@@ -7,11 +7,21 @@
 
 import type { SVGProps } from "react";
 
-export type IconName = "chevron-left" | "chevron-right" | "check" | "close" | "warning" | "info";
+export type IconName =
+  | "chevron-left"
+  | "chevron-right"
+  | "chevron-down"
+  | "chevron-up"
+  | "check"
+  | "close"
+  | "warning"
+  | "info";
 
 const PATHS: Record<IconName, string> = {
   "chevron-left": "M15 6l-6 6 6 6",
   "chevron-right": "M9 6l6 6-6 6",
+  "chevron-down": "M6 9l6 6 6-6",
+  "chevron-up": "M6 15l6-6 6 6",
   check: "M5 12l5 5L20 7",
   close: "M6 6l12 12M18 6L6 18",
   warning: "M12 4l9 16H3L12 4zm0 6v4m0 3v.5",

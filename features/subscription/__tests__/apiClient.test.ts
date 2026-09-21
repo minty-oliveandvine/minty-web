@@ -57,7 +57,14 @@ describe("apiFetch", () => {
 
   it("names the company with X-Entity-Id on a company-scoped call", async () => {
     fetchMock.mockResolvedValueOnce(
-      reply(200, { entity_id: "e1", cards: [], can_manage_modules: true, payer: null }),
+      reply(200, {
+        entity_id: "e1",
+        cards: [],
+        can_manage_modules: true,
+        payer: null,
+        viewer: { name: "Olive Vine", initials: "OV" },
+        next_payment_date: null,
+      }),
     );
     await getModulePage("e1");
 
@@ -68,13 +75,13 @@ describe("apiFetch", () => {
 
   it("posts an action as JSON", async () => {
     fetchMock.mockResolvedValueOnce(reply(200, { ok: true }));
-    await postModuleAction("e1", "start-trial", { function_code: "PETTY_CASH" });
+    await postModuleAction("e1", "start-trial", { codes: ["PETTY_CASH"] });
 
     const [url, init] = fetchMock.mock.calls[0];
     expect(String(url)).toBe(`${env.BILLING_API_URL}/api/entities/e1/modules/start-trial`);
     expect(init?.method).toBe("POST");
     expect(new Headers(init?.headers).get("Content-Type")).toBe("application/json");
-    expect(JSON.parse(String(init?.body))).toEqual({ function_code: "PETTY_CASH" });
+    expect(JSON.parse(String(init?.body))).toEqual({ codes: ["PETTY_CASH"] });
   });
 
   it("surfaces the API's error sentence with its status", async () => {

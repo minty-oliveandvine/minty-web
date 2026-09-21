@@ -22,7 +22,7 @@ stored the same way; the difference matters only at the API (below).
 
 1. **The cookie.** Every page but `/landing`, `/maintenance` and `/not-available` needs
    `minty_token`. Without it: `302` to `NEXT_PUBLIC_MINTY_URL/handoff/minty-web?next=<page>` —
-   Flask's login-gated route (Minty, Part 2 step 5) that mints the same token and comes back to
+   Flask's login-gated route (Minty's `/handoff/minty-web`, landed 2026-09-21) that mints the same token and comes back to
    `/landing`. Silent while the Flask session (24 h) is alive; a login when it is not. This app
    has no login form of its own.
 2. **The switch.** `NEXT_PUBLIC_SUBSCRIPTION_ENABLED` off → `/subscription/*` and `/` go to the

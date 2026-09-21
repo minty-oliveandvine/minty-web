@@ -13,6 +13,7 @@ import {
   handoff,
   requireApp,
   requireCredentials,
+  stubBillingApi,
   stubFlaskHandoff,
   subscriptionsDark,
 } from "./helpers";
@@ -48,6 +49,7 @@ test.describe("landing and the gates", () => {
   test("the handoff stores the token and lands on next", async ({ page, context }) => {
     test.skip(subscriptionsDark(), "dark: /subscription is not reachable (see below)");
     const creds = requireCredentials();
+    await stubBillingApi(page);
     await handoff(page, creds, "/subscription");
 
     expect(new URL(page.url()).pathname).toBe("/subscription");
@@ -64,7 +66,7 @@ test.describe("landing and the gates", () => {
     // the cookie lives as long as the token (30 minutes), not longer
     expect(token!.expires * 1000 - Date.now()).toBeLessThan(31 * 60 * 1000);
 
-    await expect(page.getByRole("heading", { name: "Your subscriptions" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Manage Subscriptions" })).toBeVisible();
     await expect(page.getByRole("navigation", { name: "Subscription sections" })).toBeVisible();
     await expect(page.getByRole("link", { name: "Invoices" }).first()).toBeVisible();
   });
@@ -72,6 +74,7 @@ test.describe("landing and the gates", () => {
   test("an unsafe next is ignored", async ({ page }) => {
     test.skip(subscriptionsDark(), "dark: /subscription is not reachable (see below)");
     const creds = requireCredentials();
+    await stubBillingApi(page);
     await handoff(page, creds, "//evil.example/phish");
     expect(new URL(page.url()).pathname).toBe("/subscription");
   });
@@ -79,6 +82,7 @@ test.describe("landing and the gates", () => {
   test("/ is the feature", async ({ page }) => {
     test.skip(subscriptionsDark(), "dark: / goes to not-available (see below)");
     const creds = requireCredentials();
+    await stubBillingApi(page);
     await handoff(page, creds, "/");
     expect(new URL(page.url()).pathname).toBe("/subscription");
   });

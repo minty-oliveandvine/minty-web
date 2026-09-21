@@ -27,3 +27,30 @@ export const PORTAL = {
 export function modulesPath(entityId: string): string {
   return subscriptionPath(`/entities/${encodeURIComponent(entityId)}/modules`);
 }
+
+/**
+ * The pages a module card's CTA leads to, under the company's module page. Built here so the
+ * page can navigate to them before they exist (each is designed in its own step); until then a
+ * seam lands on Next's 404, and the tests that pin these URLs stay valid when the pages arrive.
+ */
+export function moduleRoutes(entityId: string) {
+  const b = modulesPath(entityId);
+  return {
+    /**
+     * Manage Subscription - a trialing or active module. The design's target is the payer
+     * portal's list (section 04) with this company's row, so this is the list, not a sub-page.
+     */
+    manage: `${PORTAL.subscriptions}?entity=${encodeURIComponent(entityId)}`,
+    /** Activate Subscription - a module whose trial expired. */
+    activate: (code: string) => `${b}/activate/${encodeURIComponent(code)}`,
+    /** Resume Subscription - a module with a cancellation pending. */
+    resume: (code: string) => `${b}/resume/${encodeURIComponent(code)}`,
+    /** Reactivate Subscription - a module suspended for a failed payment. */
+    reactivate: (code: string) => `${b}/reactivate/${encodeURIComponent(code)}`,
+    /** The payment-method screen the "Payment failed" banner links to. */
+    paymentMethod: `${b}/payment-method`,
+    /** The list's ⋮ menu: cancel every active module / reactivate every module that is not. */
+    cancelAll: `${b}/cancel`,
+    reactivateAll: `${b}/reactivate`,
+  } as const;
+}

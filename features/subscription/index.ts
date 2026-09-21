@@ -7,6 +7,8 @@
  * work, which is what makes the folder liftable (README.md).
  */
 
-export { SubscriptionIndex } from "@/features/subscription/routes/SubscriptionIndex";
+export { ManageSubscriptions } from "@/features/subscription/routes/ManageSubscriptions";
+export { ModuleSettingsPage } from "@/features/subscription/routes/ModuleSettingsPage";
+export { NotBuiltYet } from "@/features/subscription/routes/NotBuiltYet";
 export { SubscriptionLayout } from "@/features/subscription/routes/SubscriptionLayout";
 export { SUBSCRIPTION_BASE_PATH } from "@/features/subscription/lib/paths";

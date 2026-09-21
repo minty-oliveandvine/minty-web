@@ -1,4 +1,6 @@
 @import "tailwindcss";
+/* billing-frontend's icon font (its Header, NavMenu and pills use these glyphs) */
+@import "material-symbols/outlined.css";
 
 /* Skeletal by decision (2026-09-21): a new frontend design replaces this. Only the tokens
    billing-frontend also carries, so the two apps read the same until then. Nothing pixel-level
@@ -11,7 +13,30 @@
   --primary: #656565;
   --secondary: #54d3da;
   --danger: #b42318;
-  --font-sans: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  /* The module settings page (Figma 43YI3MYtTfX5Xzz6dRoRuT, section 03): the first screen with a
+     design. Components read these, never a hex, so a retheme is this block. */
+  --accent: #f15a24;
+  --teal-strong: #18c4c7;
+  --info: #2374f2;
+  --ink: #16202e;
+  --ink-soft: #757575;
+  --quiet: #a0a8b2;
+  --pill: #e5e7eb;
+  --pill-text: #374151;
+  --card-live: #f5ffff;
+  --card-live-border: rgba(79, 199, 199, 0.22);
+  --card-off: rgba(238, 240, 243, 0.4);
+  --card-off-border: #d9d9d9;
+  --tile-petty: #fff7ec;
+  --tile-payment: #edf5fc;
+  --avatar-bg: #ffe6b1;
+  --avatar-fg: #6b3a12;
+  --alert-bg: #fff5f5;
+  --alert-border: #f3b6ad;
+  --alert-icon: #d92d20;
+  /* Inter from next/font (--font-inter on <html className>), as billing-frontend */
+  --font-sans:
+    var(--font-inter), ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
   --font-mono: ui-monospace, monospace;
 }
 
@@ -20,6 +45,12 @@
   --color-secondary: var(--secondary);
   --color-muted: var(--muted);
   --color-danger: var(--danger);
+  --color-accent: var(--accent);
+  --color-teal-strong: var(--teal-strong);
+  --color-info: var(--info);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-quiet: var(--quiet);
 }
 
 @media (prefers-color-scheme: dark) {

@@ -12,10 +12,12 @@ its own app when login, dashboard, profile and settings join `minty-web` in Part
 index.ts        the ONLY public surface: route components + SUBSCRIPTION_BASE_PATH
 api/            typed clients over the minty-billing-api contracts (payerPortal, moduleSettings, notice)
 hooks/          state and orchestration over api/ - what the screens call; tested
-lib/            pure helpers (paths, formatting - payerPortalFormat.ts arrives with the port)
-components/     the screens' pieces - plain, minimally styled; the design pass replaces these ONE FOR ONE
+lib/            pure helpers (paths, moduleState, flaskLinks; payerPortalFormat.ts arrives with the port)
+components/     the screens' pieces; the portal's are plain and the design pass replaces them ONE FOR ONE,
+                the module page's are built to its Figma design
 routes/         the page-level components app/subscription/**/page.tsx re-export
-__tests__/      Vitest: api/, hooks/, lib/ and the re-export guard
+__fixtures__/   the module page model per Figma state - shared by Vitest, Playwright and the dev ?fixture= switch
+__tests__/      Vitest: api/, hooks/, lib/, the screens and the re-export guard
 e2e/            Playwright: the portal and module-page journeys (picked up by the root playwright.config.ts)
 ```
 
@@ -32,7 +34,8 @@ and text, never by class).
 2. Nothing outside imports `@/features/subscription/*` except `app/subscription/**`, and it
    imports the index only.
 3. `app/subscription/**/page.tsx` and `layout.tsx` are one-line re-exports
-   (`__tests__/reexports.test.ts`).
+   (`__tests__/reexports.test.ts`). The portal pages sit in the route group
+   `app/subscription/(portal)/` so their tabbed layout stays off the module settings page.
 4. Links inside the feature are built with `lib/paths.ts`, never a literal `/subscription/…`.
 
 ## Extraction recipe (Part 3 step 4, or whenever subscription becomes its own app)
@@ -51,6 +54,12 @@ and text, never by class).
 ## Status
 
 Step 1 of Part 2: the folder, its index, the three API clients (typed to the contract, methods
-mapped to the routes) and two skeletal routes (the index and the layout). Step 4 ports the
-portal screens from `billing-frontend/components/profile/*` (behaviour, not look) and builds
-the module settings page from Flask's `module_*.html` partials' behaviour.
+mapped to the routes) and two skeletal routes (the index and the layout). Step 4a (2026-09-21):
+the module settings page, built to its Figma design over a stubbed API, under billing-frontend's
+settings chrome (`@/components/ui/{AppHeader,NavMenu}`) - `hooks/useModulePage`,
+`lib/moduleState`, `lib/flaskLinks`, six components, the fixtures, its unit and browser tests
+(`docs/features/subscriptions.md` §9). Step 4b builds the pages its CTAs lead to and ports the
+portal screens from `billing-frontend/components/profile/*` (behaviour, not look). Step 4b (same
+day): the Manage Subscriptions list from Figma section 04 - `hooks/useSubscriptionsList`,
+`lib/portalRows`, eight components, `__fixtures__/subscriptions.ts`, its unit and browser tests
+(`docs/features/subscriptions.md` §10); `/subscription` is that list now.

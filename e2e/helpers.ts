@@ -134,9 +134,25 @@ export async function handoff(
 }
 
 /**
+ * Answer the billing API ourselves with what its routers are until Part 2 step 3: a 501 stub.
+ * The shell's specs are about the landing and the gates, not the data; over the real API a
+ * token for a user the API's database does not hold is a 401, which sends the browser through
+ * Flask's re-handoff and out of the app under test.
+ */
+export async function stubBillingApi(page: Page): Promise<void> {
+  await page.route(`${BILLING_API_URL}/api/**`, (route) =>
+    route.fulfill({
+      status: 501,
+      contentType: "application/json",
+      body: JSON.stringify({ error: "not_implemented" }),
+    }),
+  );
+}
+
+/**
  * Answer Flask's re-handoff route ourselves. The specs assert WHERE the app sends the browser,
- * not what Flask does with it (that is Minty's e2e); and until Part 2 step 5 lands the route in
- * Flask, a real navigation there would be a connection error or a 404 that hides the assertion.
+ * not what Flask does with it (Minty's `tests/test_minty_web_handoff.py` covers that side); a
+ * real navigation there with Flask down would be a connection error that hides the assertion.
  */
 export async function stubFlaskHandoff(page: Page): Promise<void> {
   await page.route(`${FLASK_URL}/handoff/minty-web**`, (route) =>

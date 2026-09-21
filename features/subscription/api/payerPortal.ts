@@ -44,6 +44,12 @@ export type PortalEntity = {
   modules: PortalModule[];
   /** A Minty PATH. Hand the token back through Flask's /entity/<id>/enter to land on it signed in. */
   settings_path: string;
+  /**
+   * ISO; when the company was created. The Manage Subscriptions list is "ordered newest entity
+   * first" (design note) - an addition over Flask's answer for the step-3 API to emit; absent,
+   * the list keeps the API's order.
+   */
+  created_at?: string | null;
 };
 
 export const SORT_FIELDS = [
@@ -102,6 +108,27 @@ export async function fetchPayerSubscriptions(
   });
   if (!data || !Array.isArray(data.entities)) throw new ApiError(502, UNEXPECTED_SHAPE);
   return data;
+}
+
+/** The API's page-size ceiling (`MAX_PER_PAGE` in Minty's portal route). */
+export const MAX_PER_PAGE = 100;
+
+/**
+ * Every company the payer is responsible for, in one list: the design scrolls, it does not
+ * page, so the pages are walked here. Sorting and searching happen on the loaded list.
+ */
+export async function fetchAllPayerSubscriptions(signal?: AbortSignal): Promise<{
+  payer: PayerSubscriptions["payer"];
+  billing: PayerSubscriptions["billing"];
+  entities: PortalEntity[];
+}> {
+  const first = await fetchPayerSubscriptions({ page: 1, perPage: MAX_PER_PAGE, signal });
+  const entities = [...first.entities];
+  for (let page = 2; page <= first.pages; page++) {
+    const next = await fetchPayerSubscriptions({ page, perPage: MAX_PER_PAGE, signal });
+    entities.push(...next.entities);
+  }
+  return { payer: first.payer, billing: first.billing, entities };
 }
 
 // --- Change subscriber ----------------------------------------------------------

@@ -30,10 +30,17 @@ const REEXPORT = /^export \{ \w+ as default \} from "@\/features\/subscription";
 describe("app/subscription is re-exports only", () => {
   const files = walk(join(ROOT, "app", "subscription"));
 
-  it("has at least the layout and the index", () => {
+  // The portal pages sit in a route group so their tabbed layout does not wrap the module
+  // settings page of a company, which draws Flask's settings chrome instead.
+  it("has at least the portal's layout and index, and the module settings page", () => {
     const names = files.map((f) => relative(ROOT, f).replace(/\\/g, "/"));
-    expect(names).toContain("app/subscription/layout.tsx");
-    expect(names).toContain("app/subscription/page.tsx");
+    expect(names).toContain("app/subscription/(portal)/layout.tsx");
+    expect(names).toContain("app/subscription/(portal)/page.tsx");
+    expect(names).toContain("app/subscription/(portal)/subscriptions/page.tsx");
+    expect(names).toContain("app/subscription/entities/[entityId]/modules/page.tsx");
+    // the seams: every not-yet-built flow under the module page and the portal says so
+    expect(names).toContain("app/subscription/entities/[entityId]/modules/[...flow]/page.tsx");
+    expect(names).toContain("app/subscription/(portal)/[...rest]/page.tsx");
   });
 
   it.each(files.map((f) => [relative(ROOT, f).replace(/\\/g, "/"), f]))(
