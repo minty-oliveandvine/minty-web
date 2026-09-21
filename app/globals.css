@@ -1,0 +1,46 @@
+@import "tailwindcss";
+
+/* Skeletal by decision (2026-09-21): a new frontend design replaces this. Only the tokens
+   billing-frontend also carries, so the two apps read the same until then. Nothing pixel-level
+   is worth keeping; components/ take their look from here and nowhere else. */
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+  --muted: #6b7280;
+  --border: #e5e7eb;
+  --primary: #656565;
+  --secondary: #54d3da;
+  --danger: #b42318;
+  --font-sans: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  --font-mono: ui-monospace, monospace;
+}
+
+@theme {
+  --color-primary: var(--primary);
+  --color-secondary: var(--secondary);
+  --color-muted: var(--muted);
+  --color-danger: var(--danger);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+    --muted: #9ca3af;
+    --border: #262626;
+  }
+}
+
+html,
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  min-height: 100%;
+}
+
+/* Every screen is reachable by keyboard; the ring is the one thing the design pass may not remove. */
+:focus-visible {
+  outline: 2px solid var(--secondary);
+  outline-offset: 2px;
+}

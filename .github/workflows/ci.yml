@@ -1,0 +1,32 @@
+# Day-one CI: types, the boundary rules, the unit tests and a production build. Browser tests
+# (npm run test:e2e) need the whole stack and run locally / in Part 2 step 6's full-stack proof;
+# Part 3 step 1 replaces this with the org's reusable workflows.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: typecheck
+        run: npm run typecheck
+      - name: lint (with the boundary rules)
+        run: npm run lint
+      - name: unit tests
+        run: npm test
+      - name: build
+        run: npm run build
+        env:
+          NEXT_PUBLIC_BILLING_API_URL: http://localhost:8004
+          NEXT_PUBLIC_MINTY_URL: http://localhost:5001
+          NEXT_PUBLIC_PAYMENTS_WEB_URL: http://localhost:3000
