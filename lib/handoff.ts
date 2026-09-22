@@ -46,6 +46,11 @@ export function redirectToHandoff(next?: string, entityId?: string) {
   navigate(handoffUrl(target, entityId));
 }
 
+/** Send the browser somewhere outside the app - Stripe's card form - through the same seam. */
+export function leaveTo(url: string) {
+  navigate(url);
+}
+
 /** Test seam: forget that a redirect is under way, and optionally capture the navigation
  * instead of assigning `location.href` (jsdom does not allow `location` to be replaced). */
 export function _resetHandoffForTests(capture?: Navigate) {

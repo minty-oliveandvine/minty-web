@@ -63,3 +63,16 @@ portal screens from `billing-frontend/components/profile/*` (behaviour, not look
 day): the Manage Subscriptions list from Figma section 04 - `hooks/useSubscriptionsList`,
 `lib/portalRows`, eight components, `__fixtures__/subscriptions.ts`, its unit and browser tests
 (`docs/features/subscriptions.md` §10); `/subscription` is that list now.
+Step 4c (2026-09-22): the live-API journeys - `e2e/04_live_api.spec.ts` runs both pages over
+step 3's routers with no stubs (a real card-free trial started from the page and read back),
+against the seed's `E2E Subscription Shop`; and the open row from Figma 05·A and 05·B - `hooks/
+useEntitySummary` (the answer and the ticks pending on it), `lib/subscriptionSummary`,
+`components/SubscriptionSummaryRow` (`docs/features/subscriptions.md` §11); a tick is a change
+pending on the row until *Confirm Subscription Change*, which asks first in the change's modal
+from Figma section 06 - `lib/changeModal`, `components/ConfirmDialog` (the shell, shared with
+the Start Trial dialog) and `components/ChangeDialog` (§13) - then applies it
+(`api/moduleChanges`, one API action per module) and lands on its result from Figma 05·C -
+`lib/changeResult`, `components/ChangeResultView` (§12): in the row for what was added,
+confirmed, restored or started (Start Trial lands there too), the whole page for a
+cancellation. Next: the K-frames (the open row's ⋮), the payment-method screen (08-K),
+transfers (07) and billing/invoices, each from its Figma frame.

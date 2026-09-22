@@ -11,24 +11,40 @@
  * the API has neither.
  *
  * Actions: *Start Trial* is asked for confirmation (frames 04-G/H) and then posted through the
- * company's `start-trial` action with `X-Entity-Id` (the `/api/me/*` surface is read-only); the
- * list reloads. Everything else is a seam that navigates to the screen that owns the flow
- * (`lib/paths.ts`): a row → the company's module page, *Subscribe* → its activate flow, the ⋮
- * items → the confirm flows, *Review and accept* → the incoming-transfers page, the banner's
- * "here" → billing.
+ * company's `start-trial` action with `X-Entity-Id` (the `/api/me/*` surface is read-only). A
+ * row's chevron opens it in place (Figma 05·A, "Subscription Summary" - one row at a time;
+ * `useEntitySummary` fetches the open company's page model and card); the module page's
+ * *Manage Subscription* arrives with `?entity=` and finds that row open. A tick is local (05·B):
+ * the row shows the change pending until *Confirm Subscription Change*, which ASKS first -
+ * section 06's modal for that change (`lib/changeModal.ts`) - and, confirmed there, applies it
+ * (`api/moduleChanges.ts` - one API action per module) and lands on its RESULT (05·C,
+ * `lib/changeResult.ts`): in the row for what was added, confirmed, restored or started - where
+ * Start Trial lands too - or the whole page for a cancellation. Back to Manage Subscriptions
+ * drops the result, closes the row and reloads the list. When a card must be collected first,
+ * the browser goes to Stripe and comes back to the module page, as it does from there.
  *
- * `fixture`: dev-only, as the module page's - `?fixture=A|B|F` serves the design's frames.
+ * Everything else is a seam that navigates to the screen that owns the flow (`lib/paths.ts`):
+ * *Subscribe* → the activate flow, the ⋮ items → the confirm flows, *Review and accept* → the
+ * incoming-transfers page, the banner's "here" and the panel's *Change* → the payment-method
+ * screen.
+ *
+ * `fixture`: dev-only, as the module page's - `?fixture=A|B|F` serves the design's frames;
+ * `?result=RU22` lands the open row on a 05·C frame.
  */
 
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { ApiError } from "@/lib/apiClient";
+import { leaveTo } from "@/lib/handoff";
 import { useToast } from "@/components/ui/Toast";
 
+import { applyChange } from "@/features/subscription/api/moduleChanges";
 import {
+  getModulePage,
   startTrial as postStartTrial,
   type ModuleCode,
+  type ModulePage,
 } from "@/features/subscription/api/moduleSettings";
 import {
   fetchAllPayerSubscriptions,
@@ -45,7 +61,18 @@ import {
   type SortColumn,
   type SubscriptionRow,
 } from "@/features/subscription/lib/portalRows";
-import { PORTAL, moduleRoutes, modulesPath } from "@/features/subscription/lib/paths";
+import { buildChangeModal, type ChangeModal } from "@/features/subscription/lib/changeModal";
+import {
+  buildChangeResult,
+  type ChangeAsked,
+  type ChangeResult,
+} from "@/features/subscription/lib/changeResult";
+import { PORTAL, moduleRoutes } from "@/features/subscription/lib/paths";
+import type { PendingChange } from "@/features/subscription/lib/subscriptionSummary";
+import {
+  useEntitySummary,
+  type UseEntitySummaryResult,
+} from "@/features/subscription/hooks/useEntitySummary";
 
 export const SEARCH_DEBOUNCE_MS = 300;
 
@@ -59,10 +86,20 @@ export type ListStatus = "loading" | "ready" | "error";
 
 export type TrialPrompt = { entity: PortalEntity; code: ModuleCode; moduleName: string };
 
+/** Where the last change landed: the company and its result screen. */
+export type ListResult = { entity: PortalEntity; result: ChangeResult };
+
+/** A change asked about and not yet confirmed: the company, the ticks, the modal's words. */
+export type ChangePrompt = { entity: PortalEntity; change: PendingChange; modal: ChangeModal };
+
 export type UseSubscriptionsListArgs = {
-  /** The company to bring into view (the module page's *Manage Subscription* lands here). */
+  /** The company to bring into view and open (the module page's *Manage Subscription* lands here). */
   focusEntityId?: string | null;
   fixture?: string | null;
+  /** Dev-only: the 05·A frame the open row shows (`?summary=M44`); with a list fixture, M44. */
+  summaryFixture?: string | null;
+  /** Dev-only: the 05·C frame the open row lands on (`?result=RU22`). */
+  resultFixture?: string | null;
   today?: Date;
 };
 
@@ -88,7 +125,23 @@ export type UseSubscriptionsListResult = {
   dismissTrialPrompt: () => void;
   confirmStartTrial: () => Promise<void>;
   trialBusy: boolean;
-  openRow: (entity: PortalEntity) => void;
+  /** The company whose row is open in place, and what its panel shows. */
+  openEntityId: string | null;
+  summary: UseEntitySummaryResult;
+  toggleRow: (entity: PortalEntity) => void;
+  closeRow: () => void;
+  /** The open row's "Confirm Subscription Change": ask first (section 06's modal). */
+  confirmChange: (entity: PortalEntity, change: PendingChange) => void;
+  /** The modal, while it asks. */
+  changePrompt: ChangePrompt | null;
+  dismissChangePrompt: () => void;
+  /** The modal's Confirm: apply the change, land on the result. */
+  applyChangePrompt: () => Promise<void>;
+  changeBusy: boolean;
+  /** The result screen of the last change, until Back to Manage Subscriptions. */
+  result: ListResult | null;
+  dismissResult: () => void;
+  changePaymentMethod: (entity: PortalEntity) => void;
   subscribe: (entity: PortalEntity, code: ModuleCode) => void;
   requestTransfer: (entity: PortalEntity) => void;
   cancelSubscription: (entity: PortalEntity) => void;
@@ -127,9 +180,24 @@ async function load(
   return { entities, transfers, today: null };
 }
 
+/** The 05·C frame named by the dev switch, as a result for the company given. */
+async function fixtureResult(
+  frame: string,
+  entity: PortalEntity,
+  today: Date,
+): Promise<ChangeResult | null> {
+  if (process.env.NODE_ENV === "production") return null;
+  const f = await import("@/features/subscription/__fixtures__/modulePage");
+  if (!f.isResultFrame(frame)) return null;
+  const { before, asked, after } = f.RESULT_FIXTURES[frame];
+  return buildChangeResult(asked, before, after, entity, today);
+}
+
 export function useSubscriptionsList({
   focusEntityId = null,
   fixture,
+  summaryFixture,
+  resultFixture,
   today,
 }: UseSubscriptionsListArgs = {}): UseSubscriptionsListResult {
   const router = useRouter();
@@ -148,6 +216,13 @@ export function useSubscriptionsList({
 
   const [trialPrompt, setTrialPrompt] = useState<TrialPrompt | null>(null);
   const [trialBusy, setTrialBusy] = useState(false);
+
+  // The module page's Manage Subscription lands with ?entity=: that row opens as the list does.
+  const [openEntityId, setOpenEntityId] = useState<string | null>(focusEntityId);
+
+  const [result, setResult] = useState<ListResult | null>(null);
+  const [changePrompt, setChangePrompt] = useState<ChangePrompt | null>(null);
+  const [changeBusy, setChangeBusy] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -208,22 +283,123 @@ export function useSubscriptionsList({
     if (!trialBusy) setTrialPrompt(null);
   }, [trialBusy]);
 
+  const land = useCallback(
+    (entity: PortalEntity, asked: ChangeAsked, before: ModulePage, after: ModulePage) => {
+      const res = buildChangeResult(asked, before, after, entity, day ?? new Date());
+      setResult({ entity, result: res });
+      setOpenEntityId(res.layout === "row" ? entity.entity_id : null);
+    },
+    [day],
+  );
+
   const confirmStartTrial = useCallback(async () => {
     if (!trialPrompt) return;
+    const { entity, code } = trialPrompt;
     setTrialBusy(true);
     try {
-      await postStartTrial(trialPrompt.entity.entity_id, trialPrompt.code);
+      // The page model before is read for the result's "what changed"; a company whose row is
+      // not open has none loaded yet, so it is fetched (and again after, for the answer).
+      const before = await getModulePage(entity.entity_id);
+      await postStartTrial(entity.entity_id, code);
+      const after = await getModulePage(entity.entity_id);
       setTrialPrompt(null);
+      land(entity, { kind: "start_trial", code }, before, after);
       reload();
     } catch (err) {
       showToast(sentence(err), "error");
     } finally {
       setTrialBusy(false);
     }
-  }, [trialPrompt, reload, showToast]);
+  }, [trialPrompt, reload, showToast, land]);
 
-  const openRow = useCallback(
-    (entity: PortalEntity) => router.push(modulesPath(entity.entity_id)),
+  const openEntity = useMemo(
+    () => entities.find((e) => e.entity_id === openEntityId) ?? null,
+    [entities, openEntityId],
+  );
+  // A list served from a fixture has no real companies to ask the API about: its open row is
+  // served from a 05·A fixture too (the one named, else M44).
+  const summary = useEntitySummary(openEntity, {
+    fixture: summaryFixture ?? (fixture ? "M44" : null),
+    today: day,
+  });
+
+  const toggleRow = useCallback((entity: PortalEntity) => {
+    setResult(null);
+    setOpenEntityId((open) => (open === entity.entity_id ? null : entity.entity_id));
+  }, []);
+  const closeRow = useCallback(() => {
+    setResult(null);
+    setOpenEntityId(null);
+  }, []);
+
+  // Dev-only: land the open row on the 05·C frame named, as if its change had just been applied.
+  const summaryPage = summary.page;
+  useEffect(() => {
+    if (!resultFixture || !openEntity || !summaryPage) return;
+    let live = true;
+    void fixtureResult(resultFixture, openEntity, day ?? new Date()).then((res) => {
+      if (!live || !res) return;
+      setResult({ entity: openEntity, result: res });
+      setOpenEntityId(res.layout === "row" ? openEntity.entity_id : null);
+    });
+    return () => {
+      live = false;
+    };
+    // The company is identified by its id; the page model must have loaded.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resultFixture, openEntity?.entity_id, summaryPage !== null]);
+
+  const confirmChange = useCallback(
+    (entity: PortalEntity, change: PendingChange) => {
+      const before = summary.page;
+      if (!before || changeBusy) return;
+      const modal = buildChangeModal(before, change.codes);
+      if (modal) setChangePrompt({ entity, change, modal });
+    },
+    [summary.page, changeBusy],
+  );
+  const dismissChangePrompt = useCallback(() => {
+    if (!changeBusy) setChangePrompt(null);
+  }, [changeBusy]);
+
+  const applyChangePrompt = useCallback(async () => {
+    const before = summary.page;
+    if (!changePrompt || !before || changeBusy) return;
+    const { entity, change } = changePrompt;
+    setChangeBusy(true);
+    try {
+      {
+        const applied = await applyChange(entity.entity_id, before, change.codes);
+        if (applied.redirect) {
+          leaveTo(applied.redirect);
+          return;
+        }
+        if (applied.refused) {
+          showToast(applied.refused, "error");
+          setChangePrompt(null);
+          summary.reload();
+          return;
+        }
+        const after = await getModulePage(entity.entity_id);
+        summary.resetTicks();
+        setChangePrompt(null);
+        land(entity, { kind: "ticks", codes: change.codes }, before, after);
+      }
+    } catch (err) {
+      showToast(sentence(err), "error");
+      setChangePrompt(null);
+      summary.reload();
+    } finally {
+      setChangeBusy(false);
+    }
+  }, [changePrompt, summary, changeBusy, showToast, land]);
+  const dismissResult = useCallback(() => {
+    setResult(null);
+    setOpenEntityId(null);
+    reload();
+  }, [reload]);
+  const changePaymentMethod = useCallback(
+    (entity: PortalEntity) => router.push(moduleRoutes(entity.entity_id).paymentMethod),
     [router],
   );
   const subscribe = useCallback(
@@ -271,7 +447,18 @@ export function useSubscriptionsList({
     dismissTrialPrompt,
     confirmStartTrial,
     trialBusy,
-    openRow,
+    openEntityId,
+    summary,
+    toggleRow,
+    closeRow,
+    confirmChange,
+    changePrompt,
+    dismissChangePrompt,
+    applyChangePrompt,
+    changeBusy,
+    result,
+    dismissResult,
+    changePaymentMethod,
     subscribe,
     requestTransfer,
     cancelSubscription,

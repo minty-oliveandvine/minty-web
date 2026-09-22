@@ -1,7 +1,8 @@
 // The Manage Subscriptions list in a browser, over a STUBBED API (features/subscription/
-// __fixtures__/subscriptions served by page.route - `/api/me/subscriptions` is a 501 stub until
-// Part 2 step 3): the list from the landing, the transfer card, a row's cells, the ⋮ menu, the
-// Start Trial dialog posting with the company's id, search, and the empty state.
+// __fixtures__/subscriptions served by page.route): the list from the landing, the transfer
+// card, a row's cells, the ⋮ menu, the Start Trial dialog posting with the company's id, search,
+// the empty state, a row opened in place (Figma 05·A, served from __fixtures__/modulePage), a tick
+// pending (05·B), the modal that asks (06) and where its confirmation lands (05·C).
 // Stand-in credentials when E2E_* are unset (nothing reaches the API); located inside `main`.
 import { expect, test, type Page } from "@playwright/test";
 
@@ -12,6 +13,7 @@ import {
   requireApp,
   subscriptionsDark,
 } from "../../../e2e/helpers";
+import { RESULT_FIXTURES, SUMMARY_FIXTURES, WALLET } from "../__fixtures__/modulePage";
 import { ENTITIES, INCOMING_TRANSFERS, subscriptionsPage } from "../__fixtures__/subscriptions";
 import type { PayerSubscriptions } from "../api/payerPortal";
 
@@ -35,6 +37,17 @@ async function stubApi(page: Page, list: PayerSubscriptions, transfers: unknown[
   );
   await page.route(`${BILLING_API_URL}/api/me/subscriptions?*`, (route) =>
     route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(list) }),
+  );
+  // The open row's two reads: every company opens as 05·A's M45 (one active, one cancelling).
+  await page.route(`${BILLING_API_URL}/api/entities/*/modules`, (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(SUMMARY_FIXTURES.M45),
+    }),
+  );
+  await page.route(`${BILLING_API_URL}/api/me/billing/entity-payment-method?*`, (route) =>
+    route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(WALLET) }),
   );
   await page.route(`${BILLING_API_URL}/api/entities/*/modules/**`, (route) => {
     const req = route.request();
@@ -142,12 +155,155 @@ test.describe("manage subscriptions", () => {
     await expect(body(page).getByRole("link", { name: "Go to entity list" })).toBeVisible();
   });
 
-  test("the module page's Manage Subscription lands on the company's row", async ({ page }) => {
+  test("the module page's Manage Subscription lands on the company's row, opened", async ({
+    page,
+  }) => {
     await stubApi(page, subscriptionsPage());
     await handoff(page, creds(), "/subscription/subscriptions?entity=e-solera-group-limited", {
       entity_id: "",
     });
     const row = body(page).locator("li[data-entity='e-solera-group-limited']");
     await expect(row).toBeInViewport();
+    await expect(row.getByRole("region", { name: "Subscription Summary" })).toBeVisible();
+  });
+
+  test("05·A: the chevron opens a row in place - cards, ticks, the summary, the seams", async ({
+    page,
+  }) => {
+    await stubApi(page, subscriptionsPage());
+    await handoff(page, creds(), "/subscription", { entity_id: "" });
+
+    await body(page).getByRole("button", { name: "Open Kestrel Foods Limited" }).click();
+    const row = body(page).locator("li[data-open]");
+    await expect(row).toHaveAttribute("data-entity", "e-kestrel-foods-limited");
+    const panel = row.getByRole("region", { name: "Subscription Summary" });
+    await expect(panel).toBeVisible();
+    // M45: Petty Cash active and ticked, Payment Request cancelling and unticked.
+    await expect(row.getByRole("checkbox", { name: "Petty Cash subscription" })).toBeChecked();
+    await expect(
+      row.getByRole("checkbox", { name: "Payment Request subscription" }),
+    ).not.toBeChecked();
+    await expect(panel.getByText("(Cancellation in progress)")).toBeVisible();
+    await expect(panel.getByText("HK$400")).toBeVisible();
+    await expect(panel.getByText("Future Subscription")).toBeVisible();
+    await expect(panel.getByText("HK$280")).toBeVisible();
+    await expect(row.getByText(/was originally created/)).toBeVisible();
+    // One open at a time: opening another closes this one.
+    await body(page).getByRole("button", { name: "Open Mino Market Limited" }).click();
+    await expect(body(page).locator("li[data-open]")).toHaveAttribute(
+      "data-entity",
+      "e-mino-market-limited",
+    );
+    await expect(body(page).locator("li[data-open]")).toHaveCount(1);
+    // 05·B: a tick is a pending change, shown on the card and confirmed from the panel. Ticking
+    // the cancelling Payment Request = Restoring; the confirm button is the seam to its flow.
+    const opened = body(page).locator("li[data-open]");
+    const restore = opened.getByRole("checkbox", { name: "Payment Request subscription" });
+    await restore.click();
+    await expect(restore).toBeChecked();
+    await expect(restore).toHaveAttribute("data-changed", "true");
+    await expect(opened.locator("[data-chip]")).toHaveText("Restoring");
+    // A second press undoes it.
+    await restore.click();
+    await expect(restore).not.toBeChecked();
+    await expect(opened.locator("[data-chip]")).toHaveCount(0);
+    await expect(opened.getByRole("button", { name: "Confirm Subscription Change" })).toHaveCount(
+      0,
+    );
+    await restore.click();
+    await expect(opened.getByRole("button", { name: "Confirm Subscription Change" })).toBeVisible();
+  });
+
+  test("06 + 05·C: a change asks in its modal, then lands on its result - in the row, or on the cancellation page", async ({
+    page,
+  }) => {
+    const posts = await stubApi(page, subscriptionsPage());
+    await handoff(page, creds(), "/subscription", { entity_id: "" });
+    const serveModules = (model: unknown) =>
+      page.route(`${BILLING_API_URL}/api/entities/*/modules`, (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify(model),
+        }),
+      );
+
+    // Restore the cancelling Payment Request (M45): once posted, the company reads as M44.
+    await body(page).getByRole("button", { name: "Open Kestrel Foods Limited" }).click();
+    const opened = body(page).locator("li[data-open]");
+    await opened.getByRole("checkbox", { name: "Payment Request subscription" }).click();
+    await serveModules(RESULT_FIXTURES.RW45.after);
+    await opened.getByRole("button", { name: "Confirm Subscription Change" }).click();
+    // The modal asks first: both ticked after the change is the bundle's modal.
+    const unlock = page.getByRole("dialog", { name: "You have unlocked Super Minty" });
+    await expect(unlock).toBeVisible();
+    await expect(unlock).toContainText("You’ve activated both modules.");
+    await expect(unlock).toContainText("Kestrel Foods Limited");
+    expect(posts).toEqual([]);
+    await unlock.getByRole("button", { name: "Confirm" }).click();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    const result = body(page).locator("li[data-result]");
+    await expect(result).toHaveAttribute("data-result", "celebrate");
+    await expect(result).toHaveAttribute("data-entity", "e-kestrel-foods-limited");
+    await expect(result).toContainText("Congratulations!");
+    await expect(result).toContainText(
+      "Payment Request is restored and billing carries on as before.",
+    );
+    await expect(result).toContainText("HK$400 a month.");
+    expect(posts.map((p) => [p.url.split("/modules/")[1], p.body, p.entity])).toEqual([
+      ["renew", { code: "PAYMENT_REQUEST" }, "e-kestrel-foods-limited"],
+    ]);
+    // Back: the list again, nothing open.
+    await result.getByRole("button", { name: "Back to Manage Subscriptions" }).click();
+    await expect(body(page).locator("li[data-result]")).toHaveCount(0);
+    await expect(body(page).locator("li[data-open]")).toHaveCount(0);
+    await expect(
+      body(page).getByRole("button", { name: "Open Kestrel Foods Limited" }),
+    ).toBeVisible();
+
+    // Remove Petty Cash while Payment Request winds down (M45): the module cancellation page.
+    await serveModules(SUMMARY_FIXTURES.M45);
+    await body(page).getByRole("button", { name: "Open Mino Market Limited" }).click();
+    const mino = body(page).locator("li[data-open]");
+    await expect(mino.getByRole("checkbox", { name: "Petty Cash subscription" })).toBeChecked();
+    await mino.getByRole("checkbox", { name: "Petty Cash subscription" }).click();
+    await serveModules(RESULT_FIXTURES.RV45.after);
+    await mino.getByRole("button", { name: "Confirm Subscription Change" }).click();
+    // Nothing is ticked after (Payment Request winds down): Cancel Subscription?, in red; Go
+    // back keeps the tick, then confirm for real.
+    const ask = page.getByRole("dialog", { name: "Cancel Subscription?" });
+    await expect(ask).toContainText("No modules are selected.");
+    await ask.getByRole("button", { name: "Go back" }).click();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await expect(mino.getByRole("checkbox", { name: "Petty Cash subscription" })).not.toBeChecked();
+    await mino.getByRole("button", { name: "Confirm Subscription Change" }).click();
+    await page
+      .getByRole("dialog", { name: "Cancel Subscription?" })
+      .getByRole("button", { name: "Confirm Cancellation" })
+      .click();
+    await expect(body(page).getByRole("heading", { level: 1 })).toHaveText(
+      "Module Cancellation Scheduled",
+    );
+    const cancelled = body(page).getByRole("region", { name: "Module Cancellation Scheduled" });
+    await expect(cancelled.getByRole("heading", { level: 2 })).toHaveText(
+      "Petty Cash Cancellation Confirmed",
+    );
+    await expect(cancelled).toContainText("Mino Market Limited");
+    await expect(cancelled).toContainText(
+      "We've received your cancellation request for Petty Cash.",
+    );
+    await expect(cancelled).toContainText(
+      "Changed your mind? You can reactivate Petty Cash anytime!",
+    );
+    expect(posts.at(-1)).toMatchObject({
+      body: { code: "PETTY_CASH" },
+      entity: "e-mino-market-limited",
+    });
+    expect(posts.at(-1)!.url).toMatch(/\/modules\/cancel$/);
+    await cancelled.getByRole("button", { name: "Back to Manage Subscriptions" }).click();
+    await expect(body(page).getByRole("heading", { level: 1 })).toHaveText("Manage Subscriptions");
+    await expect(
+      body(page).getByRole("button", { name: "Open Mino Market Limited" }),
+    ).toBeVisible();
   });
 });

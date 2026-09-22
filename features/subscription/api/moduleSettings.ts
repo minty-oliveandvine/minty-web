@@ -60,6 +60,8 @@ export type ModuleCard = {
   has_access: boolean;
   subscription_status: ModuleSubscriptionStatus;
   can_cancel: boolean;
+  /** The monthly price in MAJOR units as the API's decimal string ("280"); `formatted_amount` is its "280.00". */
+  amount?: string;
   formatted_amount: string;
   currency_code: string;
   billing_interval: string;
@@ -89,9 +91,41 @@ export type ModulePage = {
   /** The person looking, for the header. */
   viewer: { name: string; initials: string };
   next_payment_date: string | null;
-  summary?: unknown;
-  panel?: unknown;
+  /** The catalogue's money, as `get_subscription_summary` builds it (the keys the summary reads). */
+  summary?: ModuleSummary | null;
+  /** The "Your subscription" panel model (`build_subscription_panel`); the keys the summary reads. */
+  panel?: ModulePanel | null;
   consent_takeover?: unknown;
+};
+
+/**
+ * What the Subscription Summary (Figma 05·A) reads of the API's `summary`: the currency's
+ * symbol as `currency_info` records it (`HK$`, or the code itself when none is recorded), the
+ * bundle - its price in MAJOR units as a decimal string ("400"), the codes it covers and its
+ * name (`Super Minty`, the API's; the design writes "SuperMinty"). Everything else the API puts
+ * beside these stays opaque.
+ */
+export type ModuleSummary = {
+  currency: string;
+  currency_code: string | null;
+  bundle_amount: string;
+  bundle_amount_formatted: string;
+  bundle_codes: ModuleCode[];
+  bundle_name: string;
+  [key: string]: unknown;
+};
+
+/** The two things the summary's footer reads of the panel. */
+export type ModulePanel = {
+  /** {date "6 Oct 2026", amount "HKD 280", overdue, includes_extension}, or null when nothing bills. */
+  next_invoice: {
+    date: string;
+    amount: string;
+    overdue: boolean;
+    includes_extension: boolean;
+  } | null;
+  total: string;
+  [key: string]: unknown;
 };
 
 function base(entityId: string): string {
@@ -132,4 +166,50 @@ export function completeCheckout(
     session_id: sessionId,
     ...(purpose ? { purpose } : {}),
   });
+}
+
+// ---- the changes the open row confirms (Figma 05·B → 05·C) ---------------------------------
+
+/** `cancel`: one module stops at its access end (a paid one under the prorated rule, a trial at once). */
+export function cancelModule(
+  entityId: string,
+  code: ModuleCode,
+): Promise<{ ok: true; access_until: string | null }> {
+  return postModuleAction(entityId, "cancel", { code });
+}
+
+/** `renew`: a module scheduled to cancel carries on. */
+export function renewModule(entityId: string, code: ModuleCode): Promise<{ ok: true }> {
+  return postModuleAction(entityId, "renew", { code });
+}
+
+/** `retry-payment`: collect a suspended company's outstanding invoice now; `ok` says whether it settled. */
+export function retryPayment(
+  entityId: string,
+): Promise<{ ok: boolean; status: string; message: string }> {
+  return postModuleAction(entityId, "retry-payment");
+}
+
+/**
+ * `restart-billing`: buy back lapsed trials - THIS CHARGES the company's card. `url` when the
+ * saved card could not be used and Stripe collects a new one; a 402 when no card is nominated.
+ */
+export function restartBilling(
+  entityId: string,
+  codes: ModuleCode[],
+): Promise<{ ok?: true; restarted?: ModuleCode[]; url?: string }> {
+  return postModuleAction(entityId, "restart-billing", { codes });
+}
+
+/**
+ * `authorize-billing`: this company's consent to bill, so its trials convert at term end.
+ * Nothing is charged; consent is once per company, so every trial it runs converts.
+ */
+export function authorizeBilling(entityId: string): Promise<{ ok: true }> {
+  return postModuleAction(entityId, "authorize-billing");
+}
+
+/** `payment-method`: where Stripe collects or updates the payer's card (the browser goes there). */
+export function openPaymentMethodCapture(entityId: string): Promise<{ url: string }> {
+  return postModuleAction(entityId, "payment-method");
 }

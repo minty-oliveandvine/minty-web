@@ -42,11 +42,11 @@ describe("settingsTabs", () => {
 });
 
 describe("backLink", () => {
-  it("goes back to the payments app when it sent the person, else to Minty's dashboard", () => {
+  it("goes back to the payments app when it sent the person, else to Petty Cash's reports", () => {
     expect(backLink("e1", "bills")).toEqual({ href: env.PAYMENTS_WEB_URL, label: "Payments" });
     expect(backLink("e1", null)).toEqual({
       href: `${env.MINTY_URL}/entity/e1`,
-      label: "Dashboard",
+      label: "Reports",
     });
   });
 });

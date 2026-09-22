@@ -9,8 +9,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ToastProvider } from "@/components/ui/Toast";
 import { setAuth } from "@/lib/auth";
 import { env } from "@/lib/env";
+import { _resetHandoffForTests } from "@/lib/handoff";
 
-import { TODAY } from "@/features/subscription/__fixtures__/modulePage";
+import { RESULT_FIXTURES, TODAY, WALLET } from "@/features/subscription/__fixtures__/modulePage";
 import {
   ENTITIES,
   INCOMING_TRANSFERS,
@@ -161,6 +162,14 @@ describe("useSubscriptionsList", () => {
 
   it("Start Trial asks first, then posts with the company's id and reloads", async () => {
     serve(fetchMock, [subscriptionsPage()], []);
+    // The page model is read before and after the trial starts (for the result's "what changed").
+    const base = fetchMock.getMockImplementation()!;
+    fetchMock.mockImplementation(async (input, init) => {
+      const url = new URL(String(input));
+      if (/^\/api\/entities\/[^/]+\/modules$/.test(url.pathname) && init?.method !== "POST")
+        return reply(200, RESULT_FIXTURES.RV14.before);
+      return base(input, init);
+    });
     const { result } = renderHook(() => useSubscriptionsList({ today: TODAY }), { wrapper });
     await waitFor(() => expect(result.current.status).toBe("ready"));
     const harbour = ENTITIES[0];
@@ -217,25 +226,271 @@ describe("useSubscriptionsList", () => {
     await waitFor(() => expect(result.current.status).toBe("ready"));
     const e = ENTITIES[0];
 
-    act(() => result.current.openRow(e));
     act(() => result.current.subscribe(e, "PAYMENT_REQUEST"));
     act(() => result.current.requestTransfer(e));
     act(() => result.current.cancelSubscription(e));
     act(() => result.current.reactivate(e));
     act(() => result.current.reviewTransfer(INCOMING_TRANSFERS[0]));
     act(() => result.current.updatePaymentMethod());
+    act(() => result.current.changePaymentMethod(e));
     act(() => result.current.back());
 
+    const b = `/subscription/entities/${e.entity_id}/modules`;
     expect(push.mock.calls.map((c) => c[0])).toEqual([
-      `/subscription/entities/${e.entity_id}/modules`,
-      `/subscription/entities/${e.entity_id}/modules/activate/PAYMENT_REQUEST`,
+      `${b}/activate/PAYMENT_REQUEST`,
       `/subscription/subscriptions/subscriber?entity=${e.entity_id}`,
-      `/subscription/entities/${e.entity_id}/modules/cancel`,
-      `/subscription/entities/${e.entity_id}/modules/reactivate`,
+      `${b}/cancel`,
+      `${b}/reactivate`,
       "/subscription/subscriptions/incoming?transfer=t-1",
       "/subscription/billing",
+      `${b}/payment-method`,
     ]);
     expect(back).toHaveBeenCalledTimes(1);
+  });
+
+  /**
+   * The open row over a stubbed company: its page model answers `before` until the actions
+   * have been posted, `after` from then on; every action answers what the API would.
+   */
+  function serveChange(
+    fetchMock: ReturnType<typeof vi.fn<typeof fetch>>,
+    frame: keyof typeof RESULT_FIXTURES,
+    answers: Record<string, { status: number; body: unknown }> = {},
+  ) {
+    const { before, after } = RESULT_FIXTURES[frame];
+    const posts: { action: string; body: unknown; entity: string | null }[] = [];
+    fetchMock.mockImplementation(async (input, init) => {
+      const url = new URL(String(input));
+      if (url.pathname === "/api/me/subscriptions/transfers") return reply(200, { transfers: [] });
+      if (url.pathname === "/api/me/subscriptions") return reply(200, subscriptionsPage());
+      if (url.pathname === "/api/me/billing/entity-payment-method") return reply(200, WALLET);
+      const m = /^\/api\/entities\/[^/]+\/modules(?:\/(.+))?$/.exec(url.pathname);
+      if (m && init?.method === "POST") {
+        const action = m[1]!;
+        posts.push({
+          action,
+          body: init.body ? JSON.parse(String(init.body)) : null,
+          entity: new Headers(init.headers).get("X-Entity-Id"),
+        });
+        const a = answers[action];
+        return a ? reply(a.status, a.body) : reply(200, { ok: true });
+      }
+      if (m) return reply(200, posts.length > 0 ? after : before);
+      return reply(404, { error: "not_found" });
+    });
+    return posts;
+  }
+
+  it("Confirm Subscription Change applies the ticks - one action per module - and lands on the result row", async () => {
+    const posts = serveChange(fetchMock, "RU23");
+    const e = ENTITIES[0];
+    const { result } = renderHook(
+      () => useSubscriptionsList({ today: TODAY, focusEntityId: e.entity_id }),
+      { wrapper },
+    );
+    await waitFor(() => expect(result.current.summary.status).toBe("ready"));
+
+    act(() => result.current.summary.toggleTick("PETTY_CASH"));
+    act(() => result.current.summary.toggleTick("PAYMENT_REQUEST"));
+    const change = result.current.summary.view!.pendingChange!;
+    expect(change.codes).toEqual(["PETTY_CASH", "PAYMENT_REQUEST"]);
+    // Section 06: the button asks first - the bundle's modal here - and its Confirm applies.
+    act(() => result.current.confirmChange(e, change));
+    expect(result.current.changePrompt?.modal.kind).toBe("bundle");
+    expect(posts).toEqual([]);
+    await act(() => result.current.applyChangePrompt());
+    expect(result.current.changePrompt).toBeNull();
+
+    // The company's consent for its trial, then the lapsed trial bought back - with the id.
+    expect(posts.map((p) => [p.action, p.body])).toEqual([
+      ["authorize-billing", {}],
+      ["restart-billing", { codes: ["PAYMENT_REQUEST"] }],
+    ]);
+    expect(posts.every((p) => p.entity === e.entity_id)).toBe(true);
+    expect(result.current.result?.entity.entity_id).toBe(e.entity_id);
+    expect(result.current.result?.result.kind).toBe("celebrate");
+    expect(result.current.result?.result.lines.map((l) => l.text)).toEqual([
+      "Petty Cash is confirmed. Billing starts the day its trial ends.",
+      "Payment Request is active. Your card has been charged.",
+    ]);
+    expect(result.current.openEntityId).toBe(e.entity_id);
+    expect(push).not.toHaveBeenCalled();
+
+    // Back to Manage Subscriptions: the result goes, the row closes, the list reloads.
+    const listCalls = fetchMock.mock.calls.filter((c) =>
+      String(c[0]).includes("/api/me/subscriptions?"),
+    ).length;
+    act(() => result.current.dismissResult());
+    expect(result.current.result).toBeNull();
+    expect(result.current.openEntityId).toBeNull();
+    await waitFor(() =>
+      expect(
+        fetchMock.mock.calls.filter((c) => String(c[0]).includes("/api/me/subscriptions?")).length,
+      ).toBeGreaterThan(listCalls),
+    );
+  });
+
+  it("a removal posts cancel and lands on the page layout, the row closed", async () => {
+    const posts = serveChange(fetchMock, "RV44");
+    const e = ENTITIES[0];
+    const { result } = renderHook(
+      () => useSubscriptionsList({ today: TODAY, focusEntityId: e.entity_id }),
+      { wrapper },
+    );
+    await waitFor(() => expect(result.current.summary.status).toBe("ready"));
+    act(() => result.current.summary.toggleTick("PETTY_CASH"));
+    act(() => result.current.confirmChange(e, result.current.summary.view!.pendingChange!));
+    expect(result.current.changePrompt?.modal.kind).toBe("remove");
+    await act(() => result.current.applyChangePrompt());
+    expect(posts.map((p) => [p.action, p.body])).toEqual([["cancel", { code: "PETTY_CASH" }]]);
+    expect(result.current.result?.result.kind).toBe("module_cancelled");
+    expect(result.current.result?.result.layout).toBe("page");
+    expect(result.current.openEntityId).toBeNull();
+  });
+
+  it("a trial confirmed with no card at all goes to Stripe's card form instead", async () => {
+    const posts = serveChange(fetchMock, "RU22", {
+      "payment-method": { status: 200, body: { url: "https://stripe.test/setup" } },
+    });
+    const left: string[] = [];
+    _resetHandoffForTests((url) => left.push(url));
+    const e = ENTITIES[0];
+    const { result } = renderHook(
+      () => useSubscriptionsList({ today: TODAY, focusEntityId: e.entity_id }),
+      { wrapper },
+    );
+    await waitFor(() => expect(result.current.summary.status).toBe("ready"));
+    act(() => result.current.summary.toggleTick("PETTY_CASH"));
+    act(() => result.current.confirmChange(e, result.current.summary.view!.pendingChange!));
+    expect(result.current.changePrompt?.modal.kind).toBe("activate");
+    await act(() => result.current.applyChangePrompt());
+    expect(posts.map((p) => p.action)).toEqual(["payment-method"]);
+    expect(left).toEqual(["https://stripe.test/setup"]);
+    expect(result.current.result).toBeNull();
+    _resetHandoffForTests();
+  });
+
+  it("a suspension reactivated pays the invoice; a declined card stops there with the API's sentence", async () => {
+    const posts = serveChange(fetchMock, "RV61", {
+      "retry-payment": {
+        status: 200,
+        body: {
+          ok: false,
+          status: "failed",
+          message: "That card was declined: insufficient funds",
+        },
+      },
+    });
+    const e = ENTITIES[0];
+    const { result } = renderHook(
+      () => useSubscriptionsList({ today: TODAY, focusEntityId: e.entity_id }),
+      { wrapper },
+    );
+    await waitFor(() => expect(result.current.summary.status).toBe("ready"));
+    act(() => result.current.summary.toggleTick("PETTY_CASH"));
+    act(() => result.current.confirmChange(e, result.current.summary.view!.pendingChange!));
+    expect(result.current.changePrompt?.modal.kind).toBe("reactivate");
+    await act(() => result.current.applyChangePrompt());
+    expect(result.current.changePrompt).toBeNull();
+    expect(posts.map((p) => [p.action, p.body])).toEqual([["retry-payment", {}]]);
+    expect(result.current.result).toBeNull();
+    expect(document.body.textContent).toContain("That card was declined: insufficient funds");
+    // The API said no: the row is read again rather than left showing the tick.
+    await waitFor(() => expect(result.current.summary.view?.pendingChange ?? null).toBeNull());
+  });
+
+  it("an action the API refuses is said in a toast, and the row is read again", async () => {
+    const posts = serveChange(fetchMock, "RV44", {
+      cancel: { status: 409, body: { error: "Module Petty Cash isn't active." } },
+    });
+    const e = ENTITIES[0];
+    const { result } = renderHook(
+      () => useSubscriptionsList({ today: TODAY, focusEntityId: e.entity_id }),
+      { wrapper },
+    );
+    await waitFor(() => expect(result.current.summary.status).toBe("ready"));
+    act(() => result.current.summary.toggleTick("PETTY_CASH"));
+    act(() => result.current.confirmChange(e, result.current.summary.view!.pendingChange!));
+    await act(() => result.current.applyChangePrompt());
+    expect(posts.map((p) => p.action)).toEqual(["cancel"]);
+    expect(result.current.result).toBeNull();
+    expect(document.body.textContent).toContain("Module Petty Cash isn't active.");
+  });
+
+  it("Go back on the modal posts nothing and keeps the ticks pending", async () => {
+    const posts = serveChange(fetchMock, "RV44");
+    const e = ENTITIES[0];
+    const { result } = renderHook(
+      () => useSubscriptionsList({ today: TODAY, focusEntityId: e.entity_id }),
+      { wrapper },
+    );
+    await waitFor(() => expect(result.current.summary.status).toBe("ready"));
+    act(() => result.current.summary.toggleTick("PETTY_CASH"));
+    act(() => result.current.confirmChange(e, result.current.summary.view!.pendingChange!));
+    expect(result.current.changePrompt).not.toBeNull();
+    act(() => result.current.dismissChangePrompt());
+    expect(result.current.changePrompt).toBeNull();
+    expect(posts).toEqual([]);
+    expect(result.current.summary.view?.pendingChange?.codes).toEqual(["PETTY_CASH"]);
+    expect(result.current.result).toBeNull();
+  });
+
+  it("Start Trial lands on the result row too", async () => {
+    const posts = serveChange(fetchMock, "RV14");
+    const e = ENTITIES[0];
+    const { result } = renderHook(() => useSubscriptionsList({ today: TODAY }), { wrapper });
+    await waitFor(() => expect(result.current.status).toBe("ready"));
+    act(() => result.current.askStartTrial(e, "PETTY_CASH"));
+    await act(() => result.current.confirmStartTrial());
+    expect(posts.map((p) => [p.action, p.body])).toEqual([
+      ["start-trial", { codes: ["PETTY_CASH"] }],
+    ]);
+    expect(result.current.trialPrompt).toBeNull();
+    expect(result.current.result?.entity.entity_id).toBe(e.entity_id);
+    expect(result.current.result?.result.lines.map((l) => l.text)).toEqual([
+      "Petty Cash free trial has started — 30 days, free.",
+    ]);
+    expect(result.current.result?.result.money).toBe("HK$280 a month.");
+    expect(result.current.openEntityId).toBe(e.entity_id);
+  });
+
+  it("?result= lands the open row on a 05·C frame outside production", async () => {
+    const { result } = renderHook(
+      () =>
+        useSubscriptionsList({
+          fixture: "A",
+          focusEntityId: ENTITIES[0].entity_id,
+          resultFixture: "RV41",
+        }),
+      { wrapper },
+    );
+    await waitFor(() => expect(result.current.result?.result.kind).toBe("subscription_cancelled"));
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("a row opens in place, one at a time, and ?entity= opens that one", async () => {
+    serve(fetchMock, [subscriptionsPage()], INCOMING_TRANSFERS);
+    const [first, second] = ENTITIES;
+    const { result } = renderHook(
+      () => useSubscriptionsList({ today: TODAY, focusEntityId: first.entity_id }),
+      { wrapper },
+    );
+    await waitFor(() => expect(result.current.status).toBe("ready"));
+    // Opened by the URL, and its summary is fetched (the page model + the card). The stand-in
+    // answer here is not a page model: the row reports that with its retry, nothing crashes.
+    expect(result.current.openEntityId).toBe(first.entity_id);
+    await waitFor(() => expect(result.current.summary.status).toBe("error"));
+    expect(result.current.summary.view).toBeNull();
+    expect(push).not.toHaveBeenCalled();
+
+    act(() => result.current.toggleRow(second));
+    expect(result.current.openEntityId).toBe(second.entity_id);
+    act(() => result.current.toggleRow(second));
+    expect(result.current.openEntityId).toBeNull();
+    act(() => result.current.toggleRow(first));
+    act(() => result.current.closeRow());
+    expect(result.current.openEntityId).toBeNull();
+    expect(result.current.summary.status).toBe("idle");
   });
 
   it("?fixture= serves a frame without the API outside production", async () => {

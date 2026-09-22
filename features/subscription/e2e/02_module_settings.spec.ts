@@ -89,14 +89,14 @@ test.describe("module settings page", () => {
     await expect(page.getByRole("navigation", { name: "Subscription sections" })).toHaveCount(0);
 
     const petty = body(page).getByRole("article", { name: "Petty Cash" });
+    const request = body(page).getByRole("article", { name: "Payment Request" });
     await expect(petty.getByText("3 days remaining")).toBeVisible();
-    await expect(
-      body(page)
-        .getByRole("article", { name: "Payment Request" })
-        .getByText("30 days trial available"),
-    ).toBeVisible();
-    await expect(body(page).getByRole("button", { name: "Manage Subscription" })).toBeVisible();
-    await expect(body(page).getByRole("button", { name: "Start Free Trial" })).toBeVisible();
+    await expect(request.getByText("30 days trial available")).toBeVisible();
+    // 03-A's redesign: the tall card, each CTA inside it
+    await expect(petty.getByRole("button", { name: "Manage Subscription" })).toBeVisible();
+    await expect(request.getByRole("button", { name: "Start Free Trial" })).toBeVisible();
+    expect((await petty.boundingBox())?.height).toBe(504);
+    expect((await request.boundingBox())?.height).toBe(504);
     await expect(body(page).getByRole("alert")).toHaveCount(0);
   });
 
@@ -134,6 +134,16 @@ test.describe("module settings page", () => {
     await expect(body(page).getByRole("button", { name: "Reactivate Subscription" })).toHaveCount(
       2,
     );
+    // not 03-A: the cards end under the status line, equal to each other, the CTAs below
+    const heights = await Promise.all(
+      ["Petty Cash", "Payment Request"].map(async (name) => {
+        const card = body(page).getByRole("article", { name });
+        await expect(card.getByRole("button")).toHaveCount(0);
+        return (await card.boundingBox())?.height ?? 0;
+      }),
+    );
+    expect(heights[0]).toBe(heights[1]);
+    expect(heights[0]).toBeLessThan(504);
     await banner.getByRole("button", { name: "here" }).click();
     await page.waitForURL((u) => u.pathname.endsWith("/modules/payment-method"));
   });

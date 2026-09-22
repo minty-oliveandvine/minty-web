@@ -44,9 +44,12 @@ describe("moduleCell", () => {
       kind: "active",
       text: "Active",
     });
-    expect(moduleCell(byName("Orchid Lane Limited").modules[1], TODAY)).toMatchObject({
+    // The fixture cancels 30 days from TODAY, and TODAY is the real day: name the date the way
+    // the cell does ("21 Oct") from the fixture's own padded date ("21 Oct 2026").
+    const orchid = byName("Orchid Lane Limited").modules[1];
+    expect(moduleCell(orchid, TODAY)).toMatchObject({
       kind: "cancels",
-      text: "Cancels 21 Oct",
+      text: `Cancels ${orchid.date?.slice(0, 6).trim()}`,
     });
     expect(moduleCell(byName("Willow Court Limited").modules[1], TODAY)).toMatchObject({
       kind: "suspended",

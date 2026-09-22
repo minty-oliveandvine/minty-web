@@ -46,7 +46,9 @@ describe("app/subscription is re-exports only", () => {
   it.each(files.map((f) => [relative(ROOT, f).replace(/\\/g, "/"), f]))(
     "%s is a single re-export from the feature index",
     (_name, file) => {
-      const source = readFileSync(file, "utf8");
+      // Normalised: a checkout with core.autocrlf=true hands the file back with CRLF, and the
+      // guard is about what the file says, not how the OS ends its lines.
+      const source = readFileSync(file, "utf8").replace(/\r\n/g, "\n");
       const code = source
         .split("\n")
         .filter((line) => !line.trim().startsWith("//") && line.trim() !== "")

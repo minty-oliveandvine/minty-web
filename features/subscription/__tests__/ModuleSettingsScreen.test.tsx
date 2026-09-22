@@ -92,9 +92,9 @@ describe("ModuleSettingsScreen", () => {
     expect(screen.queryByRole("navigation", { name: "Subscription sections" })).toBeNull();
   });
 
-  it("without from=bills the way back is Minty's dashboard, and Payment Settings hides when billing is off", async () => {
+  it("without from=bills the way back is Petty Cash's Reports, and Payment Settings hides when billing is off", async () => {
     await show(FIXTURES.A);
-    expect(screen.getByRole("link", { name: "Dashboard" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Reports" })).toHaveAttribute(
       "href",
       `${env.MINTY_URL}/entity/e1`,
     );
@@ -138,14 +138,24 @@ describe("ModuleSettingsScreen", () => {
     expect(screen.getByRole("heading", { level: 2, name: "Modules" })).toBeInTheDocument();
     expect(card("Petty Cash").getByText("3 days remaining")).toBeInTheDocument();
     expect(card("Payment Request").getByText("30 days trial available")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Manage Subscription" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Start Free Trial" })).toBeInTheDocument();
+    // this frame's redesign draws each CTA inside its card
+    expect(
+      card("Petty Cash").getByRole("button", { name: "Manage Subscription" }),
+    ).toBeInTheDocument();
+    expect(
+      card("Payment Request").getByRole("button", { name: "Start Free Trial" }),
+    ).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: /Subscription|Trial/ })).toHaveLength(2);
     expect(screen.queryByRole("alert")).toBeNull();
   });
 
-  it("03-B and 03-C: both cards share one CTA", async () => {
+  it("03-B and 03-C: both cards share one CTA, drawn outside the cards", async () => {
     await show(FIXTURES.B);
     expect(screen.getAllByRole("button", { name: "Manage Subscription" })).toHaveLength(1);
+    expect(card("Petty Cash").queryByRole("button")).toBeNull();
+    expect(card("Payment Request").queryByRole("button")).toBeNull();
+    expect(card("Petty Cash").getByText("Trial")).toBeInTheDocument();
+    expect(card("Payment Request").getByText("Trial Active")).toBeInTheDocument();
     expect(card("Payment Request").getByText("15 days remaining")).toBeInTheDocument();
   });
 

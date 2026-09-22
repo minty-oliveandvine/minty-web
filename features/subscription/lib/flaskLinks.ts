@@ -21,10 +21,13 @@ export type ModuleAccess = { pettyCash: boolean; billing: boolean };
 /** `from` as the page received it - `bills` when the payments app sent the person here. */
 export type PageOrigin = "bills" | null;
 
-/** Where the page came from, to send it back there: the payments app, or Minty's dashboard. */
+/**
+ * Where the page came from, to send it back there: the payments app, or Petty Cash's reports
+ * page (Flask's `/entity/<id>`, its `report_dashboard`) - which the person knows as "Reports".
+ */
 export function backLink(entityId: string, from: PageOrigin): { href: string; label: string } {
   if (from === "bills") return { href: env.PAYMENTS_WEB_URL, label: "Payments" };
-  return { href: `${env.MINTY_URL}/entity/${encodeURIComponent(entityId)}`, label: "Dashboard" };
+  return { href: `${env.MINTY_URL}/entity/${encodeURIComponent(entityId)}`, label: "Reports" };
 }
 
 export function settingsTabs(

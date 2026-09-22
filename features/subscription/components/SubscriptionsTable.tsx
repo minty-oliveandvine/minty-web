@@ -3,7 +3,9 @@
 /**
  * The list itself (Figma 04-A): a section title with the count, the column heads with their
  * sort arrows, and one card per company - name, a cell per module, the expand chevron and the
- * ⋮ menu. Suspended companies (nothing running) sit in their own section below, greyed.
+ * ⋮ menu. Suspended companies (nothing running) sit in their own section below, greyed. The
+ * open company (one at a time) renders as its Subscription Summary row (Figma 05·A) in place,
+ * and the company whose change just landed as its result row (Figma 05·C).
  */
 
 import { useEffect, useRef } from "react";
@@ -20,14 +22,39 @@ import type {
 } from "@/features/subscription/lib/portalRows";
 import { pluralEntities } from "@/features/subscription/lib/portalRows";
 
+import { ChangeResultRow } from "@/features/subscription/components/ChangeResultView";
 import { ModuleCellView } from "@/features/subscription/components/ModuleCellView";
 import { RowMenu } from "@/features/subscription/components/RowMenu";
+import {
+  SubscriptionSummaryRow,
+  type SummaryRowHandlers,
+} from "@/features/subscription/components/SubscriptionSummaryRow";
+import type { ChangeResult } from "@/features/subscription/lib/changeResult";
+import type { PendingChange, SummaryView } from "@/features/subscription/lib/subscriptionSummary";
 
 export type RowHandlers = {
-  onOpen: (entity: PortalEntity) => void;
+  /** The chevron: open this company's row in place, or close it if it is the open one. */
+  onToggle: (entity: PortalEntity) => void;
   onStartTrial: (entity: PortalEntity, code: ModuleCode) => void;
   onSubscribe: (entity: PortalEntity, code: ModuleCode) => void;
   onMenu: (entity: PortalEntity, item: MenuItem) => void;
+  onTick: (entity: PortalEntity, code: ModuleCode) => void;
+  onConfirmChange: (entity: PortalEntity, change: PendingChange) => void;
+  onChangePaymentMethod: (entity: PortalEntity) => void;
+  onRetrySummary: () => void;
+  /** The result row's "Back to Manage Subscriptions". */
+  onResultBack: () => void;
+};
+
+/** The company whose change just landed, and its result (row layout). */
+export type ResultRow = { entityId: string; result: ChangeResult };
+
+/** The open row: which company, and what its panel shows so far. */
+export type OpenRow = {
+  entityId: string;
+  status: "loading" | "ready" | "error";
+  view: SummaryView | null;
+  error: string | null;
 };
 
 const GRID = "grid grid-cols-[minmax(200px,1.3fr)_1fr_1fr_auto] items-center gap-6";
@@ -96,8 +123,9 @@ function Row({ row, focused, on }: { row: SubscriptionRow; focused: boolean; on:
       <div className="flex items-center gap-4">
         <button
           type="button"
-          onClick={() => on.onOpen(row.entity)}
+          onClick={() => on.onToggle(row.entity)}
           aria-label={`Open ${row.entity.entity_name}`}
+          aria-expanded={false}
           className="flex size-10 items-center justify-center rounded-md text-[#8c949e] hover:bg-gray-100"
         >
           <Icon name="chevron-down" size={24} />
@@ -112,12 +140,75 @@ function Row({ row, focused, on }: { row: SubscriptionRow; focused: boolean; on:
   );
 }
 
+function Rows({
+  rows,
+  focusEntityId,
+  open,
+  result,
+  on,
+}: {
+  rows: SubscriptionRow[];
+  focusEntityId: string | null;
+  open: OpenRow | null;
+  result: ResultRow | null;
+  on: RowHandlers;
+}) {
+  return (
+    <>
+      {rows.map((row) =>
+        result && result.entityId === row.entity.entity_id ? (
+          <ChangeResultRow
+            key={row.entity.entity_id}
+            entity={row.entity}
+            result={result.result}
+            menu={row.menu}
+            onMenu={(item) => on.onMenu(row.entity, item)}
+            onBack={on.onResultBack}
+          />
+        ) : open && open.entityId === row.entity.entity_id ? (
+          <SubscriptionSummaryRow
+            key={row.entity.entity_id}
+            entity={row.entity}
+            status={open.status}
+            view={open.view}
+            error={open.error}
+            menu={row.menu}
+            focused={row.entity.entity_id === focusEntityId}
+            on={summaryHandlers(row.entity, on)}
+          />
+        ) : (
+          <Row
+            key={row.entity.entity_id}
+            row={row}
+            focused={row.entity.entity_id === focusEntityId}
+            on={on}
+          />
+        ),
+      )}
+    </>
+  );
+}
+
+function summaryHandlers(entity: PortalEntity, on: RowHandlers): SummaryRowHandlers {
+  return {
+    onClose: () => on.onToggle(entity),
+    onStartTrial: (code) => on.onStartTrial(entity, code),
+    onTick: (code) => on.onTick(entity, code),
+    onConfirmChange: (change) => on.onConfirmChange(entity, change),
+    onMenu: (item) => on.onMenu(entity, item),
+    onChangePaymentMethod: () => on.onChangePaymentMethod(entity),
+    onRetry: on.onRetrySummary,
+  };
+}
+
 export function SubscriptionsTable({
   active,
   suspended,
   sort,
   onToggleSort,
   focusEntityId,
+  open,
+  result = null,
   on,
 }: {
   active: SubscriptionRow[];
@@ -125,6 +216,8 @@ export function SubscriptionsTable({
   sort: ListSort;
   onToggleSort: (column: SortColumn) => void;
   focusEntityId: string | null;
+  open: OpenRow | null;
+  result?: ResultRow | null;
   on: RowHandlers;
 }) {
   return (
@@ -152,14 +245,7 @@ export function SubscriptionsTable({
           <span aria-hidden className="w-[88px]" />
         </div>
         <ul className="flex flex-col gap-[29px]">
-          {active.map((row) => (
-            <Row
-              key={row.entity.entity_id}
-              row={row}
-              focused={row.entity.entity_id === focusEntityId}
-              on={on}
-            />
-          ))}
+          <Rows rows={active} focusEntityId={focusEntityId} open={open} result={result} on={on} />
         </ul>
       </section>
       {suspended.length > 0 && (
@@ -168,14 +254,13 @@ export function SubscriptionsTable({
             Suspended Subscriptions ({pluralEntities(suspended.length)})
           </h2>
           <ul className="flex flex-col gap-[29px]">
-            {suspended.map((row) => (
-              <Row
-                key={row.entity.entity_id}
-                row={row}
-                focused={row.entity.entity_id === focusEntityId}
-                on={on}
-              />
-            ))}
+            <Rows
+              rows={suspended}
+              focusEntityId={focusEntityId}
+              open={open}
+              result={result}
+              on={on}
+            />
           </ul>
         </section>
       )}

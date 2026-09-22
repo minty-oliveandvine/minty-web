@@ -9,6 +9,7 @@ import {
   daysLabel,
   daysUntil,
   moduleState,
+  pageLook,
   paymentFailed,
   resolveModuleState,
   sharedCta,
@@ -66,6 +67,34 @@ describe("resolveModuleState", () => {
     expect(pr.cta).toEqual({ kind: "start_trial", label: "Start Free Trial", variant: "outline" });
   });
 
+  it("03-B: a trial is urgent (red) at seven days or fewer, else 'Trial Active' in black", () => {
+    expect(resolveModuleState(petty("B"), TODAY).status).toEqual({
+      eyebrow: "Trial",
+      text: "3 days remaining",
+      tone: "accent",
+    });
+    expect(resolveModuleState(payment("B"), TODAY).status).toEqual({
+      eyebrow: "Trial Active",
+      text: "15 days remaining",
+      tone: "plain",
+    });
+    const trialEnding = (days: number): ModuleCard => {
+      const end = new Date(TODAY);
+      end.setUTCDate(end.getUTCDate() + days);
+      return { ...petty("B"), period_end: end.toISOString() };
+    };
+    expect(resolveModuleState(trialEnding(7), TODAY).status.tone).toBe("accent");
+    expect(resolveModuleState(trialEnding(7), TODAY).status.eyebrow).toBe("Trial");
+    expect(resolveModuleState(trialEnding(8), TODAY).status.tone).toBe("plain");
+    expect(resolveModuleState(trialEnding(8), TODAY).status.eyebrow).toBe("Trial Active");
+    // no end date at all: still a trial, drawn as urgent
+    expect(resolveModuleState({ ...petty("B"), period_end: null }, TODAY).status).toEqual({
+      eyebrow: "Trial",
+      text: "Active",
+      tone: "accent",
+    });
+  });
+
   it("03-C: active is a text link", () => {
     const v = resolveModuleState(petty("C"), TODAY);
     expect(v.status).toEqual({ text: "Currently Active", tone: "teal" });
@@ -117,7 +146,7 @@ describe("daysUntil", () => {
   });
 });
 
-describe("sharedCta / paymentFailed", () => {
+describe("sharedCta / paymentFailed / pageLook", () => {
   const views = (frame: keyof typeof FIXTURES) =>
     FIXTURES[frame].cards.map((c) => resolveModuleState(c, TODAY));
 
@@ -132,6 +161,17 @@ describe("sharedCta / paymentFailed", () => {
     expect(sharedCta(views("D"))).toBeNull();
     expect(sharedCta(views("E"))).toBeNull();
     expect(sharedCta(views("F"))).toBeNull();
+  });
+
+  it("only 03-A draws the CTA inside the card", () => {
+    expect(pageLook(views("A"))).toBe("inline");
+    expect(pageLook([...views("A")].reverse())).toBe("inline");
+    for (const frame of ["B", "C", "D", "E", "F"] as const) {
+      expect(pageLook(views(frame)), frame).toBe("stacked");
+    }
+    // one card alone, or two of the same state, is not the frame
+    expect(pageLook(views("A").slice(0, 1))).toBe("stacked");
+    expect(pageLook([views("A")[1], views("A")[1]])).toBe("stacked");
   });
 
   it("the banner shows only when a module is suspended", () => {

@@ -10,7 +10,7 @@ import { ToastProvider } from "@/components/ui/Toast";
 import { setAuth } from "@/lib/auth";
 import { env } from "@/lib/env";
 
-import { TODAY } from "@/features/subscription/__fixtures__/modulePage";
+import { SUMMARY_FIXTURES, TODAY, WALLET } from "@/features/subscription/__fixtures__/modulePage";
 import {
   ENTITIES,
   INCOMING_TRANSFERS,
@@ -37,9 +37,27 @@ function serve(page: PayerSubscriptions | Error, transfers: unknown[] = []) {
   fetchMock.mockImplementation(async (input) => {
     const url = new URL(String(input));
     if (url.pathname.endsWith("/transfers")) return reply(200, { transfers });
+    // The open row's two reads: the company's page model (05·A's M44 for everyone) and its card.
+    if (/^\/api\/entities\/[^/]+\/modules$/.test(url.pathname))
+      return reply(200, SUMMARY_FIXTURES.M44);
+    if (url.pathname === "/api/me/billing/entity-payment-method") return reply(200, WALLET);
     if (page instanceof Error) return reply(500, { error: page.message });
     return reply(200, page);
   });
+}
+
+async function showResult(frame: string) {
+  serve(subscriptionsPage());
+  const view = render(
+    <ToastProvider>
+      <ManageSubscriptionsScreen
+        today={TODAY}
+        focusEntityId={ENTITIES[0].entity_id}
+        resultFixture={frame}
+      />
+    </ToastProvider>,
+  );
+  return view;
 }
 
 async function show(
@@ -176,23 +194,39 @@ describe("ManageSubscriptionsScreen", () => {
     expect(JSON.parse(String(post![1]?.body))).toEqual({ codes: ["PAYMENT_REQUEST"] });
   });
 
-  it("a row's chevron opens the company's module page; the column arrows sort", async () => {
+  it("05·A: a row's chevron opens it in place, one at a time; the column arrows sort", async () => {
     await show(subscriptionsPage());
     await userEvent.click(screen.getByRole("button", { name: "Open Kestrel Foods Limited" }));
-    expect(push).toHaveBeenCalledWith("/subscription/entities/e-kestrel-foods-limited/modules");
+    expect(push).not.toHaveBeenCalled();
+    const open = await screen.findByRole("region", { name: "Subscription Summary" });
+    const row = open.closest("li") as HTMLElement;
+    expect(row).toHaveAttribute("data-entity", "e-kestrel-foods-limited");
+    expect(
+      within(row).getByRole("button", { name: "Close Kestrel Foods Limited" }),
+    ).toBeInTheDocument();
+    // The list's other rows keep their cells; only the open one grows.
+    expect(screen.getAllByRole("region", { name: "Subscription Summary" })).toHaveLength(1);
+
+    await userEvent.click(screen.getByRole("button", { name: "Open Mino Market Limited" }));
+    const opened = await screen.findByRole("region", { name: "Subscription Summary" });
+    expect(opened.closest("li")).toHaveAttribute("data-entity", "e-mino-market-limited");
+    expect(
+      screen.queryByRole("button", { name: "Close Kestrel Foods Limited" }),
+    ).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Close Mino Market Limited" }));
+    expect(screen.queryByRole("region", { name: "Subscription Summary" })).not.toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("button", { name: "Sort by Entity Name" }));
     const names = screen.getAllByRole("listitem").map((li) => li.querySelector("p")?.textContent);
     expect(names[0]).toBe("Aetheria Capital Limited");
   });
 
-  it("brings the company from ?entity= into view", async () => {
+  it("opens the company from ?entity= and brings it into view", async () => {
     await show(subscriptionsPage(), [], "e-solera-group-limited");
+    const open = await screen.findByRole("region", { name: "Subscription Summary" });
+    expect(open.closest("li")).toHaveAttribute("data-entity", "e-solera-group-limited");
     expect(Element.prototype.scrollIntoView).toHaveBeenCalled();
-    expect(screen.getByText("Solera Group Limited").closest("li")).toHaveAttribute(
-      "data-entity",
-      "e-solera-group-limited",
-    );
   });
 
   it("04-B: nothing paid for", async () => {
@@ -224,5 +258,66 @@ describe("ManageSubscriptionsScreen", () => {
     await waitFor(() =>
       expect(screen.getByRole("heading", { name: /Active Subscriptions/ })).toBeInTheDocument(),
     );
+  });
+
+  it("05·C: a change lands in the row (Congratulations) or on the page (a cancellation)", async () => {
+    await showResult("RU22");
+    const congratulations = await screen.findByRole("heading", {
+      level: 4,
+      name: "Congratulations!",
+    });
+    const item = congratulations.closest("li")!;
+    expect(item).toHaveAttribute("data-result", "celebrate");
+    expect(item).toHaveAttribute("data-entity", ENTITIES[0].entity_id);
+    expect(within(item).getByText(/Nothing charged today/)).toBeInTheDocument();
+    // The other companies are still listed around it.
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Manage Subscriptions");
+    expect(screen.getAllByRole("listitem").length).toBeGreaterThan(1);
+    await userEvent.click(
+      within(item).getByRole("button", { name: "Back to Manage Subscriptions" }),
+    );
+    await waitFor(() =>
+      expect(screen.queryByRole("heading", { level: 4, name: "Congratulations!" })).toBeNull(),
+    );
+  });
+
+  it("06: Confirm Subscription Change asks in the change's modal; Go back keeps the tick", async () => {
+    serve(subscriptionsPage());
+    render(
+      <ToastProvider>
+        <ManageSubscriptionsScreen today={TODAY} focusEntityId={ENTITIES[0].entity_id} />
+      </ToastProvider>,
+    );
+    const row = await screen.findByRole("region", { name: "Subscription Summary" });
+    const item = row.closest("li")!;
+    // M44 for everyone: untick Petty Cash - a removal while Payment Request stays.
+    await userEvent.click(within(item).getByRole("checkbox", { name: "Petty Cash subscription" }));
+    await userEvent.click(
+      within(item).getByRole("button", { name: "Confirm Subscription Change" }),
+    );
+    const dialog = await screen.findByRole("dialog");
+    expect(dialog).toHaveAccessibleName("Remove Petty Cash?");
+    expect(within(dialog).getByText(ENTITIES[0].entity_name)).toBeInTheDocument();
+    expect(within(dialog).getByRole("button", { name: "Confirm Change" })).toHaveAttribute(
+      "data-tone",
+      "orange",
+    );
+    await userEvent.click(within(dialog).getByRole("button", { name: "Go back" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(within(item).getByRole("checkbox", { name: "Petty Cash subscription" })).toHaveAttribute(
+      "data-changed",
+      "true",
+    );
+    expect(fetchMock.mock.calls.some((c) => c[1]?.method === "POST")).toBe(false);
+  });
+
+  it("05·C: a cancellation retitles the banner and stands alone", async () => {
+    await showResult("RV41");
+    const page = await screen.findByRole("region", { name: "Cancellation Scheduled" });
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Cancellation Scheduled");
+    expect(within(page).getByRole("heading", { level: 2 })).toHaveTextContent(
+      "Thank you for being part of Minty",
+    );
+    expect(screen.queryByRole("list")).toBeNull();
   });
 });

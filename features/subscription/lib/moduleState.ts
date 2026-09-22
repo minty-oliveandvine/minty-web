@@ -12,7 +12,9 @@
  *
  *   past_due        "Subscription Suspended"             Reactivate Subscription (outline)
  *   pending_cancel  "Cancellation pending / Ends in N"   Resume Subscription     (filled)
- *   trialing        "Trial / N days remaining"           Manage Subscription     (filled)
+ *   trialing        "Trial / N days remaining" (red, 7 days or fewer)
+ *                   "Trial Active / N days remaining" (black, more)
+ *                                                        Manage Subscription     (filled)
  *   active          "Currently Active"                   Manage Subscription →   (link)
  *   trial_eligible  "Get Started / 30 days trial…"       Start Free Trial        (outline)
  *   expired         "Trial Expired"                      Activate Subscription   (outline)
@@ -38,8 +40,8 @@ export type ModuleStatusLine = {
   eyebrow?: string;
   /** The line that carries the state ("3 days remaining", "Currently Active"). */
   text: string;
-  /** Which colour the design gives the text line. */
-  tone: "accent" | "teal" | "muted" | "info";
+  /** Which colour the design gives the text line (`plain` is black). */
+  tone: "accent" | "teal" | "muted" | "info" | "plain";
 };
 
 export type ModuleView = {
@@ -66,6 +68,12 @@ const CTA: Record<ModuleState, ModuleCta> = {
 
 /** Free trials are thirty days (`billing_policy.TRIAL_DAYS`); the eligible card says so. */
 export const TRIAL_DAYS = 30;
+
+/**
+ * A trial with this many days or fewer left is drawn as urgent (frame 03-B: "Trial" over a
+ * red count); with more it is "Trial Active" over a black count.
+ */
+export const TRIAL_URGENT_DAYS = 7;
 
 /** `YYYY-MM-DD` of an ISO date or datetime, or null when it does not start with one. */
 function isoDay(value: string | null | undefined): string | null {
@@ -130,11 +138,14 @@ export function resolveModuleState(card: ModuleCard, today: Date): ModuleView {
       break;
     case "trialing":
       daysRemaining = daysUntil(card.period_end, today);
-      status = {
-        eyebrow: "Trial",
-        text: daysRemaining === null ? "Active" : daysLabel(daysRemaining),
-        tone: "accent",
-      };
+      status =
+        daysRemaining === null || daysRemaining <= TRIAL_URGENT_DAYS
+          ? {
+              eyebrow: "Trial",
+              text: daysRemaining === null ? "Active" : daysLabel(daysRemaining),
+              tone: "accent",
+            }
+          : { eyebrow: "Trial Active", text: daysLabel(daysRemaining), tone: "plain" };
       break;
     case "active":
       status = { text: "Currently Active", tone: "teal" };
@@ -176,4 +187,22 @@ export function sharedCta(views: ModuleView[]): ModuleCta | null {
 /** The page banner (frame 03-F) shows when any module is suspended. */
 export function paymentFailed(views: ModuleView[]): boolean {
   return views.some((v) => v.state === "past_due");
+}
+
+/**
+ * Where the page draws each card's CTA. Frame 03-A (node 1410:2611) was redesigned on
+ * 2026-09-22 with the CTA INSIDE the card, as a 248x66 rounded button; the other frames still
+ * draw it under the card (or once, centred, for the shared CTA) until they are redesigned. The
+ * cards themselves are the same size in every frame - only the CTA moves.
+ */
+export type PageLook = "inline" | "stacked";
+
+/**
+ * `inline` for frame 03-A only: every card is in trial or eligible for one, and both states
+ * occur (a page of two trials is 03-B, a page of two eligible cards has no frame).
+ */
+export function pageLook(views: ModuleView[]): PageLook {
+  const states = new Set(views.map((v) => v.state));
+  const onlyThese = [...states].every((s) => s === "trialing" || s === "trial_eligible");
+  return onlyThese && states.size === 2 ? "inline" : "stacked";
 }
