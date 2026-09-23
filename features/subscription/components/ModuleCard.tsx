@@ -20,12 +20,29 @@ import type {
   PageLook,
 } from "@/features/subscription/lib/moduleState";
 
-/** Each module's illustration and tile (shared with the open row's cards, Figma 05·A). */
-export const MODULE_ART: Record<ModuleCode, { src: string; size: number; tile: string }> = {
-  PETTY_CASH: { src: "/modules/petty-cash.png", size: 80, tile: "bg-[var(--tile-petty)]" },
+/**
+ * Each module's illustration and tile (shared with the open row's cards, Figma 05·A).
+ * `width`/`height` are the PNG's own pixels, not the drawn size: Tailwind's preflight
+ * (`img { height: auto }`) derives the height from the file's ratio, so declaring a square
+ * box drew a height the attribute denied and next/image warned on every load. `box` is the
+ * drawn width the design asks for; the height follows from the ratio.
+ */
+export const MODULE_ART: Record<
+  ModuleCode,
+  { src: string; width: number; height: number; box: string; tile: string }
+> = {
+  PETTY_CASH: {
+    src: "/modules/petty-cash.png",
+    width: 240,
+    height: 201,
+    box: "w-20",
+    tile: "bg-[var(--tile-petty)]",
+  },
   PAYMENT_REQUEST: {
     src: "/modules/payment-request.png",
-    size: 95,
+    width: 210,
+    height: 145,
+    box: "w-[95px]",
     tile: "bg-[var(--tile-payment)]",
   },
 };
@@ -70,7 +87,15 @@ export function ModuleCard({
         {/* Two 5 KB PNGs: the optimizer would re-encode them to webp for nothing, and on a
             Windows dev box that re-encode hung the request (curl with a browser Accept header
             timed out at 20 s; the plain PNG answered in 6 ms). Served as committed. */}
-        <Image src={art.src} alt="" width={art.size} height={art.size} priority unoptimized />
+        <Image
+          src={art.src}
+          alt=""
+          width={art.width}
+          height={art.height}
+          className={art.box}
+          priority
+          unoptimized
+        />
       </div>
       <h2 className="mt-4 text-[26px] font-bold leading-tight text-ink">{view.name}</h2>
       {/* A fixed box (216px to 318px from the card's top) so the status line sits at the same

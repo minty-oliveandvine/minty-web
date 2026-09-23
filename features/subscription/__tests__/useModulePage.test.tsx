@@ -103,7 +103,7 @@ describe("useModulePage", () => {
     expect(dark.result.current.error).toBe(SERVICE_DARK);
   });
 
-  it("startTrial posts the module's code, then refetches", async () => {
+  it("a trial is asked about first, then posted, then the page refetches", async () => {
     fetchMock.mockResolvedValueOnce(reply(200, FIXTURES.A));
     fetchMock.mockResolvedValueOnce(reply(200, { modules: { PAYMENT_REQUEST: true } }));
     fetchMock.mockResolvedValueOnce(reply(200, FIXTURES.B));
@@ -112,7 +112,16 @@ describe("useModulePage", () => {
     });
     await waitFor(() => expect(result.current.status).toBe("ready"));
 
-    await act(() => result.current.startTrial("PAYMENT_REQUEST"));
+    // Pressing the card's CTA asks - nothing is posted yet (the dialog names the module).
+    act(() => result.current.askStartTrial("PAYMENT_REQUEST"));
+    expect(result.current.trialPrompt).toEqual({
+      code: "PAYMENT_REQUEST",
+      moduleName: "Payment Request",
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    await act(() => result.current.confirmStartTrial());
+    expect(result.current.trialPrompt).toBeNull();
 
     const [url, init] = fetchMock.mock.calls[1];
     expect(String(url)).toBe(`${API}/start-trial`);
@@ -123,7 +132,21 @@ describe("useModulePage", () => {
     expect(result.current.busyCode).toBeNull();
   });
 
-  it("a refused trial becomes an error toast and the page stays", async () => {
+  it("going back from the dialog posts nothing", async () => {
+    fetchMock.mockResolvedValueOnce(reply(200, FIXTURES.A));
+    const { result } = renderHook(() => useModulePage({ entityId: "e1", today: TODAY }), {
+      wrapper,
+    });
+    await waitFor(() => expect(result.current.status).toBe("ready"));
+
+    act(() => result.current.askStartTrial("PAYMENT_REQUEST"));
+    act(() => result.current.dismissTrialPrompt());
+
+    expect(result.current.trialPrompt).toBeNull();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("a refused trial becomes an error toast and the dialog stays to try again", async () => {
     fetchMock.mockResolvedValueOnce(reply(200, FIXTURES.A));
     fetchMock.mockResolvedValueOnce(
       reply(409, { error: "Module Payment Request has already used its free trial." }),
@@ -133,11 +156,13 @@ describe("useModulePage", () => {
     });
     await waitFor(() => expect(result.current.status).toBe("ready"));
 
-    await act(() => result.current.startTrial("PAYMENT_REQUEST"));
+    act(() => result.current.askStartTrial("PAYMENT_REQUEST"));
+    await act(() => result.current.confirmStartTrial());
 
     expect(toasts()).toEqual(["Module Payment Request has already used its free trial."]);
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(result.current.status).toBe("ready");
+    expect(result.current.trialPrompt).not.toBeNull();
   });
 
   it("back from Checkout: posts checkout-complete, drops session_id from the URL, then loads", async () => {

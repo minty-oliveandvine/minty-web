@@ -10,8 +10,10 @@
  * post it again) and `?checkout_error=` (Flask's way of carrying a failed return; shown, then
  * dropped). Both are read ONCE, at mount, so stripping them does not re-run the effect.
  *
- * Actions: `startTrial` is the one CTA that acts here (posts, then refetches; the API's sentence
- * goes to a toast). The other CTAs are seams - they navigate to the sub-page that owns the flow
+ * Actions: starting a trial is the one CTA that acts here, and it ASKS FIRST - `askStartTrial`
+ * opens Figma 04-G's dialog (`StartTrialDialog`, the same one the list uses), `confirmStartTrial`
+ * posts and refetches; the API's sentence goes to a toast and the dialog stays open to try
+ * again. The other CTAs are seams - they navigate to the sub-page that owns the flow
  * (`lib/paths.ts::moduleRoutes`), each built in its own step from its own Figma frame.
  *
  * `fixture`: a dev-only switch (`?fixture=A` … `F`) that serves the page model from
@@ -54,6 +56,9 @@ export type UseModulePageArgs = {
 
 export type ModulePageStatus = "loading" | "ready" | "error";
 
+/** A trial asked about and not yet confirmed: the module, and its name for the dialog. */
+export type ModuleTrialPrompt = { code: ModuleCode; moduleName: string };
+
 export type UseModulePageResult = {
   status: ModulePageStatus;
   page: ModulePage | null;
@@ -67,7 +72,11 @@ export type UseModulePageResult = {
   /** The load error's sentence, when `status` is "error". */
   error: string | null;
   reload: () => void;
-  startTrial: (code: ModuleCode) => Promise<void>;
+  /** The trial asked about and not yet confirmed; while it is set the screen shows the dialog. */
+  trialPrompt: ModuleTrialPrompt | null;
+  askStartTrial: (code: ModuleCode) => void;
+  dismissTrialPrompt: () => void;
+  confirmStartTrial: () => Promise<void>;
   manage: () => void;
   activate: (code: ModuleCode) => void;
   resume: (code: ModuleCode) => void;
@@ -134,6 +143,7 @@ export function useModulePage({
   const [page, setPage] = useState<ModulePage | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busyCode, setBusyCode] = useState<ModuleCode | null>(null);
+  const [trialPrompt, setTrialPrompt] = useState<ModuleTrialPrompt | null>(null);
   const [fixtureToday, setFixtureToday] = useState<Date | null>(null);
   const [generation, setGeneration] = useState(0);
 
@@ -192,20 +202,35 @@ export function useModulePage({
     return page.cards.map((card) => resolveModuleState(card, day));
   }, [page, fixtureToday, today]);
 
-  const startTrial = useCallback(
-    async (code: ModuleCode) => {
-      setBusyCode(code);
-      try {
-        await postStartTrial(entityId, code);
-        await load();
-      } catch (err) {
-        showToast(sentence(err), "error");
-      } finally {
-        setBusyCode(null);
-      }
+  // Starting a trial is asked about first (Figma 04-G), as it is from the list: press, confirm,
+  // then the post. The module's name comes from the page model the card was drawn from.
+  const askStartTrial = useCallback(
+    (code: ModuleCode) => {
+      const moduleName = page?.cards.find((c) => c.code === code)?.name ?? code;
+      setTrialPrompt({ code, moduleName });
     },
-    [entityId, load, showToast],
+    [page],
   );
+
+  const dismissTrialPrompt = useCallback(() => {
+    if (!busyCode) setTrialPrompt(null);
+  }, [busyCode]);
+
+  const confirmStartTrial = useCallback(async () => {
+    if (!trialPrompt) return;
+    const { code } = trialPrompt;
+    setBusyCode(code);
+    try {
+      await postStartTrial(entityId, code);
+      setTrialPrompt(null);
+      await load();
+    } catch (err) {
+      // The dialog stays open on a refusal, so the answer can be read and tried again.
+      showToast(sentence(err), "error");
+    } finally {
+      setBusyCode(null);
+    }
+  }, [trialPrompt, entityId, load, showToast]);
 
   const routes = useMemo(() => moduleRoutes(entityId), [entityId]);
   const manage = useCallback(() => router.push(routes.manage), [router, routes]);
@@ -235,7 +260,10 @@ export function useModulePage({
     busyCode,
     error,
     reload,
-    startTrial,
+    trialPrompt,
+    askStartTrial,
+    dismissTrialPrompt,
+    confirmStartTrial,
     manage,
     activate,
     resume,

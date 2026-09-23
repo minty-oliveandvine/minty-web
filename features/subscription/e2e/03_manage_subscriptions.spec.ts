@@ -1,8 +1,10 @@
 // The Manage Subscriptions list in a browser, over a STUBBED API (features/subscription/
-// __fixtures__/subscriptions served by page.route): the list from the landing, the transfer
+// __fixtures__/subscriptions served by page.route): the list from the landing (which is
+// /subscription/subscriptions - /subscription itself is the overview, section 08-A), the transfer
 // card, a row's cells, the ⋮ menu, the Start Trial dialog posting with the company's id, search,
 // the empty state, a row opened in place (Figma 05·A, served from __fixtures__/modulePage), a tick
-// pending (05·B), the modal that asks (06) and where its confirmation lands (05·C).
+// pending (05·B), the modal that asks (06), where its confirmation lands (05·C), and what asks
+// when it fails or gets interrupted (06·B).
 // Stand-in credentials when E2E_* are unset (nothing reaches the API); located inside `main`.
 import { expect, test, type Page } from "@playwright/test";
 
@@ -75,7 +77,7 @@ test.describe("manage subscriptions", () => {
     page,
   }) => {
     await stubApi(page, subscriptionsPage(), INCOMING_TRANSFERS);
-    await handoff(page, creds(), "/subscription", { entity_id: "" });
+    await handoff(page, creds(), "/subscription/subscriptions", { entity_id: "" });
 
     await expect(
       body(page).getByRole("heading", { level: 1, name: "Manage Subscriptions" }),
@@ -97,7 +99,7 @@ test.describe("manage subscriptions", () => {
 
   test("the ⋮ menu shows the items the row's states call for", async ({ page }) => {
     await stubApi(page, subscriptionsPage());
-    await handoff(page, creds(), "/subscription", { entity_id: "" });
+    await handoff(page, creds(), "/subscription/subscriptions", { entity_id: "" });
 
     await body(page).getByRole("button", { name: "Actions for Solera Group Limited" }).click();
     await expect(page.getByRole("menuitem")).toHaveText([
@@ -105,6 +107,21 @@ test.describe("manage subscriptions", () => {
       "Cancel subscription",
       "Reactivate",
     ]);
+    // 05·D: Cancel subscription is the tick of every active module - the row opens, the modal
+    // asks for exactly that change (M45 for everyone: Petty Cash active, nothing else ticked).
+    await page.getByRole("menuitem", { name: "Cancel subscription" }).click();
+    const ask = page.getByRole("dialog", { name: "Cancel Subscription?" });
+    await expect(ask).toBeVisible();
+    await expect(ask).toContainText("Solera Group Limited");
+    await ask.getByRole("button", { name: "Go back" }).click();
+    const opened = body(page).locator("li[data-open]");
+    await expect(opened).toHaveAttribute("data-entity", "e-solera-group-limited");
+    await expect(
+      opened.getByRole("checkbox", { name: "Petty Cash subscription" }),
+    ).not.toBeChecked();
+    await expect(opened.locator("[data-chip]")).toHaveText("Removing");
+    // Request transfer is still a seam to the change-subscriber page.
+    await opened.getByRole("button", { name: "Actions for Solera Group Limited" }).click();
     await page.getByRole("menuitem", { name: "Request transfer" }).click();
     await page.waitForURL(
       (u) =>
@@ -117,7 +134,7 @@ test.describe("manage subscriptions", () => {
     page,
   }) => {
     const posts = await stubApi(page, subscriptionsPage());
-    await handoff(page, creds(), "/subscription", { entity_id: "" });
+    await handoff(page, creds(), "/subscription/subscriptions", { entity_id: "" });
 
     await body(page)
       .getByRole("button", { name: "Start Trial · Petty Cash · Harbour & Vine Limited" })
@@ -138,7 +155,7 @@ test.describe("manage subscriptions", () => {
 
   test("search narrows the list and says so when nothing matches", async ({ page }) => {
     await stubApi(page, subscriptionsPage());
-    await handoff(page, creds(), "/subscription", { entity_id: "" });
+    await handoff(page, creds(), "/subscription/subscriptions", { entity_id: "" });
 
     await body(page).getByRole("searchbox").fill("kestrel");
     await expect(
@@ -150,7 +167,7 @@ test.describe("manage subscriptions", () => {
 
   test("04-B: nothing paid for", async ({ page }) => {
     await stubApi(page, subscriptionsPage([]));
-    await handoff(page, creds(), "/subscription", { entity_id: "" });
+    await handoff(page, creds(), "/subscription/subscriptions", { entity_id: "" });
     await expect(body(page).getByText("You're not paying for anything yet.")).toBeVisible();
     await expect(body(page).getByRole("link", { name: "Go to entity list" })).toBeVisible();
   });
@@ -171,7 +188,7 @@ test.describe("manage subscriptions", () => {
     page,
   }) => {
     await stubApi(page, subscriptionsPage());
-    await handoff(page, creds(), "/subscription", { entity_id: "" });
+    await handoff(page, creds(), "/subscription/subscriptions", { entity_id: "" });
 
     await body(page).getByRole("button", { name: "Open Kestrel Foods Limited" }).click();
     const row = body(page).locator("li[data-open]");
@@ -202,6 +219,8 @@ test.describe("manage subscriptions", () => {
     await restore.click();
     await expect(restore).toBeChecked();
     await expect(restore).toHaveAttribute("data-changed", "true");
+    // 05·B-C: the panel calculates for a beat before the change shows.
+    await expect(opened.getByRole("status")).toHaveText("Calculating....");
     await expect(opened.locator("[data-chip]")).toHaveText("Restoring");
     // A second press undoes it.
     await restore.click();
@@ -212,13 +231,62 @@ test.describe("manage subscriptions", () => {
     );
     await restore.click();
     await expect(opened.getByRole("button", { name: "Confirm Subscription Change" })).toBeVisible();
+
+    // 06·B: leaving with the tick pending asks first - Go Back stays, Discard changes goes.
+    await opened.getByRole("button", { name: "Close Mino Market Limited" }).click();
+    const leave = page.getByRole("dialog", { name: "Leave without saving?" });
+    await expect(leave).toBeVisible();
+    await leave.getByRole("button", { name: "Go Back" }).click();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await expect(opened.locator("[data-chip]")).toHaveText("Restoring");
+    await opened.getByRole("button", { name: "Close Mino Market Limited" }).click();
+    await page
+      .getByRole("dialog", { name: "Leave without saving?" })
+      .getByRole("button", { name: "Discard changes" })
+      .click();
+    await expect(body(page).locator("li[data-open]")).toHaveCount(0);
+  });
+
+  test("06·B: the bank declining a charge asks to try again, the ticks staying pending", async ({
+    page,
+  }) => {
+    const posts = await stubApi(page, subscriptionsPage());
+    await handoff(page, creds(), "/subscription/subscriptions", { entity_id: "" });
+    // M45 for everyone: Payment Request winds down; restoring it is a renew the bank refuses.
+    await page.route(`${BILLING_API_URL}/api/entities/*/modules/renew`, (route) =>
+      route.fulfill({
+        status: 402,
+        contentType: "application/json",
+        body: JSON.stringify({
+          error:
+            "We couldn't take the payment to restore this module. Please check your payment method and try again.",
+        }),
+      }),
+    );
+    await body(page).getByRole("button", { name: "Open Kestrel Foods Limited" }).click();
+    const opened = body(page).locator("li[data-open]");
+    await opened.getByRole("checkbox", { name: "Payment Request subscription" }).click();
+    await opened.getByRole("button", { name: "Confirm Subscription Change" }).click();
+    await page
+      .getByRole("dialog", { name: "You have unlocked Super Minty" })
+      .getByRole("button", { name: "Confirm" })
+      .click();
+    const failed = page.getByRole("dialog", { name: "Payment could not be processed" });
+    await expect(failed).toBeVisible();
+    await expect(failed).toContainText("Visa 4121");
+    await expect(failed).not.toContainText("We'll automatically retry");
+    await expect(failed).toContainText("If you've resolved the issue, feel free to try again.");
+    await failed.getByRole("button", { name: "Done" }).click();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await expect(opened.locator("[data-chip]")).toHaveText("Restoring");
+    expect(posts.filter((p) => p.url.endsWith("/renew"))).toHaveLength(0);
   });
 
   test("06 + 05·C: a change asks in its modal, then lands on its result - in the row, or on the cancellation page", async ({
     page,
   }) => {
     const posts = await stubApi(page, subscriptionsPage());
-    await handoff(page, creds(), "/subscription", { entity_id: "" });
+    await handoff(page, creds(), "/subscription/subscriptions", { entity_id: "" });
     const serveModules = (model: unknown) =>
       page.route(`${BILLING_API_URL}/api/entities/*/modules`, (route) =>
         route.fulfill({

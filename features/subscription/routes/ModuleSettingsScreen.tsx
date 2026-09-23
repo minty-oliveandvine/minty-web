@@ -19,6 +19,7 @@ import { ManagedByNotice } from "@/features/subscription/components/ManagedByNot
 import { ModuleCardGrid } from "@/features/subscription/components/ModuleCardGrid";
 import { PaymentFailedBanner } from "@/features/subscription/components/PaymentFailedBanner";
 import { SettingsTabs } from "@/features/subscription/components/SettingsTabs";
+import { StartTrialDialog } from "@/features/subscription/components/StartTrialDialog";
 import { useModulePage, type UseModulePageArgs } from "@/features/subscription/hooks/useModulePage";
 import { backLink, settingsTabs, type PageOrigin } from "@/features/subscription/lib/flaskLinks";
 import { modulesPath } from "@/features/subscription/lib/paths";
@@ -128,7 +129,7 @@ export function ModuleSettingsScreen({ from, ...args }: ModuleSettingsScreenProp
                   canManage={m.page.can_manage_modules}
                   busyCode={m.busyCode}
                   on={{
-                    startTrial: (code) => void m.startTrial(code),
+                    startTrial: m.askStartTrial,
                     manage: m.manage,
                     activate: m.activate,
                     resume: m.resume,
@@ -140,6 +141,17 @@ export function ModuleSettingsScreen({ from, ...args }: ModuleSettingsScreenProp
           </section>
         </div>
       </main>
+
+      {m.trialPrompt && (
+        <StartTrialDialog
+          entityName={entityName}
+          code={m.trialPrompt.code}
+          moduleName={m.trialPrompt.moduleName}
+          busy={m.busyCode !== null}
+          onConfirm={() => void m.confirmStartTrial()}
+          onBack={m.dismissTrialPrompt}
+        />
+      )}
     </div>
   );
 }

@@ -15,6 +15,12 @@
  * (B-02, the free trial, is the list's own Start Trial dialog, 04-G.) The copy is the design's;
  * "another 30 days" is the prorated rule's floor (access until the later of the period end and
  * thirty days out), and the result screen then names the exact day. Pure.
+ *
+ * The ⋮'s items (section 05·D, "Other options — the entity panel ⋮") are the same ticks:
+ * `menuCodes` names the modules Cancel subscription unticks (every ACTIVE one) or Reactivate
+ * ticks (every one that is not - a trial running or expired, a cancellation pending, a
+ * suspension; a module never started has no tick, its Start Free Trial button is on the row),
+ * and the same modal asks.
  */
 
 import type {
@@ -23,12 +29,28 @@ import type {
   ModulePage,
 } from "@/features/subscription/api/moduleSettings";
 import type { ModuleRef, ResultPart } from "@/features/subscription/lib/changeResult";
-import { tickOf, type PlanTone } from "@/features/subscription/lib/subscriptionSummary";
+import {
+  billable,
+  tickOf,
+  winding,
+  type PendingTicks,
+  type PlanTone,
+} from "@/features/subscription/lib/subscriptionSummary";
 
 export type ModalKind =
   "activate" | "reactivate" | "continue" | "remove" | "cancel_subscription" | "bundle" | "changes";
 
-export type ModalImage = "celebrating" | "surprised" | "sad" | "super";
+export type ModalImage =
+  | "celebrating"
+  | "surprised"
+  | "sad"
+  | "super"
+  | "payment_failed"
+  | "dont"
+  | "withdrawn"
+  | "thumbs_up"
+  | "envelope"
+  | "hourglass";
 
 export type ConfirmTone = "teal" | "orange" | "red";
 
@@ -57,6 +79,31 @@ function ref(card: ModuleCard): ModuleRef {
 const plain = (text: string): ResultPart => ({ text, style: "plain" });
 const strong = (text: string): ResultPart => ({ text, style: "strong" });
 const named = (m: ModuleRef): ResultPart => ({ text: m.name, style: m.tone });
+
+/** The modules a ⋮ item changes (05·D): Cancel subscription unticks every ACTIVE module … */
+export function menuCodes(
+  page: ModulePage,
+  item: "cancel_subscription" | "reactivate",
+): ModuleCode[] {
+  if (item === "cancel_subscription") {
+    return page.cards.filter((c) => billable(c) && !winding(c)).map((c) => c.code);
+  }
+  // … Reactivate ticks every module that is not, and has a tick to give.
+  return page.cards.filter((c) => tickOf(c).tick === "unticked").map((c) => c.code);
+}
+
+/** The ticks that flip the modules named: each to the opposite of what the API says. */
+export function ticksFor(page: ModulePage, codes: ModuleCode[]): PendingTicks {
+  const pending: PendingTicks = {};
+  for (const code of codes) {
+    const card = page.cards.find((c) => c.code === code);
+    if (!card) continue;
+    const own = tickOf(card);
+    if (own.tick === "start_trial") continue;
+    pending[code] = own.tick !== "ticked";
+  }
+  return pending;
+}
 
 /** The modal for the change the ticks describe: the cards changed, by code. */
 export function buildChangeModal(page: ModulePage, codes: ModuleCode[]): ChangeModal | null {

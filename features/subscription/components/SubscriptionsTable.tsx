@@ -53,6 +53,8 @@ export type ResultRow = { entityId: string; result: ChangeResult };
 export type OpenRow = {
   entityId: string;
   status: "loading" | "ready" | "error";
+  /** The panel says "Calculating…" (05·B-C). */
+  calculating?: boolean;
   view: SummaryView | null;
   error: string | null;
 };
@@ -170,6 +172,7 @@ function Rows({
             key={row.entity.entity_id}
             entity={row.entity}
             status={open.status}
+            calculating={open.calculating}
             view={open.view}
             error={open.error}
             menu={row.menu}

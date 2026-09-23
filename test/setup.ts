@@ -4,8 +4,14 @@
 // bare one registers against Jest's expect and silently adds nothing here.
 
 import "@testing-library/jest-dom/vitest";
-import { cleanup } from "@testing-library/react";
+import { cleanup, configure } from "@testing-library/react";
 import { afterEach } from "vitest";
+
+// findBy*/waitFor wait 2.5s, not the default 1s. The screens here render a list of twenty-odd
+// companies, read two endpoints for the row that opens and hold a 1.2s "Calculating…" beat -
+// under a full-suite run that is regularly more than a second, and the flake it produced was
+// always "the element isn't there yet", never a real absence.
+configure({ asyncUtilTimeout: 2500 });
 
 // RTL only auto-cleans when a global `afterEach` exists, and this project runs with globals
 // disabled -- so without this, every render stacks up in the same document.

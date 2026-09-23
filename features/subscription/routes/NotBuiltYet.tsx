@@ -18,9 +18,6 @@ const FLOWS: { test: RegExp; name: string }[] = [
   { test: /\/modules\/reactivate(\/|$)/, name: "Reactivate Subscription" },
   { test: /\/modules\/cancel(\/|$)/, name: "Cancel subscription" },
   { test: /\/modules\/payment-method$/, name: "Payment method" },
-  { test: /\/subscriptions\/subscriber$/, name: "Change subscriber" },
-  { test: /\/subscriptions\/incoming$/, name: "Transfer requests" },
-  { test: /\/billing$/, name: "Billing" },
   { test: /\/invoices$/, name: "Invoices" },
 ];
 

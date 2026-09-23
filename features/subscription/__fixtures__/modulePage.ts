@@ -233,7 +233,8 @@ export const NOT_ADMIN: ModulePage = page(FIXTURES.A.cards, { can_manage_modules
 
 // ---- 05·A - the open row ("Subscription Summary") ---------------------------------------------
 
-export type SummaryFrame = "M11" | "M21" | "M22" | "M31" | "M44" | "M45" | "M51" | "M61" | "N21a";
+export type SummaryFrame =
+  "M11" | "M21" | "M22" | "M24" | "M31" | "M44" | "M45" | "M51" | "M61" | "N21a";
 
 /**
  * The 05·A states the tests render, keyed by the design's frame (down = Petty Cash, across =
@@ -247,6 +248,8 @@ export const SUMMARY_FIXTURES: Record<SummaryFrame, ModulePage> = {
   M21: page([trialing("PETTY_CASH", 3), neverStarted("PAYMENT_REQUEST")]),
   /** Both on trial. */
   M22: page([trialing("PETTY_CASH", 3), trialing("PAYMENT_REQUEST", 15)]),
+  /** Petty Cash on trial, Payment Request active (07-D's company). */
+  M24: page([trialing("PETTY_CASH", 3), active("PAYMENT_REQUEST")]),
   /** Petty Cash's trial expired, Payment Request never started. */
   M31: page([trialExpired("PETTY_CASH"), neverStarted("PAYMENT_REQUEST")]),
   /** Both active: the bundle, both ticked. */

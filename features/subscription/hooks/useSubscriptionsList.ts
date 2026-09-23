@@ -23,10 +23,19 @@
  * drops the result, closes the row and reloads the list. When a card must be collected first,
  * the browser goes to Stripe and comes back to the module page, as it does from there.
  *
+ * The ⋮'s *Cancel subscription* and *Reactivate* (05·D, on a closed row or the open one) are
+ * the same ticks - every ACTIVE module unticked, every module that is not ticked - so they open
+ * the row, set those ticks and ask with the modal for exactly that change.
+ *
+ * When it fails or gets interrupted (06·B): a charge the bank declined asks with "Payment could
+ * not be processed" - Try again now applies the same change again, Done leaves the ticks
+ * pending; and leaving the open row with ticks pending (closing it, opening another company,
+ * going back) asks "Leave without saving?" first - Discard changes drops the ticks and goes.
+ *
  * Everything else is a seam that navigates to the screen that owns the flow (`lib/paths.ts`):
- * *Subscribe* → the activate flow, the ⋮ items → the confirm flows, *Review and accept* → the
- * incoming-transfers page, the banner's "here" and the panel's *Change* → the payment-method
- * screen.
+ * *Subscribe* → the activate flow, *Request transfer* → the change-subscriber page, *Review and
+ * accept* → the incoming-transfers page, the banner's "here" and the panel's *Change* → the
+ * payment-method screen.
  *
  * `fixture`: dev-only, as the module page's - `?fixture=A|B|F` serves the design's frames;
  * `?result=RU22` lands the open row on a 05·C frame.
@@ -61,14 +70,20 @@ import {
   type SortColumn,
   type SubscriptionRow,
 } from "@/features/subscription/lib/portalRows";
-import { buildChangeModal, type ChangeModal } from "@/features/subscription/lib/changeModal";
+import {
+  buildChangeModal,
+  menuCodes,
+  ticksFor,
+  type ChangeModal,
+} from "@/features/subscription/lib/changeModal";
 import {
   buildChangeResult,
+  transferredResult,
   type ChangeAsked,
   type ChangeResult,
 } from "@/features/subscription/lib/changeResult";
 import { PORTAL, moduleRoutes } from "@/features/subscription/lib/paths";
-import type { PendingChange } from "@/features/subscription/lib/subscriptionSummary";
+import { tickOf, type PendingChange } from "@/features/subscription/lib/subscriptionSummary";
 import {
   useEntitySummary,
   type UseEntitySummaryResult,
@@ -89,8 +104,24 @@ export type TrialPrompt = { entity: PortalEntity; code: ModuleCode; moduleName: 
 /** Where the last change landed: the company and its result screen. */
 export type ListResult = { entity: PortalEntity; result: ChangeResult };
 
-/** A change asked about and not yet confirmed: the company, the ticks, the modal's words. */
-export type ChangePrompt = { entity: PortalEntity; change: PendingChange; modal: ChangeModal };
+/** A change asked about and not yet confirmed: the company, the ticks, the modal's words, and
+ * the page model the change is read against. */
+export type ChangePrompt = {
+  entity: PortalEntity;
+  change: PendingChange;
+  modal: ChangeModal;
+  page: ModulePage;
+};
+
+/** The bank declined the charge of a change: what was being applied, to try again. */
+export type DeclinedPrompt = { prompt: ChangePrompt; message: string; autoRetry: boolean };
+
+/** A way out of the open row asked about while its ticks are pending: what happens on Discard. */
+export type LeavePrompt = { proceed: () => void };
+
+export const NOTHING_TO_CANCEL = "Nothing is active to cancel.";
+export const NOTHING_TO_REACTIVATE =
+  "Nothing to reactivate here - a module never started has its Start Free Trial button on the row.";
 
 export type UseSubscriptionsListArgs = {
   /** The company to bring into view and open (the module page's *Manage Subscription* lands here). */
@@ -100,6 +131,8 @@ export type UseSubscriptionsListArgs = {
   summaryFixture?: string | null;
   /** Dev-only: the 05·C frame the open row lands on (`?result=RU22`). */
   resultFixture?: string | null;
+  /** Arrived from accepting a handover (`?transferred=1` beside `?entity=`): that row lands on 07-M. */
+  transferred?: boolean;
   today?: Date;
 };
 
@@ -138,6 +171,14 @@ export type UseSubscriptionsListResult = {
   /** The modal's Confirm: apply the change, land on the result. */
   applyChangePrompt: () => Promise<void>;
   changeBusy: boolean;
+  /** "Payment could not be processed", while it asks. */
+  declined: DeclinedPrompt | null;
+  retryDeclined: () => Promise<void>;
+  dismissDeclined: () => void;
+  /** "Leave without saving?", while it asks. */
+  leavePrompt: LeavePrompt | null;
+  discardAndLeave: () => void;
+  stay: () => void;
   /** The result screen of the last change, until Back to Manage Subscriptions. */
   result: ListResult | null;
   dismissResult: () => void;
@@ -198,6 +239,7 @@ export function useSubscriptionsList({
   fixture,
   summaryFixture,
   resultFixture,
+  transferred = false,
   today,
 }: UseSubscriptionsListArgs = {}): UseSubscriptionsListResult {
   const router = useRouter();
@@ -221,8 +263,12 @@ export function useSubscriptionsList({
   const [openEntityId, setOpenEntityId] = useState<string | null>(focusEntityId);
 
   const [result, setResult] = useState<ListResult | null>(null);
+  // Accepting a handover lands on 07-M (derived below); this remembers it was dismissed.
+  const [transferDismissed, setTransferDismissed] = useState(false);
   const [changePrompt, setChangePrompt] = useState<ChangePrompt | null>(null);
   const [changeBusy, setChangeBusy] = useState(false);
+  const [declined, setDeclined] = useState<DeclinedPrompt | null>(null);
+  const [leavePrompt, setLeavePrompt] = useState<LeavePrompt | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -323,17 +369,64 @@ export function useSubscriptionsList({
     today: day,
   });
 
-  const toggleRow = useCallback((entity: PortalEntity) => {
-    setResult(null);
-    setOpenEntityId((open) => (open === entity.entity_id ? null : entity.entity_id));
-  }, []);
-  const closeRow = useCallback(() => {
-    setResult(null);
-    setOpenEntityId(null);
-  }, []);
+  // The open row has ticks pending: every way out asks first (06·B's "Leave without saving?").
+  const ticksPending = Boolean(summary.view?.pendingChange);
+  const guardLeave = useCallback(
+    (proceed: () => void) => {
+      if (ticksPending) setLeavePrompt({ proceed });
+      else proceed();
+    },
+    [ticksPending],
+  );
+  const discardAndLeave = useCallback(() => {
+    const prompt = leavePrompt;
+    setLeavePrompt(null);
+    if (!prompt) return;
+    summary.resetTicks();
+    prompt.proceed();
+  }, [leavePrompt, summary]);
+  const stay = useCallback(() => setLeavePrompt(null), []);
+  useEffect(() => {
+    if (!ticksPending) return;
+    const warn = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [ticksPending]);
+
+  const toggleRow = useCallback(
+    (entity: PortalEntity) =>
+      guardLeave(() => {
+        setResult(null);
+        setTransferDismissed(true);
+        setOpenEntityId((open) => (open === entity.entity_id ? null : entity.entity_id));
+      }),
+    [guardLeave],
+  );
+  const closeRow = useCallback(
+    () =>
+      guardLeave(() => {
+        setResult(null);
+        setTransferDismissed(true);
+        setOpenEntityId(null);
+      }),
+    [guardLeave],
+  );
+
+  // Accepted a handover: the company's row lands on "Subscription Transfer Completed" (07-M)
+  // once the list holds it and its page model (for the footer's renewal date) is in. Derived,
+  // not set: it shows until Back to Manage Subscriptions (or the row closes) dismisses it.
+  const summaryPage = summary.page;
+  const landedTransfer = useMemo(
+    () =>
+      transferred && !transferDismissed && openEntity && summaryPage
+        ? { entity: openEntity, result: transferredResult(openEntity, summaryPage) }
+        : null,
+    [transferred, transferDismissed, openEntity, summaryPage],
+  );
 
   // Dev-only: land the open row on the 05·C frame named, as if its change had just been applied.
-  const summaryPage = summary.page;
   useEffect(() => {
     if (!resultFixture || !openEntity || !summaryPage) return;
     let live = true;
@@ -354,24 +447,75 @@ export function useSubscriptionsList({
       const before = summary.page;
       if (!before || changeBusy) return;
       const modal = buildChangeModal(before, change.codes);
-      if (modal) setChangePrompt({ entity, change, modal });
+      if (modal) setChangePrompt({ entity, change, modal, page: before });
     },
     [summary.page, changeBusy],
+  );
+
+  // The ⋮'s Cancel subscription / Reactivate: open the row, tick what the item ticks, and ask.
+  // The page model is read here when the row was closed (the row's own read follows).
+  const runMenuChange = useCallback(
+    async (entity: PortalEntity, item: "cancel_subscription" | "reactivate") => {
+      if (changeBusy) return;
+      setResult(null);
+      setChangePrompt(null);
+      setOpenEntityId(entity.entity_id);
+      try {
+        const page =
+          openEntityId === entity.entity_id && summary.page
+            ? summary.page
+            : await getModulePage(entity.entity_id);
+        const codes = menuCodes(page, item);
+        if (codes.length === 0) {
+          showToast(item === "cancel_subscription" ? NOTHING_TO_CANCEL : NOTHING_TO_REACTIVATE);
+          return;
+        }
+        summary.setTicksFor(entity.entity_id, ticksFor(page, codes));
+        const first = page.cards.find((c) => c.code === codes[0])!;
+        const modal = buildChangeModal(page, codes);
+        if (modal) {
+          setChangePrompt({
+            entity,
+            change: { code: codes[0], seam: tickOf(first).seam!, codes },
+            modal,
+            page,
+          });
+        }
+      } catch (err) {
+        showToast(sentence(err), "error");
+      }
+    },
+    [changeBusy, openEntityId, summary, showToast],
+  );
+  // Another company's item while this row's ticks are pending: leaving is asked about first.
+  const menuChange = useCallback(
+    (entity: PortalEntity, item: "cancel_subscription" | "reactivate") => {
+      if (ticksPending && openEntityId !== entity.entity_id) {
+        setLeavePrompt({ proceed: () => void runMenuChange(entity, item) });
+        return;
+      }
+      void runMenuChange(entity, item);
+    },
+    [ticksPending, openEntityId, runMenuChange],
   );
   const dismissChangePrompt = useCallback(() => {
     if (!changeBusy) setChangePrompt(null);
   }, [changeBusy]);
 
-  const applyChangePrompt = useCallback(async () => {
-    const before = summary.page;
-    if (!changePrompt || !before || changeBusy) return;
-    const { entity, change } = changePrompt;
-    setChangeBusy(true);
-    try {
-      {
+  // Apply a change asked about: from the modal's Confirm, or again after the bank declined.
+  const apply = useCallback(
+    async (prompt: ChangePrompt) => {
+      const { entity, change, page: before } = prompt;
+      setChangeBusy(true);
+      try {
         const applied = await applyChange(entity.entity_id, before, change.codes);
         if (applied.redirect) {
           leaveTo(applied.redirect);
+          return;
+        }
+        if (applied.declined) {
+          // The bank said no: the modal asks to try again; the ticks stay pending.
+          setDeclined({ prompt, ...applied.declined });
           return;
         }
         if (applied.refused) {
@@ -384,17 +528,32 @@ export function useSubscriptionsList({
         summary.resetTicks();
         setChangePrompt(null);
         land(entity, { kind: "ticks", codes: change.codes }, before, after);
+      } catch (err) {
+        showToast(sentence(err), "error");
+        setChangePrompt(null);
+        summary.reload();
+      } finally {
+        setChangeBusy(false);
       }
-    } catch (err) {
-      showToast(sentence(err), "error");
-      setChangePrompt(null);
-      summary.reload();
-    } finally {
-      setChangeBusy(false);
-    }
-  }, [changePrompt, summary, changeBusy, showToast, land]);
+    },
+    [summary, showToast, land],
+  );
+  const applyChangePrompt = useCallback(async () => {
+    if (!changePrompt || changeBusy) return;
+    await apply(changePrompt);
+  }, [changePrompt, changeBusy, apply]);
+  const retryDeclined = useCallback(async () => {
+    if (!declined || changeBusy) return;
+    setDeclined(null);
+    await apply(declined.prompt);
+  }, [declined, changeBusy, apply]);
+  const dismissDeclined = useCallback(() => {
+    setDeclined(null);
+    setChangePrompt(null);
+  }, []);
   const dismissResult = useCallback(() => {
     setResult(null);
+    setTransferDismissed(true);
     setOpenEntityId(null);
     reload();
   }, [reload]);
@@ -413,12 +572,12 @@ export function useSubscriptionsList({
     [router],
   );
   const cancelSubscription = useCallback(
-    (entity: PortalEntity) => router.push(moduleRoutes(entity.entity_id).cancelAll),
-    [router],
+    (entity: PortalEntity) => menuChange(entity, "cancel_subscription"),
+    [menuChange],
   );
   const reactivate = useCallback(
-    (entity: PortalEntity) => router.push(moduleRoutes(entity.entity_id).reactivateAll),
-    [router],
+    (entity: PortalEntity) => menuChange(entity, "reactivate"),
+    [menuChange],
   );
   const reviewTransfer = useCallback(
     (transfer: IncomingTransfer) =>
@@ -426,7 +585,7 @@ export function useSubscriptionsList({
     [router],
   );
   const updatePaymentMethod = useCallback(() => router.push(PORTAL.billing), [router]);
-  const back = useCallback(() => router.back(), [router]);
+  const back = useCallback(() => guardLeave(() => router.back()), [guardLeave, router]);
 
   return {
     status,
@@ -456,7 +615,13 @@ export function useSubscriptionsList({
     dismissChangePrompt,
     applyChangePrompt,
     changeBusy,
-    result,
+    declined,
+    retryDeclined,
+    dismissDeclined,
+    leavePrompt,
+    discardAndLeave,
+    stay,
+    result: result ?? landedTransfer,
     dismissResult,
     changePaymentMethod,
     subscribe,

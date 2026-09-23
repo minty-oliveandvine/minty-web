@@ -35,11 +35,18 @@
  * `forecast()` is the panel's arithmetic on its own - what bills now, what bills after the
  * change day, and when that is - so the result screens (`lib/changeResult.ts`, Figma 05·C) say
  * the same numbers the panel did.
+ *
+ * `pageFromList()` is the company as the LIST already knows it (`/api/me/subscriptions`: a
+ * status and a date per module), shaped as a page model: the row opens with its cards drawn
+ * from that while the real page model is fetched and the panel says "Calculating…" (Figma
+ * 05·B-C). A trial's card and consent are not known there, so it is drawn unconfirmed until
+ * the page model answers.
  */
 
 import type {
   EntityPaymentMethod,
   PortalEntity,
+  PortalModule,
   SavedPaymentMethod,
 } from "@/features/subscription/api/payerPortal";
 import type {
@@ -448,6 +455,105 @@ export function buildSummaryView(
     paymentMethod,
     footer: { createdOn: created ? shortDate(created) : null, renewalOn: renewal },
     pendingChange,
+  };
+}
+
+// ---- the company as the list knows it ---------------------------------------------------------
+
+const MODULE_NAME: Record<ModuleCode, string> = {
+  PETTY_CASH: "Petty Cash",
+  PAYMENT_REQUEST: "Payment Request",
+};
+
+function cardFromList(m: PortalModule): ModuleCard {
+  const code = m.code as ModuleCode;
+  const day = m.date_iso ?? null;
+  const card: ModuleCard = {
+    code,
+    name: m.name || MODULE_NAME[code] || m.code,
+    description: "",
+    learn_more: null,
+    is_subscribed: false,
+    trial_eligible: false,
+    trial_closing: false,
+    trial_expired: false,
+    lapsed_long: false,
+    has_access: false,
+    subscription_status: null,
+    can_cancel: false,
+    formatted_amount: "",
+    currency_code: "",
+    billing_interval: "month",
+    cancel_at_period_end: false,
+    pending_cancel: false,
+    trial_cancelled: false,
+    formatted_period_end: null,
+    period_end_short: null,
+    period_end_long: null,
+    period_end: null,
+    extension_formatted: null,
+    access_end_date: null,
+    access_end_long: null,
+    needs_card: false,
+    needs_consent_only: false,
+  };
+  switch (m.status) {
+    case "not_subscribed":
+      return { ...card, trial_eligible: true };
+    case "trialing":
+      return {
+        ...card,
+        is_subscribed: true,
+        has_access: true,
+        subscription_status: "trialing",
+        period_end: day,
+        needs_card: true,
+      };
+    case "trial_expired":
+      return { ...card, trial_expired: true, access_end_date: day };
+    case "active":
+      return {
+        ...card,
+        is_subscribed: true,
+        has_access: true,
+        subscription_status: "active",
+        period_end: day,
+      };
+    case "cancelled":
+      return {
+        ...card,
+        is_subscribed: true,
+        has_access: true,
+        subscription_status: "active",
+        pending_cancel: true,
+        cancel_at_period_end: true,
+        period_end: day,
+        access_end_date: day,
+      };
+    case "past_due":
+      return {
+        ...card,
+        is_subscribed: true,
+        has_access: true,
+        subscription_status: "past_due",
+        access_end_date: day,
+      };
+    default:
+      return card;
+  }
+}
+
+/** The company's page model as far as the list's row can tell it - the cards, no money. */
+export function pageFromList(entity: PortalEntity): ModulePage {
+  return {
+    entity_id: entity.entity_id,
+    cards: entity.modules.map(cardFromList),
+    can_manage_modules: true,
+    payer: null,
+    viewer: { name: "", initials: "" },
+    next_payment_date: null,
+    summary: null,
+    panel: null,
   };
 }
 

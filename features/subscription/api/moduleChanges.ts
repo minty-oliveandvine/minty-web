@@ -15,8 +15,11 @@
  *   subscribe       an expired trial, ticked - `restart-billing` (THIS CHARGES); a 402 means
  *                   no card is nominated, so Stripe's card form first
  *
- * The answer says where the browser must go (Stripe), or why the change stopped (a card the
- * processor declined), or that everything was applied and the page model can be read again.
+ * The answer says where the browser must go (Stripe), or that the bank declined the charge
+ * (`declined`, with the API's sentence - Figma 06·B's "Payment could not be processed" asks
+ * to try again), or why the change stopped otherwise (`refused`), or that everything was
+ * applied and the page model can be read again. A 402 is a decline unless the API says no
+ * card is nominated at all ("Choose a card …"), which is Stripe's form instead.
  */
 
 import { ApiError } from "@/lib/apiClient";
@@ -37,9 +40,21 @@ import { tickOf, type TickSeam } from "@/features/subscription/lib/subscriptionS
 export type AppliedChange = {
   /** Stripe's page to open when a card must be collected or replaced first. */
   redirect: string | null;
-  /** The API's sentence when the change could not complete (a declined card). */
+  /** The bank declined the charge: the API's sentence, and whether a scheduled retry follows. */
+  declined: { message: string; autoRetry: boolean } | null;
+  /** The API's sentence when the change could not complete for another reason. */
   refused: string | null;
 };
+
+const NONE: AppliedChange = { redirect: null, declined: null, refused: null };
+
+function noCardNominated(err: unknown): boolean {
+  return err instanceof ApiError && err.status === 402 && /choose a card/i.test(err.message);
+}
+
+function declinedBy(err: unknown): boolean {
+  return err instanceof ApiError && err.status === 402 && !noCardNominated(err);
+}
 
 /** The modules the change touches, grouped by what the tick means for each. */
 export function seamsOf(
@@ -64,21 +79,39 @@ export async function applyChange(
   const by = seamsOf(before, codes);
 
   for (const card of by.cancel ?? []) await cancelModule(entityId, card.code);
-  for (const card of by.resume ?? []) await renewModule(entityId, card.code);
+  for (const card of by.resume ?? []) {
+    try {
+      await renewModule(entityId, card.code);
+    } catch (err) {
+      // Resuming can collect money up front (an extension already invoiced): a decline.
+      if (declinedBy(err))
+        return { ...NONE, declined: { message: (err as ApiError).message, autoRetry: false } };
+      throw err;
+    }
+  }
 
   const trials = by.confirm_trial ?? [];
   if (trials.length > 0) {
     // No card at all: the consent would sit on nothing, and the trial would still expire.
     if (trials.some((c) => c.needs_card && !c.needs_consent_only)) {
       const { url } = await openPaymentMethodCapture(entityId);
-      return { redirect: url, refused: null };
+      return { ...NONE, redirect: url };
     }
     await authorizeBilling(entityId);
   }
 
   if ((by.reactivate ?? []).length > 0) {
     const paid = await retryPayment(entityId);
-    if (!paid.ok) return { redirect: null, refused: paid.message };
+    if (!paid.ok) {
+      // The processor said no: the scheduled retries keep trying, and so can the person.
+      if (paid.status === "failed")
+        return { ...NONE, declined: { message: paid.message, autoRetry: true } };
+      if (paid.status === "no_card") {
+        const { url } = await openPaymentMethodCapture(entityId);
+        return { ...NONE, redirect: url };
+      }
+      return { ...NONE, refused: paid.message };
+    }
   }
 
   const expired = by.subscribe ?? [];
@@ -88,15 +121,17 @@ export async function applyChange(
         entityId,
         expired.map((c) => c.code),
       );
-      if (bought.url) return { redirect: bought.url, refused: null };
+      if (bought.url) return { ...NONE, redirect: bought.url };
     } catch (err) {
-      if (err instanceof ApiError && err.status === 402) {
+      if (noCardNominated(err)) {
         const { url } = await openPaymentMethodCapture(entityId);
-        return { redirect: url, refused: null };
+        return { ...NONE, redirect: url };
       }
+      if (declinedBy(err))
+        return { ...NONE, declined: { message: (err as ApiError).message, autoRetry: false } };
       throw err;
     }
   }
 
-  return { redirect: null, refused: null };
+  return NONE;
 }

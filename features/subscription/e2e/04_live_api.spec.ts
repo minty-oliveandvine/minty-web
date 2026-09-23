@@ -90,6 +90,8 @@ test.describe("over the live API", () => {
     await expect(request.getByText("30 days trial available")).toBeVisible();
 
     await item.getByRole("button", { name: "Start Free Trial" }).click();
+    // 04-G's dialog asks first, here as on the list.
+    await page.getByRole("dialog").getByRole("button", { name: "Confirm" }).click();
 
     // The API opened the trial and the page refetched: the card counts the real term down
     // (the policy's trial length, 30 days today) and offers Manage instead of Start.
@@ -116,7 +118,7 @@ test.describe("over the live API", () => {
     const model = await pageModel(c);
     const holdsSomething = model.cards.some((card) => card.subscription_status !== null);
 
-    await handoff(page, c, "/subscription", { entity_id: "" });
+    await handoff(page, c, "/subscription/subscriptions", { entity_id: "" });
 
     await expect(
       body(page).getByRole("heading", { level: 1, name: "Manage Subscriptions" }),

@@ -23,6 +23,18 @@ export const PORTAL = {
   invoices: subscriptionPath("/invoices"),
 } as const;
 
+/**
+ * The billing page's own two screens (Figma 08-Y "Add a card — full page" and 08-D "Edit card
+ * details"), which the design draws as pages rather than dialogs. Both come back to the billing
+ * page; adding comes back with `?added=<card>` so the page can say what happened (08-N / 08-S).
+ */
+export const BILLING = {
+  add: subscriptionPath("/billing/add"),
+  edit: (paymentMethod: string) =>
+    `${subscriptionPath("/billing/edit")}?card=${encodeURIComponent(paymentMethod)}`,
+  added: (paymentMethod: string) => `${PORTAL.billing}?added=${encodeURIComponent(paymentMethod)}`,
+} as const;
+
 /** The module settings page of one company (Flask's /entity/settings/module/<org_id>, re-homed). */
 export function modulesPath(entityId: string): string {
   return subscriptionPath(`/entities/${encodeURIComponent(entityId)}/modules`);
@@ -49,8 +61,5 @@ export function moduleRoutes(entityId: string) {
     reactivate: (code: string) => `${b}/reactivate/${encodeURIComponent(code)}`,
     /** The payment-method screen the "Payment failed" banner links to. */
     paymentMethod: `${b}/payment-method`,
-    /** The list's ⋮ menu: cancel every active module / reactivate every module that is not. */
-    cancelAll: `${b}/cancel`,
-    reactivateAll: `${b}/reactivate`,
   } as const;
 }

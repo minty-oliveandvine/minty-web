@@ -13,6 +13,10 @@
 import { env } from "@/lib/env";
 
 import { ChangeDialog } from "@/features/subscription/components/ChangeDialog";
+import {
+  LeaveDialog,
+  PaymentFailedDialog,
+} from "@/features/subscription/components/InterruptedDialogs";
 import { ChangeResultPage } from "@/features/subscription/components/ChangeResultView";
 import {
   ListEmpty,
@@ -96,6 +100,7 @@ export function ManageSubscriptionsScreen(args: UseSubscriptionsListArgs) {
               ? {
                   entityId: m.openEntityId,
                   status: m.summary.status,
+                  calculating: m.summary.calculating,
                   view: m.summary.view,
                   error: m.summary.error,
                 }
@@ -118,7 +123,7 @@ export function ManageSubscriptionsScreen(args: UseSubscriptionsListArgs) {
         />
       )}
 
-      {m.changePrompt && (
+      {m.changePrompt && !m.declined && (
         <ChangeDialog
           modal={m.changePrompt.modal}
           entityName={m.changePrompt.entity.entity_name}
@@ -127,6 +132,18 @@ export function ManageSubscriptionsScreen(args: UseSubscriptionsListArgs) {
           onBack={m.dismissChangePrompt}
         />
       )}
+
+      {m.declined && (
+        <PaymentFailedDialog
+          card={m.summary.view?.paymentMethod?.label ?? null}
+          autoRetry={m.declined.autoRetry}
+          busy={m.changeBusy}
+          onTryAgain={() => void m.retryDeclined()}
+          onDone={m.dismissDeclined}
+        />
+      )}
+
+      {m.leavePrompt && <LeaveDialog onDiscard={m.discardAndLeave} onStay={m.stay} />}
 
       {m.trialPrompt && (
         <StartTrialDialog

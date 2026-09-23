@@ -10,6 +10,9 @@
  * Removing / Restoring), the panel shows the subscription as it would be, and "Confirm
  * Subscription Change" hands the change to the hook - which asks first (Figma section 06's
  * modal), applies it and lands on its result (05·C). Nothing is posted from here.
+ *
+ * "Calculating…" (05·B-C) sits where the panel goes while the page model loads - the cards are
+ * already drawn from what the list knows - and for a beat after every tick.
  */
 
 import Image from "next/image";
@@ -34,6 +37,8 @@ import {
 
 import { MODULE_ART } from "@/features/subscription/components/ModuleCard";
 import { RowMenu } from "@/features/subscription/components/RowMenu";
+
+export const CALCULATING = "Calculating....";
 
 export type SummaryRowHandlers = {
   onClose: () => void;
@@ -68,7 +73,7 @@ const PLAN_TONE: Record<PlanLine["tone"], string> = {
   none: "text-[#161f2e]",
 };
 
-function SummaryModuleCard({ module }: { module: SummaryModule }) {
+export function SummaryModuleCard({ module }: { module: SummaryModule }) {
   const art = MODULE_ART[module.code];
   const live = module.view.live;
   const frame = live
@@ -88,7 +93,14 @@ function SummaryModuleCard({ module }: { module: SummaryModule }) {
           live ? "" : "opacity-50"
         }`}
       >
-        <Image src={art.src} alt="" width={art.size} height={art.size} unoptimized />
+        <Image
+          src={art.src}
+          alt=""
+          width={art.width}
+          height={art.height}
+          className={art.box}
+          unoptimized
+        />
       </div>
       <h3 className="mt-4 text-[26px] font-bold leading-tight text-ink">{module.name}</h3>
       <div className="mt-auto font-bold">
@@ -115,9 +127,12 @@ function SummaryModuleCard({ module }: { module: SummaryModule }) {
 
 function UnderCard({
   module,
+  disabled = false,
   on,
 }: {
   module: SummaryModule;
+  /** While the page model loads: the buttons wait for it. */
+  disabled?: boolean;
   on: Pick<SummaryRowHandlers, "onStartTrial" | "onTick">;
 }) {
   if (module.tick === "start_trial") {
@@ -125,8 +140,9 @@ function UnderCard({
       <button
         type="button"
         onClick={() => on.onStartTrial(module.code)}
+        disabled={disabled}
         aria-label={`Start Free Trial · ${module.name}`}
-        className="h-[50px] w-[195px] rounded-full bg-secondary text-xl font-bold text-white hover:opacity-90"
+        className="h-[50px] w-[195px] rounded-full bg-secondary text-xl font-bold text-white hover:opacity-90 disabled:opacity-60"
       >
         Start Free Trial
       </button>
@@ -140,6 +156,7 @@ function UnderCard({
       aria-checked={ticked}
       aria-label={`${module.name} subscription`}
       data-changed={module.changed}
+      disabled={disabled}
       onClick={() => on.onTick(module.code)}
       className={
         ticked
@@ -152,7 +169,7 @@ function UnderCard({
   );
 }
 
-function PlanLines({ lines, size = "text-xl" }: { lines: PlanLine[]; size?: string }) {
+export function PlanLines({ lines, size = "text-xl" }: { lines: PlanLine[]; size?: string }) {
   return (
     <ul className="flex flex-col gap-1">
       {lines.map((line) => (
@@ -168,7 +185,7 @@ function PlanLines({ lines, size = "text-xl" }: { lines: PlanLine[]; size?: stri
   );
 }
 
-function PriceBox({
+export function PriceBox({
   price,
   struck,
   greyed,
@@ -213,6 +230,22 @@ function Block({ block, card }: { block: SummaryBlock; card?: boolean }) {
       <PriceBox price={block.price} struck={block.struck} greyed={block.greyed} />
       {block.note && <p className="text-[15px] text-[#8a9099]">{block.note}</p>}
     </div>
+  );
+}
+
+function CalculatingPanel() {
+  return (
+    <section
+      aria-label="Subscription Summary"
+      aria-busy
+      data-calculating
+      className="flex min-h-[469px] w-full flex-col items-center justify-center gap-6 rounded-xl bg-white p-8 shadow-[0px_2px_8px_0px_rgba(0,0,0,0.1)]"
+    >
+      <p role="status" className="text-xl font-bold text-[#4fc7c7]">
+        {CALCULATING}
+      </p>
+      <Image src="/portal/minty-counting.png" alt="" width={157} height={136} unoptimized />
+    </section>
   );
 }
 
@@ -284,6 +317,7 @@ function SummaryPanel({
 export function SubscriptionSummaryRow({
   entity,
   status,
+  calculating = false,
   view,
   error,
   menu,
@@ -292,6 +326,8 @@ export function SubscriptionSummaryRow({
 }: {
   entity: PortalEntity;
   status: "loading" | "ready" | "error";
+  /** The panel says "Calculating…": the page model is loading, or a tick was pressed just now. */
+  calculating?: boolean;
   view: SummaryView | null;
   error: string | null;
   menu: MenuItem[];
@@ -299,6 +335,7 @@ export function SubscriptionSummaryRow({
   focused?: boolean;
   on: SummaryRowHandlers;
 }) {
+  const loading = status === "loading";
   const ref = useRef<HTMLLIElement>(null);
   useEffect(() => {
     if (focused) ref.current?.scrollIntoView({ block: "start" });
@@ -327,7 +364,7 @@ export function SubscriptionSummaryRow({
         </div>
       </div>
 
-      {status === "loading" && (
+      {loading && !view && (
         <p role="status" className="text-quiet">
           Loading…
         </p>
@@ -341,7 +378,7 @@ export function SubscriptionSummaryRow({
         </div>
       )}
 
-      {status === "ready" && view && (
+      {(status === "ready" || loading) && view && (
         <>
           {view.trialNotice && (
             <p className="flex items-center gap-2 text-xs text-info">
@@ -359,14 +396,18 @@ export function SubscriptionSummaryRow({
             {view.modules.map((module) => (
               <div key={module.code} className="flex flex-col items-center gap-[46px]">
                 <SummaryModuleCard module={module} />
-                <UnderCard module={module} on={on} />
+                <UnderCard module={module} disabled={loading} on={on} />
               </div>
             ))}
-            <SummaryPanel
-              view={view}
-              onChangePaymentMethod={on.onChangePaymentMethod}
-              onConfirmChange={on.onConfirmChange}
-            />
+            {calculating || loading ? (
+              <CalculatingPanel />
+            ) : (
+              <SummaryPanel
+                view={view}
+                onChangePaymentMethod={on.onChangePaymentMethod}
+                onConfirmChange={on.onConfirmChange}
+              />
+            )}
           </div>
 
           <div className="flex flex-col gap-3 text-[15px] text-quiet">

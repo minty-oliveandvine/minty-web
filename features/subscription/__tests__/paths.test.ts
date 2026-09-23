@@ -39,8 +39,6 @@ describe("subscription paths", () => {
   it("names the pages a module card's CTA leads to, under the module page", () => {
     const r = moduleRoutes("abc-123");
     expect(r.manage).toBe("/subscription/subscriptions?entity=abc-123");
-    expect(r.cancelAll).toBe("/subscription/entities/abc-123/modules/cancel");
-    expect(r.reactivateAll).toBe("/subscription/entities/abc-123/modules/reactivate");
     expect(r.activate("PETTY_CASH")).toBe(
       "/subscription/entities/abc-123/modules/activate/PETTY_CASH",
     );

@@ -5,9 +5,9 @@
  * layouts of one `ChangeResult` (`lib/changeResult.ts`):
  *
  * - `ChangeResultRow` - the list with this company's row open: "Congratulations!" (or
- *   "Subscription updated"), a line per module, the line of money, Back to Manage
- *   Subscriptions, Minty celebrating, and the row's footer sentences (05·C-1/-5/-6, the RU/RV/RW
- *   frames).
+ *   "Subscription updated", or 07-M's "Subscription Transfer Completed" with its sentences), a
+ *   line per module, the line of money, Back to Manage Subscriptions, Minty celebrating, and
+ *   the row's footer sentences (05·C-1/-5/-6, the RU/RV/RW frames).
  * - `ChangeResultPage` - the whole page for a cancellation: the banner retitled by the screen,
  *   one card with the ⋮, the headline, the company, three paragraphs, the button and Minty with
  *   a heart (05·C-2/-3).
@@ -52,6 +52,7 @@ function Part({ part }: { part: ResultPart }) {
   if (part.style === "plain") return <>{part.text}</>;
   if (part.style === "strong")
     return <strong className="font-normal text-[#333]">{part.text}</strong>;
+  if (part.style === "company") return <span className="text-[#219994]">{part.text}</span>;
   return <span className={PLAN_TONE[part.style]}>{part.text}</span>;
 }
 
@@ -68,7 +69,7 @@ export function ChangeResultRow({
   onMenu: (item: MenuItem) => void;
   onBack: () => void;
 }) {
-  const celebrate = result.kind === "celebrate";
+  const celebrate = result.kind === "celebrate" || result.kind === "transferred";
   return (
     <li
       data-entity={entity.entity_id}
@@ -88,6 +89,13 @@ export function ChangeResultRow({
             {result.headline.text}
           </h4>
           <div className="flex flex-col gap-1 text-xl text-black">
+            {result.paragraphs.map((parts, i) => (
+              <p key={i} className="text-[15px] text-[#737a87]">
+                {parts.map((part, j) => (
+                  <Part key={j} part={part} />
+                ))}
+              </p>
+            ))}
             {result.lines.map((line) => (
               <p key={line.module.code} data-line={line.module.code}>
                 <span className={`font-bold ${PLAN_TONE[line.module.tone]}`}>

@@ -47,6 +47,13 @@ async function show(page: ModulePage, from: "bills" | null = null) {
 
 const card = (name: string) => within(screen.getByRole("article", { name }));
 
+/** The lines of a modal title, as its hard breaks divide them. */
+const titleLines = (heading: HTMLElement) =>
+  heading.innerHTML
+    .split(/<br\s*\/?>/)
+    .map((line) => line.replace(/<[^>]*>/g, "").trim())
+    .filter(Boolean);
+
 describe("ModuleSettingsScreen", () => {
   beforeEach(() => {
     vi.stubGlobal("fetch", fetchMock);
@@ -194,7 +201,7 @@ describe("ModuleSettingsScreen", () => {
     expect(push).toHaveBeenCalledWith("/subscription/entities/e1/modules/payment-method");
   });
 
-  it("Start Free Trial posts, then the page shows the trial", async () => {
+  it("Start Free Trial asks first (04-G), then posts and the page shows the trial", async () => {
     await show(FIXTURES.A);
     fetchMock.mockResolvedValueOnce(
       new Response(JSON.stringify({ modules: { PAYMENT_REQUEST: true } }), { status: 200 }),
@@ -203,12 +210,44 @@ describe("ModuleSettingsScreen", () => {
 
     await userEvent.click(screen.getByRole("button", { name: "Start Free Trial" }));
 
+    const dialog = within(screen.getByRole("dialog"));
+    // the design's copy, word for word
+    expect(dialog.getByText(/You've activated free trial for Payment Request\./)).toBeVisible();
+    expect(
+      dialog.getByText(/You can activate the subscription anytime for uninterrupted access/),
+    ).toBeVisible();
+    // the lockup: "Start" and "Free Trial for" are always the first two lines, the module's
+    // name the third - and the spaces around the breaks keep the spoken name readable
+    expect(titleLines(dialog.getByRole("heading", { level: 2 }))).toEqual([
+      "Start",
+      "Free Trial for",
+      "Payment Request",
+    ]);
+    expect(screen.getByRole("dialog")).toHaveAccessibleName("Start Free Trial for Payment Request");
+    expect(fetchMock).toHaveBeenCalledTimes(1); // nothing posted yet
+
+    await userEvent.click(dialog.getByRole("button", { name: "Confirm" }));
+
     await waitFor(() =>
       expect(card("Payment Request").getByText("15 days remaining")).toBeInTheDocument(),
     );
+    expect(screen.queryByRole("dialog")).toBeNull();
     const [url, init] = fetchMock.mock.calls[1];
     expect(String(url)).toBe(`${env.BILLING_API_URL}/api/entities/e1/modules/start-trial`);
     expect(JSON.parse(String(init?.body))).toEqual({ codes: ["PAYMENT_REQUEST"] });
+  });
+
+  it("Go back from the trial dialog posts nothing", async () => {
+    await show(FIXTURES.A);
+
+    await userEvent.click(screen.getByRole("button", { name: "Start Free Trial" }));
+    await userEvent.click(
+      within(screen.getByRole("dialog")).getByRole("button", { name: "Go back" }),
+    );
+
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(card("Payment Request").getByText("30 days trial available")).toBeInTheDocument();
   });
 
   it("someone who may not manage sees the cards, no buttons, and who does", async () => {

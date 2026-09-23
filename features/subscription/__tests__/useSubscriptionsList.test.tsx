@@ -228,8 +228,6 @@ describe("useSubscriptionsList", () => {
 
     act(() => result.current.subscribe(e, "PAYMENT_REQUEST"));
     act(() => result.current.requestTransfer(e));
-    act(() => result.current.cancelSubscription(e));
-    act(() => result.current.reactivate(e));
     act(() => result.current.reviewTransfer(INCOMING_TRANSFERS[0]));
     act(() => result.current.updatePaymentMethod());
     act(() => result.current.changePaymentMethod(e));
@@ -239,8 +237,6 @@ describe("useSubscriptionsList", () => {
     expect(push.mock.calls.map((c) => c[0])).toEqual([
       `${b}/activate/PAYMENT_REQUEST`,
       `/subscription/subscriptions/subscriber?entity=${e.entity_id}`,
-      `${b}/cancel`,
-      `${b}/reactivate`,
       "/subscription/subscriptions/incoming?transfer=t-1",
       "/subscription/billing",
       `${b}/payment-method`,
@@ -370,8 +366,8 @@ describe("useSubscriptionsList", () => {
     _resetHandoffForTests();
   });
 
-  it("a suspension reactivated pays the invoice; a declined card stops there with the API's sentence", async () => {
-    const posts = serveChange(fetchMock, "RV61", {
+  it("06·B: a suspension reactivated pays the invoice; the bank declining asks to try again", async () => {
+    const answers: Record<string, { status: number; body: unknown }> = {
       "retry-payment": {
         status: 200,
         body: {
@@ -380,7 +376,8 @@ describe("useSubscriptionsList", () => {
           message: "That card was declined: insufficient funds",
         },
       },
-    });
+    };
+    const posts = serveChange(fetchMock, "RV61", answers);
     const e = ENTITIES[0];
     const { result } = renderHook(
       () => useSubscriptionsList({ today: TODAY, focusEntityId: e.entity_id }),
@@ -391,12 +388,99 @@ describe("useSubscriptionsList", () => {
     act(() => result.current.confirmChange(e, result.current.summary.view!.pendingChange!));
     expect(result.current.changePrompt?.modal.kind).toBe("reactivate");
     await act(() => result.current.applyChangePrompt());
-    expect(result.current.changePrompt).toBeNull();
     expect(posts.map((p) => [p.action, p.body])).toEqual([["retry-payment", {}]]);
+    // "Payment could not be processed": the API's sentence, a scheduled retry follows, the
+    // ticks stay pending, nothing landed, no toast.
+    expect(result.current.declined).toMatchObject({
+      message: "That card was declined: insufficient funds",
+      autoRetry: true,
+    });
     expect(result.current.result).toBeNull();
-    expect(document.body.textContent).toContain("That card was declined: insufficient funds");
-    // The API said no: the row is read again rather than left showing the tick.
-    await waitFor(() => expect(result.current.summary.view?.pendingChange ?? null).toBeNull());
+    expect(result.current.summary.view?.pendingChange?.codes).toEqual(["PETTY_CASH"]);
+    expect(document.body.textContent).not.toContain("That card was declined");
+
+    // Try again now: the same change, applied again - this time the bank says yes.
+    answers["retry-payment"] = { status: 200, body: { ok: true, status: "paid", message: "" } };
+    await act(() => result.current.retryDeclined());
+    expect(posts.map((p) => p.action)).toEqual(["retry-payment", "retry-payment"]);
+    expect(result.current.declined).toBeNull();
+    expect(result.current.result?.result.kind).toBe("celebrate");
+  });
+
+  it("06·B: Done on the declined modal keeps the ticks pending; a purchase's 402 asks the same way", async () => {
+    const posts = serveChange(fetchMock, "RU23", {
+      "restart-billing": {
+        status: 402,
+        body: {
+          error:
+            "We couldn't set up the subscription. Please check your payment method and try again.",
+        },
+      },
+    });
+    // RU23's trial has a card: consent is given, then the lapsed trial's charge is declined.
+    const e = ENTITIES[0];
+    const { result } = renderHook(
+      () => useSubscriptionsList({ today: TODAY, focusEntityId: e.entity_id }),
+      { wrapper },
+    );
+    await waitFor(() => expect(result.current.summary.status).toBe("ready"));
+    act(() => result.current.summary.toggleTick("PETTY_CASH"));
+    act(() => result.current.summary.toggleTick("PAYMENT_REQUEST"));
+    act(() => result.current.confirmChange(e, result.current.summary.view!.pendingChange!));
+    await act(() => result.current.applyChangePrompt());
+    expect(posts.map((p) => p.action)).toEqual(["authorize-billing", "restart-billing"]);
+    expect(result.current.declined).toMatchObject({ autoRetry: false });
+    expect(result.current.declined?.message).toMatch(/couldn't set up the subscription/);
+    act(() => result.current.dismissDeclined());
+    expect(result.current.declined).toBeNull();
+    expect(result.current.changePrompt).toBeNull();
+    expect(result.current.summary.view?.pendingChange?.codes).toEqual([
+      "PETTY_CASH",
+      "PAYMENT_REQUEST",
+    ]);
+  });
+
+  it("06·B: leaving the open row with ticks pending asks first; Discard drops them and goes", async () => {
+    serveChange(fetchMock, "RV44");
+    const [first, second] = ENTITIES;
+    const { result } = renderHook(
+      () => useSubscriptionsList({ today: TODAY, focusEntityId: first.entity_id }),
+      { wrapper },
+    );
+    await waitFor(() => expect(result.current.summary.status).toBe("ready"));
+    // Nothing pending: the row simply closes and opens.
+    act(() => result.current.toggleRow(first));
+    expect(result.current.openEntityId).toBeNull();
+    act(() => result.current.toggleRow(first));
+    await waitFor(() => expect(result.current.summary.status).toBe("ready"));
+    act(() => result.current.summary.toggleTick("PETTY_CASH"));
+    expect(result.current.summary.view?.pendingChange).not.toBeNull();
+
+    // Closing the row, opening another, going back, another company's ⋮: all ask first.
+    act(() => result.current.closeRow());
+    expect(result.current.leavePrompt).not.toBeNull();
+    expect(result.current.openEntityId).toBe(first.entity_id);
+    act(() => result.current.stay());
+    expect(result.current.leavePrompt).toBeNull();
+    expect(result.current.summary.view?.pendingChange).not.toBeNull();
+
+    act(() => result.current.back());
+    expect(result.current.leavePrompt).not.toBeNull();
+    expect(back).not.toHaveBeenCalled();
+    act(() => result.current.stay());
+
+    act(() => result.current.cancelSubscription(second));
+    expect(result.current.leavePrompt).not.toBeNull();
+    expect(result.current.openEntityId).toBe(first.entity_id);
+    act(() => result.current.stay());
+
+    act(() => result.current.toggleRow(second));
+    expect(result.current.leavePrompt).not.toBeNull();
+    act(() => result.current.discardAndLeave());
+    expect(result.current.leavePrompt).toBeNull();
+    expect(result.current.openEntityId).toBe(second.entity_id);
+    await waitFor(() => expect(result.current.summary.status).toBe("ready"));
+    expect(result.current.summary.view?.pendingChange ?? null).toBeNull();
   });
 
   it("an action the API refuses is said in a toast, and the row is read again", async () => {
@@ -415,6 +499,68 @@ describe("useSubscriptionsList", () => {
     expect(posts.map((p) => p.action)).toEqual(["cancel"]);
     expect(result.current.result).toBeNull();
     expect(document.body.textContent).toContain("Module Petty Cash isn't active.");
+  });
+
+  it("05·D: the ⋮'s Cancel subscription on a CLOSED row opens it, unticks every active module and asks", async () => {
+    const posts = serveChange(fetchMock, "RV45");
+    const e = ENTITIES[0];
+    const { result } = renderHook(() => useSubscriptionsList({ today: TODAY }), { wrapper });
+    await waitFor(() => expect(result.current.status).toBe("ready"));
+    expect(result.current.openEntityId).toBeNull();
+
+    await act(() => {
+      result.current.cancelSubscription(e);
+    });
+    // The page model was read for the change, the row is open, the modal asks.
+    await waitFor(() => expect(result.current.changePrompt).not.toBeNull());
+    expect(result.current.openEntityId).toBe(e.entity_id);
+    expect(result.current.changePrompt?.modal.kind).toBe("cancel_subscription");
+    expect(result.current.changePrompt?.change.codes).toEqual(["PETTY_CASH"]);
+    expect(posts).toEqual([]);
+    // The row shows the ticks pending, once its own read is in.
+    await waitFor(() => expect(result.current.summary.status).toBe("ready"));
+    expect(result.current.summary.view?.pendingChange?.codes).toEqual(["PETTY_CASH"]);
+    expect(result.current.summary.view?.modules[0].chip).toBe("Removing");
+
+    await act(() => result.current.applyChangePrompt());
+    expect(posts.map((p) => [p.action, p.body])).toEqual([["cancel", { code: "PETTY_CASH" }]]);
+    expect(result.current.result?.result.kind).toBe("module_cancelled");
+  });
+
+  it("05·D: Reactivate on the OPEN row ticks every module that is not active and asks", async () => {
+    const posts = serveChange(fetchMock, "RW45");
+    const e = ENTITIES[0];
+    const { result } = renderHook(
+      () => useSubscriptionsList({ today: TODAY, focusEntityId: e.entity_id }),
+      { wrapper },
+    );
+    await waitFor(() => expect(result.current.summary.status).toBe("ready"));
+    const reads = fetchMock.mock.calls.filter((c) => /\/modules$/.test(String(c[0]))).length;
+    await act(() => {
+      result.current.reactivate(e);
+    });
+    await waitFor(() => expect(result.current.changePrompt).not.toBeNull());
+    // The open row's page model served the change: nothing was read again.
+    expect(fetchMock.mock.calls.filter((c) => /\/modules$/.test(String(c[0]))).length).toBe(reads);
+    expect(result.current.changePrompt?.modal.kind).toBe("bundle");
+    expect(result.current.changePrompt?.change.codes).toEqual(["PAYMENT_REQUEST"]);
+    expect(result.current.summary.view?.modules[1].chip).toBe("Restoring");
+    await act(() => result.current.applyChangePrompt());
+    expect(posts.map((p) => [p.action, p.body])).toEqual([["renew", { code: "PAYMENT_REQUEST" }]]);
+    expect(result.current.result?.result.kind).toBe("celebrate");
+  });
+
+  it("05·D: an item with nothing to change says so and opens the row", async () => {
+    serveChange(fetchMock, "RV44");
+    const e = ENTITIES[0];
+    const { result } = renderHook(() => useSubscriptionsList({ today: TODAY }), { wrapper });
+    await waitFor(() => expect(result.current.status).toBe("ready"));
+    await act(() => {
+      result.current.reactivate(e);
+    });
+    await waitFor(() => expect(document.body.textContent).toContain("Nothing to reactivate here"));
+    expect(result.current.changePrompt).toBeNull();
+    expect(result.current.openEntityId).toBe(e.entity_id);
   });
 
   it("Go back on the modal posts nothing and keeps the ticks pending", async () => {

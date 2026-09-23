@@ -10,6 +10,7 @@ import { setAuth } from "@/lib/auth";
 import { SUMMARY_FIXTURES, TODAY, WALLET } from "@/features/subscription/__fixtures__/modulePage";
 import { ENTITIES } from "@/features/subscription/__fixtures__/subscriptions";
 import {
+  CALCULATING_MS,
   SUMMARY_LOAD_FAILED,
   useEntitySummary,
 } from "@/features/subscription/hooks/useEntitySummary";
@@ -122,6 +123,52 @@ describe("useEntitySummary", () => {
     act(() => result.current.reload());
     await waitFor(() => expect(result.current.status).toBe("ready"));
     expect(result.current.view?.pendingChange).toBeNull();
+  });
+
+  it("05·B-C: while the page model loads, the cards the list knows and a calculating panel", async () => {
+    let release: () => void = () => {};
+    const gate = new Promise<void>((r) => (release = r));
+    fetchMock.mockImplementation(async (input) => {
+      const url = new URL(String(input));
+      if (url.pathname.endsWith("/modules")) {
+        await gate;
+        return reply(200, SUMMARY_FIXTURES.M44);
+      }
+      return reply(200, WALLET);
+    });
+    // Pier 9 Trading: both on trial, as the list says.
+    const pier = ENTITIES.find((e) => e.entity_name === "Pier 9 Trading Limited")!;
+    const { result } = renderHook(() => useEntitySummary(pier, { today: TODAY }));
+    expect(result.current.status).toBe("loading");
+    expect(result.current.calculating).toBe(true);
+    expect(result.current.view?.modules.map((m) => [m.code, m.view.state, m.tick])).toEqual([
+      ["PETTY_CASH", "trialing", "unticked"],
+      ["PAYMENT_REQUEST", "trialing", "unticked"],
+    ]);
+    expect(result.current.view?.modules[0].view.status.text).toBe("3 days remaining");
+    release();
+    await waitFor(() => expect(result.current.status).toBe("ready"));
+    expect(result.current.calculating).toBe(false);
+    expect(result.current.view?.panel).toMatchObject({ kind: "simple", price: "HK$400" });
+  });
+
+  it("05·B-C: a tick calculates for a beat, then the changed panel", async () => {
+    fetchMock.mockImplementation(async (input) => {
+      const url = new URL(String(input));
+      if (url.pathname.endsWith("/modules")) return reply(200, SUMMARY_FIXTURES.M44);
+      return reply(200, WALLET);
+    });
+    const { result } = renderHook(() => useEntitySummary(entity, { today: TODAY }));
+    await waitFor(() => expect(result.current.status).toBe("ready"));
+    expect(result.current.calculating).toBe(false);
+    act(() => result.current.toggleTick("PETTY_CASH"));
+    // The cards flip at once; the panel calculates.
+    expect(result.current.calculating).toBe(true);
+    expect(result.current.view?.pendingChange?.codes).toEqual(["PETTY_CASH"]);
+    await waitFor(() => expect(result.current.calculating).toBe(false), {
+      timeout: CALCULATING_MS + 1000,
+    });
+    expect(result.current.view?.pendingChange?.codes).toEqual(["PETTY_CASH"]);
   });
 
   it("uses the house sentence for a dark or unwired API", async () => {

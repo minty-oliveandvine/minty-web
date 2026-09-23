@@ -100,19 +100,83 @@ test.describe("module settings page", () => {
     await expect(body(page).getByRole("alert")).toHaveCount(0);
   });
 
-  test("Start Free Trial posts the module and the page shows the trial", async ({ page }) => {
+  test("Start Free Trial asks first, then posts and the page shows the trial", async ({ page }) => {
     const c = creds();
     const posts = await stubApi(page, frame("A"), frame("B"));
     await handoff(page, c, MODULES(c.entityId));
 
     await body(page).getByRole("button", { name: "Start Free Trial" }).click();
 
+    // 04-G's dialog, the same one the list asks with: nothing is posted until Confirm.
+    const dialog = page.getByRole("dialog");
+    await expect(
+      dialog.getByText("You've activated free trial for Payment Request."),
+    ).toBeVisible();
+    expect(posts).toEqual([]);
+    await dialog.getByRole("button", { name: "Confirm" }).click();
+
     await expect(
       body(page).getByRole("article", { name: "Payment Request" }).getByText("15 days remaining"),
     ).toBeVisible();
     expect(posts).toEqual([{ action: "start-trial", body: { codes: ["PAYMENT_REQUEST"] } }]);
+    await expect(page.getByRole("dialog")).toHaveCount(0);
     // both trialing now: one shared CTA
     await expect(body(page).getByRole("button", { name: "Manage Subscription" })).toHaveCount(1);
+  });
+
+  test("04-G's modal is laid out as the design draws it, without the design's collision", async ({
+    page,
+  }) => {
+    const c = creds();
+    await stubApi(page, frame("A"));
+    await handoff(page, c, MODULES(c.entityId));
+    await body(page).getByRole("button", { name: "Start Free Trial" }).click();
+
+    const dialog = page.getByRole("dialog");
+    const box = async (l: ReturnType<typeof page.getByRole>) => (await l.boundingBox())!;
+    const card = await box(dialog);
+    expect(card.width).toBe(435);
+
+    // "Entity" sits in the title's column: same left edge, same width, tight under the last
+    // line of it - and never colliding, which the design does when the title takes four lines.
+    const heading = await box(dialog.getByRole("heading", { level: 2 }));
+    const entity = await box(dialog.getByText(/^Entity/));
+    expect(entity.x).toBe(heading.x);
+    expect(entity.width).toBe(heading.width);
+    // It tucks 4px into the trailing leading of the title's last line box - which is what puts
+    // the words right below the words. Anything further up would touch the title itself.
+    const offset = entity.y - (heading.y + heading.height);
+    expect(offset).toBeGreaterThan(-6);
+    expect(offset).toBeLessThan(12);
+
+    // The design's button row: equal widths, a 20px gap, 39px to each edge. The two share the
+    // row, so their widths land on a half pixel - compare within one.
+    const back = await box(dialog.getByRole("button", { name: "Go back" }));
+    const confirm = await box(dialog.getByRole("button", { name: "Confirm" }));
+    const near = (actual: number, expected: number) =>
+      expect(Math.abs(actual - expected)).toBeLessThanOrEqual(1);
+    near(confirm.width, back.width);
+    near(confirm.x - (back.x + back.width), 20);
+    near(back.x - card.x, 39);
+    near(card.x + card.width - (confirm.x + confirm.width), 39);
+    expect(back.height).toBe(66);
+  });
+
+  test("Go back from the trial dialog posts nothing", async ({ page }) => {
+    const c = creds();
+    const posts = await stubApi(page, frame("A"));
+    await handoff(page, c, MODULES(c.entityId));
+
+    await body(page).getByRole("button", { name: "Start Free Trial" }).click();
+    await page.getByRole("dialog").getByRole("button", { name: "Go back" }).click();
+
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    expect(posts).toEqual([]);
+    await expect(
+      body(page)
+        .getByRole("article", { name: "Payment Request" })
+        .getByText("30 days trial available"),
+    ).toBeVisible();
   });
 
   test("a seam navigates to the flow's page under the module page", async ({ page }) => {

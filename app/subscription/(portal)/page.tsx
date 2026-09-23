@@ -1,1 +1,1 @@
-export { ManageSubscriptions as default } from "@/features/subscription";
+export { SubscriptionOverview as default } from "@/features/subscription";

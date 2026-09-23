@@ -225,6 +225,55 @@ describe("SubscriptionSummaryRow", () => {
     expect(on.onMenu).toHaveBeenCalledWith("cancel_subscription");
   });
 
+  it("05·B-C: calculating - the cards stay, the panel says so, nothing to confirm yet", () => {
+    const on = handlers();
+    const view = buildSummaryView(SUMMARY_FIXTURES.M44, entity, WALLET, TODAY, {
+      PETTY_CASH: false,
+    });
+    render(
+      <ul>
+        <SubscriptionSummaryRow
+          entity={entity}
+          status="ready"
+          calculating
+          view={view}
+          error={null}
+          menu={[]}
+          on={on}
+        />
+      </ul>,
+    );
+    const panel = screen.getByRole("region", { name: "Subscription Summary" });
+    expect(panel).toHaveAttribute("aria-busy", "true");
+    expect(within(panel).getByRole("status")).toHaveTextContent("Calculating");
+    expect(panel.querySelector("img")).toHaveAttribute("src", "/portal/minty-counting.png");
+    expect(screen.queryByRole("button", { name: "Confirm Subscription Change" })).toBeNull();
+    // The cards already show the change.
+    expect(screen.getByRole("checkbox", { name: "Petty Cash subscription" })).not.toBeChecked();
+    expect(screen.getByRole("checkbox", { name: "Petty Cash subscription" })).toBeEnabled();
+  });
+
+  it("05·B-C: loading with the list's cards - drawn, but waiting for the page model", () => {
+    const on = handlers();
+    const view = buildSummaryView(SUMMARY_FIXTURES.M45, entity, null, TODAY);
+    render(
+      <ul>
+        <SubscriptionSummaryRow
+          entity={entity}
+          status="loading"
+          calculating
+          view={view}
+          error={null}
+          menu={[]}
+          on={on}
+        />
+      </ul>,
+    );
+    expect(screen.getByRole("checkbox", { name: "Petty Cash subscription" })).toBeDisabled();
+    expect(screen.getByRole("status")).toHaveTextContent("Calculating");
+    expect(screen.queryByText("Loading…")).toBeNull();
+  });
+
   it("says when it is loading and when it could not load, with a retry", async () => {
     const on = handlers();
     const { rerender } = render(

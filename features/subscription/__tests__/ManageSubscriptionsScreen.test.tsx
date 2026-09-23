@@ -153,10 +153,24 @@ describe("ManageSubscriptionsScreen", () => {
       .getAllByRole("menuitem")
       .map((el) => el.textContent);
     expect(items).toEqual(["Request transfer", "Cancel subscription", "Reactivate"]);
+    // 05·D: Cancel subscription is the tick of every active module - the row opens (M44 for
+    // everyone here: both active, so nothing is left) and the modal asks for that change.
     await userEvent.click(screen.getByRole("menuitem", { name: "Cancel subscription" }));
-    expect(push).toHaveBeenCalledWith(
-      "/subscription/entities/e-solera-group-limited/modules/cancel",
-    );
+    const ask = await screen.findByRole("dialog");
+    expect(ask).toHaveAccessibleName("Cancel Subscription?");
+    expect(within(ask).getByText("Solera Group Limited")).toBeInTheDocument();
+    await userEvent.click(within(ask).getByRole("button", { name: "Go back" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    const opened = (
+      await screen.findByRole("region", { name: "Subscription Summary", busy: false })
+    ).closest("li")!;
+    expect(opened).toHaveAttribute("data-entity", "e-solera-group-limited");
+    expect(
+      within(opened)
+        .getAllByRole("checkbox")
+        .map((c) => c.getAttribute("aria-checked")),
+    ).toEqual(["false", "false"]);
+    expect(push).not.toHaveBeenCalled();
 
     await userEvent.click(screen.getByRole("button", { name: "Actions for Halcyon Labs Limited" }));
     items = within(screen.getByRole("menu"))
@@ -177,6 +191,8 @@ describe("ManageSubscriptionsScreen", () => {
 
     const dialog = within(screen.getByRole("dialog", { name: /Petty Cash/ }));
     expect(dialog.getByText("Harbour & Vine Limited")).toBeInTheDocument();
+    // the same lockup as the module page's, with a name short enough for one line
+    expect(screen.getByRole("dialog")).toHaveAccessibleName("Start Free Trial for Petty Cash");
     await userEvent.click(dialog.getByRole("button", { name: "Go back" }));
     expect(screen.queryByRole("dialog")).toBeNull();
 
@@ -198,7 +214,7 @@ describe("ManageSubscriptionsScreen", () => {
     await show(subscriptionsPage());
     await userEvent.click(screen.getByRole("button", { name: "Open Kestrel Foods Limited" }));
     expect(push).not.toHaveBeenCalled();
-    const open = await screen.findByRole("region", { name: "Subscription Summary" });
+    const open = await screen.findByRole("region", { name: "Subscription Summary", busy: false });
     const row = open.closest("li") as HTMLElement;
     expect(row).toHaveAttribute("data-entity", "e-kestrel-foods-limited");
     expect(
@@ -208,7 +224,7 @@ describe("ManageSubscriptionsScreen", () => {
     expect(screen.getAllByRole("region", { name: "Subscription Summary" })).toHaveLength(1);
 
     await userEvent.click(screen.getByRole("button", { name: "Open Mino Market Limited" }));
-    const opened = await screen.findByRole("region", { name: "Subscription Summary" });
+    const opened = await screen.findByRole("region", { name: "Subscription Summary", busy: false });
     expect(opened.closest("li")).toHaveAttribute("data-entity", "e-mino-market-limited");
     expect(
       screen.queryByRole("button", { name: "Close Kestrel Foods Limited" }),
@@ -224,7 +240,7 @@ describe("ManageSubscriptionsScreen", () => {
 
   it("opens the company from ?entity= and brings it into view", async () => {
     await show(subscriptionsPage(), [], "e-solera-group-limited");
-    const open = await screen.findByRole("region", { name: "Subscription Summary" });
+    const open = await screen.findByRole("region", { name: "Subscription Summary", busy: false });
     expect(open.closest("li")).toHaveAttribute("data-entity", "e-solera-group-limited");
     expect(Element.prototype.scrollIntoView).toHaveBeenCalled();
   });
@@ -288,12 +304,18 @@ describe("ManageSubscriptionsScreen", () => {
         <ManageSubscriptionsScreen today={TODAY} focusEntityId={ENTITIES[0].entity_id} />
       </ToastProvider>,
     );
-    const row = await screen.findByRole("region", { name: "Subscription Summary" });
+    const row = await screen.findByRole("region", { name: "Subscription Summary", busy: false });
     const item = row.closest("li")!;
     // M44 for everyone: untick Petty Cash - a removal while Payment Request stays.
     await userEvent.click(within(item).getByRole("checkbox", { name: "Petty Cash subscription" }));
+    // The panel calculates for a beat (05·B-C) before the change and its button appear.
+    expect(within(item).getByRole("status")).toHaveTextContent("Calculating");
     await userEvent.click(
-      within(item).getByRole("button", { name: "Confirm Subscription Change" }),
+      await within(item).findByRole(
+        "button",
+        { name: "Confirm Subscription Change" },
+        { timeout: 2500 },
+      ),
     );
     const dialog = await screen.findByRole("dialog");
     expect(dialog).toHaveAccessibleName("Remove Petty Cash?");
@@ -313,7 +335,13 @@ describe("ManageSubscriptionsScreen", () => {
 
   it("05·C: a cancellation retitles the banner and stands alone", async () => {
     await showResult("RV41");
-    const page = await screen.findByRole("region", { name: "Cancellation Scheduled" });
+    // The result screen lands after the row's own reads and the calculating beat: under a full
+    // file run the default second is not always enough.
+    const page = await screen.findByRole(
+      "region",
+      { name: "Cancellation Scheduled" },
+      { timeout: 2500 },
+    );
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Cancellation Scheduled");
     expect(within(page).getByRole("heading", { level: 2 })).toHaveTextContent(
       "Thank you for being part of Minty",

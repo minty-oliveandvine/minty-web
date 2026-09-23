@@ -10,6 +10,8 @@ import {
   CONFIRM_CHANGE,
   CONFIRM_CHANGES,
   buildChangeModal,
+  menuCodes,
+  ticksFor,
 } from "@/features/subscription/lib/changeModal";
 
 const text = (m: NonNullable<ReturnType<typeof buildChangeModal>>) =>
@@ -121,5 +123,46 @@ describe("buildChangeModal (section 06)", () => {
 
   it("nothing to ask about when no code changes anything", () => {
     expect(buildChangeModal(SUMMARY_FIXTURES.M11, ["PETTY_CASH"])).toBeNull();
+  });
+});
+
+describe("the ⋮'s items (05·D)", () => {
+  it("Cancel subscription unticks every ACTIVE module; Reactivate ticks every one that is not", () => {
+    const f = SUMMARY_FIXTURES;
+    expect(menuCodes(f.M44, "cancel_subscription")).toEqual(["PETTY_CASH", "PAYMENT_REQUEST"]);
+    expect(menuCodes(f.M44, "reactivate")).toEqual([]);
+    // M45: Petty Cash active, Payment Request winding down - the cancellation is not ACTIVE.
+    expect(menuCodes(f.M45, "cancel_subscription")).toEqual(["PETTY_CASH"]);
+    expect(menuCodes(f.M45, "reactivate")).toEqual(["PAYMENT_REQUEST"]);
+    // M21: a trial running, Payment Request never started - no tick to give the latter.
+    expect(menuCodes(f.M21, "cancel_subscription")).toEqual([]);
+    expect(menuCodes(f.M21, "reactivate")).toEqual(["PETTY_CASH"]);
+    // M61: suspended + never started; M31: expired + never started; N21a: confirmed = ticked.
+    expect(menuCodes(f.M61, "reactivate")).toEqual(["PETTY_CASH"]);
+    expect(menuCodes(f.M31, "reactivate")).toEqual(["PETTY_CASH"]);
+    expect(menuCodes(f.N21a, "reactivate")).toEqual([]);
+    expect(menuCodes(f.N21a, "cancel_subscription")).toEqual([]);
+  });
+
+  it("the ticks flip each module named to the opposite of what the API says", () => {
+    const f = SUMMARY_FIXTURES;
+    expect(ticksFor(f.M44, ["PETTY_CASH", "PAYMENT_REQUEST"])).toEqual({
+      PETTY_CASH: false,
+      PAYMENT_REQUEST: false,
+    });
+    expect(ticksFor(f.M45, ["PAYMENT_REQUEST"])).toEqual({ PAYMENT_REQUEST: true });
+    expect(ticksFor(f.M11, ["PETTY_CASH"])).toEqual({});
+  });
+
+  it("each item lands on the modal for exactly that change", () => {
+    const f = SUMMARY_FIXTURES;
+    expect(buildChangeModal(f.M45, menuCodes(f.M45, "cancel_subscription"))?.kind).toBe(
+      "cancel_subscription",
+    );
+    expect(buildChangeModal(f.M45, menuCodes(f.M45, "reactivate"))?.kind).toBe("bundle");
+    expect(buildChangeModal(f.M44, menuCodes(f.M44, "cancel_subscription"))?.kind).toBe(
+      "cancel_subscription",
+    );
+    expect(buildChangeModal(f.M61, menuCodes(f.M61, "reactivate"))?.kind).toBe("reactivate");
   });
 });

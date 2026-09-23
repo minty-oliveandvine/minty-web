@@ -17,6 +17,7 @@ function Part({ part }: { part: ResultPart }) {
   if (part.style === "plain") return <>{part.text}</>;
   if (part.style === "strong")
     return <strong className="font-bold text-[#16202e]">{part.text}</strong>;
+  if (part.style === "company") return <span className="text-[#219994]">{part.text}</span>;
   return <span className={`font-bold ${PLAN_TONE[part.style]}`}>{part.text}</span>;
 }
 

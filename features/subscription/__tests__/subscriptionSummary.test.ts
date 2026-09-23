@@ -11,6 +11,7 @@ import {
   WALLET,
   type SummaryFrame,
 } from "@/features/subscription/__fixtures__/modulePage";
+import { ENTITIES } from "@/features/subscription/__fixtures__/subscriptions";
 import type { ModulePage } from "@/features/subscription/api/moduleSettings";
 import {
   NO_MODULE,
@@ -19,6 +20,7 @@ import {
   buildSummaryView,
   formatMoney,
   longDate,
+  pageFromList,
   shortDate,
   tickOf,
   toggleTick,
@@ -38,6 +40,27 @@ describe("formatMoney", () => {
     expect(formatMoney("HK$", 400.5)).toBe("HK$400.50");
     expect(formatMoney("HKD", 280)).toBe("HKD 280");
     expect(formatMoney("", 0)).toBe("0");
+  });
+});
+
+describe("pageFromList", () => {
+  it("draws the company's cards from what the list knows of it", () => {
+    const orchid = ENTITIES.find((e) => e.entity_name === "Orchid Lane Limited")!;
+    const page = pageFromList(orchid);
+    expect(page.entity_id).toBe(orchid.entity_id);
+    expect(page.summary).toBeNull();
+    const view = buildSummaryView(page, orchid, null, TODAY);
+    expect(view.modules.map((m) => [m.code, m.view.state, m.tick, m.seam])).toEqual([
+      ["PETTY_CASH", "trial_eligible", "start_trial", null],
+      ["PAYMENT_REQUEST", "pending_cancel", "unticked", "resume"],
+    ]);
+    const states = ENTITIES.flatMap((e) =>
+      buildSummaryView(pageFromList(e), e, null, TODAY).modules.map((m) => m.view.state),
+    );
+    // every list status the fixtures use draws as a card state
+    expect(new Set(states)).toEqual(
+      new Set(["trial_eligible", "trialing", "expired", "active", "pending_cancel", "past_due"]),
+    );
   });
 });
 

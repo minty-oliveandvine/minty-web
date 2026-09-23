@@ -74,5 +74,24 @@ the Start Trial dialog) and `components/ChangeDialog` (§13) - then applies it
 (`api/moduleChanges`, one API action per module) and lands on its result from Figma 05·C -
 `lib/changeResult`, `components/ChangeResultView` (§12): in the row for what was added,
 confirmed, restored or started (Start Trial lands there too), the whole page for a
-cancellation. Next: the K-frames (the open row's ⋮), the payment-method screen (08-K),
-transfers (07) and billing/invoices, each from its Figma frame.
+cancellation. The ⋮'s Cancel subscription / Reactivate (Figma 05·D) are those same ticks - every
+ACTIVE module unticked, every module that is not ticked - opening the row and asking with the
+modal for that change; "Calculating…" (05·B-C) fills the panel's slot while the row loads and
+for a beat after every tick; the bank declining asks to try again and leaving with ticks
+pending asks first (06·B, `components/InterruptedDialogs`). Both sides of a handover (Figma
+section 07): the payer's `routes/TransferSubscription` - `hooks/useTransferSubscription`,
+`components/TransferSubscriptionPanels` (pick the new subscriber, Request transfer, the one
+waiting withdrawn) - and the recipient's `routes/SubscriptionRequests` -
+`hooks/useSubscriptionRequests`, `components/SubscriptionRequestsPanels` (the request under
+review with the company's cards and what accepting charges, the card picked, Confirm
+Subscription Transfer landing on the list's row) - over `lib/transfer` (both sides' rules,
+minor-unit money) and `__fixtures__/transfers.ts`; `components/TransferOutcomeDialog` tells how
+a handover ended (§14). Step 4c (2026-09-23): the billing area from Figma section 08 - `routes/SubscriptionOverview`
+(the portal's landing at `/subscription`, so the Manage Subscriptions list is
+`/subscription/subscriptions` now), `routes/BillingPage` (the next bill, the saved cards with
+their menu, the invoices) and `routes/CardPages` (add a card on Stripe's own fields, edit a
+saved one), over `hooks/useBillingPage` / `useBillingOverview` / `useCardForm`,
+`components/BillingPanels` + `CardDialogs` + `CardCaptureForm` + `BillingOverviewPanels`,
+`lib/billing` and `__fixtures__/billing.ts` (§15). Next: the invoices page (section 09); the
+handover's outcome modals once the API reports an outgoing request's end; the billing company
+and address (08-C) and the next bill's estimated amount, both of which need the API first.

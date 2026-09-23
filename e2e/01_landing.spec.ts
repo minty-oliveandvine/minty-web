@@ -66,7 +66,9 @@ test.describe("landing and the gates", () => {
     // the cookie lives as long as the token (30 minutes), not longer
     expect(token!.expires * 1000 - Date.now()).toBeLessThan(31 * 60 * 1000);
 
-    await expect(page.getByRole("heading", { name: "Manage Subscriptions" })).toBeVisible();
+    // /subscription is the portal's landing - the account at a glance (Figma 08-A); the list
+    // of companies is a page on from it.
+    await expect(page.getByRole("heading", { name: "Subscription & Billing" })).toBeVisible();
     await expect(page.getByRole("navigation", { name: "Subscription sections" })).toBeVisible();
     await expect(page.getByRole("link", { name: "Invoices" }).first()).toBeVisible();
   });

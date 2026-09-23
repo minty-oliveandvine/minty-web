@@ -46,7 +46,8 @@ import {
   type PlanTone,
 } from "@/features/subscription/lib/subscriptionSummary";
 
-export type ResultKind = "celebrate" | "updated" | "module_cancelled" | "subscription_cancelled";
+export type ResultKind =
+  "celebrate" | "updated" | "module_cancelled" | "subscription_cancelled" | "transferred";
 
 /** A module's name, painted in its colour. */
 export type ModuleRef = { code: ModuleCode; name: string; tone: PlanTone };
@@ -54,8 +55,8 @@ export type ModuleRef = { code: ModuleCode; name: string; tone: PlanTone };
 /** One line of the row layout: the module in colour, then what happened to it. */
 export type ResultLine = { module: ModuleRef; text: string };
 
-/** A run of a page-layout paragraph: plain, a bold date, or a module's name in its colour. */
-export type ResultPart = { text: string; style: "plain" | "strong" | PlanTone };
+/** A run of a paragraph: plain, a bold date, a company's name in teal, or a module's name in its colour. */
+export type ResultPart = { text: string; style: "plain" | "strong" | "company" | PlanTone };
 
 export type ChangeResult = {
   kind: ResultKind;
@@ -162,6 +163,40 @@ function lineFor(outcome: Outcome, card: ModuleCard): string {
         : `${card.name}'s trial will not be billed.`;
     }
   }
+}
+
+export const TRANSFER_COMPLETED = "Subscription Transfer Completed";
+
+/**
+ * Where accepting a handover lands (Figma 07-M): in the list, the company's row saying it is
+ * now the person's - the sentences of the frame, the footer as any row's.
+ */
+export function transferredResult(
+  entity: Pick<PortalEntity, "entity_name" | "created_at">,
+  after: ModulePage | null,
+): ChangeResult {
+  const created = utcDay(entity.created_at);
+  return {
+    kind: "transferred",
+    layout: "row",
+    hero: null,
+    headline: { module: null, text: TRANSFER_COMPLETED },
+    company: entity.entity_name,
+    lines: [],
+    money: null,
+    paragraphs: [
+      [{ text: "The subscription transfer has been completed successfully.", style: "plain" }],
+      [
+        { text: "You are now the owner of the ", style: "plain" },
+        { text: entity.entity_name, style: "company" },
+        { text: " subscription and have full control of this Minty.", style: "plain" },
+      ],
+    ],
+    footer: {
+      createdOn: created ? shortDate(created) : null,
+      renewalOn: after?.panel?.next_invoice?.date ?? null,
+    },
+  };
 }
 
 export function buildChangeResult(
