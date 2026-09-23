@@ -60,6 +60,27 @@ async function showResult(frame: string) {
   return view;
 }
 
+/** The list as a trial started on the module settings page arrives at it (RV11). */
+async function showStarted(code: string, model = SUMMARY_FIXTURES.M21) {
+  serve(subscriptionsPage());
+  fetchMock.mockImplementation(async (input) => {
+    const url = new URL(String(input));
+    if (url.pathname.endsWith("/transfers")) return reply(200, { transfers: [] });
+    if (/^\/api\/entities\/[^/]+\/modules$/.test(url.pathname)) return reply(200, model);
+    if (url.pathname === "/api/me/billing/entity-payment-method") return reply(200, WALLET);
+    return reply(200, subscriptionsPage());
+  });
+  render(
+    <ToastProvider>
+      <ManageSubscriptionsScreen
+        today={TODAY}
+        focusEntityId={ENTITIES[0].entity_id}
+        startedCode={code}
+      />
+    </ToastProvider>,
+  );
+}
+
 async function show(
   page: PayerSubscriptions | Error,
   transfers: unknown[] = [],
@@ -289,12 +310,11 @@ describe("ManageSubscriptionsScreen", () => {
     // The other companies are still listed around it.
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Manage Subscriptions");
     expect(screen.getAllByRole("listitem").length).toBeGreaterThan(1);
+    // Back leaves for the portal's landing (08-A), as every 05·C frame's hotspot says.
     await userEvent.click(
       within(item).getByRole("button", { name: "Back to Manage Subscriptions" }),
     );
-    await waitFor(() =>
-      expect(screen.queryByRole("heading", { level: 4, name: "Congratulations!" })).toBeNull(),
-    );
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/subscription"));
   });
 
   it("06: Confirm Subscription Change asks in the change's modal; Go back keeps the tick", async () => {
@@ -347,5 +367,34 @@ describe("ManageSubscriptionsScreen", () => {
       "Thank you for being part of Minty",
     );
     expect(screen.queryByRole("list")).toBeNull();
+  });
+
+  it("RV11: arriving from a trial started on the module page lands on Congratulations", async () => {
+    await showStarted("PETTY_CASH");
+
+    const headline = await screen.findByRole("heading", { level: 4, name: "Congratulations!" });
+    const row = headline.closest("li")!;
+    expect(row).toHaveAttribute("data-result", "celebrate");
+    expect(row).toHaveAttribute("data-entity", ENTITIES[0].entity_id);
+    // the module's name is its own coloured span inside the line
+    const line = within(row).getByText(/free trial has started/);
+    expect(line).toHaveTextContent("Petty Cash free trial has started — 30 days, free.");
+    expect(within(line).getByText("Petty Cash")).toHaveClass("text-[#ea9713]");
+    // M21 has nothing else running, so nothing bills - RV11's own money line.
+    expect(within(row).getByText("Nothing is being charged.")).toBeVisible();
+    // the other companies are still listed around it
+    expect(screen.getAllByRole("listitem").length).toBeGreaterThan(1);
+
+    await userEvent.click(
+      within(row).getByRole("button", { name: "Back to Manage Subscriptions" }),
+    );
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/subscription"));
+  });
+
+  it("a module that is not on trial gets no celebration, just its row", async () => {
+    await showStarted("PETTY_CASH", SUMMARY_FIXTURES.M44);
+
+    await screen.findByRole("region", { name: "Subscription Summary", busy: false });
+    expect(screen.queryByText("Congratulations!")).toBeNull();
   });
 });

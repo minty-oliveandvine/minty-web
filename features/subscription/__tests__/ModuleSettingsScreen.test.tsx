@@ -201,12 +201,11 @@ describe("ModuleSettingsScreen", () => {
     expect(push).toHaveBeenCalledWith("/subscription/entities/e1/modules/payment-method");
   });
 
-  it("Start Free Trial asks first (04-G), then posts and the page shows the trial", async () => {
+  it("Start Free Trial asks first (04-G), then posts and lands on the list's row", async () => {
     await show(FIXTURES.A);
     fetchMock.mockResolvedValueOnce(
       new Response(JSON.stringify({ modules: { PAYMENT_REQUEST: true } }), { status: 200 }),
     );
-    serve(FIXTURES.B);
 
     await userEvent.click(screen.getByRole("button", { name: "Start Free Trial" }));
 
@@ -228,8 +227,11 @@ describe("ModuleSettingsScreen", () => {
 
     await userEvent.click(dialog.getByRole("button", { name: "Confirm" }));
 
+    // The news is told on the list, in that company's row (RV11) - this page is left behind.
     await waitFor(() =>
-      expect(card("Payment Request").getByText("15 days remaining")).toBeInTheDocument(),
+      expect(push).toHaveBeenCalledWith(
+        "/subscription/subscriptions?entity=e1&started=PAYMENT_REQUEST",
+      ),
     );
     expect(screen.queryByRole("dialog")).toBeNull();
     const [url, init] = fetchMock.mock.calls[1];

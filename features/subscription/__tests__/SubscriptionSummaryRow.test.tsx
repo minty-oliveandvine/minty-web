@@ -18,6 +18,7 @@ import {
   SubscriptionSummaryRow,
   type SummaryRowHandlers,
 } from "@/features/subscription/components/SubscriptionSummaryRow";
+import { AUTO_RENEW } from "@/features/subscription/components/RowFooter";
 import {
   CONFIRM_CHANGE,
   TRIAL_NOTICE,
@@ -107,6 +108,25 @@ describe("SubscriptionSummaryRow", () => {
       `Minty for Nexora Health Limited was originally created ${view.footer.createdOn}.`,
     );
     expect(screen.getByText(/Your next subscription renewal date is/)).toBeInTheDocument();
+    expect(screen.getByText(new RegExp(AUTO_RENEW.slice(0, 40)))).toBeInTheDocument();
+  });
+
+  it("the standing terms are under every row, even one that bills nothing", () => {
+    // M21's only module is a trial, so the API gives no next invoice - the terms are not
+    // status, though, and the sentence names the day the trial ends.
+    const { view } = show("M21");
+    expect(SUMMARY_FIXTURES.M21.panel?.next_invoice).toBeNull();
+    const terms = screen.getByText(new RegExp(AUTO_RENEW.slice(0, 40)));
+    expect(terms).toHaveTextContent(AUTO_RENEW);
+    expect(terms).toHaveTextContent(
+      `Your next subscription renewal date is ${view.footer.renewalOn} and each month after.`,
+    );
+  });
+
+  it("with nothing started there is no renewal sentence, but the terms stay", () => {
+    show("M11");
+    expect(screen.queryByText(/Your next subscription renewal date is/)).toBeNull();
+    expect(screen.getByText(new RegExp(AUTO_RENEW.slice(0, 40)))).toBeInTheDocument();
   });
 
   it("M11: nothing started - Start Free Trial under each card, no module selected, HK$0 greyed", async () => {

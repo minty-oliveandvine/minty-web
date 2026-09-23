@@ -114,10 +114,13 @@ export type SummaryView = {
   trialNotice: boolean;
   panel: SummaryPanel;
   paymentMethod: SummaryPayment | null;
-  footer: { createdOn: string | null; renewalOn: string | null };
+  footer: RowFooterFacts;
   /** Set while a tick is pending: the "Confirm Subscription Change" button. */
   pendingChange: PendingChange | null;
 };
+
+/** The two dates the paragraph under an open row names (`components/RowFooter.tsx`). */
+export type RowFooterFacts = { createdOn: string | null; renewalOn: string | null };
 
 export const TRIAL_NOTICE =
   "Confirm your subscription at any time during the trial. You'll continue to enjoy all remaining trial days before billing begins.";
@@ -435,9 +438,6 @@ export function buildSummaryView(
       }
     : null;
 
-  const created = utcDay(entity?.created_at ?? null);
-  const renewal = page.panel?.next_invoice?.date ?? null;
-
   const first = changedCards[0];
   const pendingChange: PendingChange | null =
     first && shown(first.code).seam
@@ -453,9 +453,48 @@ export function buildSummaryView(
     trialNotice,
     panel,
     paymentMethod,
-    footer: { createdOn: created ? shortDate(created) : null, renewalOn: renewal },
+    footer: rowFooter(entity, page),
     pendingChange,
   };
+}
+
+/**
+ * The dates of the paragraph under an open row (Figma RV11's footer), for both the summary row
+ * and the result row - derived ONCE so the two cannot say different things.
+ *
+ * The renewal date is the panel's next invoice when the company bills. It does not when the
+ * company's only modules are trials: the API withholds `next_invoice` until there is a cycle
+ * ("Absent while the entity has only trials", `panel.py`). The day the soonest running trial
+ * ends is then the day billing would begin, so that is what the sentence names. A trial already
+ * cancelled will not renew and is skipped; a company with nothing started has no date at all,
+ * and the sentence is left out.
+ */
+export function rowFooter(
+  entity: Pick<PortalEntity, "created_at"> | null | undefined,
+  page: ModulePage | null,
+): RowFooterFacts {
+  const created = utcDay(entity?.created_at ?? null);
+  return {
+    createdOn: created ? shortDate(created) : null,
+    renewalOn: page?.panel?.next_invoice?.date ?? nextTrialEnd(page),
+  };
+}
+
+/** The soonest running trial's end, in the same form the API writes `next_invoice.date`. */
+function nextTrialEnd(page: ModulePage | null): string | null {
+  const days = (page?.cards ?? [])
+    // `trialing` stays true for a trial since CANCELLED (the trap `startedTrialResult` documents
+    // too) and a cancelled trial renews nothing, so it cannot be the date. A trial with no card
+    // will not convert either - it lapses - but the blue ⓘ notice above the panel says so, and
+    // excluding it would leave the sentence off exactly the company this fixes.
+    .filter((c) => trialing(c) && !c.trial_cancelled)
+    .map((c) => utcDay(c.period_end))
+    .filter((d): d is Date => d !== null)
+    .sort((a, b) => a.getTime() - b.getTime());
+  // Formatted here rather than taken from the card's `period_end_long`: the API writes that as
+  // "5 Aug 2026" (`display.day`) but the fixtures write a full month name, and this sentence
+  // has to read like the `next_invoice.date` beside it and the created date above it.
+  return days[0] ? shortDate(days[0]) : null;
 }
 
 // ---- the company as the list knows it ---------------------------------------------------------

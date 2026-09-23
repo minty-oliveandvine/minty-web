@@ -24,6 +24,7 @@ import {
   shortDate,
   tickOf,
   toggleTick,
+  utcDay,
   type PendingTicks,
 } from "@/features/subscription/lib/subscriptionSummary";
 
@@ -251,9 +252,46 @@ describe("the payment method and the footer", () => {
     const v = view("M44");
     expect(v.footer.createdOn).toBe(shortDate(new Date("2025-09-11T00:00:00Z")));
     expect(v.footer.renewalOn).toBe(SUMMARY_FIXTURES.M44.panel?.next_invoice?.date);
-    // Nothing billing: no renewal to state; no created_at: no first sentence.
+    // Nothing started at all: no trial to convert, so no renewal to state; and with no
+    // created_at there is no first sentence either.
     expect(view("M11").footer.renewalOn).toBeNull();
     expect(buildSummaryView(SUMMARY_FIXTURES.M11, null, null, TODAY).footer.createdOn).toBeNull();
+  });
+
+  it("with only a trial running, the renewal date is the day that trial ends", () => {
+    // The API withholds `next_invoice` until a company has a billing cycle ("Absent while the
+    // entity has only trials"), but the trial's end IS the day billing would begin.
+    expect(SUMMARY_FIXTURES.M21.panel?.next_invoice).toBeNull();
+    const end = utcDay(SUMMARY_FIXTURES.M21.cards[0].period_end)!;
+    expect(view("M21").footer.renewalOn).toBe(shortDate(end));
+
+    // Two trials: the nearer one, which is what "your next" means.
+    const ends = SUMMARY_FIXTURES.M22.cards.map((c) => utcDay(c.period_end)!.getTime());
+    expect(view("M22").footer.renewalOn).toBe(shortDate(new Date(Math.min(...ends))));
+
+    // A trial already cancelled will not renew, so it names nothing.
+    const cancelled = {
+      ...SUMMARY_FIXTURES.M21,
+      cards: SUMMARY_FIXTURES.M21.cards.map((c) =>
+        c.code === "PETTY_CASH" ? { ...c, trial_cancelled: true } : c,
+      ),
+    };
+    expect(buildSummaryView(cancelled, ENTITY, WALLET, TODAY).footer.renewalOn).toBeNull();
+  });
+
+  it("the row says the same date while it loads as it does once loaded", () => {
+    // The open row draws its footer from `pageFromList` until the page model lands. That model
+    // carries no pre-formatted dates, so a date taken from one would change spelling under the
+    // reader mid-load; written here, both models agree.
+    const trialing = ENTITIES.find((e) =>
+      e.modules.some((m) => m.status === "trialing" && m.date_iso),
+    )!;
+    const loading = buildSummaryView(pageFromList(trialing), trialing, null, TODAY);
+    const soonest = trialing.modules
+      .filter((m) => m.status === "trialing" && m.date_iso)
+      .map((m) => utcDay(m.date_iso)!)
+      .sort((a, b) => a.getTime() - b.getTime())[0];
+    expect(loading.footer.renewalOn).toBe(shortDate(soonest));
   });
 });
 

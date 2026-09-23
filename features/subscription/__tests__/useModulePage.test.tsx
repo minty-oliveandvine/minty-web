@@ -103,10 +103,9 @@ describe("useModulePage", () => {
     expect(dark.result.current.error).toBe(SERVICE_DARK);
   });
 
-  it("a trial is asked about first, then posted, then the page refetches", async () => {
+  it("a trial is asked about first, then posted, then the list is where it lands", async () => {
     fetchMock.mockResolvedValueOnce(reply(200, FIXTURES.A));
     fetchMock.mockResolvedValueOnce(reply(200, { modules: { PAYMENT_REQUEST: true } }));
-    fetchMock.mockResolvedValueOnce(reply(200, FIXTURES.B));
     const { result } = renderHook(() => useModulePage({ entityId: "e1", today: TODAY }), {
       wrapper,
     });
@@ -127,8 +126,11 @@ describe("useModulePage", () => {
     expect(String(url)).toBe(`${API}/start-trial`);
     expect(init?.method).toBe("POST");
     expect(JSON.parse(String(init?.body))).toEqual({ codes: ["PAYMENT_REQUEST"] });
-    expect(fetchMock).toHaveBeenCalledTimes(3);
-    expect(result.current.views.map((v) => v.state)).toEqual(["trialing", "trialing"]);
+    // The news is told on the list's row (RV11), so this page is left, not read again.
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(push).toHaveBeenCalledWith(
+      "/subscription/subscriptions?entity=e1&started=PAYMENT_REQUEST",
+    );
     expect(result.current.busyCode).toBeNull();
   });
 
@@ -163,6 +165,7 @@ describe("useModulePage", () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(result.current.status).toBe("ready");
     expect(result.current.trialPrompt).not.toBeNull();
+    expect(push).not.toHaveBeenCalled();
   });
 
   it("back from Checkout: posts checkout-complete, drops session_id from the URL, then loads", async () => {

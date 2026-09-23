@@ -20,8 +20,9 @@
  * (`api/moduleChanges.ts` - one API action per module) and lands on its RESULT (05·C,
  * `lib/changeResult.ts`): in the row for what was added, confirmed, restored or started - where
  * Start Trial lands too - or the whole page for a cancellation. Back to Manage Subscriptions
- * drops the result, closes the row and reloads the list. When a card must be collected first,
- * the browser goes to Stripe and comes back to the module page, as it does from there.
+ * leaves for the portal's landing (08-A), as every result frame's hotspot says. When a card must
+ * be collected first, the browser goes to Stripe and comes back to the module page, as it does
+ * from there.
  *
  * The ⋮'s *Cancel subscription* and *Reactivate* (05·D, on a closed row or the open one) are
  * the same ticks - every ACTIVE module unticked, every module that is not ticked - so they open
@@ -78,6 +79,7 @@ import {
 } from "@/features/subscription/lib/changeModal";
 import {
   buildChangeResult,
+  startedTrialResult,
   transferredResult,
   type ChangeAsked,
   type ChangeResult,
@@ -133,6 +135,12 @@ export type UseSubscriptionsListArgs = {
   resultFixture?: string | null;
   /** Arrived from accepting a handover (`?transferred=1` beside `?entity=`): that row lands on 07-M. */
   transferred?: boolean;
+  /**
+   * Arrived from a trial started on the module settings page (`?started=<code>` beside
+   * `?entity=`): that row lands on "Congratulations!" (RV11). The module names the news
+   * because there is no before-and-after to read it from here.
+   */
+  startedCode?: string | null;
   today?: Date;
 };
 
@@ -240,6 +248,7 @@ export function useSubscriptionsList({
   summaryFixture,
   resultFixture,
   transferred = false,
+  startedCode = null,
   today,
 }: UseSubscriptionsListArgs = {}): UseSubscriptionsListResult {
   const router = useRouter();
@@ -264,7 +273,7 @@ export function useSubscriptionsList({
 
   const [result, setResult] = useState<ListResult | null>(null);
   // Accepting a handover lands on 07-M (derived below); this remembers it was dismissed.
-  const [transferDismissed, setTransferDismissed] = useState(false);
+  const [landingDismissed, setLandingDismissed] = useState(false);
   const [changePrompt, setChangePrompt] = useState<ChangePrompt | null>(null);
   const [changeBusy, setChangeBusy] = useState(false);
   const [declined, setDeclined] = useState<DeclinedPrompt | null>(null);
@@ -399,7 +408,7 @@ export function useSubscriptionsList({
     (entity: PortalEntity) =>
       guardLeave(() => {
         setResult(null);
-        setTransferDismissed(true);
+        setLandingDismissed(true);
         setOpenEntityId((open) => (open === entity.entity_id ? null : entity.entity_id));
       }),
     [guardLeave],
@@ -408,7 +417,7 @@ export function useSubscriptionsList({
     () =>
       guardLeave(() => {
         setResult(null);
-        setTransferDismissed(true);
+        setLandingDismissed(true);
         setOpenEntityId(null);
       }),
     [guardLeave],
@@ -420,11 +429,21 @@ export function useSubscriptionsList({
   const summaryPage = summary.page;
   const landedTransfer = useMemo(
     () =>
-      transferred && !transferDismissed && openEntity && summaryPage
+      transferred && !landingDismissed && openEntity && summaryPage
         ? { entity: openEntity, result: transferredResult(openEntity, summaryPage) }
         : null,
-    [transferred, transferDismissed, openEntity, summaryPage],
+    [transferred, landingDismissed, openEntity, summaryPage],
   );
+
+  // A trial started on the module settings page: the same row, rebuilt from the page model
+  // alone (RV11). `startedTrialResult` is the one that refuses - it answers null unless that
+  // module is really trialing and not since cancelled, so a code naming nothing, or a module
+  // in any other state, leaves the row as the ordinary summary.
+  const landedTrial = useMemo((): ListResult | null => {
+    if (!startedCode || landingDismissed || !openEntity || !summaryPage) return null;
+    const res = startedTrialResult(openEntity, summaryPage, startedCode, day ?? new Date());
+    return res ? { entity: openEntity, result: res } : null;
+  }, [startedCode, landingDismissed, openEntity, summaryPage, day]);
 
   // Dev-only: land the open row on the 05·C frame named, as if its change had just been applied.
   useEffect(() => {
@@ -551,12 +570,14 @@ export function useSubscriptionsList({
     setDeclined(null);
     setChangePrompt(null);
   }, []);
-  const dismissResult = useCallback(() => {
-    setResult(null);
-    setTransferDismissed(true);
-    setOpenEntityId(null);
-    reload();
-  }, [reload]);
+  /**
+   * The result screens' "Back to Manage Subscriptions" - every one of them, row or page, since
+   * they share this handler. It LEAVES for the portal's landing (Figma 08-A): all 103 frames of
+   * section 05·C carry `▶ Back to Manage Subscriptions → 08-A`, and so does 07-M. This list
+   * unmounts on the way, so there is nothing to reset and nothing to reload - the landing does
+   * its own read, and coming back here reloads anyway.
+   */
+  const dismissResult = useCallback(() => router.push(PORTAL.index), [router]);
   const changePaymentMethod = useCallback(
     (entity: PortalEntity) => router.push(moduleRoutes(entity.entity_id).paymentMethod),
     [router],
@@ -621,7 +642,7 @@ export function useSubscriptionsList({
     leavePrompt,
     discardAndLeave,
     stay,
-    result: result ?? landedTransfer,
+    result: result ?? landedTransfer ?? landedTrial,
     dismissResult,
     changePaymentMethod,
     subscribe,

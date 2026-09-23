@@ -15,6 +15,7 @@ import { useEffect, useId, useMemo, useState, useSyncExternalStore } from "react
 
 import { clearAuth, getAuth } from "@/lib/auth";
 import { env } from "@/lib/env";
+import { mintyEntryUrl } from "@/lib/mintyEntry";
 
 export type NavItem = { href: string; label: string; icon: string; current?: boolean };
 export type NavSection = { title: string; items: NavItem[] };
@@ -26,15 +27,6 @@ export type NavMenuProps = {
   /** This app's settings page, so the Settings item stays in the app. */
   settingsHref: string;
 };
-
-function mintyEntryUrl(path?: string): string {
-  const auth = getAuth();
-  if (auth?.entityId && auth.token) {
-    const base = `${env.MINTY_URL}/entity/${encodeURIComponent(auth.entityId)}/enter?token=${encodeURIComponent(auth.token)}`;
-    return path ? `${base}&next=${encodeURIComponent(path)}` : base;
-  }
-  return `${env.MINTY_URL}/entity`;
-}
 
 function buildSections(modules: NavMenuProps["modules"]): NavSection[] {
   const auth = getAuth();

@@ -53,6 +53,13 @@ export function moduleRoutes(entityId: string) {
      * portal's list (section 04) with this company's row, so this is the list, not a sub-page.
      */
     manage: `${PORTAL.subscriptions}?entity=${encodeURIComponent(entityId)}`,
+    /**
+     * Where a trial started HERE lands: the same list, with the company's row open on the
+     * "Congratulations!" result (Figma RV11). `started` names the module, because the list has
+     * no before-and-after of its own to read the news from.
+     */
+    started: (code: string) =>
+      `${PORTAL.subscriptions}?entity=${encodeURIComponent(entityId)}&started=${encodeURIComponent(code)}`,
     /** Activate Subscription - a module whose trial expired. */
     activate: (code: string) => `${b}/activate/${encodeURIComponent(code)}`,
     /** Resume Subscription - a module with a cancellation pending. */

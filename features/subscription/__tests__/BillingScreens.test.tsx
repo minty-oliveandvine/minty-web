@@ -9,6 +9,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { setAuth } from "@/lib/auth";
+import { env } from "@/lib/env";
 
 import { TODAY } from "@/features/subscription/__fixtures__/modulePage";
 import { ADDED_CARD, WALLET_ADDED, WALLET_TWO } from "@/features/subscription/__fixtures__/billing";
@@ -207,6 +208,8 @@ describe("the card screens", () => {
   });
 });
 
+const TOKEN = "h.eyJ1c2VyX2lkIjoidTEifQ.s";
+
 describe("08-A, the portal's landing", () => {
   const fetchMock = vi.fn<typeof fetch>();
 
@@ -238,9 +241,26 @@ describe("08-A, the portal's landing", () => {
     expect(push).toHaveBeenCalledWith("/subscription/billing");
     await user.click(within(overview).getByRole("button", { name: "Manage Subscription" }));
     expect(push).toHaveBeenCalledWith("/subscription/subscriptions");
+    // With no company scoped, the way back can only be Minty's entity list.
     expect(screen.getByRole("link", { name: "Back to the entity dashboard" })).toHaveAttribute(
       "href",
-      expect.stringContaining("/entity"),
+      `${env.MINTY_URL}/entity`,
+    );
+  });
+
+  it("the way back goes to the scoped company's modules, signed in", () => {
+    // Everyone here arrived from a company's module settings, so the token names one. Minty's
+    // /entity/<id>/modules then routes: one module in, two to the module selection.
+    setAuth(TOKEN, "e1", "Olive & Vine Limited");
+    render(<SubscriptionOverviewScreen fixture="A" today={TODAY} />);
+
+    const href = screen
+      .getByRole("link", { name: "Back to the entity dashboard" })
+      .getAttribute("href")!;
+    // through /enter, so the Flask session is re-established on the way
+    expect(href).toBe(
+      `${env.MINTY_URL}/entity/e1/enter?token=${encodeURIComponent(TOKEN)}` +
+        `&next=${encodeURIComponent("/entity/e1/modules")}`,
     );
   });
 });

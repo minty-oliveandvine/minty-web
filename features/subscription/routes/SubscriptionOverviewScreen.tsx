@@ -4,9 +4,16 @@
  * "Subscription & Billing" - the portal's landing, composed (Figma 08-A): the way back into
  * Minty, the banner, the payment-method card and the Subscription Overview. `SubscriptionOverview`
  * reads the URL and hands the parameters here; the tests render this directly with fixtures.
+ *
+ * The way back goes to the COMPANY this browser is scoped to, not to Minty's entity picker:
+ * everyone here arrived from a company's module settings, so `/entity/<id>/modules` takes them
+ * to its module selection - or straight into the module, when only one is on (Minty routes it).
  */
 
-import { env } from "@/lib/env";
+import { useSyncExternalStore } from "react";
+
+import { getAuth } from "@/lib/auth";
+import { mintyModulesUrl } from "@/lib/mintyEntry";
 
 import {
   PaymentMethodCard,
@@ -18,13 +25,19 @@ import {
 } from "@/features/subscription/hooks/useBillingOverview";
 import { BACK_TO_ENTITIES, OVERVIEW_TITLE } from "@/features/subscription/lib/billing";
 
+// A primitive, not the auth object: a fresh object per read makes the store loop (PortalChrome).
+const noSubscribe = () => () => {};
+const readEntityId = () => getAuth()?.entityId ?? "";
+const serverEmpty = () => "";
+
 export function SubscriptionOverviewScreen(args: UseBillingOverviewArgs) {
   const o = useBillingOverview(args);
+  const entityId = useSyncExternalStore(noSubscribe, readEntityId, serverEmpty);
 
   return (
     <div className="flex flex-col gap-6 pb-16">
       <a
-        href={`${env.MINTY_URL}/entity`}
+        href={mintyModulesUrl(entityId)}
         className="self-start text-base text-[var(--ink-soft)] hover:underline"
       >
         {BACK_TO_ENTITIES}

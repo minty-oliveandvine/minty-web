@@ -25,6 +25,43 @@ function result(frame: keyof typeof RESULT_FIXTURES) {
 }
 
 describe("ChangeResultRow", () => {
+  const row = (frame: keyof typeof RESULT_FIXTURES) => {
+    render(
+      <ul>
+        <ChangeResultRow
+          entity={entity}
+          result={result(frame)}
+          menu={MENU}
+          onMenu={vi.fn()}
+          onBack={vi.fn()}
+        />
+      </ul>,
+    );
+    return screen.getByRole("listitem");
+  };
+
+  it("the standing terms are under every result row, with or without a renewal date", () => {
+    // RU22 bills nothing yet (two confirmed trials), so the date is the soonest trial's end.
+    const confirmed = row("RU22");
+    expect(within(confirmed).getByText(/Your next subscription renewal date is/)).toHaveTextContent(
+      `Your next subscription renewal date is ${result("RU22").footer.renewalOn} and each month after.`,
+    );
+    expect(
+      within(confirmed).getByText(/auto-renew monthly until cancellation is initiated/),
+    ).toBeInTheDocument();
+    expect(
+      within(confirmed).getByText(/1 month notice period required for your cancellation/),
+    ).toBeInTheDocument();
+
+    // RNX21a's trial is cancelled: nothing renews, so there is no date - and the terms remain.
+    screen.getAllByRole("listitem").forEach((li) => li.remove());
+    const stopped = row("RNX21a");
+    expect(within(stopped).queryByText(/Your next subscription renewal date is/)).toBeNull();
+    expect(
+      within(stopped).getByText(/auto-renew monthly until cancellation is initiated/),
+    ).toBeInTheDocument();
+  });
+
   it("RU22: Congratulations, a line per module in its colour, the money, the footer, the way back", async () => {
     const onBack = vi.fn();
     const onMenu = vi.fn();

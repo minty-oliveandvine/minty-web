@@ -37,6 +37,7 @@ import {
   forecast,
   formatMoney,
   longDate,
+  rowFooter,
   shortDate,
   trialConfirmed,
   trialing,
@@ -44,6 +45,7 @@ import {
   winding,
   type Forecast,
   type PlanTone,
+  type RowFooterFacts,
 } from "@/features/subscription/lib/subscriptionSummary";
 
 export type ResultKind =
@@ -70,7 +72,7 @@ export type ChangeResult = {
   lines: ResultLine[];
   money: string | null;
   paragraphs: ResultPart[][];
-  footer: { createdOn: string | null; renewalOn: string | null };
+  footer: RowFooterFacts;
 };
 
 /** What was asked: the open row's ticks, or the list's Start Trial. */
@@ -175,7 +177,6 @@ export function transferredResult(
   entity: Pick<PortalEntity, "entity_name" | "created_at">,
   after: ModulePage | null,
 ): ChangeResult {
-  const created = utcDay(entity.created_at);
   return {
     kind: "transferred",
     layout: "row",
@@ -192,10 +193,7 @@ export function transferredResult(
         { text: " subscription and have full control of this Minty.", style: "plain" },
       ],
     ],
-    footer: {
-      createdOn: created ? shortDate(created) : null,
-      renewalOn: after?.panel?.next_invoice?.date ?? null,
-    },
+    footer: rowFooter(entity, after),
   };
 }
 
@@ -207,11 +205,7 @@ export function buildChangeResult(
   today: Date,
 ): ChangeResult {
   const company = entity.entity_name;
-  const created = utcDay(entity.created_at);
-  const footer = {
-    createdOn: created ? shortDate(created) : null,
-    renewalOn: after.panel?.next_invoice?.date ?? null,
-  };
+  const footer = rowFooter(entity, after);
 
   // What changed, module by module.
   const diff = after.cards
@@ -303,8 +297,6 @@ export function buildChangeResult(
     };
   }
 
-  const money = moneyLine(forecast(after, today));
-
   if (removed.length > 0) {
     // A removal and an addition in one change: the design's "Subscription updated" row.
     const lines: ResultLine[] = [
@@ -318,7 +310,7 @@ export function buildChangeResult(
       headline: { module: null, text: SUBSCRIPTION_UPDATED },
       company,
       lines,
-      money,
+      money: moneyLine(forecast(after, today)),
       paragraphs: [],
       footer,
     };
@@ -332,6 +324,17 @@ export function buildChangeResult(
           .map((code) => after.cards.find((c) => c.code === code))
           .filter((c): c is ModuleCard => c !== undefined)
           .map((c) => ({ module: ref(c), text: `${c.name} has been updated.` }));
+  return celebrateRow(company, lines, after, today, footer);
+}
+
+/** The "Congratulations!" row - one place, so the two ways of reaching it cannot drift apart. */
+function celebrateRow(
+  company: string,
+  lines: ResultLine[],
+  after: ModulePage,
+  today: Date,
+  footer: RowFooterFacts,
+): ChangeResult {
   return {
     kind: "celebrate",
     layout: "row",
@@ -339,8 +342,34 @@ export function buildChangeResult(
     headline: { module: null, text: CONGRATULATIONS },
     company,
     lines,
-    money,
+    money: moneyLine(forecast(after, today)),
     paragraphs: [],
     footer,
   };
+}
+
+/**
+ * The same row for a trial that has just started, rebuilt from the page model ALONE (Figma
+ * RV11). The module settings page starts a trial and then LEAVES for the list, so the list has
+ * no "before" to diff - it is told which module by `?started=` and reads the rest off the
+ * company. It refuses rather than guess: nothing unless that module is really trialing now, so
+ * a stale link, or one naming a module the company does not have, congratulates nobody.
+ */
+export function startedTrialResult(
+  entity: Pick<PortalEntity, "entity_name" | "created_at">,
+  after: ModulePage | null,
+  code: string,
+  today: Date,
+): ChangeResult | null {
+  const card = after?.cards.find((c) => c.code === code);
+  // `trialing` is still true for a trial since cancelled - `outcomeOf` would call that
+  // "stopped", not "started" - and an unknown code simply finds no card.
+  if (!after || !card || !trialing(card) || card.trial_cancelled) return null;
+  return celebrateRow(
+    entity.entity_name,
+    [{ module: ref(card), text: lineFor("started", card) }],
+    after,
+    today,
+    rowFooter(entity, after),
+  );
 }

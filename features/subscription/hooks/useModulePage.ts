@@ -12,8 +12,9 @@
  *
  * Actions: starting a trial is the one CTA that acts here, and it ASKS FIRST - `askStartTrial`
  * opens Figma 04-G's dialog (`StartTrialDialog`, the same one the list uses), `confirmStartTrial`
- * posts and refetches; the API's sentence goes to a toast and the dialog stays open to try
- * again. The other CTAs are seams - they navigate to the sub-page that owns the flow
+ * posts and then LEAVES for the list, where the company's row says what happened (RV11); the
+ * API's sentence goes to a toast and the dialog stays open to try again. The other CTAs are
+ * seams - they navigate to the sub-page that owns the flow
  * (`lib/paths.ts::moduleRoutes`), each built in its own step from its own Figma frame.
  *
  * `fixture`: a dev-only switch (`?fixture=A` … `F`) that serves the page model from
@@ -223,14 +224,16 @@ export function useModulePage({
     try {
       await postStartTrial(entityId, code);
       setTrialPrompt(null);
-      await load();
+      // The news is told on the list, in the company's row (Figma RV11), as it is when a trial
+      // is started from there - so this page is left rather than refetched.
+      router.push(moduleRoutes(entityId).started(code));
     } catch (err) {
       // The dialog stays open on a refusal, so the answer can be read and tried again.
       showToast(sentence(err), "error");
     } finally {
       setBusyCode(null);
     }
-  }, [trialPrompt, entityId, load, showToast]);
+  }, [trialPrompt, entityId, router, showToast]);
 
   const routes = useMemo(() => moduleRoutes(entityId), [entityId]);
   const manage = useCallback(() => router.push(routes.manage), [router, routes]);

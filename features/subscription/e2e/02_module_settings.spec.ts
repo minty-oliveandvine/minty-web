@@ -18,7 +18,8 @@ import {
   requireApp,
   subscriptionsDark,
 } from "../../../e2e/helpers";
-import { FIXTURES, NON_MANAGER, type FixtureFrame } from "../__fixtures__/modulePage";
+import { FIXTURES, NON_MANAGER, WALLET, type FixtureFrame } from "../__fixtures__/modulePage";
+import { ENTITIES, subscriptionsPage } from "../__fixtures__/subscriptions";
 import type { ModulePage } from "../api/moduleSettings";
 
 const STUB_CREDS = {
@@ -63,6 +64,35 @@ async function stubApi(page: Page, model: ModulePage, next?: ModulePage) {
   return posts;
 }
 
+/**
+ * The payer's list holding exactly this company - what the browser reads when a trial started
+ * here lands on the list. The id must be the one the token carries or there is no row to open.
+ */
+async function stubList(page: Page, entityId: string, entityName: string) {
+  const list = subscriptionsPage([
+    {
+      ...ENTITIES[0],
+      entity_id: entityId,
+      entity_name: entityName,
+      settings_path: `/entity/settings/module/${entityId}`,
+    },
+  ]);
+  const json = (data: unknown) => ({
+    status: 200,
+    contentType: "application/json",
+    body: JSON.stringify(data),
+  });
+  await page.route(`${BILLING_API_URL}/api/me/subscriptions/transfers`, (route) =>
+    route.fulfill(json({ transfers: [] })),
+  );
+  await page.route(`${BILLING_API_URL}/api/me/subscriptions?*`, (route) =>
+    route.fulfill(json(list)),
+  );
+  await page.route(`${BILLING_API_URL}/api/me/billing/entity-payment-method?*`, (route) =>
+    route.fulfill(json(WALLET)),
+  );
+}
+
 const frame = (letter: FixtureFrame): ModulePage => FIXTURES[letter];
 const body = (page: Page) => page.getByRole("main");
 
@@ -100,9 +130,12 @@ test.describe("module settings page", () => {
     await expect(body(page).getByRole("alert")).toHaveCount(0);
   });
 
-  test("Start Free Trial asks first, then posts and the page shows the trial", async ({ page }) => {
+  test("Start Free Trial asks first, then posts and lands on the Congratulations row", async ({
+    page,
+  }) => {
     const c = creds();
     const posts = await stubApi(page, frame("A"), frame("B"));
+    await stubList(page, c.entityId, c.entityName);
     await handoff(page, c, MODULES(c.entityId));
 
     await body(page).getByRole("button", { name: "Start Free Trial" }).click();
@@ -115,13 +148,20 @@ test.describe("module settings page", () => {
     expect(posts).toEqual([]);
     await dialog.getByRole("button", { name: "Confirm" }).click();
 
-    await expect(
-      body(page).getByRole("article", { name: "Payment Request" }).getByText("15 days remaining"),
-    ).toBeVisible();
+    // The news is told on the list, in this company's row (Figma RV11).
+    await page.waitForURL((u) => u.pathname === "/subscription/subscriptions");
+    const landed = body(page).locator(`li[data-result='celebrate'][data-entity='${c.entityId}']`);
+    await expect(landed).toContainText("Congratulations!");
+    await expect(landed).toContainText("Payment Request free trial has started — 30 days, free.");
     expect(posts).toEqual([{ action: "start-trial", body: { codes: ["PAYMENT_REQUEST"] } }]);
     await expect(page.getByRole("dialog")).toHaveCount(0);
-    // both trialing now: one shared CTA
-    await expect(body(page).getByRole("button", { name: "Manage Subscription" })).toHaveCount(1);
+
+    // Back to Manage Subscriptions leaves for the portal's landing (08-A).
+    await landed.getByRole("button", { name: "Back to Manage Subscriptions" }).click();
+    await page.waitForURL((u) => u.pathname === "/subscription");
+    await expect(body(page).getByRole("heading", { level: 1 })).toHaveText(
+      "Subscription & Billing",
+    );
   });
 
   test("04-G's modal is laid out as the design draws it, without the design's collision", async ({

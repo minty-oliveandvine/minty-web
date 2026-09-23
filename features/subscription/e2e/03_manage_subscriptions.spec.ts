@@ -321,13 +321,17 @@ test.describe("manage subscriptions", () => {
     expect(posts.map((p) => [p.url.split("/modules/")[1], p.body, p.entity])).toEqual([
       ["renew", { code: "PAYMENT_REQUEST" }, "e-kestrel-foods-limited"],
     ]);
-    // Back: the list again, nothing open.
+    // Back: the portal's landing (08-A), where every 05·C frame's hotspot points.
     await result.getByRole("button", { name: "Back to Manage Subscriptions" }).click();
+    await page.waitForURL((u) => u.pathname === "/subscription");
+    await expect(body(page).getByRole("heading", { level: 1 })).toHaveText(
+      "Subscription & Billing",
+    );
+    // and Manage Subscription there is the way back into the list
+    await body(page).getByRole("button", { name: "Manage Subscription" }).click();
+    await page.waitForURL((u) => u.pathname === "/subscription/subscriptions");
     await expect(body(page).locator("li[data-result]")).toHaveCount(0);
     await expect(body(page).locator("li[data-open]")).toHaveCount(0);
-    await expect(
-      body(page).getByRole("button", { name: "Open Kestrel Foods Limited" }),
-    ).toBeVisible();
 
     // Remove Petty Cash while Payment Request winds down (M45): the module cancellation page.
     await serveModules(SUMMARY_FIXTURES.M45);
@@ -368,10 +372,11 @@ test.describe("manage subscriptions", () => {
       entity: "e-mino-market-limited",
     });
     expect(posts.at(-1)!.url).toMatch(/\/modules\/cancel$/);
+    // The page layout's button is the same one: it leaves for the landing too.
     await cancelled.getByRole("button", { name: "Back to Manage Subscriptions" }).click();
-    await expect(body(page).getByRole("heading", { level: 1 })).toHaveText("Manage Subscriptions");
-    await expect(
-      body(page).getByRole("button", { name: "Open Mino Market Limited" }),
-    ).toBeVisible();
+    await page.waitForURL((u) => u.pathname === "/subscription");
+    await expect(body(page).getByRole("heading", { level: 1 })).toHaveText(
+      "Subscription & Billing",
+    );
   });
 });

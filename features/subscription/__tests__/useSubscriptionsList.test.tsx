@@ -312,18 +312,16 @@ describe("useSubscriptionsList", () => {
     expect(result.current.openEntityId).toBe(e.entity_id);
     expect(push).not.toHaveBeenCalled();
 
-    // Back to Manage Subscriptions: the result goes, the row closes, the list reloads.
+    // Back to Manage Subscriptions leaves for the portal's landing (08-A). This list is on its
+    // way out, so it does not read itself again on the way.
     const listCalls = fetchMock.mock.calls.filter((c) =>
       String(c[0]).includes("/api/me/subscriptions?"),
     ).length;
     act(() => result.current.dismissResult());
-    expect(result.current.result).toBeNull();
-    expect(result.current.openEntityId).toBeNull();
-    await waitFor(() =>
-      expect(
-        fetchMock.mock.calls.filter((c) => String(c[0]).includes("/api/me/subscriptions?")).length,
-      ).toBeGreaterThan(listCalls),
-    );
+    expect(push).toHaveBeenCalledWith("/subscription");
+    expect(
+      fetchMock.mock.calls.filter((c) => String(c[0]).includes("/api/me/subscriptions?")).length,
+    ).toBe(listCalls);
   });
 
   it("a removal posts cancel and lands on the page layout, the row closed", async () => {

@@ -284,6 +284,16 @@ redrawn to the Figma design (section "03 · Settings › Module", six frames). W
   _Go back_, Escape and the backdrop post nothing. A refusal is a toast and the dialog stays
   open so it can be tried again. All three places a trial can be started (this page, the list's
   row, the open row's card) now ask the same way; nothing starts a trial on one press.
+- **Confirming leaves for the list** (2026-09-23). The trial's news is told where the design
+  tells it - Figma RV11, the company's row in Manage Subscriptions saying "Congratulations! /
+  <Module> free trial has started — 30 days, free. / Nothing is being charged." - so _Confirm_
+  posts and then pushes `moduleRoutes(id).started(code)` = `/subscription/subscriptions?entity=
+  <id>&started=<code>` instead of refetching this page. The list rebuilds that row from the
+  company's page model ALONE (`lib/changeResult.ts::startedTrialResult`, beside the handover's
+  `transferredResult`), since it has no before-and-after of its own; it refuses to celebrate
+  unless that module really is on trial and not since cancelled, so a link opened in another
+  state simply shows the ordinary row. Starting a trial makes the person the company's payer,
+  so the company is in the list to land on. A refusal never navigates.
 - **The dialog is the design's, with the design's own styling fixed** (2026-09-23). The copy is
   Figma 04-G/04-H word for word - "You've activated free trial for <Module>." and "after trial
   period" without the article - by the user's decision, over the grammar. Its title lockup is a
@@ -430,9 +440,18 @@ design's rules live (`buildSummaryView(page, entity, wallet, today, pending)`, `
   nomination screen, still to be built - the ACCOUNT's cards are the billing page, §15); the brand is
   the API's `brand_label`, a datum, not the design's Visa artwork. A 403 (not the payer) or a
   Stripe failure there simply leaves the column out.
-- **The footer**: "Minty for <company> was originally created <created_at>." and "Your next
-  subscription renewal date is <panel.next_invoice.date> and each month after. …" — the second
-  only when something bills.
+- **The footer** (`components/RowFooter.tsx`, the same one under a result row): "Minty for
+  <company> was originally created <created_at>. Your next subscription renewal date is <date>
+  and each month after. Minty subscriptions auto-renew monthly until cancellation is initiated.
+  There is a 1 month notice period required for your cancellation." Three parts, guarded
+  SEPARATELY (2026-09-23): the created sentence needs `created_at`, the renewal sentence needs a
+  date, and the two standing sentences are terms — they carry no date and read under every
+  company. Hanging all three off the date made them vanish for any company whose only module was
+  a trial, which is most of the design's own frames. The date is `panel.next_invoice.date`, or —
+  since the API withholds that until a company has a billing cycle ("Absent while the entity has
+  only trials") — the end of the soonest running, not-cancelled trial, which is the day billing
+  would begin. Nothing started at all: no date, no sentence. Both facts come from
+  `subscriptionSummary.ts::rowFooter`, derived once for the summary row and the result row.
 - **Money** prints the API's way (`format_trimmed`): the summary's symbol, cents only when they
   mean something, a symbol that is letters spaced (`HKD 400`).
 - **"Calculating…"** (section "05·B-C · Calculating… — one per destination, auto-advances after
@@ -481,7 +500,8 @@ button in 05·B lands". Built 2026-09-22.
   **"Congratulations!"** in the row — "<Module> is confirmed. Billing starts the day its trial
   ends." / "<Module> is active. Your card has been charged." / "<Module> is restored and billing
   carries on as before." / "<Module> free trial has started — 30 days, free." — where the list's
-  _Start Trial_ (04-G) now lands too.
+  _Start Trial_ (04-G) now lands too - and the module settings page's, which leaves for the
+  list rather than refreshing itself (`?started=<code>` beside `?entity=`; see §9).
 - **The line of money** under the row's lines is the panel's own arithmetic
   (`subscriptionSummary.ts` `forecast`, in a sentence): "Nothing is being charged." / "HK$400 a
   month." / "Nothing charged today · HK$400 a month when the trial ends." / "HK$280 a month now ·
@@ -491,8 +511,12 @@ button in 05·B lands". Built 2026-09-22.
   name and ⋮, the headline, the lines with the module names in their colours, the money, _Back to
   Manage Subscriptions_, Minty celebrating, the footer sentences; the other companies stay listed
   around it) and the page (`ChangeResultPage` — the banner retitled, one card with the ⋮, Minty
-  with a heart). _Back to Manage Subscriptions_ drops the result, closes the row and reloads the
-  list. The illustrations are the design's (`public/portal/minty-celebrating.png`,
+  with a heart). _Back to Manage Subscriptions_ **leaves for the portal's landing** (08-A,
+  `/subscription`) — all 103 frames of 05·C carry `▶ Back to Manage Subscriptions → 08-A`, and so
+  does 07-M, so every result screen ends the same way (2026-09-23; it used to clear the result in
+  place). One handler serves all five kinds and both layouts, and the list unmounts, so nothing
+  is reset and nothing is reloaded on the way out. Back into the list from there:
+  _Manage Subscription_ on the landing, or the _Subscriptions_ tab. The illustrations are the design's (`public/portal/minty-celebrating.png`,
   `minty-heart.png`, cropped and shrunk).
 - **Readings and gaps, for the design**: the base frame 05·C-4 ("Subscription Update
   Confirmed", a full page) is not what the generated grid draws for a mixed change (RU24 and
@@ -644,7 +668,7 @@ payer's money does not cover, and the subscription moves.
 - **07-M "Subscription Transfer Completed"**: the list's row for the company, in the result
   row's celebrate layout (§12): the headline, "You are now the owner of the <company>
   subscription and have full control of this Minty." with the company in teal, and how billing
-  carries on; _Back to Manage Subscriptions_ closes it. `useSubscriptionsList` reads
+  carries on; _Back to Manage Subscriptions_ leaves for the landing, as on every result screen. `useSubscriptionsList` reads
   `?transferred=1` and shows it once the row's page model is in (`transferredResult`), until the
   row is closed or the person moves on.
 - **How it ended, told** — `components/TransferOutcomeDialog.tsx`, four kinds on the
@@ -690,7 +714,16 @@ step 3's live routes, as two pages and two screens: the portal's landing
 read by are `lib/billing.ts`, pure.
 
 - **08-A "Subscription & Billing"**, at `/subscription` — where Minty's own link lands
-  (Flask's `next` defaults to it). "Back to the entity dashboard" above; then the payment-method
+  (Flask's `next` defaults to it). "Back to the entity dashboard" above — which goes to **the
+  company this browser is scoped to**, not Minty's entity picker (2026-09-23):
+  `lib/mintyEntry.ts::mintyModulesUrl` builds `/entity/{id}/enter?token=…&next=/entity/{id}/modules`,
+  so the person arrives with their Flask session re-established and Minty's `module_selector`
+  routes them — one module enabled goes straight in (Petty Cash's dashboard, or the payments
+  app), two offer the module selection. Minty decides, from `entity_function_map`; this app
+  counts no modules. With no company in the cookie the link falls back to the entity list, which
+  is a safety net rather than a second design: the only live way in here is a company's module
+  settings page (`Minty/blueprints/entity/routes/settings.py:1287`), which is always scoped.
+  Then the payment-method
   card (who the bill goes to, the next billing date, _Go to payment details and invoices_ →
   the billing page) and the Subscription Overview: **Active subscriptions** and **Trial ending**
   counted in COMPANIES (a company counts once however many modules it pays for, and a trial is

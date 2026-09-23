@@ -234,13 +234,10 @@ describe("07-M in the list", () => {
       `You are now the owner of the ${mine.entity_name} subscription and have full control of this Minty.`,
     );
     expect(within(row).getByText(/Your next subscription renewal date/)).toBeInTheDocument();
+    // The handover's row shares the result screens' button: it leaves for 08-A too (07-M).
     await userEvent.click(
       within(row).getByRole("button", { name: "Back to Manage Subscriptions" }),
     );
-    await waitFor(() =>
-      expect(
-        screen.queryByRole("heading", { level: 4, name: "Subscription Transfer Completed" }),
-      ).toBeNull(),
-    );
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/subscription"));
   });
 });

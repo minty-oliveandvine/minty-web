@@ -26,6 +26,7 @@ import {
 } from "@/features/subscription/lib/changeResult";
 import type { PlanTone } from "@/features/subscription/lib/subscriptionSummary";
 
+import { RowFooter } from "@/features/subscription/components/RowFooter";
 import { RowMenu } from "@/features/subscription/components/RowMenu";
 
 /** The module names' colours, as the summary panel paints them. */
@@ -122,25 +123,21 @@ export function ChangeResultRow({
         />
       </div>
 
-      <div className="flex flex-col gap-3 text-[15px] text-quiet">
-        {result.footer.createdOn && (
-          <p>
-            Minty for <span className="text-[#219994]">{entity.entity_name}</span> was originally
-            created {result.footer.createdOn}.
-          </p>
-        )}
-        {result.footer.renewalOn && (
-          <p>
-            Your next subscription renewal date is {result.footer.renewalOn} and each month after.
-            Minty subscriptions auto-renew monthly until cancellation is initiated. There is a 1
-            month notice period required for your cancellation.
-          </p>
-        )}
-      </div>
+      <RowFooter
+        entityName={entity.entity_name}
+        createdOn={result.footer.createdOn}
+        renewalOn={result.footer.renewalOn}
+      />
     </li>
   );
 }
 
+/**
+ * The page layout (05·C-2/-3) carries NO row footer, deliberately: it is a different frame with
+ * its own prose, and its company name is already drawn in orange above. Do not add `RowFooter`
+ * here without checking those frames - the second teal copy of the company's name would also
+ * make this file's colour assertion ambiguous.
+ */
 export function ChangeResultPage({
   entity,
   result,

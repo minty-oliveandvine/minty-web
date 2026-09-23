@@ -198,6 +198,9 @@ test.describe("transfers", () => {
       "You are now the owner of the New Company Limited subscription and have full control of this Minty.",
     );
     await landed.getByRole("button", { name: "Back to Manage Subscriptions" }).click();
-    await expect(body(page).locator("li[data-result]")).toHaveCount(0);
+    await page.waitForURL((u) => u.pathname === "/subscription");
+    await expect(body(page).getByRole("heading", { level: 1 })).toHaveText(
+      "Subscription & Billing",
+    );
   });
 });

@@ -4,7 +4,11 @@
 
 import { describe, expect, it } from "vitest";
 
-import { RESULT_FIXTURES, TODAY } from "@/features/subscription/__fixtures__/modulePage";
+import {
+  RESULT_FIXTURES,
+  SUMMARY_FIXTURES,
+  TODAY,
+} from "@/features/subscription/__fixtures__/modulePage";
 import { ENTITIES } from "@/features/subscription/__fixtures__/subscriptions";
 import {
   CONGRATULATIONS,
@@ -16,6 +20,7 @@ import {
   buildChangeResult,
   moneyLine,
   outcomeOf,
+  startedTrialResult,
 } from "@/features/subscription/lib/changeResult";
 import { forecast, shortDate, longDate } from "@/features/subscription/lib/subscriptionSummary";
 
@@ -183,5 +188,46 @@ describe("moneyLine", () => {
     expect(moneyLine(forecast(f.RV44.after, TODAY))).toMatch(
       /^HK\$400 until \d{1,2} \w+ \d{4}, then HK\$280 a month\.$/,
     );
+  });
+});
+
+describe("startedTrialResult (RV11, rebuilt from the page model alone)", () => {
+  it("says exactly what buildChangeResult says for the same trial", () => {
+    const { after } = RESULT_FIXTURES.RV14;
+    const rebuilt = startedTrialResult(entity, after, "PETTY_CASH", TODAY);
+    expect(rebuilt).toEqual(build("RV14"));
+  });
+
+  it("RV11: a lone trial - 30 days free, and nothing is being charged", () => {
+    // M21 is RV11's company: Petty Cash on trial, nothing else started, so nothing bills.
+    const r = startedTrialResult(entity, SUMMARY_FIXTURES.M21, "PETTY_CASH", TODAY);
+    expect(r?.kind).toBe("celebrate");
+    expect(r?.layout).toBe("row");
+    expect(r?.headline).toEqual({ module: null, text: CONGRATULATIONS });
+    expect(r?.lines.map((l) => l.text)).toEqual([
+      "Petty Cash free trial has started — 30 days, free.",
+    ]);
+    expect(r?.money).toBe(NOTHING_CHARGED);
+  });
+
+  it("says nothing unless that module is really on trial", () => {
+    const no = (page: Parameters<typeof startedTrialResult>[1], code: string) =>
+      startedTrialResult(entity, page, code, TODAY);
+    expect(no(SUMMARY_FIXTURES.M11, "PETTY_CASH")).toBeNull(); // never started
+    expect(no(SUMMARY_FIXTURES.M31, "PETTY_CASH")).toBeNull(); // the trial expired
+    expect(no(SUMMARY_FIXTURES.M44, "PETTY_CASH")).toBeNull(); // active, not on trial
+    expect(no(SUMMARY_FIXTURES.M61, "PETTY_CASH")).toBeNull(); // suspended
+    expect(no(SUMMARY_FIXTURES.M21, "BANANA")).toBeNull(); // no such module here
+    expect(no(null, "PETTY_CASH")).toBeNull(); // the page model is not in yet
+    // A trial since cancelled still reads as "trialing" - it must not celebrate again.
+    const cancelled = {
+      ...SUMMARY_FIXTURES.M21,
+      cards: SUMMARY_FIXTURES.M21.cards.map((c) =>
+        c.code === "PETTY_CASH" ? { ...c, trial_cancelled: true } : c,
+      ),
+    };
+    expect(no(cancelled, "PETTY_CASH")).toBeNull();
+    // A trial already confirmed is still a trial that has just started - that one celebrates.
+    expect(no(SUMMARY_FIXTURES.N21a, "PETTY_CASH")).not.toBeNull();
   });
 });

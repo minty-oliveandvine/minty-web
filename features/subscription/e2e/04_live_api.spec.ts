@@ -93,20 +93,35 @@ test.describe("over the live API", () => {
     // 04-G's dialog asks first, here as on the list.
     await page.getByRole("dialog").getByRole("button", { name: "Confirm" }).click();
 
-    // The API opened the trial and the page refetched: the card counts the real term down
-    // (the policy's trial length, 30 days today) and offers Manage instead of Start.
-    await expect(request.getByText(/^\d+ days remaining$/)).toBeVisible();
-    await expect(item.getByRole("button", { name: "Start Free Trial" })).toHaveCount(0);
-    await expect(item.getByRole("button", { name: "Manage Subscription" })).toBeVisible();
-    // Petty Cash keeps its own offer.
-    await expect(body(page).getByRole("button", { name: "Start Free Trial" })).toHaveCount(1);
+    // The API opened the trial and the browser left for the list, where this company's row
+    // says so (Figma RV11). The "30 days" is the web's own TRIAL_DAYS, not the API's term.
+    await page.waitForURL((u) => u.pathname === "/subscription/subscriptions");
+    const landed = body(page).locator(`li[data-result='celebrate'][data-entity='${c.entityId}']`);
+    await expect(landed).toContainText("Congratulations!");
+    await expect(landed).toContainText("Payment Request free trial has started — 30 days, free.");
+    // The seed leaves the shop with nothing else running, so nothing bills.
+    await expect(landed).toContainText("Nothing is being charged.");
 
     const after = await pageModel(c);
     const started = after.cards.find((card) => card.code === "PAYMENT_REQUEST");
     expect(started?.subscription_status).toBe("trialing");
     expect(started?.trial_eligible).toBe(false);
-    // The other module was not touched.
+    // The other module was not touched - its own offer is still open.
     expect(after.cards.find((card) => card.code === "PETTY_CASH")?.trial_eligible).toBe(true);
+
+    // Back to Manage Subscriptions leaves for the landing (08-A), over live data.
+    await landed.getByRole("button", { name: "Back to Manage Subscriptions" }).click();
+    await page.waitForURL((u) => u.pathname === "/subscription");
+    await expect(body(page).getByRole("heading", { level: 1 })).toHaveText(
+      "Subscription & Billing",
+    );
+    // And the way out of the portal goes back to THIS company's modules, not the entity picker:
+    // Minty routes /entity/<id>/modules to the module selection, or into the only module on.
+    const backHref = await body(page)
+      .getByRole("link", { name: "Back to the entity dashboard" })
+      .getAttribute("href");
+    expect(backHref).toContain(`/entity/${c.entityId}/enter?token=`);
+    expect(backHref).toContain(encodeURIComponent(`/entity/${c.entityId}/modules`));
   });
 
   test("the Manage Subscriptions list shows the companies the person pays for", async ({
@@ -140,6 +155,12 @@ test.describe("over the live API", () => {
       await expect(panel.getByText(/^(HK\$|HKD ?)0$/)).toBeVisible();
       await expect(panel.getByText("Payment method")).toHaveCount(0);
       await expect(open.getByText(/was originally created/)).toBeVisible();
+      // The footer's standing terms are not status, so they read under a company that bills
+      // nothing - and the renewal sentence names a real date (the trial's end), not a blank.
+      await expect(open.getByText(/Your next subscription renewal date is \d/)).toBeVisible();
+      await expect(
+        open.getByText(/auto-renew monthly until cancellation is initiated/),
+      ).toBeVisible();
     } else {
       await expect(body(page).getByText("You're not paying for anything yet.")).toBeVisible();
     }

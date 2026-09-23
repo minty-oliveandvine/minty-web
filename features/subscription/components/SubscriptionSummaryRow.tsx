@@ -36,6 +36,7 @@ import {
 } from "@/features/subscription/lib/subscriptionSummary";
 
 import { MODULE_ART } from "@/features/subscription/components/ModuleCard";
+import { RowFooter } from "@/features/subscription/components/RowFooter";
 import { RowMenu } from "@/features/subscription/components/RowMenu";
 
 export const CALCULATING = "Calculating....";
@@ -410,21 +411,11 @@ export function SubscriptionSummaryRow({
             )}
           </div>
 
-          <div className="flex flex-col gap-3 text-[15px] text-quiet">
-            {view.footer.createdOn && (
-              <p>
-                Minty for <span className="text-[#219994]">{entity.entity_name}</span> was
-                originally created {view.footer.createdOn}.
-              </p>
-            )}
-            {view.footer.renewalOn && (
-              <p>
-                Your next subscription renewal date is {view.footer.renewalOn} and each month after.
-                Minty subscriptions auto-renew monthly until cancellation is initiated. There is a 1
-                month notice period required for your cancellation.
-              </p>
-            )}
-          </div>
+          <RowFooter
+            entityName={entity.entity_name}
+            createdOn={view.footer.createdOn}
+            renewalOn={view.footer.renewalOn}
+          />
         </>
       )}
     </li>
