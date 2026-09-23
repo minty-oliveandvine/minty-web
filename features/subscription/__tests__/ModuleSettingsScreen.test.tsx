@@ -179,7 +179,8 @@ describe("ModuleSettingsScreen", () => {
     await show(FIXTURES.D);
     expect(card("Petty Cash").getByText("Trial Expired")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Activate Subscription" }));
-    expect(push).toHaveBeenCalledWith("/subscription/entities/e1/modules/activate/PETTY_CASH");
+    // Activating is one module's pending change: the list, this row, Petty Cash ticked.
+    expect(push).toHaveBeenCalledWith("/subscription/subscriptions?entity=e1&tick=PETTY_CASH");
     expect(screen.getByRole("button", { name: "Manage Subscription" })).toBeInTheDocument();
   });
 
@@ -188,7 +189,7 @@ describe("ModuleSettingsScreen", () => {
     expect(card("Petty Cash").getByText("Cancellation pending")).toBeInTheDocument();
     expect(card("Petty Cash").getByText("Ends in 15 days")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Resume Subscription" }));
-    expect(push).toHaveBeenCalledWith("/subscription/entities/e1/modules/resume/PETTY_CASH");
+    expect(push).toHaveBeenCalledWith("/subscription/subscriptions?entity=e1&tick=PETTY_CASH");
   });
 
   it("03-F: both suspended, the banner, and 'here' opens the payment method", async () => {

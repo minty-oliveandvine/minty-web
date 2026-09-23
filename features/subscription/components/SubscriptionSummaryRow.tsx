@@ -74,7 +74,21 @@ const PLAN_TONE: Record<PlanLine["tone"], string> = {
   none: "text-[#161f2e]",
 };
 
-export function SummaryModuleCard({ module }: { module: SummaryModule }) {
+/**
+ * `onToggle` makes the whole card the tick's click target, not just the box below it - the card
+ * looks like one thing, so all of it acts like one. It is a pointer affordance only: the
+ * checkbox beside it stays the focusable control with the accessible name, so nothing is added
+ * to the tab order and no second name is announced. Cards with nothing to tick (a module never
+ * started, whose button is its own control) and the read-only card the transfer review draws
+ * pass no handler and stay inert.
+ */
+export function SummaryModuleCard({
+  module,
+  onToggle,
+}: {
+  module: SummaryModule;
+  onToggle?: () => void;
+}) {
   const art = MODULE_ART[module.code];
   const live = module.view.live;
   const frame = live
@@ -87,7 +101,10 @@ export function SummaryModuleCard({ module }: { module: SummaryModule }) {
       data-module={module.code}
       data-state={module.view.state}
       data-ticked={module.tick === "ticked"}
-      className={`flex h-[354px] w-full flex-col items-center rounded-[20px] px-4 pt-[31px] text-center ${frame}`}
+      onClick={onToggle}
+      className={`flex h-[354px] w-full flex-col items-center rounded-[20px] px-4 pt-[31px] text-center ${frame} ${
+        onToggle ? "cursor-pointer" : ""
+      }`}
     >
       <div
         className={`flex h-[120px] w-[167px] items-center justify-center rounded-[13px] ${art.tile} ${
@@ -396,7 +413,16 @@ export function SubscriptionSummaryRow({
           <div className="grid grid-cols-[1fr_1fr_minmax(360px,1.45fr)] items-start gap-6">
             {view.modules.map((module) => (
               <div key={module.code} className="flex flex-col items-center gap-[46px]">
-                <SummaryModuleCard module={module} />
+                <SummaryModuleCard
+                  module={module}
+                  // The card toggles what the box below it toggles - the same handler, so the
+                  // two can never disagree. Nothing to tick, or the row still loading: inert.
+                  onToggle={
+                    module.tick === "start_trial" || loading
+                      ? undefined
+                      : () => on.onTick(module.code)
+                  }
+                />
                 <UnderCard module={module} disabled={loading} on={on} />
               </div>
             ))}

@@ -71,6 +71,10 @@ function show(
 
 const panel = () => screen.getByRole("region", { name: "Subscription Summary" });
 
+/** A click on the card itself, away from the checkbox that sits below it. */
+const cardBody = (name: string) =>
+  within(screen.getByRole("article", { name })).getByRole("heading", { level: 3, name });
+
 describe("SubscriptionSummaryRow", () => {
   it("M44: both active - two ticked live cards, the bundle, the card on file, no pending changes", async () => {
     const { on, view } = show("M44");
@@ -127,6 +131,27 @@ describe("SubscriptionSummaryRow", () => {
     show("M11");
     expect(screen.queryByText(/Your next subscription renewal date is/)).toBeNull();
     expect(screen.getByText(new RegExp(AUTO_RENEW.slice(0, 40)))).toBeInTheDocument();
+  });
+
+  it("the whole card toggles the tick, not only the box under it", async () => {
+    const { on } = show("M44");
+    await userEvent.click(cardBody("Petty Cash"));
+    expect(on.onTick).toHaveBeenCalledTimes(1);
+    expect(on.onTick).toHaveBeenCalledWith("PETTY_CASH");
+
+    // The box is still its own control, and still the only focusable one.
+    await userEvent.click(screen.getByRole("checkbox", { name: "Payment Request subscription" }));
+    expect(on.onTick).toHaveBeenLastCalledWith("PAYMENT_REQUEST");
+    expect(on.onTick).toHaveBeenCalledTimes(2);
+  });
+
+  it("a card with nothing to tick stays inert - its button is the only control", async () => {
+    // M11: neither module was ever started, so both cards carry Start Free Trial and no box.
+    const { on } = show("M11", null);
+    await userEvent.click(cardBody("Petty Cash"));
+    await userEvent.click(screen.getByRole("article", { name: "Payment Request" }));
+    expect(on.onTick).not.toHaveBeenCalled();
+    expect(on.onStartTrial).not.toHaveBeenCalled();
   });
 
   it("M11: nothing started - Start Free Trial under each card, no module selected, HK$0 greyed", async () => {

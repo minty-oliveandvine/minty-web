@@ -184,6 +184,29 @@ test.describe("manage subscriptions", () => {
     await expect(row.getByRole("region", { name: "Subscription Summary" })).toBeVisible();
   });
 
+  test("a module card's Activate / Resume lands on the row with that module ticked", async ({
+    page,
+  }) => {
+    const posts = await stubApi(page, subscriptionsPage());
+    // Every company opens as M45 here: Payment Request is winding down, so ticking it resumes.
+    await handoff(
+      page,
+      creds(),
+      "/subscription/subscriptions?entity=e-solera-group-limited&tick=PAYMENT_REQUEST",
+      { entity_id: "" },
+    );
+
+    const row = body(page).locator("li[data-entity='e-solera-group-limited']");
+    await expect(row.getByRole("region", { name: "Subscription Summary" })).toBeVisible();
+    // The tick waits for the row's own read, then shows as any other pending change would.
+    await expect(row.getByRole("checkbox", { name: "Payment Request subscription" })).toBeChecked();
+    await expect(row.locator("[data-chip]")).toHaveText("Restoring");
+    await expect(row.getByRole("button", { name: "Confirm Subscription Change" })).toBeVisible();
+    // Arriving asks nothing and posts nothing - the person confirms.
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    expect(posts).toEqual([]);
+  });
+
   test("05·A: the chevron opens a row in place - cards, ticks, the summary, the seams", async ({
     page,
   }) => {
@@ -216,6 +239,13 @@ test.describe("manage subscriptions", () => {
     // the cancelling Payment Request = Restoring; the confirm button is the seam to its flow.
     const opened = body(page).locator("li[data-open]");
     const restore = opened.getByRole("checkbox", { name: "Payment Request subscription" });
+    // The whole card is that box's click target, not only the box.
+    await opened.getByRole("article", { name: "Payment Request" }).click();
+    await expect(restore).toBeChecked();
+    await expect(opened.locator("[data-chip]")).toHaveText("Restoring");
+    await opened.getByRole("article", { name: "Payment Request" }).click();
+    await expect(restore).not.toBeChecked();
+
     await restore.click();
     await expect(restore).toBeChecked();
     await expect(restore).toHaveAttribute("data-changed", "true");

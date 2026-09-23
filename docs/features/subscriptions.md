@@ -308,6 +308,17 @@ redrawn to the Figma design (section "03 · Settings › Module", six frames). W
   change modules.
 - **Re-entry.** `?session_id=` (back from Stripe Checkout) posts `checkout-complete` once and is
   dropped from the URL before the page loads; `?checkout_error=` is shown and dropped.
+- **Activate / Resume / Reactivate are not pages** (2026-09-23). Each is ONE module's pending
+  change, which the open row already says, so the CTA lands on the list with that company's row
+  open and that module **ticked**: `moduleRoutes(id).activate|resume|reactivate(code)` all build
+  `/subscription/subscriptions?entity=<id>&tick=<code>`. The URL carries no verb — what the tick
+  means is decided there by `tickOf`'s seam (`subscribe` / `resume` / `reactivate`). It **ticks
+  and stops**: the chip shows and _Confirm Subscription Change_ appears, but nothing is posted
+  and no modal opens, so the person reads the money first — which matters most for _Activate_,
+  whose confirmation charges the card. The list seeds the tick once the row's page model is in
+  (`useSubscriptionsList`, the same wait `?started=` makes; the ticks are keyed per company, so
+  seeding early would be invisible and would burn the "Calculating…" beat), and `ticksFor`
+  refuses a code the company does not have or one with no tick to give.
 - **The seams.** Every CTA but _Start Free Trial_ navigates to a page under the module page
   (`lib/paths.ts::moduleRoutes`: `/manage`, `/activate/{code}`, `/resume/{code}`,
   `/reactivate/{code}`, `/payment-method`) that the next steps build from their own Figma frames; until
@@ -409,6 +420,12 @@ design's rules live (`buildSummaryView(page, entity, wallet, today, pending)`, `
   unticked, _subscribe_; cancellation pending → unticked, _resume_; suspended → unticked,
   _reactivate_; never started → the **Start Free Trial** button (04-G's dialog, then the
   company's `start-trial`).
+- **The whole card is that box's click target** (2026-09-23), not only the 34px box below it:
+  `SummaryModuleCard` takes an `onToggle` and calls the same `onTick` the checkbox calls, so the
+  two can never disagree. It is a pointer affordance only — the checkbox stays the one focusable
+  control with the accessible name, so nothing is added to the tab order. A card with nothing to
+  tick is inert: a module never started (its _Start Free Trial_ button is its own control), a row
+  still loading, and the read-only card the transfer review draws all pass no handler.
 - **A press is a change pending, not a request** (05·B). The box flips in place, the card takes
   the live fill if it is now ticked (a confirmed trial unticked loses it), and a chip under its
   status names the change: **Adding** (a trial or an expired trial ticked), **Restoring**

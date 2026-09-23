@@ -43,7 +43,7 @@
  */
 
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { ApiError } from "@/lib/apiClient";
 import { leaveTo } from "@/lib/handoff";
@@ -141,6 +141,12 @@ export type UseSubscriptionsListArgs = {
    * because there is no before-and-after to read it from here.
    */
   startedCode?: string | null;
+  /**
+   * Arrived from a module card's *Activate* / *Resume* / *Reactivate* (`?tick=<code>` beside
+   * `?entity=`): that module starts ticked, so the person reads what the change costs and
+   * presses *Confirm Subscription Change* themselves. Nothing is posted by arriving.
+   */
+  tickCode?: string | null;
   today?: Date;
 };
 
@@ -249,6 +255,7 @@ export function useSubscriptionsList({
   resultFixture,
   transferred = false,
   startedCode = null,
+  tickCode = null,
   today,
 }: UseSubscriptionsListArgs = {}): UseSubscriptionsListResult {
   const router = useRouter();
@@ -444,6 +451,26 @@ export function useSubscriptionsList({
     const res = startedTrialResult(openEntity, summaryPage, startedCode, day ?? new Date());
     return res ? { entity: openEntity, result: res } : null;
   }, [startedCode, landingDismissed, openEntity, summaryPage, day]);
+
+  // Arrived from a module card's CTA: tick that module, once, when the row's page model is in.
+  // Waiting is the point - the ticks are keyed by company AND read against the cards, so a tick
+  // seeded before the answer would be invisible and would burn the "Calculating…" beat. It
+  // refuses rather than guesses: `ticksFor` drops a code the company does not have or one whose
+  // card has no tick to give (a module never started keeps its Start Free Trial button).
+  // The latch is a ref, not state: the React compiler forbids setState inside an effect, and
+  // this is bookkeeping the render does not read. Keyed by company and code, so a second
+  // arrival for another module seeds again while a re-render never does.
+  const tickSeeded = useRef<string | null>(null);
+  useEffect(() => {
+    if (!tickCode || !openEntity || !summaryPage) return;
+    const key = `${openEntity.entity_id}#${tickCode}`;
+    if (tickSeeded.current === key) return;
+    tickSeeded.current = key;
+    const pending = ticksFor(summaryPage, [tickCode as ModuleCode]);
+    if (Object.keys(pending).length > 0) summary.setTicksFor(openEntity.entity_id, pending);
+    // The company is identified by its id; the page model must have loaded.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tickCode, openEntity?.entity_id, summaryPage !== null]);
 
   // Dev-only: land the open row on the 05·C frame named, as if its change had just been applied.
   useEffect(() => {

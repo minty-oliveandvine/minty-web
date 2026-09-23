@@ -40,10 +40,16 @@ export function modulesPath(entityId: string): string {
   return subscriptionPath(`/entities/${encodeURIComponent(entityId)}/modules`);
 }
 
+/** The list with a company's row open and one module ticked, ready to confirm. */
+function tickPath(entityId: string, code: string): string {
+  return `${PORTAL.subscriptions}?entity=${encodeURIComponent(entityId)}&tick=${encodeURIComponent(code)}`;
+}
+
 /**
- * The pages a module card's CTA leads to, under the company's module page. Built here so the
- * page can navigate to them before they exist (each is designed in its own step); until then a
- * seam lands on Next's 404, and the tests that pin these URLs stay valid when the pages arrive.
+ * Where a module card's CTA leads. Most of them are not pages at all: a change to one module is
+ * what the open row in Manage Subscriptions already says, so they land there with that module
+ * ticked. Only the payment-method screen is still a page waiting to be built, and a seam to it
+ * lands on `routes/NotBuiltYet.tsx` until it is.
  */
 export function moduleRoutes(entityId: string) {
   const b = modulesPath(entityId);
@@ -60,12 +66,18 @@ export function moduleRoutes(entityId: string) {
      */
     started: (code: string) =>
       `${PORTAL.subscriptions}?entity=${encodeURIComponent(entityId)}&started=${encodeURIComponent(code)}`,
-    /** Activate Subscription - a module whose trial expired. */
-    activate: (code: string) => `${b}/activate/${encodeURIComponent(code)}`,
+    /**
+     * Activate / Resume / Reactivate all mean the same thing: ONE module's pending change,
+     * which the open row already expresses. So they are not pages of their own - they are the
+     * list, this company's row, that module ticked, and the person presses *Confirm
+     * Subscription Change* having read what it costs. What the tick MEANS is decided there,
+     * by `tickOf`'s seam (subscribe / resume / reactivate), so the URL carries no verb.
+     */
+    activate: (code: string) => tickPath(entityId, code),
     /** Resume Subscription - a module with a cancellation pending. */
-    resume: (code: string) => `${b}/resume/${encodeURIComponent(code)}`,
+    resume: (code: string) => tickPath(entityId, code),
     /** Reactivate Subscription - a module suspended for a failed payment. */
-    reactivate: (code: string) => `${b}/reactivate/${encodeURIComponent(code)}`,
+    reactivate: (code: string) => tickPath(entityId, code),
     /** The payment-method screen the "Payment failed" banner links to. */
     paymentMethod: `${b}/payment-method`,
   } as const;

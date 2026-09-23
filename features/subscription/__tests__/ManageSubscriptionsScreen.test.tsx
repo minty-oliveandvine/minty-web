@@ -17,6 +17,7 @@ import {
   subscriptionsPage,
 } from "@/features/subscription/__fixtures__/subscriptions";
 import type { PayerSubscriptions } from "@/features/subscription/api/payerPortal";
+import { CALCULATING_MS } from "@/features/subscription/hooks/useEntitySummary";
 import { ManageSubscriptionsScreen } from "@/features/subscription/routes/ManageSubscriptionsScreen";
 
 const push = vi.fn();
@@ -183,7 +184,14 @@ describe("ManageSubscriptionsScreen", () => {
     await userEvent.click(within(ask).getByRole("button", { name: "Go back" }));
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     const opened = (
-      await screen.findByRole("region", { name: "Subscription Summary", busy: false })
+      await screen.findByRole(
+        "region",
+        { name: "Subscription Summary", busy: false },
+        // Cancel subscription ticked every active module, which arms the 1.2s "Calculating…"
+        // beat - half the 2.5s default budget before the row can settle at all. The beat goes
+        // on top of the usual budget, not inside it (as useEntitySummary.test.tsx does).
+        { timeout: CALCULATING_MS + 2500 },
+      )
     ).closest("li")!;
     expect(opened).toHaveAttribute("data-entity", "e-solera-group-limited");
     expect(

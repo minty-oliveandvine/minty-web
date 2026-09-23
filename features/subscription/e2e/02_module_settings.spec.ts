@@ -224,8 +224,14 @@ test.describe("module settings page", () => {
     await stubApi(page, frame("D"));
     await handoff(page, c, MODULES(c.entityId));
 
+    // Activating is one module's pending change, so it lands on the list with it ticked.
     await body(page).getByRole("button", { name: "Activate Subscription" }).click();
-    await page.waitForURL((u) => u.pathname.endsWith("/modules/activate/PETTY_CASH"));
+    await page.waitForURL(
+      (u) =>
+        u.pathname === "/subscription/subscriptions" &&
+        u.searchParams.get("tick") === "PETTY_CASH" &&
+        u.searchParams.get("entity") === c.entityId,
+    );
   });
 
   test("03-F: the payment-failed banner, and 'here' opens the payment method", async ({ page }) => {

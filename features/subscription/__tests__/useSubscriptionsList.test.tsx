@@ -11,7 +11,12 @@ import { setAuth } from "@/lib/auth";
 import { env } from "@/lib/env";
 import { _resetHandoffForTests } from "@/lib/handoff";
 
-import { RESULT_FIXTURES, TODAY, WALLET } from "@/features/subscription/__fixtures__/modulePage";
+import {
+  RESULT_FIXTURES,
+  SUMMARY_FIXTURES,
+  TODAY,
+  WALLET,
+} from "@/features/subscription/__fixtures__/modulePage";
 import {
   ENTITIES,
   INCOMING_TRANSFERS,
@@ -235,7 +240,7 @@ describe("useSubscriptionsList", () => {
 
     const b = `/subscription/entities/${e.entity_id}/modules`;
     expect(push.mock.calls.map((c) => c[0])).toEqual([
-      `${b}/activate/PAYMENT_REQUEST`,
+      `/subscription/subscriptions?entity=${e.entity_id}&tick=PAYMENT_REQUEST`,
       `/subscription/subscriptions/subscriber?entity=${e.entity_id}`,
       "/subscription/subscriptions/incoming?transfer=t-1",
       "/subscription/billing",
@@ -523,6 +528,65 @@ describe("useSubscriptionsList", () => {
     await act(() => result.current.applyChangePrompt());
     expect(posts.map((p) => [p.action, p.body])).toEqual([["cancel", { code: "PETTY_CASH" }]]);
     expect(result.current.result?.result.kind).toBe("module_cancelled");
+  });
+
+  /** The list, plus one company's page model - what an arrival with `?tick=` reads. */
+  function serveRow(fetchMock: ReturnType<typeof vi.fn<typeof fetch>>, page: unknown) {
+    fetchMock.mockImplementation(async (input) => {
+      const url = new URL(String(input));
+      if (url.pathname === "/api/me/subscriptions/transfers") return reply(200, { transfers: [] });
+      if (url.pathname === "/api/me/subscriptions") return reply(200, subscriptionsPage());
+      if (url.pathname === "/api/me/billing/entity-payment-method") return reply(200, WALLET);
+      if (/^\/api\/entities\/[^/]+\/modules$/.test(url.pathname)) return reply(200, page);
+      return reply(404, { error: "not_found" });
+    });
+  }
+
+  it("arriving from Activate Subscription opens the row with that module ticked", async () => {
+    // M31: Petty Cash's trial expired - ticking it is the `subscribe` seam.
+    serveRow(fetchMock, SUMMARY_FIXTURES.M31);
+    const e = ENTITIES[0];
+    const { result } = renderHook(
+      () =>
+        useSubscriptionsList({ focusEntityId: e.entity_id, tickCode: "PETTY_CASH", today: TODAY }),
+      { wrapper },
+    );
+    await waitFor(() => expect(result.current.status).toBe("ready"));
+    expect(result.current.openEntityId).toBe(e.entity_id);
+
+    // The tick waits for the row's own read: before it, there is nothing to tick against.
+    await waitFor(() => expect(result.current.summary.view?.pendingChange).toBeTruthy());
+    expect(result.current.summary.view?.pendingChange).toMatchObject({
+      code: "PETTY_CASH",
+      seam: "subscribe",
+    });
+    expect(result.current.summary.view?.modules[0]).toMatchObject({
+      tick: "ticked",
+      chip: "Adding",
+    });
+    // Arriving posts nothing and asks nothing - the person confirms.
+    expect(result.current.changePrompt).toBeNull();
+    expect(fetchMock.mock.calls.every((c) => (c[1]?.method ?? "GET") === "GET")).toBe(true);
+  });
+
+  it("a tick it cannot give is simply not given", async () => {
+    // Payment Request was never started on M31: its control is Start Free Trial, not a box.
+    serveRow(fetchMock, SUMMARY_FIXTURES.M31);
+    const e = ENTITIES[0];
+    const { result } = renderHook(
+      () =>
+        useSubscriptionsList({
+          focusEntityId: e.entity_id,
+          tickCode: "PAYMENT_REQUEST",
+          today: TODAY,
+        }),
+      { wrapper },
+    );
+    await waitFor(() => expect(result.current.summary.status).toBe("ready"));
+
+    expect(result.current.openEntityId).toBe(e.entity_id);
+    expect(result.current.summary.view?.pendingChange).toBeNull();
+    expect(result.current.summary.view?.modules[1].changed).toBe(false);
   });
 
   it("05·D: Reactivate on the OPEN row ticks every module that is not active and asks", async () => {

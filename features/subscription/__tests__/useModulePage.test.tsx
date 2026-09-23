@@ -227,9 +227,9 @@ describe("useModulePage", () => {
 
     expect(push.mock.calls.map((c) => c[0])).toEqual([
       "/subscription/subscriptions?entity=e1",
-      "/subscription/entities/e1/modules/activate/PETTY_CASH",
-      "/subscription/entities/e1/modules/resume/PETTY_CASH",
-      "/subscription/entities/e1/modules/reactivate/PAYMENT_REQUEST",
+      "/subscription/subscriptions?entity=e1&tick=PETTY_CASH",
+      "/subscription/subscriptions?entity=e1&tick=PETTY_CASH",
+      "/subscription/subscriptions?entity=e1&tick=PAYMENT_REQUEST",
       "/subscription/entities/e1/modules/payment-method",
     ]);
   });

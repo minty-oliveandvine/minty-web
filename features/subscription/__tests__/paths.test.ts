@@ -36,16 +36,19 @@ describe("subscription paths", () => {
     expect(modulesPath("a/b")).toBe("/subscription/entities/a%2Fb/modules");
   });
 
-  it("names the pages a module card's CTA leads to, under the module page", () => {
+  it("names where a module card's CTA leads", () => {
     const r = moduleRoutes("abc-123");
     expect(r.manage).toBe("/subscription/subscriptions?entity=abc-123");
+    // Activate / Resume / Reactivate are one module's pending change, which the open row
+    // already says: the list, this company, that module ticked.
     expect(r.activate("PETTY_CASH")).toBe(
-      "/subscription/entities/abc-123/modules/activate/PETTY_CASH",
+      "/subscription/subscriptions?entity=abc-123&tick=PETTY_CASH",
     );
-    expect(r.resume("PETTY_CASH")).toBe("/subscription/entities/abc-123/modules/resume/PETTY_CASH");
+    expect(r.resume("PETTY_CASH")).toBe(r.activate("PETTY_CASH"));
     expect(r.reactivate("PAYMENT_REQUEST")).toBe(
-      "/subscription/entities/abc-123/modules/reactivate/PAYMENT_REQUEST",
+      "/subscription/subscriptions?entity=abc-123&tick=PAYMENT_REQUEST",
     );
+    // Still a page of its own, still unbuilt.
     expect(r.paymentMethod).toBe("/subscription/entities/abc-123/modules/payment-method");
   });
 });

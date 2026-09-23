@@ -26,6 +26,7 @@ function Content() {
       resultFixture={q.get("result")}
       transferred={q.get("transferred") === "1"}
       startedCode={q.get("started")}
+      tickCode={q.get("tick")}
     />
   );
 }

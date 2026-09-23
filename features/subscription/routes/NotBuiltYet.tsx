@@ -13,9 +13,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { PORTAL } from "@/features/subscription/lib/paths";
 
 const FLOWS: { test: RegExp; name: string }[] = [
-  { test: /\/modules\/activate\//, name: "Activate Subscription" },
-  { test: /\/modules\/resume\//, name: "Resume Subscription" },
-  { test: /\/modules\/reactivate(\/|$)/, name: "Reactivate Subscription" },
+  // Activate / Resume / Reactivate are no longer pages: they land on the list with the module
+  // ticked (`lib/paths.ts::moduleRoutes`).
   { test: /\/modules\/cancel(\/|$)/, name: "Cancel subscription" },
   { test: /\/modules\/payment-method$/, name: "Payment method" },
   { test: /\/invoices$/, name: "Invoices" },
