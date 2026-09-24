@@ -105,6 +105,9 @@ export function TransferSubscriptionScreen(args: UseTransferSubscriptionArgs) {
           outcome="withdrawn"
           entityName={t.entityName}
           onDone={t.dismissWithdrawn}
+          // 07-K records nothing: it follows the payer's OWN Withdraw, a moment ago in this
+          // tab, so there is no "seen" to consume and every way out is the same action.
+          onClose={t.dismissWithdrawn}
         />
       )}
     </div>

@@ -36,16 +36,18 @@ function text(r: ReturnType<typeof build>) {
 }
 
 describe("buildChangeResult (05·C)", () => {
-  it("RU22: both trials confirmed - Congratulations, a line each, nothing charged today", () => {
+  it("RU22: both trials confirmed - ONE line, the bundle, not the same sentence twice", () => {
+    // The design's RU frames say it per module; both confirmed is the bundle said twice, so
+    // the row says it once. Only when the SAME thing happened to every module of the bundle.
     const r = build("RU22");
     expect(r.kind).toBe("celebrate");
     expect(r.layout).toBe("row");
     expect(r.headline).toEqual({ module: null, text: CONGRATULATIONS });
     expect(text(r)).toEqual([
-      "Petty Cash is confirmed. Billing starts the day its trial ends.",
-      "Payment Request is confirmed. Billing starts the day its trial ends.",
+      "Super Minty is confirmed. Billing starts the day its trial ends.",
     ]);
-    expect(r.lines.map((l) => l.module.tone)).toEqual(["petty", "payment"]);
+    expect(r.lines.map((l) => l.module.tone)).toEqual(["bundle"]);
+    expect(r.lines.map((l) => l.module.code)).toEqual(["BUNDLE"]);
     expect(r.money).toBe("Nothing charged today · HK$400 a month when the trial ends.");
     expect(r.footer.createdOn).not.toBeNull();
   });

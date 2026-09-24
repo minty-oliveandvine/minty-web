@@ -282,6 +282,31 @@ describe("useSubscriptionsList", () => {
     return posts;
   }
 
+  it("after a successful change the row is read again - a stale CTA cannot linger", async () => {
+    // The bug: `after` was fetched only to say what CHANGED, so the open row kept the BEFORE
+    // page model and a reactivated module went on offering "Reactivate Subscription"
+    // underneath the result. Every other exit from `apply` reloaded; the successful one did not.
+    serveChange(fetchMock, "RU23");
+    const e = ENTITIES[0];
+    const { result } = renderHook(
+      () => useSubscriptionsList({ today: TODAY, focusEntityId: e.entity_id }),
+      { wrapper },
+    );
+    await waitFor(() => expect(result.current.summary.status).toBe("ready"));
+    const was = result.current.summary.view!.modules.find((m) => m.code === "PAYMENT_REQUEST")!;
+    expect(was.view.state).not.toBe("active");
+
+    act(() => result.current.summary.toggleTick("PETTY_CASH"));
+    act(() => result.current.summary.toggleTick("PAYMENT_REQUEST"));
+    act(() => result.current.confirmChange(e, result.current.summary.view!.pendingChange!));
+    await act(() => result.current.applyChangePrompt());
+
+    await waitFor(() => {
+      const now = result.current.summary.view?.modules.find((m) => m.code === "PAYMENT_REQUEST");
+      expect(now?.view.state).toBe("active");
+    });
+  });
+
   it("Confirm Subscription Change applies the ticks - one action per module - and lands on the result row", async () => {
     const posts = serveChange(fetchMock, "RU23");
     const e = ENTITIES[0];

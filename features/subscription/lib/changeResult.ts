@@ -36,6 +36,7 @@ import {
   billable,
   forecast,
   formatMoney,
+  isBundleSet,
   longDate,
   rowFooter,
   shortDate,
@@ -51,8 +52,12 @@ import {
 export type ResultKind =
   "celebrate" | "updated" | "module_cancelled" | "subscription_cancelled" | "transferred";
 
-/** A module's name, painted in its colour. */
-export type ModuleRef = { code: ModuleCode; name: string; tone: PlanTone };
+/**
+ * What a result line is ABOUT, and how to colour its name. `"BUNDLE"` is not a module: when
+ * one change did the same thing to every module of the bundle, the row says it once, as the
+ * bundle, instead of repeating a sentence per module.
+ */
+export type ModuleRef = { code: ModuleCode | "BUNDLE"; name: string; tone: PlanTone };
 
 /** One line of the row layout: the module in colour, then what happened to it. */
 export type ResultLine = { module: ModuleRef; text: string };
@@ -91,6 +96,31 @@ const TONE: Record<ModuleCode, PlanTone> = { PETTY_CASH: "petty", PAYMENT_REQUES
 
 function ref(card: ModuleCard): ModuleRef {
   return { code: card.code, name: card.name, tone: TONE[card.code] ?? "none" };
+}
+
+function bundleRef(page: ModulePage): ModuleRef {
+  return { code: "BUNDLE", name: page.summary?.bundle_name || "Super Minty", tone: "bundle" };
+}
+
+/**
+ * The Congratulations lines - one per module, or ONE for the bundle.
+ *
+ * Both modules confirmed used to read "Petty Cash is confirmed. Billing starts the day its
+ * trial ends." followed by the identical sentence with the other name, which is the bundle
+ * said twice. Collapsed only when the same thing happened to every module of the bundle, so
+ * the single sentence is true of all of it; anything else stays per module.
+ *
+ * Deliberately NOT applied to what is ending: those lines carry each module's own end date,
+ * and two dates cannot be one sentence.
+ */
+function celebrateLines(added: { card: ModuleCard; outcome: Outcome }[], page: ModulePage) {
+  const outcomes = new Set(added.map((d) => d.outcome));
+  if (outcomes.size === 1 && isBundleSet(added.map((d) => d.card), page)) {
+    // not `module`: Next forbids assigning that identifier (no-assign-module-variable)
+    const bundle = bundleRef(page);
+    return [{ module: bundle, text: lineFor(added[0].outcome, added[0].card, bundle.name) }];
+  }
+  return added.map((d) => ({ module: ref(d.card), text: lineFor(d.outcome, d.card) }));
 }
 
 /** What happened to one module between the two page models. */
@@ -142,16 +172,17 @@ export function moneyLine(f: Forecast): string {
   return `${money(f.now.price)} until ${shortDate(until)}, then ${money(f.after.price)} a month.`;
 }
 
-function lineFor(outcome: Outcome, card: ModuleCard): string {
+/** ``name`` overrides the card's own, so the bundle can say one sentence for all of it. */
+function lineFor(outcome: Outcome, card: ModuleCard, name: string = card.name): string {
   switch (outcome) {
     case "started":
-      return `${card.name} free trial has started — ${TRIAL_DAYS} days, free.`;
+      return `${name} free trial has started — ${TRIAL_DAYS} days, free.`;
     case "confirmed":
-      return `${card.name} is confirmed. Billing starts the day its trial ends.`;
+      return `${name} is confirmed. Billing starts the day its trial ends.`;
     case "activated":
-      return `${card.name} is active. Your card has been charged.`;
+      return `${name} is active. Your card has been charged.`;
     case "restored":
-      return `${card.name} is restored and billing carries on as before.`;
+      return `${name} is restored and billing carries on as before.`;
     case "ending": {
       const end = accessEnd(card);
       return end
@@ -318,7 +349,7 @@ export function buildChangeResult(
 
   const lines: ResultLine[] =
     added.length > 0
-      ? added.map((d) => ({ module: ref(d.card), text: lineFor(d.outcome, d.card) }))
+      ? celebrateLines(added, after)
       : // The API said yes but the page model reads the same: say what was asked, plainly.
         (asked.kind === "start_trial" ? [asked.code] : asked.codes)
           .map((code) => after.cards.find((c) => c.code === code))

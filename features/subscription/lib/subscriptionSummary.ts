@@ -272,7 +272,7 @@ function line(card: ModuleCard, tag: string | null): PlanLine {
   return { name: card.name, tone: TONE[card.code] ?? "none", tag };
 }
 
-function isBundleSet(cards: ModuleCard[], page: ModulePage): boolean {
+export function isBundleSet(cards: ModuleCard[], page: ModulePage): boolean {
   const bundleCodes = (page.summary?.bundle_codes ?? []).map((c) => String(c).toUpperCase()).sort();
   const codes = cards.map((c) => c.code.toUpperCase()).sort();
   return (

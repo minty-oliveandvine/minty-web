@@ -56,7 +56,10 @@ export type UseBillingOverviewResult = {
    * stacking modals is worse than a short queue.
    */
   outcome: TransferOutcomeRow | null;
+  /** Done: records it as seen, so it never returns. */
   dismissOutcome: () => void;
+  /** The backdrop and Escape: closes it for this visit only. */
+  closeOutcome: () => void;
   reload: () => void;
 };
 
@@ -113,14 +116,27 @@ export function useBillingOverview({
     return all.find((o) => !dismissed.includes(o.id)) ?? null;
   }, [account, dismissed]);
 
-  const dismissOutcome = useCallback(() => {
-    if (!outcome) return;
-    // OPTIMISTIC, and deliberately so. The modal closes on the click and the POST runs
-    // behind it; a failure only means it opens once more next visit, which is the safe
-    // direction. Trapping somebody behind a dialog that will not close is not.
-    setDismissed((seen) => [...seen, outcome.id]);
-    void markTransferSeen(outcome.id).catch(() => {});
-  }, [outcome]);
+  /**
+   * Take this outcome off the queue. `seen` says whether it also goes on the record.
+   *
+   * ONLY DONE MARKS IT SEEN. The marker is once-ever, so a backdrop click that consumed it
+   * would remove the only in-app telling of a declined handover for good; closing simply
+   * defers it to the next visit. Either way it leaves the queue now, so nobody is trapped
+   * behind a dialog that will not go.
+   *
+   * The POST is OPTIMISTIC: the modal closes on the click and the write runs behind it. A
+   * failure only means it opens once more, which is the safe direction to fail in.
+   */
+  const advance = useCallback(
+    (seen: boolean) => {
+      if (!outcome) return;
+      setDismissed((done) => [...done, outcome.id]);
+      if (seen) void markTransferSeen(outcome.id).catch(() => {});
+    },
+    [outcome],
+  );
+  const dismissOutcome = useCallback(() => advance(true), [advance]);
+  const closeOutcome = useCallback(() => advance(false), [advance]);
 
   const next = useMemo(() => nextBilling(account), [account]);
   const summary = useMemo(
@@ -135,6 +151,7 @@ export function useBillingOverview({
     overview: summary,
     outcome,
     dismissOutcome,
+    closeOutcome,
     goToBilling: useCallback(() => router.push(PORTAL.billing), [router]),
     manageSubscriptions: useCallback(() => router.push(PORTAL.subscriptions), [router]),
     reload: useCallback(() => {

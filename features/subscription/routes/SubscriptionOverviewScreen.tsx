@@ -81,6 +81,7 @@ export function SubscriptionOverviewScreen(args: UseBillingOverviewArgs) {
           entityName={o.outcome.entity_name}
           who={o.outcome.who || null}
           onDone={o.dismissOutcome}
+          onClose={o.closeOutcome}
         />
       )}
     </div>

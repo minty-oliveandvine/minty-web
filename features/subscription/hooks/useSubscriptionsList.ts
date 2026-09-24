@@ -574,6 +574,13 @@ export function useSubscriptionsList({
         summary.resetTicks();
         setChangePrompt(null);
         land(entity, { kind: "ticks", codes: change.codes }, before, after);
+        // READ BOTH AGAIN. `after` is fetched to say what CHANGED and nothing more - the open
+        // row keeps its own page model and the list its own rows, and neither had heard. A
+        // reactivated module went on offering "Reactivate Subscription" underneath the result
+        // until something else happened to reload them. Every other exit from this function
+        // already reloads; the successful one was the exception.
+        summary.reload();
+        reload();
       } catch (err) {
         showToast(sentence(err), "error");
         setChangePrompt(null);
@@ -582,7 +589,7 @@ export function useSubscriptionsList({
         setChangeBusy(false);
       }
     },
-    [summary, showToast, land],
+    [summary, showToast, land, reload],
   );
   const applyChangePrompt = useCallback(async () => {
     if (!changePrompt || changeBusy) return;

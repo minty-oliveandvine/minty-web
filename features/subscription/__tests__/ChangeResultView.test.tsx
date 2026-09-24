@@ -80,12 +80,12 @@ describe("ChangeResultRow", () => {
     expect(row).toHaveAttribute("data-result", "celebrate");
     expect(within(row).getByRole("heading", { level: 3 })).toHaveTextContent(entity.entity_name);
     expect(within(row).getByRole("heading", { level: 4 })).toHaveTextContent("Congratulations!");
+    // ONE line: both modules confirmed is the bundle, not the same sentence twice.
     const lines = within(row).getAllByText(
       /is confirmed\. Billing starts the day its trial ends\./,
     );
-    expect(lines).toHaveLength(2);
-    expect(within(lines[0]).getByText("Petty Cash")).toHaveClass("text-[#ea9713]");
-    expect(within(lines[1]).getByText("Payment Request")).toHaveClass("text-[#2e6ff2]");
+    expect(lines).toHaveLength(1);
+    expect(within(lines[0]).getByText("Super Minty")).toHaveClass("text-[#161f2e]");
     expect(
       within(row).getByText("Nothing charged today · HK$400 a month when the trial ends."),
     ).toBeInTheDocument();

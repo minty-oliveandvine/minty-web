@@ -303,6 +303,7 @@ describe("08-A, the portal's landing", () => {
     // the rest of the sentence - the same trap the <br/> in section 06's titles has.
     expect(dialog).toHaveAccessibleName("Sonia Chan declined the transfer");
     // The design's colours: the person in orange, the company in teal, "Entity" neither.
+    // The same rule wherever the name appears - the title here, the body on 07-L.
     expect(within(dialog).getByText("Sonia Chan")).toHaveClass("text-[#ea9713]");
     const company = within(dialog).getByText("Company B Limited");
     expect(company).toBeInTheDocument();
@@ -318,6 +319,82 @@ describe("08-A, the portal's landing", () => {
     expect(posts).toEqual([
       { path: "/api/me/subscriptions/transfer/seen", body: { transfer: "t-9" } },
     ]);
+  });
+
+  it("closing without pressing Done does NOT record it as seen", async () => {
+    // The marker is once-ever, so a stray backdrop click or an Escape must not consume the
+    // only in-app telling of a declined handover. It closes for this visit and comes back.
+    const user = userEvent.setup();
+    const posts: string[] = [];
+    fetchMock.mockImplementation(async (input, init) => {
+      const url = new URL(String(input));
+      if (init?.method === "POST") {
+        posts.push(url.pathname);
+        return reply(200, { ok: true, message: "Done." });
+      }
+      return reply(200, {
+        ...LIST_FIXTURES.A.page,
+        transfer_outcomes: [
+          {
+            id: "t-9",
+            entity_id: "e-company-b",
+            entity_name: "Company B Limited",
+            status: "declined",
+            who: "Sonia Chan",
+            responded_at: null,
+          },
+        ],
+        total: LIST_FIXTURES.A.page.entities.length,
+        page: 1,
+        pages: 1,
+        per_page: 100,
+        sort: "entity",
+        direction: "asc",
+        query: "",
+      });
+    });
+
+    render(<SubscriptionOverviewScreen today={TODAY} />);
+    await screen.findByRole("dialog");
+
+    await user.keyboard("{Escape}");
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(posts).toEqual([]);
+  });
+
+  it("07-L: an accepted handover names the person in the body, in the same orange", async () => {
+    fetchMock.mockImplementation(async (input, init) => {
+      if (init?.method === "POST") return reply(200, { ok: true, message: "Done." });
+      void input;
+      return reply(200, {
+        ...LIST_FIXTURES.A.page,
+        transfer_outcomes: [
+          {
+            id: "t-8",
+            entity_id: "e-company-b",
+            entity_name: "Company B Limited",
+            status: "accepted",
+            who: "Angelika Lifecycle",
+            responded_at: null,
+          },
+        ],
+        total: LIST_FIXTURES.A.page.entities.length,
+        page: 1,
+        pages: 1,
+        per_page: 100,
+        sort: "entity",
+        direction: "asc",
+        query: "",
+      });
+    });
+
+    render(<SubscriptionOverviewScreen today={TODAY} />);
+
+    const dialog = await screen.findByRole("dialog");
+    expect(dialog).toHaveAccessibleName("Transfer has been successful");
+    // The sentence stays whole around the coloured run.
+    expect(dialog).toHaveTextContent("Angelika Lifecycle has accepted the transfer.");
+    expect(within(dialog).getByText("Angelika Lifecycle")).toHaveClass("text-[#ea9713]");
   });
 
   it("nothing is told when there is no unseen outcome", async () => {

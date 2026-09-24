@@ -719,6 +719,13 @@ payer's money does not cover, and the subscription moves.
   the gap and that it still shares the title's column and never collides. In 07-I the
   **person's name is orange** (`#ea9713`, the design's own), rendered as a `<span>` inside the
   `<h2>` so the dialog's accessible name stays the whole sentence.
+- **The bundle says it once** (2026-09-24). A change that did the SAME thing to every module of
+  the bundle renders one line naming the bundle — "Super Minty is confirmed. Billing starts the
+  day its trial ends." — instead of that sentence twice with a different name. `ModuleRef.code`
+  gained `"BUNDLE"` for it and the line takes the bundle tone. **This diverges from the RU
+  frames**, which say it per module; RU22's two tests were updated to the collapsed shape.
+  Deliberately NOT applied to what is ENDING: those lines carry each module's own end date, and
+  two dates cannot be one sentence.
 - **How it ended, told** — `components/TransferOutcomeDialog.tsx`, four kinds on the
   `ConfirmDialog` shell, each the company, one sentence and _Done_: `withdrawn` (07-K, the only
   one with a trigger today), `accepted` (07-L "Transfer has been successful"), `declined`
@@ -788,8 +795,14 @@ payer's money does not cover, and the subscription moves.
     over a per-browser flag, and the right one here, since this app stores nothing in
     `localStorage` and its other "show once" mechanisms only work for an action taken in the
     same tab a moment earlier. Several outcomes queue oldest-first, one dialog at a time.
-    Dismissal is optimistic: the dialog closes on the click and a failed POST only means it
-    opens once more next visit, which is the safe direction.
+    **Only _Done_ records it.** The backdrop and Escape close the dialog for that visit and it
+    returns next time (`onClose` vs `onDone`, through `ConfirmDialog`'s `onDismiss` hook — the
+    same one A-11 uses so Escape cannot mean "discard"): the marker is once-ever, so a stray
+    click must not be able to consume the only in-app telling of a declined handover. Either way
+    it leaves the queue immediately, so nobody is stuck behind a dialog that will not go. The
+    POST is optimistic — a failure only means it opens once more, which is the safe direction.
+    07-K is the exception and passes the same handler to both: it follows the payer's own
+    Withdraw a moment earlier in the same tab, so there is no "seen" to consume.
   - **Money is in minor units** on both transfer routes (8800 = HK$88.00), unlike the module
     page's cards — `formatMinor` is the one place it is converted.
   - **"to them"**: when the person a request waits on is no longer among the candidates (left
