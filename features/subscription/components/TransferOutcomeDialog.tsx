@@ -4,10 +4,11 @@
  * How a handover ended, told in a modal on the `ConfirmDialog` shell (Figma 07-K/L/I and
  * 06·B's A-08): the request withdrawn, accepted, declined, or expired - the company, one
  * sentence, Done. `withdrawn` follows the payer's own *Withdraw request*; the other three
- * answer to something the OTHER person did (or did not do), which the API tells by email
- * today and no read here reports - they are drawn on the Subscription & Billing dashboard when
- * that page (08) and an outgoing-transfer read exist.
+ * answer to something the OTHER person did (or did not do), and are drawn on the Subscription
+ * & Billing dashboard, fed by `transfer_outcomes` on `/api/me/subscriptions`.
  */
+
+import type { ReactNode } from "react";
 
 import type { ModalImage } from "@/features/subscription/lib/changeModal";
 
@@ -15,9 +16,24 @@ import { ConfirmDialog } from "@/features/subscription/components/ConfirmDialog"
 
 export type TransferOutcome = "withdrawn" | "accepted" | "declined" | "expired";
 
+/**
+ * The person's name in the title, in the design's orange (07-I draws it that way).
+ *
+ * A SPAN, not a second line: the accessible name of the dialog is the whole `<h2>`, so the
+ * name has to stay contiguous with the rest of the sentence - "Sonia Chan declined the
+ * transfer", not "Sonia Chandeclined". Same trap the `<br/>` in 06's titles has.
+ */
+function who_(who: string | null) {
+  return <span className="text-[#ea9713]">{who || "They"}</span>;
+}
+
 export const OUTCOME: Record<
   TransferOutcome,
-  { title: (who: string | null) => string; body: (who: string | null) => string; image: ModalImage }
+  {
+    title: (who: string | null) => ReactNode;
+    body: (who: string | null) => string;
+    image: ModalImage;
+  }
 > = {
   withdrawn: {
     title: () => "Transfer request has been withdrawn",
@@ -30,7 +46,7 @@ export const OUTCOME: Record<
     image: "thumbs_up",
   },
   declined: {
-    title: (who) => `${who || "They"} declined the transfer`,
+    title: (who) => <>{who_(who)} declined the transfer</>,
     body: () => "You can send a new request to anyone anytime.",
     image: "envelope",
   },

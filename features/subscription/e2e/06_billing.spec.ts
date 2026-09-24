@@ -108,6 +108,45 @@ test.describe("billing", () => {
     await expect(body(page).getByRole("heading", { level: 1 })).toHaveText("Manage Subscriptions");
   });
 
+  test("07-I: a declined handover is told over the landing, once", async ({ page }) => {
+    // The payer who ASKED learned by email or not at all until this: every other read of a
+    // transfer filters on the open statuses, so a declined offer was invisible here.
+    const posts: unknown[] = [];
+    await stubBilling(page, WALLET_TWO);
+    await page.route(`${BILLING_API_URL}/api/me/subscriptions?*`, (route) =>
+      route.fulfill(
+        json({
+          ...subscriptionsPage(),
+          transfer_outcomes: [
+            {
+              id: "t-9",
+              entity_id: "e-company-b",
+              entity_name: "Company B Limited",
+              status: "declined",
+              who: "Sonia Chan",
+              responded_at: null,
+            },
+          ],
+        }),
+      ),
+    );
+    await page.route(`${BILLING_API_URL}/api/me/subscriptions/transfer/seen`, (route) => {
+      posts.push(route.request().postDataJSON());
+      return route.fulfill(json({ ok: true, message: "Done." }));
+    });
+
+    await handoff(page, creds(), "/subscription", { entity_id: "" });
+
+    const told = page.getByRole("dialog", { name: "Sonia Chan declined the transfer" });
+    await expect(told).toContainText("Company B Limited");
+    await expect(told).toContainText("You can send a new request to anyone anytime.");
+    await told.getByRole("button", { name: "Done" }).click();
+
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    // The server marker is what keeps it closed tomorrow, and on every other device.
+    expect(posts).toEqual([{ transfer: "t-9" }]);
+  });
+
   test("08-B: the next bill, the cards with the default first, and the invoices", async ({
     page,
   }) => {

@@ -101,7 +101,6 @@ export function SubscriberPicker({
   candidates,
   selected,
   blockers,
-  charge,
   invite,
   inviting,
   inviteError,
@@ -115,7 +114,6 @@ export function SubscriberPicker({
   candidates: SubscriberCandidate[];
   selected: string | null;
   blockers: string[];
-  charge: string | null;
   invite: string;
   inviting: boolean;
   inviteError: string | null;
@@ -169,12 +167,6 @@ export function SubscriberPicker({
           ))
         )}
       </div>
-
-      {charge && (
-        <p className="text-sm text-[#6b7380]" data-charge>
-          {charge}
-        </p>
-      )}
 
       <hr className="border-[#eef1f4]" />
 

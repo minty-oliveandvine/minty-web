@@ -239,6 +239,34 @@ describe("ManageSubscriptionsScreen", () => {
     expect(JSON.parse(String(post![1]?.body))).toEqual({ codes: ["PAYMENT_REQUEST"] });
   });
 
+  it("the whole row opens the company, but its own controls do not", async () => {
+    await show(subscriptionsPage());
+
+    // The name, not the chevron.
+    await userEvent.click(screen.getByText("Kestrel Foods Limited"));
+    const open = await screen.findByRole("region", { name: "Subscription Summary", busy: false });
+    expect(open.closest("li")).toHaveAttribute("data-entity", "e-kestrel-foods-limited");
+
+    // The ⋮ inside a row does its own job and leaves the row alone.
+    await userEvent.click(screen.getByRole("button", { name: "Actions for Solera Group Limited" }));
+    expect(screen.getAllByRole("menuitem").length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("region", { name: "Subscription Summary" })).toHaveLength(1);
+    expect(
+      screen.getByRole("region", { name: "Subscription Summary" }).closest("li"),
+    ).toHaveAttribute("data-entity", "e-kestrel-foods-limited");
+  });
+
+  it("a cell's Start Trial asks, and does not open the row behind it", async () => {
+    await show(subscriptionsPage());
+
+    await userEvent.click(
+      screen.getByRole("button", { name: "Start Trial · Petty Cash · Harbour & Vine Limited" }),
+    );
+
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Subscription Summary" })).toBeNull();
+  });
+
   it("05·A: a row's chevron opens it in place, one at a time; the column arrows sort", async () => {
     await show(subscriptionsPage());
     await userEvent.click(screen.getByRole("button", { name: "Open Kestrel Foods Limited" }));

@@ -12,6 +12,7 @@ import { setAuth } from "@/lib/auth";
 import { env } from "@/lib/env";
 
 import { TODAY } from "@/features/subscription/__fixtures__/modulePage";
+import { LIST_FIXTURES } from "@/features/subscription/__fixtures__/subscriptions";
 import { ADDED_CARD, WALLET_ADDED, WALLET_TWO } from "@/features/subscription/__fixtures__/billing";
 import { BillingPageScreen } from "@/features/subscription/routes/BillingPageScreen";
 import { AddCardScreen, EditCardScreen } from "@/features/subscription/routes/CardScreens";
@@ -28,6 +29,20 @@ vi.mock("@/features/subscription/components/CardCaptureForm", () => ({
   CardCaptureForm: ({ firstCard }: { firstCard: boolean }) => (
     <div data-testid="card-form">{firstCard ? "first card" : "another card"}</div>
   ),
+  // The loading/error/form triad around it, which the screen now delegates to. Mocked at the
+  // same boundary: what this suite is about is still the screen, not Stripe's iframe.
+  CardCapturePanel: ({
+    setup,
+  }: {
+    setup: { status: string; error: string | null; firstCard: boolean };
+  }) =>
+    setup.status === "error" ? (
+      <p role="alert">{setup.error}</p>
+    ) : setup.status === "loading" ? (
+      <p role="status">Opening the card form…</p>
+    ) : (
+      <div data-testid="card-form">{setup.firstCard ? "first card" : "another card"}</div>
+    ),
 }));
 
 function reply(status: number, body: unknown): Response {
@@ -246,6 +261,69 @@ describe("08-A, the portal's landing", () => {
       "href",
       `${env.MINTY_URL}/entity`,
     );
+  });
+
+  it("07-I: a declined handover is told once, over the landing, and marked seen", async () => {
+    // The gap this closes: every other read filters on the OPEN statuses, so the payer who
+    // ASKED learned by email or not at all.
+    const user = userEvent.setup();
+    const posts: { path: string; body: unknown }[] = [];
+    fetchMock.mockImplementation(async (input, init) => {
+      const url = new URL(String(input));
+      if (init?.method === "POST") {
+        posts.push({ path: url.pathname, body: JSON.parse(String(init.body)) });
+        return reply(200, { ok: true, message: "Done." });
+      }
+      return reply(200, {
+        ...LIST_FIXTURES.A.page,
+        transfer_outcomes: [
+          {
+            id: "t-9",
+            entity_id: "e-company-b",
+            entity_name: "Company B Limited",
+            status: "declined",
+            who: "Sonia Chan",
+            responded_at: null,
+          },
+        ],
+        total: LIST_FIXTURES.A.page.entities.length,
+        page: 1,
+        pages: 1,
+        per_page: 100,
+        sort: "entity",
+        direction: "asc",
+        query: "",
+      });
+    });
+
+    render(<SubscriptionOverviewScreen today={TODAY} />);
+
+    const dialog = await screen.findByRole("dialog");
+    // The accessible name is the WHOLE title, so the coloured name must stay contiguous with
+    // the rest of the sentence - the same trap the <br/> in section 06's titles has.
+    expect(dialog).toHaveAccessibleName("Sonia Chan declined the transfer");
+    // The design's colours: the person in orange, the company in teal, "Entity" neither.
+    expect(within(dialog).getByText("Sonia Chan")).toHaveClass("text-[#ea9713]");
+    const company = within(dialog).getByText("Company B Limited");
+    expect(company).toBeInTheDocument();
+    expect(company).toHaveClass("text-[#18c4c7]");
+    expect(
+      within(dialog).getByText("You can send a new request to anyone anytime."),
+    ).toBeInTheDocument();
+
+    await user.click(within(dialog).getByRole("button", { name: "Done" }));
+
+    expect(screen.queryByRole("dialog")).toBeNull();
+    // The server marker is what stops it returning tomorrow.
+    expect(posts).toEqual([
+      { path: "/api/me/subscriptions/transfer/seen", body: { transfer: "t-9" } },
+    ]);
+  });
+
+  it("nothing is told when there is no unseen outcome", async () => {
+    render(<SubscriptionOverviewScreen fixture="A" today={TODAY} />);
+    await screen.findByRole("region", { name: "Payment Method" });
+    expect(screen.queryByRole("dialog")).toBeNull();
   });
 
   it("the way back goes to the scoped company's modules, signed in", () => {

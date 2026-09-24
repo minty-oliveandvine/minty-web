@@ -259,6 +259,19 @@ describe("SubscriptionSummaryRow", () => {
     expect(within(p).getByRole("button", { name: CONFIRM_CHANGE })).toBeInTheDocument();
   });
 
+  it("the header strip closes the row; the panel under it does not", async () => {
+    const { on } = show("M44");
+
+    // A checkbox and a module card are inside the same `<li>`: they must not collapse it.
+    await userEvent.click(screen.getByRole("checkbox", { name: "Petty Cash subscription" }));
+    await userEvent.click(screen.getByRole("article", { name: "Payment Request" }));
+    expect(on.onClose).not.toHaveBeenCalled();
+
+    // The company's name, at the top, is the way back out - as the chevron beside it is.
+    await userEvent.click(screen.getByRole("heading", { level: 3, name: "Nexora Health Limited" }));
+    expect(on.onClose).toHaveBeenCalledTimes(1);
+  });
+
   it("the chevron closes, the ⋮ carries the row's items", async () => {
     const { on } = show("M44");
     await userEvent.click(screen.getByRole("button", { name: "Close Nexora Health Limited" }));

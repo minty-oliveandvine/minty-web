@@ -89,8 +89,6 @@ describe("useSubscriptionRequests", () => {
     expect(r.view?.panel).toMatchObject({ kind: "simple", price: "HK$280" });
     expect(r.card?.last4).toBe("4121");
     expect(r.cardId).toBe("pm_visa4121");
-    expect(r.charge.today).toMatch(/^You’ll be charged HK\$88 today/);
-    expect(r.trialLines).toEqual([]);
   });
 
   it("several requests: none reviewed until picked; ?transfer= picks", async () => {
@@ -101,8 +99,6 @@ describe("useSubscriptionRequests", () => {
     expect(result.current.reviewed).toBeNull();
     act(() => result.current.review(second));
     await waitFor(() => expect(result.current.reviewed?.row.id).toBe("t-2"));
-    expect(result.current.reviewed?.charge.nothingDueNow).toBe(true);
-    expect(result.current.reviewed?.trialLines).toHaveLength(1);
 
     const { result: byUrl } = renderHook(() =>
       useSubscriptionRequests({ today: TODAY, transferId: "t-1" }),
@@ -132,8 +128,90 @@ describe("useSubscriptionRequests", () => {
     ]);
     expect(result.current.step).toBe("review");
     expect(result.current.reviewed?.card?.last4).toBe("8842");
+  });
+
+  it("Add New Card opens the form in place; the new card is picked and the offer is still there", async () => {
+    serve([INCOMING_REQUEST]);
+    const { result } = renderHook(() => useSubscriptionRequests({ today: TODAY }));
+    await waitFor(() => expect(result.current.reviewed?.viewStatus).toBe("ready"));
+    act(() => result.current.changeCard());
+
     act(() => result.current.addCard());
-    expect(push).toHaveBeenCalledWith("/subscription/billing");
+    expect(result.current.step).toBe("add-card");
+    // THE POINT OF THE STEP: it used to push to the billing page, which answered "I have no
+    // card" by throwing away the offer being reviewed.
+    expect(push).not.toHaveBeenCalled();
+    expect(result.current.reviewed?.row.id).toBe("t-1");
+
+    const added = {
+      ...RECIPIENT_CARDS,
+      methods: [...RECIPIENT_CARDS.methods, { ...RECIPIENT_CARDS.methods[0], id: "pm_fresh" }],
+    };
+    act(() => result.current.cardSaved(added, "pm_fresh"));
+    expect(result.current.step).toBe("payment");
+    // Picked, because adding it mid-choice IS choosing it.
+    expect(result.current.reviewed?.cardId).toBe("pm_fresh");
+    expect(result.current.reviewed?.cards).toHaveLength(added.methods.length);
+  });
+
+  it("Cancel on the card form goes back to the list, not out of the offer", async () => {
+    serve([INCOMING_REQUEST]);
+    const { result } = renderHook(() => useSubscriptionRequests({ today: TODAY }));
+    await waitFor(() => expect(result.current.reviewed?.viewStatus).toBe("ready"));
+    act(() => result.current.changeCard());
+    act(() => result.current.addCard());
+    act(() => result.current.cancelAddCard());
+    expect(result.current.step).toBe("payment");
+    expect(push).not.toHaveBeenCalled();
+  });
+
+  it("07-D: unticking a module sends only the kept ones; the whole company sends no codes", async () => {
+    serve([INCOMING_REQUEST]);
+    const { result } = renderHook(() => useSubscriptionRequests({ today: TODAY }));
+    await waitFor(() => expect(result.current.reviewed?.viewStatus).toBe("ready"));
+    // Everything the company holds starts taken on - arriving here is being offered all of it.
+    expect(result.current.reviewed?.taking).toEqual(["PETTY_CASH", "PAYMENT_REQUEST"]);
+
+    act(() => result.current.toggleModule("PETTY_CASH"));
+    expect(result.current.reviewed?.taking).toEqual(["PAYMENT_REQUEST"]);
+
+    await act(() => result.current.accept());
+    expect(posts).toEqual([
+      {
+        path: "/api/me/subscriptions/transfer/respond",
+        body: { transfer: "t-1", accept: true, codes: ["PAYMENT_REQUEST"] },
+        entity: null,
+      },
+    ]);
+  });
+
+  it("taking the whole company omits codes entirely rather than re-listing them", async () => {
+    serve([INCOMING_REQUEST]);
+    const { result } = renderHook(() => useSubscriptionRequests({ today: TODAY }));
+    await waitFor(() => expect(result.current.reviewed?.viewStatus).toBe("ready"));
+    // Ticked off and back on again: the choice is unchanged, so it is not a choice.
+    act(() => result.current.toggleModule("PETTY_CASH"));
+    act(() => result.current.toggleModule("PETTY_CASH"));
+
+    await act(() => result.current.accept());
+    expect(posts[0].body).toEqual({ transfer: "t-1", accept: true });
+  });
+
+  it("the last ticked module cannot be unticked", async () => {
+    serve([INCOMING_REQUEST]);
+    const { result } = renderHook(() => useSubscriptionRequests({ today: TODAY }));
+    await waitFor(() => expect(result.current.reviewed?.viewStatus).toBe("ready"));
+    act(() => result.current.toggleModule("PETTY_CASH"));
+    expect(result.current.reviewed?.taking).toEqual(["PAYMENT_REQUEST"]);
+
+    // Taking nothing on is declining the handover, which is the other button - so the
+    // screen never reaches a state Confirm would have to refuse.
+    act(() => result.current.toggleModule("PAYMENT_REQUEST"));
+    expect(result.current.reviewed?.taking).toEqual(["PAYMENT_REQUEST"]);
+
+    // And it still ticks back on.
+    act(() => result.current.toggleModule("PETTY_CASH"));
+    expect(result.current.reviewed?.taking).toEqual(["PETTY_CASH", "PAYMENT_REQUEST"]);
   });
 
   it("Confirm Subscription Transfer accepts and lands on the list's row, transferred", async () => {

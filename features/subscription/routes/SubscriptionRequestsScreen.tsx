@@ -12,6 +12,7 @@ import Image from "next/image";
 
 import { PortalHero } from "@/features/subscription/components/PortalHero";
 import {
+  AddCardPanel,
   IncomingRequestReview,
   NoRequests,
   PaymentMethodPicker,
@@ -25,7 +26,7 @@ import {
 export function SubscriptionRequestsScreen(args: UseSubscriptionRequestsArgs) {
   const r = useSubscriptionRequests(args);
   const reviewing = r.reviewed && r.step === "review";
-  const picking = r.reviewed && r.step === "payment";
+  const picking = r.reviewed && r.step !== "review";
   const title = reviewing
     ? "Transfer Subscription - Choose Modules"
     : picking
@@ -66,15 +67,23 @@ export function SubscriptionRequestsScreen(args: UseSubscriptionRequestsArgs) {
               <h2 className="text-[25px] font-bold text-black">{r.reviewed.row.entity_name}</h2>
               <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-[minmax(0,1fr)_auto]">
                 <div className="flex justify-center">
-                  <PaymentMethodPicker
-                    cards={r.reviewed.cards}
-                    cardId={r.reviewed.cardId}
-                    busy={r.busy}
-                    actionError={r.actionError}
-                    onPick={r.pickCard}
-                    onAdd={r.addCard}
-                    onConfirm={() => void r.confirmCard()}
-                  />
+                  {r.step === "add-card" ? (
+                    <AddCardPanel
+                      setup={r.setup}
+                      onSaved={r.cardSaved}
+                      onCancel={r.cancelAddCard}
+                    />
+                  ) : (
+                    <PaymentMethodPicker
+                      cards={r.reviewed.cards}
+                      cardId={r.reviewed.cardId}
+                      busy={r.busy}
+                      actionError={r.actionError}
+                      onPick={r.pickCard}
+                      onAdd={r.addCard}
+                      onConfirm={() => void r.confirmCard()}
+                    />
+                  )}
                 </div>
                 <Image
                   src="/portal/minty-lemon-handoff.png"
@@ -92,6 +101,7 @@ export function SubscriptionRequestsScreen(args: UseSubscriptionRequestsArgs) {
               busy={r.busy}
               actionError={r.actionError}
               onChangeCard={r.changeCard}
+              onToggleModule={r.toggleModule}
               onAccept={() => void r.accept()}
               onDecline={() => void r.decline()}
             />

@@ -19,6 +19,7 @@ import {
   PaymentMethodCard,
   SubscriptionOverviewCard,
 } from "@/features/subscription/components/BillingOverviewPanels";
+import { TransferOutcomeDialog } from "@/features/subscription/components/TransferOutcomeDialog";
 import {
   useBillingOverview,
   type UseBillingOverviewArgs,
@@ -68,6 +69,19 @@ export function SubscriptionOverviewScreen(args: UseBillingOverviewArgs) {
           <PaymentMethodCard next={o.next} onOpen={o.goToBilling} />
           <SubscriptionOverviewCard overview={o.overview} onManage={o.manageSubscriptions} />
         </div>
+      )}
+
+      {/* 07-I / A-07 (declined), A-08 (expired), 07-L (accepted) - all drawn OVER this page.
+          The first modal on the landing, and it belongs here rather than on the transfer
+          screen: that is where the design puts it, and it is the page the payer comes back
+          to. Done marks it seen on the server, so it never opens again on any device. */}
+      {o.outcome && (
+        <TransferOutcomeDialog
+          outcome={o.outcome.status}
+          entityName={o.outcome.entity_name}
+          who={o.outcome.who || null}
+          onDone={o.dismissOutcome}
+        />
       )}
     </div>
   );

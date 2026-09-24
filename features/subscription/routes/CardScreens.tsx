@@ -10,7 +10,7 @@
 
 import Image from "next/image";
 
-import { CardCaptureForm } from "@/features/subscription/components/CardCaptureForm";
+import { CardCapturePanel } from "@/features/subscription/components/CardCaptureForm";
 import { PortalHero } from "@/features/subscription/components/PortalHero";
 import {
   ADD_CARD_HEADING,
@@ -52,40 +52,7 @@ export function AddCardScreen({ fixture }: { fixture?: string | null }) {
           <h2 className="text-[17px] font-bold text-[#16202e]">{ADD_CARD_HEADING}</h2>
           <p className="mt-1.5 text-[13px] text-[#8b93a0]">{STRIPE_NOTE}</p>
         </div>
-        {add.status === "error" ? (
-          <div className="flex flex-col items-start gap-3">
-            <p role="alert" className="text-[15px] text-[#b42318]">
-              {add.error}
-            </p>
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={add.cancel}
-                className="h-[44px] w-[104px] rounded-lg border border-[#d8dee4] bg-white text-[15px] font-semibold text-[#292e38]"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={add.retry}
-                className="h-[44px] w-[114px] rounded-lg bg-[#4fc7c7] text-[15px] font-semibold text-white"
-              >
-                Try again
-              </button>
-            </div>
-          </div>
-        ) : add.status === "loading" || !add.handle ? (
-          <p role="status" className="py-6 text-center text-[15px] text-[#8b93a0]">
-            Opening the card form…
-          </p>
-        ) : (
-          <CardCaptureForm
-            handle={add.handle}
-            firstCard={add.firstCard}
-            onSaved={add.saved}
-            onCancel={add.cancel}
-          />
-        )}
+        <CardCapturePanel setup={add} onSaved={add.saved} onCancel={add.cancel} />
       </section>
       <MintyWithCards />
     </div>

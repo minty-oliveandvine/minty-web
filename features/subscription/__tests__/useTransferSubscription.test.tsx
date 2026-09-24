@@ -85,12 +85,10 @@ describe("useTransferSubscription", () => {
     ]);
     expect(result.current.selected).toBeNull();
     expect(result.current.canRequest).toBe(false);
-    expect(result.current.charge).toBeNull();
     expect(result.current.note).toMatch(/paid up until/);
 
     act(() => result.current.select("u-jiwon"));
     expect(result.current.canRequest).toBe(true);
-    expect(result.current.charge).toMatch(/^They’ll be charged HKD 88/);
     act(() => result.current.select("u-harry"));
     expect(result.current.canRequest).toBe(false);
   });

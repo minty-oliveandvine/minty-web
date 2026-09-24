@@ -73,7 +73,6 @@ describe("TransferSubscriptionScreen", () => {
     expect(request).toBeDisabled();
     await userEvent.click(within(picker).getByRole("radio", { name: /Jiwon Kim/ }));
     expect(request).toBeEnabled();
-    expect(within(picker).getByText(/They’ll be charged HKD 88/)).toBeInTheDocument();
     expect(screen.getByText(/You are still responsible for/)).toHaveTextContent(
       /paid up until \d{1,2} \w+ \d{4}\./,
     );
@@ -144,11 +143,11 @@ describe("SubscriptionRequestsScreen", () => {
       within(empty).getByText(/When someone asks you to take over billing/),
     ).toBeInTheDocument();
     expect(empty.querySelector("img")).toHaveAttribute("src", "/portal/minty-dont.png");
-    await userEvent.click(within(empty).getByRole("button", { name: "Back to My Profile" }));
+    await userEvent.click(within(empty).getByRole("button", { name: "Back to Manage Subscription" }));
     expect(push).toHaveBeenCalledWith("/subscription/subscriptions");
   });
 
-  it("07-D / 07-E: a request under review, its cards drawn not ticked, the card changed, then accepted", async () => {
+  it("07-D / 07-E: a request under review, the modules chosen, the card changed, then accepted", async () => {
     serve({
       "GET /api/me/subscriptions/transfers": { transfers: [INCOMING_REQUEST] },
       "GET /api/me/billing/payment-methods": RECIPIENT_CARDS,
@@ -164,18 +163,22 @@ describe("SubscriptionRequestsScreen", () => {
       ),
     );
     const review = await screen.findByRole("region", { name: "Transfer request" });
-    await within(review).findByRole("checkbox", { name: "Payment Request subscription" });
-    expect(
-      within(review).getByRole("checkbox", { name: "Payment Request subscription" }),
-    ).toHaveAttribute("aria-checked", "true");
-    expect(
-      within(review).getByRole("checkbox", { name: "Petty Cash subscription" }),
-    ).toHaveAttribute("aria-disabled", "true");
+    // EVERY module the company holds starts ticked: arriving here means being offered all
+    // of it. The ticks are the CHOICE now, not a read-out of each module's own state -
+    // which is why Petty Cash is ticked too although it is not the active one.
+    await within(review).findByRole("checkbox", { name: "Take on Payment Request" });
+    for (const name of ["Take on Payment Request", "Take on Petty Cash"]) {
+      expect(within(review).getByRole("checkbox", { name })).toHaveAttribute(
+        "aria-checked",
+        "true",
+      );
+    }
     const panel = within(review).getByRole("region", { name: "Subscription Summary" });
     expect(within(panel).getByText("Payment Request")).toBeInTheDocument();
     expect(within(panel).getByText("HK$280")).toBeInTheDocument();
     expect(within(panel).getByText("Visa 4121")).toBeInTheDocument();
-    expect(within(panel).getByText(/You’ll be charged HK\$88 today/)).toBeInTheDocument();
+    // NO MONEY LINE: accepting takes nothing, so the panel names no figure and no date.
+    expect(within(panel).queryByText(/You’ll be charged/)).toBeNull();
     expect(screen.getByText(/charged to your selected payment method/)).toBeInTheDocument();
 
     await userEvent.click(within(panel).getByRole("button", { name: "Change" }));

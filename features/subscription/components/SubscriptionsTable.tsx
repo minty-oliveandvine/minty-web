@@ -27,6 +27,7 @@ import { ModuleCellView } from "@/features/subscription/components/ModuleCellVie
 import { RowMenu } from "@/features/subscription/components/RowMenu";
 import {
   SubscriptionSummaryRow,
+  fromControl,
   type SummaryRowHandlers,
 } from "@/features/subscription/components/SubscriptionSummaryRow";
 import type { ChangeResult } from "@/features/subscription/lib/changeResult";
@@ -105,10 +106,16 @@ function Row({ row, focused, on }: { row: SubscriptionRow; focused: boolean; on:
 
   const suspended = row.section === "suspended";
   return (
+    // The whole card opens the company, not only the chevron - it reads as one thing. A
+    // pointer affordance only: the chevron keeps the name and stays the focusable control, so
+    // nothing is added to the tab order and "Open <Company>" still names exactly one element.
     <li
       ref={ref}
       data-entity={row.entity.entity_id}
-      className={`${GRID} min-h-[125px] rounded-xl px-7 py-5 shadow-[0px_2px_8px_0px_rgba(0,0,0,0.1)] ${
+      onClick={(e) => {
+        if (!fromControl(e)) on.onToggle(row.entity);
+      }}
+      className={`${GRID} min-h-[125px] cursor-pointer rounded-xl px-7 py-5 shadow-[0px_2px_8px_0px_rgba(0,0,0,0.1)] ${
         suspended ? "bg-[#f5f5f5]" : "bg-white"
       } ${focused ? "ring-2 ring-secondary" : ""}`}
     >

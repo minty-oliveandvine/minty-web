@@ -63,8 +63,27 @@ export const SORT_FIELDS = [
 export type SortField = (typeof SORT_FIELDS)[number];
 export type SortDirection = "asc" | "desc";
 
+/**
+ * How one of the payer's OWN offers ended, where they have not been shown yet (07-I / A-07 for
+ * a decline, A-08 for an expiry, 07-L for an accept).
+ *
+ * The only place a finished handover is visible: every other read filters on the open
+ * statuses, so a declined offer is otherwise indistinguishable from one never made.
+ */
+export type TransferOutcomeRow = {
+  id: string;
+  entity_id: string;
+  entity_name: string;
+  status: "declined" | "expired" | "accepted";
+  /** The other party, named - the modal's title is "<Name> declined the transfer". */
+  who: string;
+  responded_at: string | null;
+};
+
 export type PayerSubscriptions = {
   payer: { id: string; name: string; email: string };
+  /** Empty when there is nothing to tell; absent on an API older than this field. */
+  transfer_outcomes?: TransferOutcomeRow[];
   billing: {
     anchor: string | null;
     anchor_iso: string | null;
@@ -121,6 +140,7 @@ export async function fetchAllPayerSubscriptions(signal?: AbortSignal): Promise<
   payer: PayerSubscriptions["payer"];
   billing: PayerSubscriptions["billing"];
   entities: PortalEntity[];
+  transfer_outcomes: TransferOutcomeRow[];
 }> {
   const first = await fetchPayerSubscriptions({ page: 1, perPage: MAX_PER_PAGE, signal });
   const entities = [...first.entities];
@@ -128,7 +148,14 @@ export async function fetchAllPayerSubscriptions(signal?: AbortSignal): Promise<
     const next = await fetchPayerSubscriptions({ page, perPage: MAX_PER_PAGE, signal });
     entities.push(...next.entities);
   }
-  return { payer: first.payer, billing: first.billing, entities };
+  // From the FIRST page only: the outcomes are a fact about the payer, not about the window
+  // of companies, so every page repeats them and concatenating would show each modal twice.
+  return {
+    payer: first.payer,
+    billing: first.billing,
+    entities,
+    transfer_outcomes: first.transfer_outcomes ?? [],
+  };
 }
 
 // --- Change subscriber ----------------------------------------------------------
@@ -176,6 +203,11 @@ export type PendingTransfer = {
 
 export type SubscriberOptions = {
   entity: { entity_id: string; entity_name: string };
+  /**
+   * ISO; the day the outgoing payer's money stops covering this company. A fact about the
+   * ENTITY - the footer needs it whether or not there is anyone to hand the bill to.
+   */
+  paid_through?: string | null;
   current: { id: string; name: string; email: string };
   candidates: SubscriberCandidate[];
   /** Why the handover cannot go ahead, in the API's words, or empty. */
@@ -235,12 +267,29 @@ export async function initiateTransfer(entityId: string, toUserId: string): Prom
   return data?.message || "The handover request has been sent.";
 }
 
-export async function respondToTransfer(transferId: string, accept: boolean): Promise<string> {
+/**
+ * `codes` is the modules being taken on (07-D "Choose Modules"). Anything the company has and
+ * the list does not name is CANCELLED as part of accepting, ending where the outgoing payer's
+ * money runs out. Omitted means the whole company.
+ */
+export async function respondToTransfer(
+  transferId: string,
+  accept: boolean,
+  codes?: string[],
+): Promise<string> {
   const data = await apiFetch<{ message?: string }>("/api/me/subscriptions/transfer/respond", {
     method: "POST",
-    json: { transfer: transferId, accept },
+    json: { transfer: transferId, accept, ...(codes ? { codes } : {}) },
   });
   return data?.message || (accept ? "You're now the subscriber." : "Request declined.");
+}
+
+/** 07-I's Done: this payer has been shown how that offer ended, and never will be again. */
+export async function markTransferSeen(transferId: string): Promise<void> {
+  await apiFetch("/api/me/subscriptions/transfer/seen", {
+    method: "POST",
+    json: { transfer: transferId },
+  });
 }
 
 export async function cancelTransfer(transferId: string): Promise<string> {

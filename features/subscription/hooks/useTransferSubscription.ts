@@ -34,7 +34,6 @@ import {
 import { PORTAL, moduleRoutes } from "@/features/subscription/lib/paths";
 import {
   NO_COMPANY,
-  candidateCharge,
   paidThrough,
   pendingRecipient,
   responsibilityNote,
@@ -62,8 +61,6 @@ export type UseTransferSubscriptionResult = {
   select: (id: string) => void;
   /** Why the handover cannot go ahead, in the API's words. */
   blockers: string[];
-  /** What the chosen person would be charged, when known. */
-  charge: string | null;
   /** The footer sentence: who is responsible, until when. */
   note: string;
   /** An offer already out: the person, and since when. */
@@ -162,7 +159,6 @@ export function useTransferSubscription({
     entityName || "this company",
     options ? paidThrough(options) : null,
   );
-  const charge = chosen && !pending ? candidateCharge(chosen) : null;
   const canRequest = !busy && !!chosen && !chosen.is_current && blockers.length === 0 && !pending;
 
   const select = useCallback((id: string) => setSelected(id), []);
@@ -232,7 +228,6 @@ export function useTransferSubscription({
     selected,
     select,
     blockers,
-    charge,
     note,
     pending,
     invite,

@@ -65,7 +65,6 @@ test.describe("transfers", () => {
     const request = picker.getByRole("button", { name: "Request transfer" });
     await expect(request).toBeDisabled();
     await picker.getByRole("radio", { name: /Jiwon Kim/ }).click();
-    await expect(picker.getByText(/They’ll be charged HKD 88/)).toBeVisible();
     await expect(body(page).getByText(/You are still responsible for/)).toContainText(
       "paid up until",
     );
@@ -123,7 +122,7 @@ test.describe("transfers", () => {
     await expect(body(page).getByRole("heading", { level: 1 })).toHaveText("Subscription requests");
     const empty = body(page).getByRole("region", { name: "No requests waiting" });
     await expect(empty).toContainText("When someone asks you to take over billing");
-    await empty.getByRole("button", { name: "Back to My Profile" }).click();
+    await empty.getByRole("button", { name: "Back to Manage Subscription" }).click();
     await page.waitForURL((u) => u.pathname === "/subscription/subscriptions");
   });
 
@@ -166,12 +165,24 @@ test.describe("transfers", () => {
       "Transfer Subscription - Choose Modules",
     );
     const review = body(page).getByRole("region", { name: "Transfer request" });
+    // 07-D "Choose Modules": every module the company holds starts taken on, and unticking
+    // one cancels it for the company as part of accepting.
+    const takePc = review.getByRole("checkbox", { name: "Take on Petty Cash" });
+    await expect(takePc).toHaveAttribute("aria-checked", "true");
     await expect(
-      review.getByRole("checkbox", { name: "Payment Request subscription" }),
+      review.getByRole("checkbox", { name: "Take on Payment Request" }),
     ).toHaveAttribute("aria-checked", "true");
+    await takePc.click();
+    await expect(takePc).toHaveAttribute("aria-checked", "false");
     const panel = review.getByRole("region", { name: "Subscription Summary" });
     await expect(panel).toContainText("Visa 4121");
-    await expect(panel).toContainText("You’ll be charged HK$88 today");
+    // THE PANEL FOLLOWS THE TICKS: unticking Petty Cash above re-priced the plan to what
+    // the recipient is actually taking on, and the line under it says what happens to the
+    // module they declined instead of the frozen "No pending changes".
+    await expect(panel).not.toContainText("No pending changes");
+    await expect(panel).toContainText("Petty Cash ends");
+    // Accepting takes no money, so no figure and no date are promised here.
+    await expect(panel).not.toContainText("You’ll be charged");
 
     await panel.getByRole("button", { name: "Change" }).click();
     const picker = body(page).getByRole("region", { name: "Payment Methods" });
@@ -190,7 +201,8 @@ test.describe("transfers", () => {
     );
     expect(posts.map((p) => p.body)).toEqual([
       { payment_method: "pm_master8842" },
-      { transfer: "t-1", accept: true },
+      // Petty Cash was unticked above, so only what is kept is sent.
+      { transfer: "t-1", accept: true, codes: ["PAYMENT_REQUEST"] },
     ]);
     const landed = body(page).locator("li[data-result='transferred']");
     await expect(landed).toContainText("Subscription Transfer Completed");

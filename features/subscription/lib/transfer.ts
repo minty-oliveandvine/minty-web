@@ -7,8 +7,9 @@
  *   against the recipient's billing anchor), why it cannot go ahead (`blockers`, the API's
  *   words), and the offer already waiting (`pending_transfer`), if any;
  * - the recipient's side (07-D/E/F/M): `/api/me/subscriptions/transfers` - the offers made to
- *   the signed-in person, each with the company, who asks, a quote for what accepting charges
- *   TODAY, the trials that would be inherited, and blockers.
+ *   the signed-in person, each with the company, who asks, and blockers. ACCEPTING CHARGES
+ *   NOTHING - the API takes no money for days that have not started and parks the charge until
+ *   they do - so neither the `quote` on those rows nor the inherited trials are drawn.
  *
  * Money from these routes is in MINOR units (the engine's invoices: 8800 = HK$88.00) - unlike
  * the module page's cards - so it is formatted here, once. Pure.
@@ -16,7 +17,6 @@
 
 import type {
   IncomingTransfer,
-  InheritedTrial,
   PendingTransfer,
   SubscriberCandidate,
   SubscriberOptions,
@@ -43,7 +43,12 @@ export const NO_REQUESTS_BODY =
 export const CONFIRM_TRANSFER = "Confirm Subscription Transfer";
 export const TRANSFER_CHARGE_NOTE =
   "Subscription will be charged to your selected payment method from the date that transfer is completed.";
-export const NOTHING_TO_PAY_TODAY = "Nothing to pay today.";
+/**
+ * 07-D when the person has no saved card. Not a refusal: a company may be offered to any admin,
+ * and the card is only needed at the moment of accepting, which is what this says.
+ */
+export const NEEDS_CARD =
+  "Add a payment method to take this over. Nothing is charged until you confirm.";
 
 /** Minor units → "HK$88.00" / "HKD 88.00" (the currency code when no symbol is known). */
 export function formatMinor(
@@ -57,10 +62,17 @@ export function formatMinor(
 }
 
 /**
- * The day the outgoing payer's money stops covering the company - the same for every
- * candidate (each quote's window starts there), so any quote answers it.
+ * The day the outgoing payer's money stops covering the company.
+ *
+ * The API answers it on the payload, because it is a fact about the ENTITY. It used to be
+ * read off a candidate's quote - and quotes are priced per candidate, only when there is
+ * one: a company whose payer is its own only admin has none, and the footer lost "paid up
+ * until ..." on exactly the screen that exists to say what the payer is still liable for.
+ * The quote scan stays as a fallback so an older API still answers.
  */
 export function paidThrough(options: SubscriberOptions): Date | null {
+  const own = utcDay(options.paid_through);
+  if (own) return own;
   for (const c of options.candidates) {
     const day = utcDay(c.quote?.covers_from);
     if (day) return day;
@@ -100,59 +112,67 @@ export function pendingSentence(recipient: {
   return `Sent${when} to ${who}. Nothing has changed and you are still the subscriber. Withdraw it if you want to ask somebody else.`;
 }
 
-/** What one candidate would be charged, for the line under the picker; null without a quote. */
-export function candidateCharge(c: SubscriberCandidate, symbol?: string | null): string | null {
-  const q = c.quote;
-  if (!q) return null;
-  const from = utcDay(q.covers_from);
-  const to = utcDay(q.covers_to);
-  const window = from && to ? ` for ${shortDate(from)} to ${shortDate(to)}` : "";
-  const anchor = q.anchor_is_new ? " This also sets their billing date." : "";
-  return `They’ll be charged ${formatMinor(q.amount, q.currency, symbol)}${window} — the days after the period you’ve paid for, up to their own billing date.${anchor}`;
+export const NO_PENDING_CHANGES = "No pending changes";
+
+/** One declined module: its name, and whether its free days are what end rather than a period. */
+export type DeclinedModule = { name: string; trialing: boolean };
+
+function list(names: string[]): string {
+  return names.length === 1
+    ? names[0]
+    : `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
 }
 
-/** What accepting charges the recipient today (07-D's money), in the design's voice. */
-export function acceptCharge(
-  row: IncomingTransfer,
-  symbol?: string | null,
-): { today: string | null; detail: string | null; nothingDueNow: boolean } {
-  const quote = row.quote;
-  const amount = quote ? quote.amount : row.amount;
-  const currency = quote ? quote.currency : row.currency;
-  const trials = row.trials ?? [];
-  if (amount != null) {
-    const from = utcDay(quote?.covers_from);
-    const to = utcDay(quote?.covers_to);
-    const window = from && to ? ` for ${shortDate(from)} to ${shortDate(to)}` : "";
-    const anchor = quote?.anchor_is_new
-      ? " It also sets your monthly billing date."
-      : " After that it renews on your usual billing date.";
-    return {
-      today: `You’ll be charged ${formatMinor(amount, currency, symbol)} today${window}.`,
-      detail: `That covers the days after the period ${row.from_name || "the current subscriber"} has already paid for — you’re not charged for those.${anchor}`,
-      nothingDueNow: false,
-    };
+/**
+ * What unticking a module on 07-D means, said plainly (the line under the price).
+ *
+ * A declined module is not merely "not taken on" — it is CANCELLED for the company, and this
+ * is the only place that decision is visible before Confirm.
+ *
+ * A TRIAL AND A PAID MODULE END ON DIFFERENT DAYS, so they get different sentences. A paid
+ * one stops when the outgoing payer's money runs out, which is a date this screen knows. A
+ * trial runs its free days out and then simply does not convert — an earlier version said
+ * both ended "when the current subscription runs out", which was wrong for the trial and is
+ * the reason these are split.
+ */
+export function declinedNote(modules: DeclinedModule[], endsOn: Date | null): string {
+  if (modules.length === 0) return NO_PENDING_CHANGES;
+  const trials = modules.filter((m) => m.trialing).map((m) => m.name);
+  const paid = modules.filter((m) => !m.trialing).map((m) => m.name);
+  if (paid.length > 0 && !endsOn) {
+    // Callers check `undatedDecline` first and show that instead. Reaching here would mean
+    // printing a date-shaped sentence with no date behind it, about a module that is about
+    // to be cancelled - so it raises rather than inventing wording for a broken read.
+    throw new Error("declinedNote: a paid module was declined with no end date");
   }
-  // No figure AND something on trial means there is nothing to charge - not that pricing
-  // failed: the free days carry over and the money comes at the conversion date.
-  if (trials.length > 0) return { today: NOTHING_TO_PAY_TODAY, detail: null, nothingDueNow: true };
-  return {
-    today: null,
-    detail:
-      "We couldn’t price this request just now. Accepting will show you the amount before anything is charged.",
-    nothingDueNow: false,
-  };
+  const parts: string[] = [];
+  if (trials.length > 0) {
+    parts.push(`${list(trials)} ${trials.length === 1 ? "ends" : "end"} when the trial runs out.`);
+  }
+  if (paid.length > 0) {
+    parts.push(`${list(paid)} ${paid.length === 1 ? "ends" : "end"} on ${shortDate(endsOn!)}.`);
+  }
+  return parts.join(" ");
 }
 
-/** "Petty Cash's free trial runs until 25 Sept 2026; HK$280 a month after that." per trial date. */
-export function inheritedTrialLines(trials: InheritedTrial[], symbol?: string | null): string[] {
-  return trials.map((t) => {
-    const end = utcDay(t.trial_end);
-    const when = end ? ` until ${shortDate(end)}` : "";
-    const then =
-      t.amount != null ? `; ${formatMinor(t.amount, t.currency, symbol)} a month after that` : "";
-    return `${t.label} free trial carries over${when}${then}.`;
-  });
+/**
+ * The one state this screen must not paper over: a PAID module is being declined and the API
+ * has not said when the company is paid up to.
+ *
+ * That date is where the module would stop, and it comes from the same read that prices the
+ * handover - so its absence means the pricing failed, not that the answer is "no date". Said
+ * softly it reads as ordinary copy ("...when the current subscription runs out") above a
+ * button that cancels a module for real. So it is a refusal instead: the sentence says what
+ * is wrong and Confirm is held until it is not.
+ *
+ * Returns the refusal, or null when there is nothing wrong. A declined TRIAL is unaffected -
+ * it ends at its own trial end and never needed this date.
+ */
+export function undatedDecline(modules: DeclinedModule[], endsOn: Date | null): string | null {
+  if (endsOn) return null;
+  const paid = modules.filter((m) => !m.trialing).map((m) => m.name);
+  if (paid.length === 0) return null;
+  return `We can't tell when ${list(paid)} would stop being billed, so this can't go ahead. Refresh and try again.`;
 }
 
 /** The expiry chip on a request: "Expires 27 Sept 2026". */

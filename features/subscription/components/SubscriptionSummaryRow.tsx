@@ -67,7 +67,8 @@ const TONE: Record<ModuleStatusLine["tone"], string> = {
   plain: "text-black",
 };
 
-const PLAN_TONE: Record<PlanLine["tone"], string> = {
+/** The module colours the plan lines are set in; the transfer summary draws its own rows. */
+export const PLAN_TONE: Record<PlanLine["tone"], string> = {
   petty: "text-[#ea9713]",
   payment: "text-[#2e6ff2]",
   bundle: "text-[#161f2e]",
@@ -82,6 +83,17 @@ const PLAN_TONE: Record<PlanLine["tone"], string> = {
  * started, whose button is its own control) and the read-only card the transfer review draws
  * pass no handler and stay inert.
  */
+/**
+ * Whether a click came from a control rather than from the row around it. A row is its own
+ * click target, but the ⋮ and its menu render INLINE inside the same `<li>` (no portal), as do
+ * a cell's Start Trial / Subscribe buttons - so their clicks bubble, and without this the row
+ * would open behind every menu and every button pressed in it.
+ */
+export function fromControl(e: { target: EventTarget | null }): boolean {
+  const el = e.target as HTMLElement | null;
+  return Boolean(el?.closest("button, a, input, [role='menu'], [role='menuitem']"));
+}
+
 export function SummaryModuleCard({
   module,
   onToggle,
@@ -191,12 +203,17 @@ export function PlanLines({ lines, size = "text-xl" }: { lines: PlanLine[]; size
   return (
     <ul className="flex flex-col gap-1">
       {lines.map((line) => (
-        <li key={line.name} className="flex items-center gap-2">
-          <span className={`${size} font-bold ${PLAN_TONE[line.tone]}`}>{line.name}</span>
-          {line.tone === "bundle" && (
-            <Image src="/portal/super-minty.png" alt="" width={60} height={56} unoptimized />
-          )}
-          {line.tag && <span className="text-sm text-[#737a87]">{line.tag}</span>}
+        // THE TAG SITS BELOW THE NAME, on its own line and at the same left edge - "only",
+        // "(Free Trial)", "(Active)" qualify the module above them rather than continuing its
+        // name. Beside it, a long name pushed it to the right and it read as a stray word.
+        <li key={line.name}>
+          <div className="flex items-center gap-2">
+            <span className={`${size} font-bold ${PLAN_TONE[line.tone]}`}>{line.name}</span>
+            {line.tone === "bundle" && (
+              <Image src="/portal/super-minty.png" alt="" width={60} height={56} unoptimized />
+            )}
+          </div>
+          {line.tag && <span className="block text-sm text-[#737a87]">{line.tag}</span>}
         </li>
       ))}
     </ul>
@@ -366,7 +383,16 @@ export function SubscriptionSummaryRow({
       data-open
       className="flex flex-col gap-8 rounded-xl bg-white px-8 pb-8 pt-10 shadow-[0px_2px_8px_0px_rgba(0,0,0,0.1)]"
     >
-      <div className="flex items-center justify-between gap-4">
+      {/*
+        The strip is the click target, not the whole `<li>`: the panel below holds the cards and
+        their checkboxes, and a click there must never collapse the row.
+      */}
+      <div
+        onClick={(e) => {
+          if (!fromControl(e)) on.onClose();
+        }}
+        className="flex cursor-pointer items-center justify-between gap-4"
+      >
         <h3 className="min-w-0 truncate text-[25px] font-bold text-black">{entity.entity_name}</h3>
         <div className="flex items-center gap-4">
           <button

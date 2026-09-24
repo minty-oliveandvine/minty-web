@@ -33,7 +33,10 @@ import { utcDay } from "@/features/subscription/lib/subscriptionSummary";
  * `fetchAllPayerSubscriptions` walks the pages and answers exactly this much, so neither page
  * depends on where the paging stopped.
  */
-export type PayerAccount = Pick<PayerSubscriptions, "payer" | "billing" | "entities">;
+export type PayerAccount = Pick<
+  PayerSubscriptions,
+  "payer" | "billing" | "entities" | "transfer_outcomes"
+>;
 
 export const BILLING_TITLE = "Manage billing details and Payment Methods";
 export const OVERVIEW_TITLE = "Subscription & Billing";

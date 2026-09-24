@@ -43,21 +43,32 @@ function sentence(err: unknown, fallback: string): string {
   return err instanceof ApiError ? err.message : fallback;
 }
 
-export type UseAddCardResult = {
+export type SetupIntentState = {
   status: "loading" | "ready" | "error";
   error: string | null;
   /** The SetupIntent the form mounts against; one per visit, never re-opened under the form. */
   handle: SetupIntentHandle | null;
   /** True when this is the first card: the server makes a first card the default by itself. */
   firstCard: boolean;
-  /** Step 3: what the form calls once Stripe has the card. */
-  saved: (methods: PayerPaymentMethods, paymentMethodId: string | null) => void;
-  cancel: () => void;
   retry: () => void;
 };
 
-export function useAddCard({ fixture }: { fixture?: string | null } = {}): UseAddCardResult {
-  const router = useRouter();
+/**
+ * Step 1 on its own — opening a SetupIntent and asking whether this is the account's first card.
+ *
+ * Shared, because the card form is no longer only the billing page's: the handover's accept
+ * screen mounts it too (07-E), so that someone offered a company they cannot yet be charged for
+ * can save a card without leaving the offer. What differs between the two is only where the
+ * screen goes afterwards, which is the caller's.
+ *
+ * `enabled` exists for that second caller: the accept screen mounts this hook long before the
+ * person asks to add a card, and opening a SetupIntent for everyone who merely READ an offer
+ * would leave a trail of abandoned intents on the account.
+ */
+export function useSetupIntent({
+  enabled = true,
+  fixture,
+}: { enabled?: boolean; fixture?: string | null } = {}): SetupIntentState {
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   const [error, setError] = useState<string | null>(null);
   const [handle, setHandle] = useState<SetupIntentHandle | null>(null);
@@ -65,6 +76,7 @@ export function useAddCard({ fixture }: { fixture?: string | null } = {}): UseAd
   const [generation, setGeneration] = useState(0);
 
   useEffect(() => {
+    if (!enabled) return;
     let live = true;
     (async () => {
       try {
@@ -96,7 +108,29 @@ export function useAddCard({ fixture }: { fixture?: string | null } = {}): UseAd
     return () => {
       live = false;
     };
-  }, [fixture, generation]);
+  }, [enabled, fixture, generation]);
+
+  return {
+    status,
+    error,
+    handle,
+    firstCard,
+    retry: useCallback(() => {
+      setStatus("loading");
+      setGeneration((g) => g + 1);
+    }, []),
+  };
+}
+
+export type UseAddCardResult = SetupIntentState & {
+  /** Step 3: what the form calls once Stripe has the card. */
+  saved: (methods: PayerPaymentMethods, paymentMethodId: string | null) => void;
+  cancel: () => void;
+};
+
+export function useAddCard({ fixture }: { fixture?: string | null } = {}): UseAddCardResult {
+  const router = useRouter();
+  const opened = useSetupIntent({ fixture });
 
   const saved = useCallback(
     (methods: PayerPaymentMethods, paymentMethodId: string | null) => {
@@ -109,16 +143,9 @@ export function useAddCard({ fixture }: { fixture?: string | null } = {}): UseAd
   );
 
   return {
-    status,
-    error,
-    handle,
-    firstCard,
+    ...opened,
     saved,
     cancel: useCallback(() => router.push(PORTAL.billing), [router]),
-    retry: useCallback(() => {
-      setStatus("loading");
-      setGeneration((g) => g + 1);
-    }, []),
   };
 }
 

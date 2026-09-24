@@ -67,7 +67,6 @@ export function TransferSubscriptionScreen(args: UseTransferSubscriptionArgs) {
                   candidates={t.candidates}
                   selected={t.selected}
                   blockers={t.blockers}
-                  charge={t.charge}
                   invite={t.invite}
                   inviting={t.inviting}
                   inviteError={t.inviteError}

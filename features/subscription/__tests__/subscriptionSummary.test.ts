@@ -44,6 +44,20 @@ describe("formatMoney", () => {
   });
 });
 
+describe("utcDay", () => {
+  it("reads an ISO prefix, and the portal's RFC 822 too", () => {
+    // The prefix is taken as written: an offset must not slide the day it names.
+    expect(utcDay("2026-10-18")).toEqual(new Date(Date.UTC(2026, 9, 18)));
+    expect(utcDay("2026-10-18T23:00:00+08:00")).toEqual(new Date(Date.UTC(2026, 9, 18)));
+    // What the payer portal actually sends. Every date on the handover screens arrives
+    // like this, and reading only ISO dropped all of them against the real API.
+    expect(utcDay("Sun, 18 Oct 2026 12:00:00 GMT")).toEqual(new Date(Date.UTC(2026, 9, 18)));
+    expect(utcDay(null)).toBeNull();
+    expect(utcDay("")).toBeNull();
+    expect(utcDay("whenever")).toBeNull();
+  });
+});
+
 describe("pageFromList", () => {
   it("draws the company's cards from what the list knows of it", () => {
     const orchid = ENTITIES.find((e) => e.entity_name === "Orchid Lane Limited")!;

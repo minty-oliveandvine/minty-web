@@ -2,8 +2,9 @@
 
 /**
  * The confirmation modal's shell (Figma 04-G, section 06 and 06·B): a small white card over the
- * blurred page - the title with a module's name in its colour and Minty beside it, "Entity" and
- * the company (or a lead line of its own, the declined card), the sentences, the secondary
+ * blurred page - the title with a module's (or a person's) name in its colour and Minty beside
+ * it, "Entity" and the company in teal below it (or a lead line of its own, the declined card),
+ * the sentences, the secondary
  * button (Go back; grey-edged, or teal for "Try again now" / "Discard changes") and the
  * confirming button in the tone the change calls for (teal to add, orange to change, red to
  * cancel). Escape and the backdrop take the secondary way out - or `onDismiss` where that is
@@ -119,14 +120,21 @@ export function ConfirmDialog({
             <h2 id={titleId} className="text-[26px] font-bold leading-tight text-black">
               {title}
             </h2>
+            {/*
+              CLEAR OF THE TITLE, not tucked under it. This used to be `-mt-1`, which pulled
+              the block up against the last line of the title; the design leaves a gap there
+              and a company name reads as part of the sentence without one.
+            */}
             {lead !== undefined ? (
-              <div className="-mt-1 text-[15px] leading-snug break-words">{lead}</div>
+              <div className="mt-4 text-[15px] leading-snug break-words">{lead}</div>
             ) : entityName ? (
-              <p className="-mt-1 text-[15px] leading-snug break-words text-[#737a87]">
+              <p className="mt-4 text-[15px] leading-snug break-words text-[#737a87]">
                 Entity
                 <br />
-                {/* one colour for both lines, as the design's single text node draws them */}
-                <span>{entityName}</span>
+                {/* The COMPANY is coloured, the label above it is not: "Entity" is furniture,
+                    the name is the thing the modal is about. (It was one grey for a while -
+                    that reading of the design's single text node is superseded.) */}
+                <span className="text-[#18c4c7]">{entityName}</span>
               </p>
             ) : null}
           </div>

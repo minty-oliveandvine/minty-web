@@ -149,11 +149,25 @@ function amountOf(card: ModuleCard): number {
 
 // ---- dates ---------------------------------------------------------------------------------
 
-export function utcDay(iso: string | null | undefined): Date | null {
-  if (!iso) return null;
-  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
-  if (!m) return null;
-  return new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])));
+/**
+ * The DAY a server date names, in UTC.
+ *
+ * ISO is read off the front, deliberately: `2026-10-18T23:00:00+08:00` is the 18th to the
+ * person who wrote it, and parsing it would slide that to the 18th or 19th depending on where
+ * it is read. The payer portal, though, writes its datetimes RFC 822 - `"Sun, 18 Oct 2026
+ * 12:00:00 GMT"` - so anything the prefix cannot read is parsed and reduced to its UTC day.
+ * Without that second arm every portal date was silently dropped against the real API while
+ * the ISO fixtures made the tests pass: the handover's "paid up until", "Sent <day>", the
+ * charge window, an inherited trial's end and a request's expiry.
+ */
+export function utcDay(value: string | null | undefined): Date | null {
+  if (!value) return null;
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(value);
+  if (m) return new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])));
+  const parsed = Date.parse(value);
+  if (Number.isNaN(parsed)) return null;
+  const d = new Date(parsed);
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
 }
 
 /** "16 August 2026" */

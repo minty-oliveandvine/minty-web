@@ -113,13 +113,16 @@ export function ChangeResultRow({
           </div>
           <BackButton onBack={onBack} />
         </div>
+        {/* FLIPPED to face the words. The art is drawn facing right, which on this layout
+            turned the cat away from the message it is celebrating; mirroring is the whole
+            fix and leaves the asset alone (nothing else uses this file). */}
         <Image
           src="/portal/minty-celebrating.png"
           alt=""
           width={300}
           height={360}
           unoptimized
-          className="justify-self-center"
+          className="-scale-x-100 justify-self-center"
         />
       </div>
 

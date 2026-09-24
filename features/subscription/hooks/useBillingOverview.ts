@@ -21,7 +21,11 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { ApiError } from "@/lib/apiClient";
 
-import { fetchAllPayerSubscriptions } from "@/features/subscription/api/payerPortal";
+import {
+  fetchAllPayerSubscriptions,
+  markTransferSeen,
+  type TransferOutcomeRow,
+} from "@/features/subscription/api/payerPortal";
 import {
   BILLING_LOAD_FAILED,
   nextBilling,
@@ -46,6 +50,13 @@ export type UseBillingOverviewResult = {
   overview: Overview;
   goToBilling: () => void;
   manageSubscriptions: () => void;
+  /**
+   * How one of the payer's own offers ended, where they have not been told (07-I / A-07 /
+   * A-08). One at a time, oldest first: several can have finished while they were away, and
+   * stacking modals is worse than a short queue.
+   */
+  outcome: TransferOutcomeRow | null;
+  dismissOutcome: () => void;
   reload: () => void;
 };
 
@@ -93,6 +104,24 @@ export function useBillingOverview({
     return () => controller.abort();
   }, [fixture, generation]);
 
+  // Which outcomes have been answered in THIS visit. The server marker is what stops them
+  // returning tomorrow; this is only so the queue advances without re-reading the page.
+  const [dismissed, setDismissed] = useState<string[]>([]);
+
+  const outcome = useMemo(() => {
+    const all = account?.transfer_outcomes ?? [];
+    return all.find((o) => !dismissed.includes(o.id)) ?? null;
+  }, [account, dismissed]);
+
+  const dismissOutcome = useCallback(() => {
+    if (!outcome) return;
+    // OPTIMISTIC, and deliberately so. The modal closes on the click and the POST runs
+    // behind it; a failure only means it opens once more next visit, which is the safe
+    // direction. Trapping somebody behind a dialog that will not close is not.
+    setDismissed((seen) => [...seen, outcome.id]);
+    void markTransferSeen(outcome.id).catch(() => {});
+  }, [outcome]);
+
   const next = useMemo(() => nextBilling(account), [account]);
   const summary = useMemo(
     () => overview(account, fixtureToday ?? today ?? new Date()),
@@ -104,6 +133,8 @@ export function useBillingOverview({
     error,
     next,
     overview: summary,
+    outcome,
+    dismissOutcome,
     goToBilling: useCallback(() => router.push(PORTAL.billing), [router]),
     manageSubscriptions: useCallback(() => router.push(PORTAL.subscriptions), [router]),
     reload: useCallback(() => {

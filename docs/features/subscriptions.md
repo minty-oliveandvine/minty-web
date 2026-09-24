@@ -18,7 +18,7 @@ or a company's _Modules_ settings (a scoped token, for that company's page). Nev
 | Index             | `/subscription`                                   | **built** (§15): "Subscription & Billing" — the account at a glance (who is billed and when, how many companies pay, how many trials end soon, what needs attention), with _Manage Subscription_ leading to the list. Where Minty's own link lands | —                                                                                                                                             |
 | Subscriptions     | `/subscription/subscriptions`                     | **built** (§10): every company the payer pays for in one scrolling list, a cell per module, search, the column sorts, the ⋮ menu, Start Trial from the list, the transfer-request cards, the payment-failed line — over a stubbed API | —                                                                                                                                             |
 | Change subscriber | `/subscription/subscriptions/subscriber?entity=…` | **built** (§14): the admins the bill could move to, each with its own quote, the current payer tagged, an invitation for someone new, _Request transfer_ → "Transfer requested"; the request already waiting and its _Withdraw request_ — over the live routes | the outcome modals (accepted / declined / expired) once the API reports how an outgoing request ended                                        |
-| Incoming          | `/subscription/subscriptions/incoming`            | **built** (§14): the requests offered to me — the company's modules as they are, what accepting charges today, the card it goes to (changeable among my saved cards), _Confirm Subscription Transfer_ landing on the list's row, _Decline_; "No requests waiting" — over the live routes | —                                                                                                                                             |
+| Incoming          | `/subscription/subscriptions/incoming`            | **built** (§14): the requests offered to me — the company's modules as they are, no money line (a handover takes nothing at accept), the card the bill will go to (changeable among my saved cards, or added in place), _Confirm Subscription Transfer_ landing on the list's row, _Decline_; "No requests waiting" — over the live routes | —                                                                                                                                             |
 | Billing           | `/subscription/billing`                           | **built** (§15): the next bill, the saved cards with the default pinned first and its _Update card_ menu (promote / edit / remove), _+ Add payment method_, the invoices already paid — over the live routes | the billing company and its address (08-C: no route on the `/api/me` surface), the estimated amount of the next bill |
 | Add / edit a card | `/subscription/billing/add`, `…/billing/edit?card=` | **built** (§15): Stripe's own card fields on a SetupIntent (08-Y), and the name and expiry of a saved card (08-D)                                                                                                                       | —                                                                                                                                             |
 | Invoices          | `/subscription/invoices`                          | — (the billing page already lists the invoices already paid; this is section 09's own page)                                                                                                                                           | every invoice, newest first, filter by company, Stripe's hosted page, the billing-breakdown csv                                               |
@@ -374,6 +374,15 @@ re-homed and redrawn to Figma section "04 · Manage Subscriptions — the payer 
 - **Start Trial from the list** (04-G/H): a confirmation card, then the company's `start-trial`
   action with `X-Entity-Id` (the `/api/me/*` surface is read-only), then the result row (§12). A
   refusal is a toast and the card stays.
+- **The whole row is that chevron's click target** (2026-09-23): the company's name, a module
+  cell, the space between them. A row's own controls are not — the ⋮ and its menu (which render
+  inline in the same `<li>`, not through a portal), a cell's _Start Trial_ / _Subscribe_, and the
+  chevron itself do only their own job (`fromControl` in `SubscriptionSummaryRow.tsx` is the one
+  guard both rows share). On an OPEN row only the header strip closes it, never the panel below —
+  a click on a checkbox or a module card must not collapse the row. Pointer affordance only: the
+  chevron keeps the accessible name and stays the sole focusable control, so "Open <Company>"
+  still names exactly one element. Ticks pending: closing this way asks "Leave without saving?"
+  like every other way out.
 - **A row's chevron opens it in place** — the Subscription Summary of §11 (Figma 05·A), one
   company at a time; the chevron on the open row closes it.
 - **Where the rest goes** — _Request transfer_ → `PORTAL.subscriber?entity=` and _Review and
@@ -639,13 +648,20 @@ payer's money does not cover, and the subscription moves.
   responsibility sentence — "Send request to take over the subscription. You are still
   responsible for <company> until the transfer is successfully completed. This subscription has
   been paid up until <date>. The new subscriber will begin incurring charges after this date."
-  (the date is the first quote's `covers_from`; without a quote the sentence stops at
-  "completed.") — then the picker: "SELECT NEW SUBSCRIBER FOR THIS ENTITY (Admin Role Only)", a
+  (the date is `paid_through` on the payload — a fact about the COMPANY, added 2026-09-24. It
+  used to be read off the first candidate's `covers_from`, and quotes are priced per candidate
+  and only when there is one: a company whose payer is its own only admin had none, so the
+  sentence stopped at "completed." on exactly the screen that exists to say what the payer is
+  still liable for. The quote scan remains as a fallback. The API answers it advisorily —
+  unreadable billing leaves the sentence off rather than failing the screen. **And the payer
+  portal writes its datetimes RFC 822** — `"Sun, 18 Oct 2026 12:00:00 GMT"`, not ISO — so
+  `utcDay` reads both; reading only the ISO prefix dropped every date on these screens against
+  the real API while the ISO fixtures kept the tests green) — then the picker: "SELECT NEW SUBSCRIBER FOR THIS ENTITY (Admin Role Only)", a
   radio per admin of the company (`/api/me/subscriptions/subscriber-options?entity=`), the
-  current payer disabled and tagged _Current_, the pick's own charge under it ("They'll be
-  charged HKD 88 for <from> to <to> — the days after the period you've paid for, up to
-  their own billing date."; "This also sets their billing date." when the recipient has no
-  anchor yet), the API's `blockers` in amber (they disable _Request transfer_), "Invite someone
+  current payer disabled and tagged _Current_ (the pick's own charge used to print under it —
+  "They’ll be charged HKD 88 for <from> to <to> …" — removed 2026-09-24 by decision, along
+  with `candidateCharge`; the recipient is still told what accepting costs them, on 07-D, the
+  screen where that money is actually owed), the API's `blockers` in amber (they disable _Request transfer_), "Invite someone
   new" (an address, _Send invite_ → `invite-admin`; the answer or the refusal stays by the box),
   _Cancel_ / _Request transfer_ (`POST /transfer {entity, to_user}`) — beside Minty handing the
   papers to Lemon.
@@ -655,7 +671,10 @@ payer's money does not cover, and the subscription moves.
 - **07-C, a request already waiting** (`pending_transfer`): the amber notice "A request is
   already waiting. Sent <date> to <name>. Nothing has changed and you are still the
   subscriber. Withdraw it if you want to ask somebody else.", the person with a _Pending_ tag,
-  _Back_ / _Withdraw request_ (`POST /transfer/cancel`) beside Minty with a clock. Withdrawing
+  _Back_ / _Withdraw request_ (`POST /transfer/cancel`) beside Minty with a clock. The
+  responsibility footer is deliberately NOT repeated here (asked for and dropped 2026-09-24):
+  the amber notice above it already says "Nothing has changed and you are still the subscriber."
+  Withdrawing
   asks nothing (there is nothing to lose) and tells with **07-K "Transfer request has been
   withdrawn"** — "You can send a new request to anyone anytime.", _Done_ — then reads the
   screen again, which is 07-A. After every write the screen is read again rather than patched:
@@ -663,31 +682,43 @@ payer's money does not cover, and the subscription moves.
 - **07-F "Subscription requests"** — the only portal screen about companies the viewer does NOT
   pay for, and the one a person can arrive at with no subscriptions at all: "No requests
   waiting" / "When someone asks you to take over billing for their company, it'll appear here
-  for you to accept or decline.", _Back to My Profile_ → the list. Several requests waiting are
+  for you to accept or decline.", _Back to Manage Subscription_ → the list. Several requests waiting are
   a list to pick from (`?transfer=` picks one); a single one is reviewed at once.
 - **07-D "Transfer Subscription - Choose Modules"**, the request under review
   (`/api/me/subscriptions/transfers`): who asks and for which company, the company's two module
   cards drawn as the module page draws them (the page model read with that company's
   `X-Entity-Id`, the card the person's own default), the Subscription Summary panel with the
-  plan and price (§11's builder), the card the charge goes to ("Visa 4121", _Change_), what
-  accepting costs — "You'll be charged HK$88 today for <from> to <to>." with "That
-  covers the days after the period Priya Chan has already paid for … renews on your usual
-  billing date." — or "Nothing to pay today." when everything is still on a free trial (the
+  plan and price (§11's builder), the card the charge goes to (its network mark over "Visa
+  4121", _Change_ — "Add a card" when there is none), **no money line at all** (accepting
+  takes nothing), the trials that carry over when there are any (the
   trials that carry over are listed: "Petty Cash free trial carries over until <date>;
   HK$280 a month after that."), the API's blockers, "Subscription will be charged to your
   selected payment method from the date that transfer is completed.", _Confirm Subscription
   Transfer_ (`POST /transfer/respond {transfer, accept: true}`) and _Decline_ (`accept: false`,
   then the screen is read again). Accepting lands on the list with `?entity=<id>&transferred=1`.
 - **07-E "Payment Methods"** (_Change_): the person's saved cards
-  (`/api/me/billing/payment-methods`) as radios — "Visa ending in 4121 · Expire on 04/29" — _Add
-  New Card_ (the billing page's add-card screen, §15) and _Confirm_, which makes the pick the default
-  (`POST /payment-methods/default`) and returns to 07-D naming it.
+  (`/api/me/billing/payment-methods`) as radios — "Visa ending in 4121 · Expire on 04/29", each
+  with its network mark (`components/CardBrand.tsx`) — _Add New Card_ and _Confirm_, which makes
+  the pick the default (`POST /payment-methods/default`) and returns to 07-D naming it.
+  _Add New Card_ replaces the list with Stripe's own fields **in place** (the hook's `add-card`
+  step, `CardCapturePanel` on a SetupIntent); saving picks the new card and returns to the list,
+  Cancel returns to it unchanged. Nothing navigates, because the offer being reviewed would be
+  lost — and the person most likely to press it is someone with no card at all, who the API now
+  lets be offered a company precisely so they can say yes and add one.
 - **07-M "Subscription Transfer Completed"**: the list's row for the company, in the result
   row's celebrate layout (§12): the headline, "You are now the owner of the <company>
   subscription and have full control of this Minty." with the company in teal, and how billing
   carries on; _Back to Manage Subscriptions_ leaves for the landing, as on every result screen. `useSubscriptionsList` reads
   `?transferred=1` and shows it once the row's page model is in (`transferredResult`), until the
   row is closed or the person moves on.
+- **The modal shell's colours** (`ConfirmDialog`, so every modal that shows a company):
+  the **entity name is teal** and the "Entity" label above it is not — the label is furniture,
+  the name is what the modal is about. This supersedes the earlier "one grey for both lines".
+  The block also sits **clear of the title** now (a `mt-4` gap, where it used to tuck `-mt-1`
+  into the title's trailing leading and read as one block); `02_module_settings.spec.ts` pins
+  the gap and that it still shares the title's column and never collides. In 07-I the
+  **person's name is orange** (`#ea9713`, the design's own), rendered as a `<span>` inside the
+  `<h2>` so the dialog's accessible name stays the whole sentence.
 - **How it ended, told** — `components/TransferOutcomeDialog.tsx`, four kinds on the
   `ConfirmDialog` shell, each the company, one sentence and _Done_: `withdrawn` (07-K, the only
   one with a trigger today), `accepted` (07-L "Transfer has been successful"), `declined`
@@ -698,21 +729,67 @@ payer's money does not cover, and the subscription moves.
   (nothing waiting) on the recipient's — dev only, from `__fixtures__/transfers.ts`, the
   company's cards from the 05·A frame M24.
 - **Readings** (the design's frames against the API's contract):
-  - **The cards are drawn, not ticked.** 07-D's title says "Choose Modules" and its cards have
-    hotspots to 07-E, but `transfer/respond` moves a company's billing whole — there is no
-    per-module accept — so the cards show the modules as they come and the ticks are read-only.
+  - **The cards ARE ticked, and the ticks are the choice** (built 2026-09-24; they were
+    read-only until then, when `transfer/respond` moved a company's billing whole). The title
+    says "Choose Modules" and now it does: every module the company holds starts ticked —
+    arriving here is being offered all of it — and unticking one **cancels that module for the
+    company** as part of accepting, ending it where the outgoing payer's money runs out.
+    The tick reflects *"am I taking this on"*, NOT the module's own state, which is why a
+    module that is not the active one is still ticked. `codes` is sent only when the choice
+    differs from the whole company; unchanged, the field is omitted.
+    **The last ticked module cannot be unticked** — its checkbox and its card both go inert —
+    so the screen never reaches a state Confirm would have to refuse. The API refuses an empty
+    set too, and that guard stays: it answers a request, not a click. Keeping none is what
+    _Decline_ is for.
+
+    **The Subscription Summary follows the ticks.** The unticked codes are fed to
+    `buildSummaryView` as a pending change — the same machinery the open row uses for the
+    same question — so "Selected plan" and the price become what the recipient will actually
+    be billed, not what the company has today. The panel splits honestly in the process: the
+    company keeps everything until the outgoing payer's money runs out, and only what was
+    kept after, so the plan shown is the FUTURE half. The frozen "No pending changes" line
+    under the price is now `declinedNote`, the only place that cancellation is visible before
+    Confirm. **A trial and a paid module end on different days and get different sentences**:
+    a paid one stops when the outgoing payer's money runs out ("Payment Request ends on 18 Oct
+    2026."), a trial runs its free days out and then does not convert ("Petty Cash ends when
+    the trial runs out."), and one of each is two sentences. With no date to name, a paid one
+    reads "when the current subscription runs out".
   - **Decline exists.** The design draws no way to refuse a request; the API has one
     (`accept: false`) and a request the person cannot take (blockers) would otherwise sit
     forever, so _Decline_ sits under _Confirm Subscription Transfer_.
-  - **Add New Card leaves this screen** for the billing page (§15, built since 2026-09-23); a
-    card is added there, never here.
+  - **A handover takes no money, and 07-D says nothing about money** (2026-09-24). The window
+    being bought starts when the outgoing payer's money runs out — normally weeks away — so the
+    API charges nothing at accept: it parks the charge on `subscription_transfer.collect_at` and
+    the daily `collect-transfers` job takes it on that day. The "You'll be charged … today" line
+    is GONE, with `acceptCharge` and `NOTHING_TO_PAY_TODAY`; a version naming the collection date
+    instead was built and then dropped by the user. What the panel still carries is the note
+    under it — "charged to your selected payment method from the date that transfer is
+    completed" — and the inherited-trial lines, which are a different disclosure: they commit the
+    recipient to a charge at a date of their own. `quote` is still on the API's rows, unread.
+  - **A person with no card can be offered a company.** Being asked is not being charged, so
+    the API's offer-time card refusal is gone (2026-09-24); the requirement lives at the accept,
+    where the money is. 07-D says so rather than leaving it to a refused POST — "Add a payment
+    method to take this over. Nothing is charged until you confirm." — and _Confirm Subscription
+    Transfer_ is held until there is one. Only claimed once the wallet has actually been read.
+  - **Add New Card stays on this screen.** It used to leave for the billing page (§15); it now
+    mounts the same form here, because answering "I have no card" by discarding the offer is not
+    an answer.
   - **07-B's hero** reads "Subscription & Billing" in the frame; the page keeps "Transfer
     Subscription" — it is the same page a moment later.
-  - **The outcome modals have no trigger** but `withdrawn`. Accepted, declined and expired
-    answer to something the OTHER person did or did not do; the API tells the payer by email
-    and has no read for an outgoing request's end (`subscriber-options` reports only the one
-    still pending). They are built and tested as kinds and wait for that read and the
-    Subscription & Billing dashboard (08), where 06·B places A-07/A-08.
+  - **All four outcome modals now have a trigger** (2026-09-24). `withdrawn` always had one;
+    **07-I / A-07** ("<Name> declined the transfer"), **A-08** (expired) and **07-L** (accepted)
+    are drawn over **Subscription & Billing** — where the design puts them, and which until now
+    had no modal layer at all. The gap was never the modal: `TransferOutcomeDialog` has had all
+    four kinds with this copy since section 07. It was that **no read reported a finished
+    handover** — every `SubscriptionTransfer` query filters on the three open statuses, so a
+    decline was indistinguishable from an offer never made. `/api/me/subscriptions` now carries
+    `transfer_outcomes`, and _Done_ POSTs `transfer/seen`, which stamps
+    `subscription_transfer.outcome_seen_at`: **once, ever, on every device** — the user's choice
+    over a per-browser flag, and the right one here, since this app stores nothing in
+    `localStorage` and its other "show once" mechanisms only work for an action taken in the
+    same tab a moment earlier. Several outcomes queue oldest-first, one dialog at a time.
+    Dismissal is optimistic: the dialog closes on the click and a failed POST only means it
+    opens once more next visit, which is the safe direction.
   - **Money is in minor units** on both transfer routes (8800 = HK$88.00), unlike the module
     page's cards — `formatMinor` is the one place it is converted.
   - **"to them"**: when the person a request waits on is no longer among the candidates (left

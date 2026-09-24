@@ -2,19 +2,30 @@
 
 /**
  * The recipient's side of a handover, drawn (Figma 07-D/E/F): a request under review - the
- * company's cards as they are, the summary with the card the charge goes to, what accepting
- * charges today, Confirm Subscription Transfer (and Decline, the design's other answer); the
+ * company's cards as they are, the summary with the card the bill will go to, Confirm
+ * Subscription Transfer (and Decline, the design's other answer); the
  * card picker - the person's saved cards, Add New Card, Confirm; and "No requests waiting".
  * Everything shown is the hook's (`useSubscriptionRequests`).
  */
 
 import Image from "next/image";
 
-import type { IncomingTransfer, SavedPaymentMethod } from "@/features/subscription/api/payerPortal";
+import type {
+  IncomingTransfer,
+  PayerPaymentMethods,
+  SavedPaymentMethod,
+} from "@/features/subscription/api/payerPortal";
+import { CardBrand } from "@/features/subscription/components/CardBrand";
+import { CardCapturePanel } from "@/features/subscription/components/CardCaptureForm";
+import type { SetupIntentState } from "@/features/subscription/hooks/useCardForm";
+import { ADD_CARD_HEADING, STRIPE_NOTE } from "@/features/subscription/lib/billing";
 import { PORTAL } from "@/features/subscription/lib/paths";
-import type { SummaryView } from "@/features/subscription/lib/subscriptionSummary";
+import { utcDay, type SummaryView } from "@/features/subscription/lib/subscriptionSummary";
 import {
   CONFIRM_TRANSFER,
+  NEEDS_CARD,
+  declinedNote,
+  undatedDecline,
   NO_REQUESTS,
   NO_REQUESTS_BODY,
   TRANSFER_CHARGE_NOTE,
@@ -23,7 +34,7 @@ import {
 import type { ReviewedRequest } from "@/features/subscription/hooks/useSubscriptionRequests";
 
 import {
-  PlanLines,
+  PLAN_TONE,
   PriceBox,
   SummaryModuleCard,
 } from "@/features/subscription/components/SubscriptionSummaryRow";
@@ -50,7 +61,7 @@ export function NoRequests({ onBack }: { onBack: () => void }) {
         onClick={onBack}
         className="mt-2 h-[52px] w-[260px] rounded-lg border border-[#d8dee4] bg-white text-[15px] font-semibold text-[#292e38] hover:bg-[#f5f7fa]"
       >
-        Back to My Profile
+        Back to Manage Subscription
       </button>
     </section>
   );
@@ -92,11 +103,15 @@ export function RequestList({
   );
 }
 
-function CardLabel({ card }: { card: SavedPaymentMethod | null }) {
-  if (!card) return <p className="text-xl font-bold text-black">No card yet</p>;
+/** The card's number, as the summary grid's second row draws it. */
+function CardNumber({ card }: { card: SavedPaymentMethod | null }) {
   return (
     <p className="text-xl font-bold text-black" data-payment-method>
-      {card.last4 ? `${card.brand_label || "Card"} ${card.last4}` : card.label}
+      {card === null
+        ? "No card yet"
+        : card.last4
+          ? `${card.brand_label || "Card"} ${card.last4}`
+          : card.label}
     </p>
   );
 }
@@ -106,6 +121,7 @@ export function IncomingRequestReview({
   busy,
   actionError,
   onChangeCard,
+  onToggleModule,
   onAccept,
   onDecline,
 }: {
@@ -113,12 +129,32 @@ export function IncomingRequestReview({
   busy: boolean;
   actionError: string | null;
   onChangeCard: () => void;
+  onToggleModule: (code: string) => void;
   onAccept: () => void;
   onDecline: () => void;
 }) {
-  const { row, view, viewStatus, charge, trialLines, card } = reviewed;
+  const { row, view, viewStatus, card, cards, offered, taking } = reviewed;
   const blocked = row.blockers.length > 0;
+  // Only once the wallet has been READ: until then there are no cards because nothing has
+  // answered yet, and saying "add one" to someone who has three is worse than saying nothing.
+  const needsCard = viewStatus === "ready" && cards.length === 0;
   const panel: SummaryView["panel"] | null = view?.panel ?? null;
+  // The plan the recipient ends up on: the future half when something has been unticked,
+  // otherwise the company as it stands. Normalised to one shape so the price box and the
+  // plan lines do not each have to ask which kind of panel this is.
+  const chosen =
+    panel === null
+      ? null
+      : panel.kind === "simple"
+        ? { lines: panel.lines, price: panel.price, struck: null, greyed: panel.greyed }
+        : (panel.future ?? panel.current);
+  const declinedModules = (view?.modules ?? [])
+    .filter((m) => offered.includes(m.code) && !taking.includes(m.code))
+    .map((m) => ({ name: m.name, trialing: m.view.state === "trialing" }));
+  const paidUntil = utcDay(row.quote?.covers_from);
+  // MUST NOT HAPPEN: a paid module is being declined and the API has not said when the
+  // company is paid up to. Held rather than worded around - see `undatedDecline`.
+  const undated = undatedDecline(declinedModules, paidUntil);
   const expires = expiresLabel(row);
   return (
     <section aria-label="Transfer request" className="flex flex-col gap-8">
@@ -138,21 +174,39 @@ export function IncomingRequestReview({
         {viewStatus === "ready" && view ? (
           view.modules.map((module) => (
             <div key={module.code} className="flex flex-col items-center gap-[46px]">
-              <SummaryModuleCard module={module} />
-              {module.tick !== "start_trial" && (
-                <span
+              <SummaryModuleCard
+                module={module}
+                onToggle={
+                  offered.includes(module.code) &&
+                  !(taking.length === 1 && taking[0] === module.code)
+                    ? () => onToggleModule(module.code)
+                    : undefined
+                }
+              />
+              {offered.includes(module.code) && (
+                /* THE CHOICE, not the module's state. 07-D is titled "Choose Modules" and
+                   this is what does the choosing: ticked = "I am taking this on", and
+                   unticking it cancels that module for the company as part of accepting.
+                   It starts ticked for everything the company holds, because arriving on
+                   this screen means being offered all of it. */
+                <button
+                  type="button"
                   role="checkbox"
-                  aria-checked={module.tick === "ticked"}
-                  aria-disabled
-                  aria-label={`${module.name} subscription`}
+                  aria-checked={taking.includes(module.code)}
+                  aria-label={`Take on ${module.name}`}
+                  /* THE LAST ONE STAYS TICKED. Taking nothing on is declining the handover,
+                     which is the button below - so the choice never reaches a state the
+                     Confirm would have to refuse. */
+                  disabled={busy || (taking.length === 1 && taking[0] === module.code)}
+                  onClick={() => onToggleModule(module.code)}
                   className={
-                    module.tick === "ticked"
-                      ? "flex size-10 items-center justify-center rounded-lg bg-[#4fc7c7] text-white"
-                      : "size-[34px] rounded-[9px] border-2 border-[#c7cdd4] bg-white"
+                    taking.includes(module.code)
+                      ? "flex size-10 items-center justify-center rounded-lg bg-[#4fc7c7] text-white disabled:opacity-60"
+                      : "size-[34px] rounded-[9px] border-2 border-[#c7cdd4] bg-white disabled:opacity-60"
                   }
                 >
-                  {module.tick === "ticked" && "✓"}
-                </span>
+                  {taking.includes(module.code) && "✓"}
+                </button>
               )}
             </div>
           ))
@@ -168,45 +222,87 @@ export function IncomingRequestReview({
           className="flex w-full flex-col gap-6 rounded-xl bg-white p-8 shadow-[0px_2px_8px_0px_rgba(0,0,0,0.1)]"
         >
           <h3 className="text-xl font-bold text-black">Subscription Summary</h3>
-          <div className="flex items-start justify-between gap-6">
-            <div className="flex flex-col gap-3">
-              <p className="text-[15px] text-[#737a87]">Selected plan</p>
-              {panel && panel.kind === "simple" ? (
-                <PlanLines lines={panel.lines} />
-              ) : panel ? (
-                <PlanLines lines={panel.current.lines} />
-              ) : (
-                <p className="text-xl font-bold text-black">…</p>
+          {/*
+            ONE GRID, not two stacks. The plan and the card are read across: the module name
+            sits level with the card's mark, the plan's qualifier level with the card number,
+            and Change on a row of its own. Two independent columns let those drift apart by
+            however tall each happened to be.
+
+            WHAT THEY ARE TAKING ON is what the ticks decide: when a module is unticked the
+            panel splits, and `chosen` is the FUTURE half of that - what the recipient ends up
+            paying for, not what the company has today.
+          */}
+          <div className="grid grid-cols-[auto_auto] items-end justify-between gap-x-6">
+            <p className="col-start-1 row-start-1 text-[15px] text-[#737a87]">Selected plan</p>
+            <p className="col-start-2 row-start-1 justify-self-end text-[15px] text-[#737a87]">
+              Payment method
+            </p>
+
+            <div className="col-start-1 row-start-2 mt-3 flex flex-col gap-1">
+              {(chosen?.lines ?? [{ name: "…", tone: "none" as const, tag: null }]).map((l) => (
+                <span key={l.name} className="flex items-center gap-2">
+                  <span className={`text-xl font-bold ${PLAN_TONE[l.tone]}`}>{l.name}</span>
+                  {/* Super Minty rides beside the bundle's name, as `PlanLines` draws it
+                      everywhere else - this grid replaced that component and has to keep it. */}
+                  {l.tone === "bundle" && (
+                    <Image
+                      src="/portal/super-minty.png"
+                      alt=""
+                      width={60}
+                      height={56}
+                      unoptimized
+                    />
+                  )}
+                </span>
+              ))}
+            </div>
+            <div className="col-start-2 row-start-2 mt-3 justify-self-end">
+              {card && (
+                <CardBrand
+                  brand={card.brand}
+                  label={card.brand_label}
+                  className="h-[44px] w-[68px]"
+                />
               )}
             </div>
-            <div className="flex flex-col items-end gap-1 text-right">
-              <p className="text-[15px] text-[#737a87]">Payment method</p>
-              <CardLabel card={card} />
-              <button
-                type="button"
-                onClick={onChangeCard}
-                className="text-[15px] text-quiet hover:underline"
-              >
-                Change
-              </button>
-            </div>
-          </div>
-          {panel && panel.kind === "simple" ? (
-            <PriceBox price={panel.price} struck={null} greyed={panel.greyed} />
-          ) : panel ? (
-            <PriceBox price={panel.current.price} struck={panel.current.struck} greyed />
-          ) : null}
-          <p className="text-center text-xl font-bold text-quiet">No pending changes</p>
 
-          <div className="rounded-xl bg-[#f7f9fa] px-4 py-3.5 text-sm" data-charge>
-            {charge.today && <p className="font-semibold text-[#21262e]">{charge.today}</p>}
-            {charge.detail && <p className="mt-1 text-[#6b7380]">{charge.detail}</p>}
-            {trialLines.map((line) => (
-              <p key={line} className="mt-1 text-[#6b7380]">
-                {line}
-              </p>
-            ))}
+            {/* The qualifier - "only", "(Free Trial)" - sits at the lower right OF THE NAME,
+                not of the column: the plan column is `auto`, so it is only as wide as the
+                widest thing in it, and `justify-between` holds the two columns apart. Aligned
+                to a `1fr` column instead, the word drifted off into the gap. */}
+            <span className="col-start-1 row-start-3 text-right text-sm text-[#737a87]">
+              {chosen?.lines.find((l) => l.tag)?.tag ?? ""}
+            </span>
+            <div className="col-start-2 row-start-3 justify-self-end">
+              <CardNumber card={card} />
+            </div>
+
+            <button
+              type="button"
+              onClick={onChangeCard}
+              className="col-start-2 row-start-4 justify-self-end text-[15px] text-quiet hover:underline"
+            >
+              {needsCard ? "Add a card" : "Change"}
+            </button>
           </div>
+          {chosen && (
+            <PriceBox price={chosen.price} struck={chosen.struck} greyed={chosen.greyed} />
+          )}
+          {undated ? (
+            <p role="alert" className="text-center text-[15px] font-semibold text-[#b42318]">
+              {undated}
+            </p>
+          ) : (
+            <p className="text-center text-xl font-bold text-quiet">
+              {declinedNote(declinedModules, paidUntil)}
+            </p>
+          )}
+
+          {/* NO DETAIL SECTION. The grey box under the price held two things and both have
+              gone: the money line (a handover takes nothing at accept) and the inherited-
+              trial lines. What accepting means is the plan and the price above it, and the
+              note below - "charged to your selected payment method from the date that
+              transfer is completed". */}
 
           {blocked && (
             <div
@@ -218,6 +314,18 @@ export function IncomingRequestReview({
               ))}
             </div>
           )}
+          {/* Said HERE rather than left to the API's refusal, because the API can only answer
+              once Confirm has been pressed. The offer is allowed to reach someone with no card
+              — being asked is not being charged — so this is a normal state of this screen and
+              not an error. Only claimed once the wallet has actually been read. */}
+          {needsCard && (
+            <div
+              role="status"
+              className="rounded-lg border border-[#e6ebed] bg-[#f7f9fa] px-3.5 py-2.5 text-sm text-[#6b7380]"
+            >
+              {NEEDS_CARD}
+            </div>
+          )}
           {actionError && (
             <p className="text-sm text-[#b42318]" role="alert">
               {actionError}
@@ -227,7 +335,7 @@ export function IncomingRequestReview({
           <button
             type="button"
             onClick={onAccept}
-            disabled={busy || blocked}
+            disabled={busy || blocked || needsCard || undated !== null}
             aria-busy={busy || undefined}
             className="h-[66px] rounded-2xl bg-[#4fc7c7] text-xl font-bold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
           >
@@ -245,6 +353,36 @@ export function IncomingRequestReview({
       </div>
 
       <p className="text-[15px] text-[#a0a8b2]">{TRANSFER_CHARGE_NOTE}</p>
+    </section>
+  );
+}
+
+/**
+ * 07-E with Stripe's fields in place of the card list: adding a card without leaving the offer.
+ *
+ * Drawn as the same sheet as the picker it replaces, so the step reads as the picker changing
+ * rather than the screen navigating - which is the whole point of it being here. Cancel goes
+ * back to the list; saving picks the new card and goes back to it too.
+ */
+export function AddCardPanel({
+  setup,
+  onSaved,
+  onCancel,
+}: {
+  setup: SetupIntentState;
+  onSaved: (methods: PayerPaymentMethods, paymentMethodId: string | null) => void;
+  onCancel: () => void;
+}) {
+  return (
+    <section
+      aria-label={ADD_CARD_HEADING}
+      className="flex w-full max-w-[477px] flex-col gap-5 rounded-xl bg-white p-7 shadow-[0px_2px_8px_0px_rgba(0,0,0,0.1)]"
+    >
+      <div>
+        <h3 className="text-[17px] font-bold text-[#16202e]">{ADD_CARD_HEADING}</h3>
+        <p className="mt-1.5 text-[13px] text-[#8b93a0]">{STRIPE_NOTE}</p>
+      </div>
+      <CardCapturePanel setup={setup} onSaved={onSaved} onCancel={onCancel} />
     </section>
   );
 }
@@ -290,13 +428,13 @@ export function PaymentMethodPicker({
                 onChange={() => onPick(card.id)}
                 className="sr-only"
               />
-              <span
-                className={`w-[78px] shrink-0 overflow-hidden text-center font-black italic text-[#1a1f71] ${
-                  (card.brand_label || "Card").length > 5 ? "text-[13px]" : "text-2xl"
-                }`}
-              >
-                {card.brand_label || "Card"}
-              </span>
+              {/* The same mark the summary draws. It used to be the label in Visa's blue
+                  italic whatever the card was, which drew a Mastercard as a blue word. */}
+              <CardBrand
+                brand={card.brand}
+                label={card.brand_label}
+                className="h-[30px] w-[78px] shrink-0"
+              />
               <span className="min-w-0 flex-1">
                 <span className="block text-[15px] font-bold text-[#16202e]">
                   {card.last4

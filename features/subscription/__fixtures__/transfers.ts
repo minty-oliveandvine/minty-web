@@ -36,6 +36,7 @@ export const ENTITY_B = { entity_id: "e-company-b", entity_name: "Company B Limi
 /** 07-A: the current payer first, three admins to choose from, each with its own quote. */
 export const SUBSCRIBER_OPTIONS: SubscriberOptions = {
   entity: ENTITY_B,
+  paid_through: iso(21),
   current: { id: "u-harry", name: "Harry Kim", email: "harry.kim@oliveandvine.com" },
   candidates: [
     { id: "u-harry", name: "Harry Kim", email: "harry.kim@oliveandvine.com", is_current: true },
@@ -82,6 +83,15 @@ export const SUBSCRIBER_OPTIONS_PENDING: SubscriberOptions = {
   ...SUBSCRIBER_OPTIONS,
   candidates: SUBSCRIBER_OPTIONS.candidates.map((c) => ({ ...c, quote: null, trials: [] })),
   pending_transfer: { id: "t-9", to_user_id: "u-jiwon", status: "pending", since: iso(-2) },
+};
+
+/**
+ * The payer is the company's only admin: nobody to hand it to, so the API prices no quotes.
+ * The footer still has to say what the company is paid up until.
+ */
+export const SUBSCRIBER_OPTIONS_ALONE: SubscriberOptions = {
+  ...SUBSCRIBER_OPTIONS,
+  candidates: SUBSCRIBER_OPTIONS.candidates.filter((c) => c.is_current),
 };
 
 /** A company whose handover the API refuses, in its own words. */

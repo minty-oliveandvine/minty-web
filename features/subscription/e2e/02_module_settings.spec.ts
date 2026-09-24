@@ -177,17 +177,17 @@ test.describe("module settings page", () => {
     const card = await box(dialog);
     expect(card.width).toBe(435);
 
-    // "Entity" sits in the title's column: same left edge, same width, tight under the last
-    // line of it - and never colliding, which the design does when the title takes four lines.
+    // "Entity" sits in the title's column: same left edge, same width, CLEAR of the last line
+    // of it - and never colliding, which the design does when the title takes four lines.
     const heading = await box(dialog.getByRole("heading", { level: 2 }));
     const entity = await box(dialog.getByText(/^Entity/));
     expect(entity.x).toBe(heading.x);
     expect(entity.width).toBe(heading.width);
-    // It tucks 4px into the trailing leading of the title's last line box - which is what puts
-    // the words right below the words. Anything further up would touch the title itself.
+    // A real gap (it used to tuck 4px INTO the title's trailing leading, which read as one
+    // block); still inside the card's rhythm rather than adrift from the sentence it belongs to.
     const offset = entity.y - (heading.y + heading.height);
-    expect(offset).toBeGreaterThan(-6);
-    expect(offset).toBeLessThan(12);
+    expect(offset).toBeGreaterThan(8);
+    expect(offset).toBeLessThan(30);
 
     // The design's button row: equal widths, a 20px gap, 39px to each edge. The two share the
     // row, so their widths land on a half pixel - compare within one.

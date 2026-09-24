@@ -184,6 +184,27 @@ test.describe("manage subscriptions", () => {
     await expect(row.getByRole("region", { name: "Subscription Summary" })).toBeVisible();
   });
 
+  test("the whole row opens a company; its own controls do not", async ({ page }) => {
+    await stubApi(page, subscriptionsPage());
+    await handoff(page, creds(), "/subscription/subscriptions", { entity_id: "" });
+
+    // The company's name, not the chevron.
+    await body(page).getByText("Kestrel Foods Limited").click();
+    const opened = body(page).locator("li[data-open]");
+    await expect(opened).toHaveAttribute("data-entity", "e-kestrel-foods-limited");
+
+    // The ⋮ INSIDE the open row: its menu opens and the row stays open (it renders inline, so
+    // the click passes through the strip on its way up).
+    await opened.getByRole("button", { name: "Actions for Kestrel Foods Limited" }).click();
+    await expect(page.getByRole("menuitem").first()).toBeVisible();
+    await expect(body(page).locator("li[data-open]")).toHaveCount(1);
+    await page.keyboard.press("Escape");
+
+    // The strip closes it, as the chevron does.
+    await opened.getByRole("heading", { level: 3, name: "Kestrel Foods Limited" }).click();
+    await expect(body(page).locator("li[data-open]")).toHaveCount(0);
+  });
+
   test("a module card's Activate / Resume lands on the row with that module ticked", async ({
     page,
   }) => {

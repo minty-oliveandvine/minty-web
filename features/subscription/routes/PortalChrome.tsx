@@ -51,8 +51,10 @@ export function PortalChrome() {
   return (
     <AppHeader
       title="Subscriptions"
-      back={{ href: `${env.MINTY_URL}/entity`, label: "Minty" }}
-      companyName={entityName || "My companies"}
+      // The way back is Minty's entity list, so the link says what it DOES rather than
+      // where it goes - "Minty" named the product, which is also the app you are already in.
+      back={{ href: `${env.MINTY_URL}/entity`, label: "Entity List" }}
+      companyName={entityName || "My entities"}
       companyAbbreviation={abbreviate(entityName)}
       nav={{
         modules: entityId ? claims : NONE,
