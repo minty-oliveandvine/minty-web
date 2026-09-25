@@ -1,9 +1,10 @@
 "use client";
 
 /**
- * `/subscription/billing/add` and `/subscription/billing/edit?card=<pm>` - the billing page's
- * two card screens (Figma 08-Y and 08-D). Both read the URL here and hand the parameters to
- * the screens; `fixture` is the dev-only switch.
+ * `/subscription/billing/add?account=` and `/subscription/billing/edit?card=<pm>&account=` - the
+ * billing account's card screens (Figma 08-Y and 08-D). Both read the URL here and hand the
+ * parameters to the screens; `fixture` is the dev-only switch. (A NEW account is not a page: it
+ * opens in onboarding's sheet over 08-A or 08-B - `BillingAccountDialogs`.)
  */
 
 import { useSearchParams } from "next/navigation";
@@ -13,7 +14,7 @@ import { AddCardScreen, EditCardScreen } from "@/features/subscription/routes/Ca
 
 function AddContent() {
   const q = useSearchParams();
-  return <AddCardScreen fixture={q.get("fixture")} />;
+  return <AddCardScreen accountId={q.get("account")} fixture={q.get("fixture")} />;
 }
 
 export function AddCard() {
@@ -26,7 +27,13 @@ export function AddCard() {
 
 function EditContent() {
   const q = useSearchParams();
-  return <EditCardScreen cardId={q.get("card")} fixture={q.get("fixture")} />;
+  return (
+    <EditCardScreen
+      cardId={q.get("card")}
+      accountId={q.get("account")}
+      fixture={q.get("fixture")}
+    />
+  );
 }
 
 export function EditCard() {

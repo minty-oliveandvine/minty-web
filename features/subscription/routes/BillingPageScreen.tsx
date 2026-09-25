@@ -1,19 +1,23 @@
 "use client";
 
 /**
- * "Manage billing details and Payment Methods" - the billing page, composed (Figma 08-B and its
- * states): the banner, the next bill, the expired-card line when there is one (08-I), the saved
- * cards with their menus (08-W/08-X, 08-H when there are none, 08-J expanded), the invoices,
- * and the two things a card can ask - it has just been added (08-N/08-S) or it is being removed
- * (08-R). `BillingPage` reads the URL and hands the parameters here; the tests render this
- * directly with fixtures.
+ * "Manage billing details and Payment Methods" - one billing account's page, composed (Figma
+ * 08-B and its states): the banner, the account's next bill and who it is addressed to (with
+ * the way to 08-C), the expired-card line when there is one (08-I), its cards with their menus
+ * (08-W/08-X, 08-H when there are none, 08-J expanded), its invoices, and the two things a card
+ * can ask - it has just been added (08-N/08-S) or it is being removed (08-R). A payer with no
+ * account at all is offered one instead, opened in onboarding's sheet (`NewAccountDialog`).
+ * `BillingPage` reads the URL and hands the parameters here; the tests render this directly with
+ * fixtures.
  */
 
+import { NewAccountDialog } from "@/features/subscription/components/BillingAccountDialogs";
 import { PortalHero } from "@/features/subscription/components/PortalHero";
 import {
   ExpiredCardNotice,
   InvoiceHistoryTable,
   NextBillingCard,
+  NoAccountPanel,
   PaymentMethodsPanel,
 } from "@/features/subscription/components/BillingPanels";
 import { CardAddedDialog, RemoveCardDialog } from "@/features/subscription/components/CardDialogs";
@@ -44,10 +48,17 @@ export function BillingPageScreen(args: UseBillingPageArgs) {
             Try again
           </button>
         </div>
+      ) : b.status === "ready" && !b.account ? (
+        <div className="mx-auto flex w-full max-w-[942px] flex-col gap-8">
+          <NoAccountPanel onOpen={b.openAccount} />
+        </div>
       ) : (
         // The design's blocks sit in a 942px column inside the banner's 1298px one.
         <div className="mx-auto flex w-full max-w-[942px] flex-col gap-8">
-          <NextBillingCard next={b.next} />
+          <NextBillingCard
+            next={b.next}
+            onChangeDetails={b.account ? b.changeDetails : undefined}
+          />
           {b.expired && <ExpiredCardNotice text={b.expired} onAdd={b.addCard} />}
           <PaymentMethodsPanel
             rows={b.rows}
@@ -61,7 +72,16 @@ export function BillingPageScreen(args: UseBillingPageArgs) {
             onToggle={b.toggleExpanded}
             onAdd={b.addCard}
           />
-          <InvoiceHistoryTable invoices={b.invoices} amountHeader={b.invoiceHeader} />
+          <InvoiceHistoryTable
+            invoices={b.invoices}
+            amountHeader={b.invoiceHeader}
+            paging={b.invoicePaging}
+            onPage={b.goToInvoicePage}
+            onPerPage={b.setInvoicesPerPage}
+            onBreakdown={(invoiceId) => void b.downloadBreakdown(invoiceId)}
+            breakdownBusy={b.breakdownBusy}
+            breakdownError={b.breakdownError}
+          />
         </div>
       )}
 
@@ -80,6 +100,13 @@ export function BillingPageScreen(args: UseBillingPageArgs) {
           error={b.actionError}
           onConfirm={b.confirmRemove}
           onBack={b.dismissPrompt}
+        />
+      )}
+      {b.opening && (
+        <NewAccountDialog
+          fixture={args.fixture}
+          onOpened={b.accountOpened}
+          onClose={b.closeOpening}
         />
       )}
     </div>

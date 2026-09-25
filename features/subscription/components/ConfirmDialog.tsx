@@ -12,8 +12,9 @@
  */
 
 import Image from "next/image";
-import { useEffect, useId, type ReactNode } from "react";
+import { useId, type ReactNode } from "react";
 
+import { ModalFrame } from "@/features/subscription/components/ModalFrame";
 import type { ConfirmTone, ModalImage } from "@/features/subscription/lib/changeModal";
 
 export const MODAL_IMAGE: Record<ModalImage, { src: string; width: number; height: number }> = {
@@ -84,30 +85,14 @@ export function ConfirmDialog({
   const art = MODAL_IMAGE[image];
   const dismiss = onDismiss ?? onBack;
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && !busy) dismiss();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [busy, dismiss]);
-
   return (
-    <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
-      <button
-        type="button"
-        aria-label="Go back"
-        onClick={dismiss}
-        disabled={busy}
-        className="absolute inset-0 cursor-default bg-white/60 backdrop-blur-[3px]"
-      />
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        className="relative w-full max-w-[435px] rounded-[24px] border border-white/40 bg-white p-12 shadow-[0px_4px_8px_0px_rgba(15,23,42,0.08),0px_12px_32px_0px_rgba(0,0,0,0.1)]"
-      >
-        {/*
+    <ModalFrame
+      labelledBy={titleId}
+      busy={busy}
+      onDismiss={dismiss}
+      className="max-w-[435px] rounded-[24px] border border-white/40 bg-white p-12 shadow-[0px_4px_8px_0px_rgba(15,23,42,0.08),0px_12px_32px_0px_rgba(0,0,0,0.1)]"
+    >
+      {/*
           The company sits in the TITLE's column, tight under the last line of it and no wider
           (the design's 194px block under a 200px title) - so a long name wraps inside that
           column rather than running under Minty. The design pins the block at a fixed offset
@@ -115,44 +100,44 @@ export function ConfirmDialog({
           title, so it is always clear of it however many lines the title takes. Only the
           sentences below and the buttons use the card's full width.
         */}
-        <div className="flex items-start justify-between gap-4">
-          <div className="min-w-0 flex-1">
-            <h2 id={titleId} className="text-[26px] font-bold leading-tight text-black">
-              {title}
-            </h2>
-            {/*
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0 flex-1">
+          <h2 id={titleId} className="text-[26px] font-bold leading-tight text-black">
+            {title}
+          </h2>
+          {/*
               CLEAR OF THE TITLE, not tucked under it. This used to be `-mt-1`, which pulled
               the block up against the last line of the title; the design leaves a gap there
               and a company name reads as part of the sentence without one.
             */}
-            {lead !== undefined ? (
-              <div className="mt-4 text-[15px] leading-snug break-words">{lead}</div>
-            ) : entityName ? (
-              <p className="mt-4 text-[15px] leading-snug break-words text-[#737a87]">
-                Entity
-                <br />
-                {/* The COMPANY is coloured, the label above it is not: "Entity" is furniture,
+          {lead !== undefined ? (
+            <div className="mt-4 text-[15px] leading-snug break-words">{lead}</div>
+          ) : entityName ? (
+            <p className="mt-4 text-[15px] leading-snug break-words text-[#737a87]">
+              Entity
+              <br />
+              {/* The COMPANY is coloured, the label above it is not: "Entity" is furniture,
                     the name is the thing the modal is about. (It was one grey for a while -
                     that reading of the design's single text node is superseded.) */}
-                <span className="text-[#18c4c7]">{entityName}</span>
-              </p>
-            ) : null}
-          </div>
-          <Image
-            src={art.src}
-            alt=""
-            width={art.width}
-            height={art.height}
-            unoptimized
-            data-image={image}
-            style={{ height: art.height }}
-            className="-mr-3 -mt-2 w-auto shrink-0"
-          />
+              <span className="text-[#18c4c7]">{entityName}</span>
+            </p>
+          ) : null}
         </div>
-        <div className="mt-6 flex flex-col gap-4 text-[15px] leading-snug text-[var(--ink-soft)]">
-          {children}
-        </div>
-        {/*
+        <Image
+          src={art.src}
+          alt=""
+          width={art.width}
+          height={art.height}
+          unoptimized
+          data-image={image}
+          style={{ height: art.height }}
+          className="-mr-3 -mt-2 w-auto shrink-0"
+        />
+      </div>
+      <div className="mt-6 flex flex-col gap-4 text-[15px] leading-snug text-[var(--ink-soft)]">
+        {children}
+      </div>
+      {/*
           The design's button row is WIDER than the card's padding: 169px each, a 20px gap,
           and 39px to each edge (435 - 39 - 169 - 20 - 169 - 38). The card's p-12 leaves only
           339px, so the row reaches back out by 9px a side and the two buttons share what is
@@ -160,34 +145,33 @@ export function ConfirmDialog({
           ("Confirm Cancellation") could not wrap inside. One button on its own (`hideBack`) is
           centred at the fixed 169px, as the design draws that case.
         */}
-        <div className={`mt-8 flex gap-5 ${hideBack ? "justify-center" : "-mx-[9px]"}`}>
-          {!hideBack && (
-            <button
-              type="button"
-              onClick={onBack}
-              disabled={busy}
-              data-tone={backTone}
-              className={`h-[66px] flex-1 rounded-[14px] border bg-white text-lg leading-tight disabled:opacity-60 ${BACK_TONE[backTone]}`}
-            >
-              {backLabel}
-            </button>
-          )}
+      <div className={`mt-8 flex gap-5 ${hideBack ? "justify-center" : "-mx-[9px]"}`}>
+        {!hideBack && (
           <button
             type="button"
-            onClick={onConfirm}
+            onClick={onBack}
             disabled={busy}
-            aria-busy={busy || undefined}
-            data-tone={confirmTone}
-            // the transparent border matters: with `flex-1` the bordered button beside it would
-            // otherwise end up 2px wider, both being basis-0 under border-box
-            className={`h-[66px] rounded-[14px] border border-transparent text-lg font-bold leading-tight text-white hover:opacity-90 disabled:cursor-wait disabled:opacity-60 ${
-              hideBack ? "w-[169px]" : "flex-1"
-            } ${CONFIRM_TONE[confirmTone]}`}
+            data-tone={backTone}
+            className={`h-[66px] flex-1 rounded-[14px] border bg-white text-lg leading-tight disabled:opacity-60 ${BACK_TONE[backTone]}`}
           >
-            {confirmLabel}
+            {backLabel}
           </button>
-        </div>
+        )}
+        <button
+          type="button"
+          onClick={onConfirm}
+          disabled={busy}
+          aria-busy={busy || undefined}
+          data-tone={confirmTone}
+          // the transparent border matters: with `flex-1` the bordered button beside it would
+          // otherwise end up 2px wider, both being basis-0 under border-box
+          className={`h-[66px] rounded-[14px] border border-transparent text-lg font-bold leading-tight text-white hover:opacity-90 disabled:cursor-wait disabled:opacity-60 ${
+            hideBack ? "w-[169px]" : "flex-1"
+          } ${CONFIRM_TONE[confirmTone]}`}
+        >
+          {confirmLabel}
+        </button>
       </div>
-    </div>
+    </ModalFrame>
   );
 }

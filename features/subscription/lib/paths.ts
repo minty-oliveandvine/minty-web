@@ -23,16 +23,41 @@ export const PORTAL = {
   invoices: subscriptionPath("/invoices"),
 } as const;
 
+/** `path?a=1&b=2`, the empty ones left out - so an absent account keeps the URL bare. */
+function withParams(path: string, params: Record<string, string | null | undefined>): string {
+  const qs = Object.entries(params)
+    .filter((entry): entry is [string, string] => Boolean(entry[1]))
+    .map(([k, v]) => `${k}=${encodeURIComponent(v)}`)
+    .join("&");
+  return qs ? `${path}?${qs}` : path;
+}
+
 /**
- * The billing page's own two screens (Figma 08-Y "Add a card — full page" and 08-D "Edit card
- * details"), which the design draws as pages rather than dialogs. Both come back to the billing
- * page; adding comes back with `?added=<card>` so the page can say what happened (08-N / 08-S).
+ * 08-A showing one billing account. The account rides in the URL (`?account=`), never in
+ * storage: with none, the page shows the payer's oldest.
+ */
+export function overviewPath(accountId?: string | null): string {
+  return withParams(PORTAL.index, { account: accountId });
+}
+
+/**
+ * One billing account's pages. 08-B is the account's profile (`?account=`, or `?entity=` for
+ * "the account this company is on" - the list's payment-failed banner knows a company, not an
+ * account); 08-Y and 08-D add and edit a card ON it and come back to it, adding with `?added=`
+ * so the page can say what happened (08-N / 08-S); and 08-C is its name and address. Opening a
+ * NEW account is not a page: it is onboarding's sheet, over 08-A or 08-B.
  */
 export const BILLING = {
-  add: subscriptionPath("/billing/add"),
-  edit: (paymentMethod: string) =>
-    `${subscriptionPath("/billing/edit")}?card=${encodeURIComponent(paymentMethod)}`,
-  added: (paymentMethod: string) => `${PORTAL.billing}?added=${encodeURIComponent(paymentMethod)}`,
+  account: ({ id, entity }: { id?: string | null; entity?: string | null } = {}) =>
+    withParams(PORTAL.billing, { account: id, entity }),
+  add: (accountId?: string | null) =>
+    withParams(subscriptionPath("/billing/add"), { account: accountId }),
+  edit: (paymentMethod: string, accountId?: string | null) =>
+    withParams(subscriptionPath("/billing/edit"), { card: paymentMethod, account: accountId }),
+  added: (paymentMethod: string, accountId?: string | null) =>
+    withParams(PORTAL.billing, { account: accountId, added: paymentMethod }),
+  details: (accountId: string) =>
+    withParams(subscriptionPath("/billing/details"), { account: accountId }),
 } as const;
 
 /** The module settings page of one company (Flask's /entity/settings/module/<org_id>, re-homed). */

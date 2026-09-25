@@ -16,6 +16,7 @@ import {
 import { ENTITIES, subscriptionsPage } from "@/features/subscription/__fixtures__/subscriptions";
 import {
   CARDS_SHOWN,
+  TRIAL_ENDING_DAYS,
   amountHeader,
   cardExpiry,
   cardMenu,
@@ -23,11 +24,14 @@ import {
   cardTitle,
   entityCount,
   expiredNotice,
+  UPDATES_SHOWN,
   invoiceLines,
+  moreUpdatesLabel,
   nextBilling,
   overview,
   showMoreLabel,
   visibleCards,
+  visibleUpdates,
 } from "@/features/subscription/lib/billing";
 
 describe("a saved card, as the page names it", () => {
@@ -77,12 +81,14 @@ describe("a saved card, as the page names it", () => {
   });
 });
 
-describe("the next bill", () => {
-  it("names the payer and the anchor, and turns amber when a company is past due", () => {
+describe("the next bill, when the accounts could not be read", () => {
+  it("names the payer and the NEXT billing date - never the anchor - and turns amber when a company is past due", () => {
     const page = subscriptionsPage();
     const next = nextBilling(page);
     expect(next.billTo).toBe("Olive Vine");
     expect(next.email).toBe("olive@example.com");
+    // The fixture's anchor is 28 Jul: the cycle's start, which 08-A used to print as "next".
+    expect(page.billing.anchor).toBe("28 Jul 2026");
     expect(next.date).toBe("28 Sep 2026");
     expect(next.failed).toBe(true);
     expect(next.failedNames).toEqual(
@@ -99,7 +105,10 @@ describe("the next bill", () => {
     expect(nextBilling(null)).toEqual({
       billTo: "",
       email: null,
+      addressLines: [],
       date: null,
+      // The payer-level fallback has no account to price.
+      amount: null,
       failed: false,
       failedNames: [],
     });
@@ -118,6 +127,18 @@ describe("the invoice table", () => {
 });
 
 describe("the overview (08-A)", () => {
+  it("shows five update lines, and Show more opens every one", () => {
+    const { updates } = overview(subscriptionsPage(), TODAY);
+    expect(UPDATES_SHOWN).toBe(5);
+    expect(updates.length).toBeGreaterThan(UPDATES_SHOWN);
+    expect(visibleUpdates(updates, false)).toEqual(updates.slice(0, 5));
+    expect(visibleUpdates(updates, true)).toEqual(updates);
+    expect(moreUpdatesLabel(updates)).toBe(`Show more (${updates.length - 5})`);
+    // Five or fewer need no button at all.
+    expect(moreUpdatesLabel(updates.slice(0, 5))).toBeNull();
+    expect(visibleUpdates(updates.slice(0, 3), false)).toHaveLength(3);
+  });
+
   it("counts COMPANIES: paying, and on a trial about to end", () => {
     const o = overview(subscriptionsPage(), TODAY);
     // A trial is not an active subscription - nothing is being charged for it yet.
@@ -140,20 +161,72 @@ describe("the overview (08-A)", () => {
     expect(trial.emphasis).toMatch(/^\d+ days?$/);
   });
 
-  it("leaves out the trials that are further off than the window", () => {
-    const far = subscriptionsPage([
+  it("counts and lists every trial ending within 30 days - a trial's whole length", () => {
+    // A payer whose trials all ended more than a week out read "Trial ending 0" over "Nothing
+    // needs your attention" - with seven trials running. Frame 08-A: two trials, "2".
+    const endingIn = (days: number) =>
+      subscriptionsPage([
+        {
+          ...ENTITIES[1],
+          modules: ENTITIES[1].modules.map((m) =>
+            m.status === "trialing"
+              ? { ...m, date_iso: new Date(TODAY.getTime() + days * 86_400_000).toISOString() }
+              : m,
+          ),
+        },
+      ]);
+    expect(TRIAL_ENDING_DAYS).toBe(30);
+    const month = overview(endingIn(30), TODAY);
+    expect(month.trialEnding).toBe(1);
+    expect(month.updates.length).toBeGreaterThan(0);
+    expect(month.updates.every((u) => u.tone === "trial" && u.emphasis === "30 days")).toBe(true);
+    // Past the window it is neither counted nor listed: figure and lines agree.
+    expect(overview(endingIn(31), TODAY)).toMatchObject({ trialEnding: 0, updates: [] });
+    expect(overview(null, TODAY)).toEqual({ active: 0, trialEnding: 0, updates: [] });
+  });
+
+  it("lists the trials soonest first, under every payment that failed", () => {
+    const at = (days: number) => new Date(TODAY.getTime() + days * 86_400_000).toISOString();
+    const [base] = ENTITIES;
+    const trial = (id: string, name: string, days: number) => ({
+      ...base,
+      entity_id: id,
+      entity_name: name,
+      modules: [{ ...base.modules[0], status: "trialing" as const, date_iso: at(days) }],
+    });
+    const failing = {
+      ...base,
+      entity_id: "e-failing",
+      entity_name: "Failing Limited",
+      modules: [{ ...base.modules[0], status: "past_due" as const, date_iso: at(3) }],
+    };
+    const o = overview(
+      subscriptionsPage([
+        trial("e-late", "Late Limited", 28),
+        failing,
+        trial("e-soon", "Soon Limited", 2),
+        trial("e-today", "Today Limited", 0),
+      ]),
+      TODAY,
+    );
+    expect(o.updates.map((u) => `${u.entityName}: ${u.text} ${u.emphasis ?? ""}`.trim())).toEqual([
+      "Failing Limited: Payment failed",
+      "Today Limited: trial ends today",
+      "Soon Limited: trial ends in 2 days",
+      "Late Limited: trial ends in 28 days",
+    ]);
+    expect(o.trialEnding).toBe(3);
+  });
+
+  it("does not count a trial that has lapsed or never started", () => {
+    const over = subscriptionsPage([
       {
         ...ENTITIES[1],
         modules: ENTITIES[1].modules.map((m) =>
-          m.status === "trialing"
-            ? { ...m, date_iso: new Date(TODAY.getTime() + 30 * 86_400_000).toISOString() }
-            : m,
+          m.status === "trialing" ? { ...m, status: "trial_expired" as const } : m,
         ),
       },
     ]);
-    const o = overview(far, TODAY);
-    expect(o.trialEnding).toBe(0);
-    expect(o.updates).toEqual([]);
-    expect(overview(null, TODAY)).toEqual({ active: 0, trialEnding: 0, updates: [] });
+    expect(overview(over, TODAY).trialEnding).toBe(0);
   });
 });

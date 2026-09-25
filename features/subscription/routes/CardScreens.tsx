@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * The billing page's two card screens, composed (Figma 08-Y "Add Card Details" and 08-D "Edit
+ * The billing account's card screens, composed (Figma 08-Y "Add Card Details" and 08-D "Edit
  * Card Details"): the banner, one narrow card with the form, and Minty holding the cards under
  * it. Adding mounts Stripe's own fields (`CardCaptureForm`); editing draws three fields of our
  * own, because the only things Stripe lets a saved card change are the name on it and when it
@@ -42,8 +42,14 @@ function MintyWithCards() {
   );
 }
 
-export function AddCardScreen({ fixture }: { fixture?: string | null }) {
-  const add = useAddCard({ fixture });
+export function AddCardScreen({
+  accountId,
+  fixture,
+}: {
+  accountId?: string | null;
+  fixture?: string | null;
+}) {
+  const add = useAddCard({ fixture, accountId });
   return (
     <div className="flex flex-col gap-8 pb-16">
       <PortalHero title={ADD_CARD_TITLE} />
@@ -52,7 +58,12 @@ export function AddCardScreen({ fixture }: { fixture?: string | null }) {
           <h2 className="text-[17px] font-bold text-[#16202e]">{ADD_CARD_HEADING}</h2>
           <p className="mt-1.5 text-[13px] text-[#8b93a0]">{STRIPE_NOTE}</p>
         </div>
-        <CardCapturePanel setup={add} onSaved={add.saved} onCancel={add.cancel} />
+        <CardCapturePanel
+          setup={add}
+          onSaved={add.saved}
+          onCancel={add.cancel}
+          account={add.account}
+        />
       </section>
       <MintyWithCards />
     </div>
@@ -61,12 +72,14 @@ export function AddCardScreen({ fixture }: { fixture?: string | null }) {
 
 export function EditCardScreen({
   cardId,
+  accountId,
   fixture,
 }: {
   cardId?: string | null;
+  accountId?: string | null;
   fixture?: string | null;
 }) {
-  const edit = useEditCard({ cardId, fixture });
+  const edit = useEditCard({ cardId, accountId, fixture });
   return (
     <div className="flex flex-col gap-8 pb-16">
       <PortalHero title={EDIT_CARD_TITLE} />

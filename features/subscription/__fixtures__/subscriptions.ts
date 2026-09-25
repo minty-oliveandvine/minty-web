@@ -69,7 +69,7 @@ function mod(code: "PETTY_CASH" | "PAYMENT_REQUEST", status: ModuleStatus, days 
   }
 }
 
-const PAYER = { id: "u-payer", name: "Olive Vine", email: "olive@example.com" };
+export const PAYER = { id: "u-payer", name: "Olive Vine", email: "olive@example.com" };
 
 let created = 0;
 function company(
@@ -201,10 +201,14 @@ export function subscriptionsPage(entities: PortalEntity[] = ENTITIES): PayerSub
   return {
     payer: PAYER,
     billing: {
-      anchor: "28 Sep 2026",
-      anchor_iso: inDays(7).iso,
+      // The cycle's START, two months back - deliberately NOT the next billing date, so a
+      // screen that prints the anchor as "next" (the bug 08-A shipped with) fails its tests.
+      anchor: "28 Jul 2026",
+      anchor_iso: inDays(-53).iso,
       paid_through: "28 Sep 2026",
       paid_through_iso: inDays(7).iso,
+      next_billing: "28 Sep 2026",
+      next_billing_iso: inDays(7).iso,
       currency: "HKD",
     },
     entities,

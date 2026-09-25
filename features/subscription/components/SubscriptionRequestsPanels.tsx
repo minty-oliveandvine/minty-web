@@ -17,6 +17,7 @@ import type {
 } from "@/features/subscription/api/payerPortal";
 import { CardBrand } from "@/features/subscription/components/CardBrand";
 import { CardCapturePanel } from "@/features/subscription/components/CardCaptureForm";
+import { RadioCard } from "@/features/subscription/components/RadioCard";
 import type { SetupIntentState } from "@/features/subscription/hooks/useCardForm";
 import { ADD_CARD_HEADING, STRIPE_NOTE } from "@/features/subscription/lib/billing";
 import { PORTAL } from "@/features/subscription/lib/paths";
@@ -411,45 +412,34 @@ export function PaymentMethodPicker({
     >
       <h3 className="text-[15px] font-semibold text-[#21262e]">Payment Methods</h3>
       <div className="flex flex-col gap-3">
-        {cards.map((card) => {
-          const picked = card.id === cardId;
-          return (
-            <label
-              key={card.id}
-              className={`flex cursor-pointer items-center gap-5 rounded-xl border px-6 py-4 shadow-[0px_2px_8px_0px_rgba(0,0,0,0.06)] ${
-                picked ? "border-[#2e9b9b] bg-[#f5ffff]" : "border-[#eef1f4] bg-white"
-              }`}
-            >
-              <input
-                type="radio"
-                name="card"
-                value={card.id}
-                checked={picked}
-                onChange={() => onPick(card.id)}
-                className="sr-only"
-              />
-              {/* The same mark the summary draws. It used to be the label in Visa's blue
-                  italic whatever the card was, which drew a Mastercard as a blue word. */}
+        {cards.map((card) => (
+          <RadioCard
+            key={card.id}
+            name="card"
+            value={card.id}
+            checked={card.id === cardId}
+            onSelect={onPick}
+            // The same mark the summary draws. It used to be the label in Visa's blue italic
+            // whatever the card was, which drew a Mastercard as a blue word.
+            leading={
               <CardBrand
                 brand={card.brand}
                 label={card.brand_label}
                 className="h-[30px] w-[78px] shrink-0"
               />
-              <span className="min-w-0 flex-1">
-                <span className="block text-[15px] font-bold text-[#16202e]">
-                  {card.last4
-                    ? `${card.brand_label || "Card"} ending in ${card.last4}`
-                    : card.label}
-                </span>
-                {card.expiry && (
-                  <span className="block text-[13px] text-[#6b7380]">
-                    <span className="text-[#a0a8b2]">Expire on</span> {card.expiry}
-                  </span>
-                )}
-              </span>
-            </label>
-          );
-        })}
+            }
+            title={
+              card.last4 ? `${card.brand_label || "Card"} ending in ${card.last4}` : card.label
+            }
+            subtitle={
+              card.expiry && (
+                <>
+                  <span className="text-[#a0a8b2]">Expire on</span> {card.expiry}
+                </>
+              )
+            }
+          />
+        ))}
         {cards.length === 0 && <p className="text-sm text-[#6b7380]">No saved cards yet.</p>}
       </div>
       <a

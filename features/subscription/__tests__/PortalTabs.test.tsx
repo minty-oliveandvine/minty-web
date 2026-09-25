@@ -41,6 +41,7 @@ describe("PortalTabs", () => {
       "/subscription/subscriptions",
       "/subscription/billing",
       "/subscription/billing/add",
+      "/subscription/billing/details",
       "/subscription/invoices",
       "/subscription/subscriptions/incoming",
     ]) {
@@ -53,6 +54,8 @@ describe("PortalTabs", () => {
     // The prefix trap: `/subscription/...`.startsWith("/subscription/") is true of everything.
     expect(tabsOn("/subscription/subscriptions").current).toEqual(["Manage Subscriptions"]);
     expect(tabsOn("/subscription/billing/add").current).toEqual(["Billing"]);
+    // A billing account's own page is Billing's too: 08-C.
+    expect(tabsOn("/subscription/billing/details").current).toEqual(["Billing"]);
   });
 
   it("a sub-page keeps its section's tab current", () => {

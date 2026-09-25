@@ -92,6 +92,17 @@ a handover ended (§14). Step 4c (2026-09-23): the billing area from Figma secti
 their menu, the invoices) and `routes/CardPages` (add a card on Stripe's own fields, edit a
 saved one), over `hooks/useBillingPage` / `useBillingOverview` / `useCardForm`,
 `components/BillingPanels` + `CardDialogs` + `CardCaptureForm` + `BillingOverviewPanels`,
-`lib/billing` and `__fixtures__/billing.ts` (§15). Next: the invoices page (section 09); the
-handover's outcome modals once the API reports an outgoing request's end; the billing company
-and address (08-C) and the next bill's estimated amount, both of which need the API first.
+`lib/billing` and `__fixtures__/billing.ts` (§15). 2026-09-25: the billing area re-cut around
+BILLING ACCOUNTS - 08-A shows one account (its name as "Bill to", clicking the card picks which,
+`?account=`) and moves a company between accounts (`components/BillingAccountDialogs`), 08-B is
+one account's profile, and 08-C (`routes/BillingDetailsPage`, `hooks/useBillingDetails`,
+`components/BillingDetailsForm`) is built, over `lib/billingAccounts` - its address in
+Stripe's own `AddressElement` (loaded through `lib/stripe`, shared with the card forms). Later the same day, at the
+user's word: a new account opens in onboarding's `BillingSheet`, in place (`components/AccountSheet`
++ `sheetClasses`, `BillingAccountDialogs`, `useCardForm.useNewAccount`; the new-account page went);
+the account's NAME is _Change billing account_; "Trial ending" counts the trials ending within 30
+days and the update lines have _Show more_; 08-B shows the next bill's estimated amount (the API's
+`next_bill`, priced by its renewal runner), pages its invoices 10 / 50 / 100 and downloads each
+one's billing breakdown as the user's sample CSV (`lib/breakdown`, `lib/download`).
+`components/ModalFrame` is shared by the other modals, `RadioCard` by 07-E's picker (§15). Next:
+the invoices page (section 09).

@@ -243,7 +243,9 @@ describe("useSubscriptionsList", () => {
       `/subscription/subscriptions?entity=${e.entity_id}&tick=PAYMENT_REQUEST`,
       `/subscription/subscriptions/subscriber?entity=${e.entity_id}`,
       "/subscription/subscriptions/incoming?transfer=t-1",
-      "/subscription/billing",
+      // The banner names the first company whose payment failed; the billing page opens the
+      // account THAT company is on - the card that needs fixing.
+      "/subscription/billing?entity=e-willow-court-limited",
       `${b}/payment-method`,
     ]);
     expect(back).toHaveBeenCalledTimes(1);

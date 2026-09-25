@@ -8,6 +8,7 @@
  */
 
 export { AddCard, EditCard } from "@/features/subscription/routes/CardPages";
+export { BillingDetails } from "@/features/subscription/routes/BillingDetailsPage";
 export { BillingPage } from "@/features/subscription/routes/BillingPage";
 export { ManageSubscriptions } from "@/features/subscription/routes/ManageSubscriptions";
 export { ModuleSettingsPage } from "@/features/subscription/routes/ModuleSettingsPage";

@@ -1,5 +1,6 @@
 /**
- * The payer portal's API: the fifteen `/api/me/*` routes, typed to the contract.
+ * The payer portal's API: the `/api/me/*` routes, typed to the contract - Flask's fifteen
+ * paths, plus `transfer/seen` and the four `billing/accounts` routes minty-billing-api added.
  *
  * billing-frontend/lib/payerPortal.ts, moved: the same function names, parameters, request
  * bodies, query names and response types, so the portal screens port mechanically (Part 2
@@ -85,10 +86,14 @@ export type PayerSubscriptions = {
   /** Empty when there is nothing to tell; absent on an API older than this field. */
   transfer_outcomes?: TransferOutcomeRow[];
   billing: {
+    /** The cycle's START - the payer's first charge. Never a date to print as "next". */
     anchor: string | null;
     anchor_iso: string | null;
     paid_through: string | null;
     paid_through_iso: string | null;
+    /** The date the payer is next billed: the end of the anchor period now is in. */
+    next_billing?: string | null;
+    next_billing_iso?: string | null;
     currency: string | null;
   };
   entities: PortalEntity[];
@@ -382,13 +387,44 @@ export async function startCardSetup(): Promise<SetupIntentHandle> {
   return data;
 }
 
+/** Which billing account a confirmed card goes on - onboarding's `BillingAccountChoice`. */
+export type BillingAccountChoice = {
+  /** Put the card on this account (08-B's "Add payment method"). */
+  billingGroupId?: string | null;
+  /** With `company`, OPEN a new account on the card ("New billing account"). */
+  email?: string | null;
+  company?: string | null;
+};
+
+/** The confirm answer: the wallet, plus the account the card went on when it named one. */
+export type ConfirmedCard = PayerPaymentMethods & {
+  account?: {
+    id: string;
+    billing_email: string | null;
+    billing_company: string | null;
+    default_id: string;
+  };
+};
+
+/**
+ * Tell the API about the card the browser just confirmed. `account` is optional: the id puts
+ * the card on an account the payer holds; a company and an email OPEN one. The body is
+ * onboarding's `confirmCardSetup` exactly (onboarding/lib/billing.ts), the same act in two apps.
+ */
 export function confirmCardSetup(
   setupIntent: string,
   makeDefault = false,
-): Promise<PayerPaymentMethods> {
-  return apiFetch<PayerPaymentMethods>("/api/me/billing/payment-methods/confirm", {
+  account?: BillingAccountChoice | null,
+): Promise<ConfirmedCard> {
+  return apiFetch<ConfirmedCard>("/api/me/billing/payment-methods/confirm", {
     method: "POST",
-    json: { setup_intent: setupIntent, make_default: makeDefault },
+    json: {
+      setup_intent: setupIntent,
+      make_default: makeDefault,
+      ...(account?.billingGroupId ? { billing_group_id: account.billingGroupId } : {}),
+      ...(account?.email != null ? { billing_email: account.email } : {}),
+      ...(account?.company != null ? { billing_company: account.company } : {}),
+    },
   });
 }
 
@@ -436,11 +472,159 @@ export function updatePaymentMethod(
   });
 }
 
-export function removePaymentMethod(paymentMethod: string): Promise<PayerPaymentMethods> {
+/**
+ * `accountId` is the billing account whose page asked (08-B): the API refuses that account's
+ * own card in its words, and hands the payer-wide default to the account's card rather than
+ * refusing with a fix this page has no button for.
+ */
+export function removePaymentMethod(
+  paymentMethod: string,
+  accountId?: string | null,
+): Promise<PayerPaymentMethods> {
   return apiFetch<PayerPaymentMethods>("/api/me/billing/payment-methods/remove", {
     method: "POST",
-    json: { payment_method: paymentMethod },
+    json: { payment_method: paymentMethod, ...(accountId ? { account: accountId } : {}) },
   });
+}
+
+// --- Billing accounts (08-A / 08-B / 08-C) ---------------------------------------------
+
+/** A billing account's address: the Stripe billing address of the card it charges. */
+export type BillingAddress = SavedPaymentMethod["address"] & { country_name: string | null };
+
+/** A company one account pays for. */
+export type AccountCompany = { entity_id: string; entity_name: string; past_due: boolean };
+
+/**
+ * A billing account: a name ("Bill to"), a billing email, the cards on it, the ONE card it
+ * charges, the companies it pays for and its own dunning clock.
+ */
+export type BillingAccount = {
+  id: string;
+  /** What "Bill to" reads: the company it bills under, else the payer. */
+  name: string;
+  /** Raw, so a form can tell "unnamed" from "named after the payer". */
+  billing_company: string | null;
+  billing_email: string | null;
+  /** The card the account CHARGES. */
+  default_id: string;
+  /** That card, or null when Stripe no longer holds it - an account that cannot pay. */
+  card: SavedPaymentMethod | null;
+  /** The account's cards, its own first; `is_default` marks THIS account's card. */
+  cards: SavedPaymentMethod[];
+  total: number;
+  /** The charged card's billing address; null with no card to hold one. */
+  address: BillingAddress | null;
+  companies: AccountCompany[];
+  in_dunning: boolean;
+  /** In dunning, or any of its companies past due. */
+  past_due: boolean;
+  /**
+   * What its next renewal will charge - ESTIMATED, priced by the API's renewal runner for the
+   * period starting on the payer's next billing date (its companies billing forward, the trials
+   * that will have converted by then, a cancellation extension riding along). Null when there
+   * is no cycle yet or nothing to bill.
+   */
+  next_bill: { amount: string; amount_minor: number; currency: string } | null;
+};
+
+export type CountryOption = { code: string; name: string };
+
+export type BillingAccounts = {
+  has_account: boolean;
+  payer: { id: string; name: string; email: string };
+  /** ONE date for the payer - every account renews on the same anchor. */
+  next_billing: string | null;
+  next_billing_iso: string | null;
+  /** Oldest first: the first is the one shown when none is asked for. */
+  accounts: BillingAccount[];
+  total: number;
+  /** The flat wallet: a card on no account is still the payer's. */
+  methods: SavedPaymentMethod[];
+  default_id: string | null;
+  /** Only when asked (`countries: true`) - the countries 08-C's address form may offer. */
+  countries?: CountryOption[];
+  /**
+   * Only when asked, with the countries: the key 08-C's address form - Stripe's own - mounts
+   * with. Null when the environment has no Stripe.
+   */
+  publishable_key?: string | null;
+};
+
+/** What "Change billing account" did: the company, where from and where to. */
+export type AccountMove = {
+  entity_id: string;
+  entity_name: string;
+  from_account: { id: string; name: string } | null;
+  to_account: { id: string; name: string };
+};
+
+export type MovedAccounts = BillingAccounts & { moved: AccountMove | null };
+
+/**
+ * What 08-C may change: the name and email (the account), the address and the cardholder's name
+ * that Stripe's address form asks for with it (both its charged card's).
+ */
+export type AccountChanges = {
+  billing_company?: string;
+  billing_email?: string;
+  address?: Partial<SavedPaymentMethod["address"]>;
+  cardholder?: string;
+};
+
+function accountsOrThrow<T extends BillingAccounts>(data: T | null | undefined): T {
+  if (!data || !Array.isArray(data.accounts)) throw new ApiError(502, UNEXPECTED_SHAPE);
+  return data;
+}
+
+export async function fetchBillingAccounts(
+  params: { countries?: boolean; signal?: AbortSignal } = {},
+): Promise<BillingAccounts> {
+  return accountsOrThrow(
+    await apiFetch<BillingAccounts>("/api/me/billing/accounts", {
+      signal: params.signal,
+      query: { countries: params.countries ? 1 : undefined },
+    }),
+  );
+}
+
+/** Make one card on the account the card it CHARGES: its companies' next bills go to it. */
+export async function setAccountDefaultCard(
+  accountId: string,
+  paymentMethod: string,
+): Promise<BillingAccounts> {
+  return accountsOrThrow(
+    await apiFetch<BillingAccounts>("/api/me/billing/accounts/default-card", {
+      method: "POST",
+      json: { account: accountId, payment_method: paymentMethod },
+    }),
+  );
+}
+
+/** 08-C: only the keys that changed; a blank clears. */
+export async function updateBillingAccount(
+  accountId: string,
+  changes: AccountChanges,
+): Promise<BillingAccounts> {
+  return accountsOrThrow(
+    await apiFetch<BillingAccounts>("/api/me/billing/accounts/update", {
+      method: "POST",
+      json: { account: accountId, ...changes },
+    }),
+  );
+}
+
+/** "Change billing account": nothing is charged; the company's paid days go with it. */
+export async function moveCompanyToAccount(
+  entityId: string,
+  accountId: string,
+): Promise<MovedAccounts> {
+  return accountsOrThrow(
+    await apiFetch<MovedAccounts>("/api/me/billing/accounts/move", {
+      method: "POST",
+      json: { entity: entityId, account: accountId },
+    }),
+  );
 }
 
 // --- Invoices ------------------------------------------------------------------
@@ -473,6 +657,8 @@ export type PayerInvoices = {
   invoices: InvoiceRow[];
   entity_options: { id: string; name: string }[];
   entity_id: string | null;
+  /** The billing account asked about, when one was. */
+  account_id?: string | null;
   total: number;
   page: number;
   pages: number;
@@ -481,15 +667,65 @@ export type PayerInvoices = {
 
 export type PayerInvoicesParams = {
   entityId?: string | null;
+  /** ONE billing account's invoices (08-B); a pre-accounts invoice belongs to the oldest. */
+  accountId?: string | null;
   page?: number;
   perPage?: number;
   signal?: AbortSignal;
 };
 
+/**
+ * One line of an invoice's breakdown (08-B's "Billing Breakdown"): a company, the subscription
+ * it was charged for, the monthly rate that charge was priced at, the days it paid for and what
+ * was charged. The API reads each line's days and rate back from how that kind of line is priced
+ * - `full` a renewal, `remaining` a mid-period start or upgrade, `unused` the credit for the plan
+ * replaced (negative), `extension` the days of access past a cancellation.
+ */
+export type BreakdownRow = {
+  entity_id: string;
+  entity_name: string;
+  subscription: string;
+  kind: "full" | "remaining" | "unused" | "extension" | (string & {});
+  /** Minor units; null when it could not be read back. */
+  monthly_minor: number | null;
+  period_start: string | null;
+  /** The instant the days paid for end (the next period's start); null when it is not known. */
+  period_end: string | null;
+  charged_minor: number;
+};
+
+export type InvoiceBreakdown = {
+  invoice: {
+    id: string;
+    reference: string;
+    currency: string;
+    period_start: string | null;
+    period_end: string | null;
+    total_minor: number;
+  };
+  rows: BreakdownRow[];
+};
+
+/** One invoice, company by company - someone else's invoice is a 404, in the API's words. */
+export async function fetchInvoiceBreakdown(invoiceId: string): Promise<InvoiceBreakdown> {
+  const data = await apiFetch<InvoiceBreakdown>(
+    `/api/me/invoices/${encodeURIComponent(invoiceId)}/breakdown`,
+  );
+  if (!data || !Array.isArray(data.rows) || !data.invoice) {
+    throw new ApiError(502, UNEXPECTED_SHAPE);
+  }
+  return data;
+}
+
 export async function fetchPayerInvoices(params: PayerInvoicesParams = {}): Promise<PayerInvoices> {
   const data = await apiFetch<PayerInvoices>("/api/me/invoices", {
     signal: params.signal,
-    query: { entity: params.entityId ?? undefined, page: params.page, per_page: params.perPage },
+    query: {
+      entity: params.entityId ?? undefined,
+      account: params.accountId ?? undefined,
+      page: params.page,
+      per_page: params.perPage,
+    },
   });
   if (!data || !Array.isArray(data.invoices)) throw new ApiError(502, UNEXPECTED_SHAPE);
   return data;

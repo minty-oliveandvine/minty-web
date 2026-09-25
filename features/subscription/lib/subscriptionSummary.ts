@@ -133,10 +133,17 @@ const TONE: Record<ModuleCode, PlanTone> = { PETTY_CASH: "petty", PAYMENT_REQUES
 
 // ---- money ---------------------------------------------------------------------------------
 
-/** `HK$400`, `HK$400.50`, `HKD 400` - the API's `format_trimmed` in the browser. */
+/**
+ * `HK$400`, `HK$400.50`, `HKD 1,500` - the API's `format_trimmed` in the browser, thousands
+ * grouped as it groups them (`{:,}`). It once printed "HK$1200" beside the API's "HK$1,200".
+ */
 export function formatMoney(symbol: string, amount: number): string {
   const whole = Number.isInteger(amount);
-  const digits = whole ? String(amount) : amount.toFixed(2);
+  const places = whole ? 0 : 2;
+  const digits = amount.toLocaleString("en-US", {
+    minimumFractionDigits: places,
+    maximumFractionDigits: places,
+  });
   const sym = symbol.trim();
   if (!sym) return digits;
   return /[A-Za-z]$/.test(sym) ? `${sym} ${digits}` : `${sym}${digits}`;

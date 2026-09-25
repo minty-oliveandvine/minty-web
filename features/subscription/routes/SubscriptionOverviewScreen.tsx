@@ -2,8 +2,11 @@
 
 /**
  * "Subscription & Billing" - the portal's landing, composed (Figma 08-A): the way back into
- * Minty, the banner, the payment-method card and the Subscription Overview. `SubscriptionOverview`
- * reads the URL and hands the parameters here; the tests render this directly with fixtures.
+ * Minty, the banner, the billing-account card and the Subscription Overview, and the two
+ * account dialogs the card opens - which account to show, and "Change billing account" - each
+ * of which can open a new account in place (onboarding's sheet, `BillingAccountDialogs`).
+ * `SubscriptionOverview` reads the URL and hands the parameters here; the tests render this
+ * directly with fixtures.
  *
  * The way back goes to the COMPANY this browser is scoped to, not to Minty's entity picker:
  * everyone here arrived from a company's module settings, so `/entity/<id>/modules` takes them
@@ -16,7 +19,11 @@ import { getAuth } from "@/lib/auth";
 import { mintyModulesUrl } from "@/lib/mintyEntry";
 
 import {
-  PaymentMethodCard,
+  AccountPickerDialog,
+  MoveCompanyDialog,
+} from "@/features/subscription/components/BillingAccountDialogs";
+import {
+  BillingAccountCard,
   SubscriptionOverviewCard,
 } from "@/features/subscription/components/BillingOverviewPanels";
 import { TransferOutcomeDialog } from "@/features/subscription/components/TransferOutcomeDialog";
@@ -66,9 +73,46 @@ export function SubscriptionOverviewScreen(args: UseBillingOverviewArgs) {
           className="mx-auto flex w-full max-w-[720px] flex-col gap-8"
           aria-busy={o.status === "loading"}
         >
-          <PaymentMethodCard next={o.next} onOpen={o.goToBilling} />
-          <SubscriptionOverviewCard overview={o.overview} onManage={o.manageSubscriptions} />
+          <BillingAccountCard
+            next={o.next}
+            accountsFailed={o.accountsFailed}
+            notice={o.notice}
+            onPick={o.openPicker}
+            onMove={o.openMove}
+            onOpen={o.goToBilling}
+            onRetry={o.reload}
+          />
+          <SubscriptionOverviewCard
+            overview={o.overview}
+            updatesExpanded={o.updatesExpanded}
+            onToggleUpdates={o.toggleUpdates}
+            onManage={o.manageSubscriptions}
+          />
         </div>
+      )}
+
+      {/* Siblings of the card, never inside it: a click in a dialog would otherwise bubble to
+          the card's own click and open the picker under the dialog. */}
+      {o.picking && o.accounts && (
+        <AccountPickerDialog
+          data={o.accounts}
+          currentId={o.account?.id ?? null}
+          fixture={args.fixture}
+          onConfirm={o.confirmPick}
+          onOpened={o.accountOpened}
+          onClose={o.closePicker}
+        />
+      )}
+      {o.moving && o.accounts && (
+        <MoveCompanyDialog
+          data={o.accounts}
+          busy={o.moveBusy}
+          error={o.moveError}
+          fixture={args.fixture}
+          onMove={o.moveCompany}
+          onOpened={o.accountOpened}
+          onClose={o.closeMove}
+        />
       )}
 
       {/* 07-I / A-07 (declined), A-08 (expired), 07-L (accepted) - all drawn OVER this page.

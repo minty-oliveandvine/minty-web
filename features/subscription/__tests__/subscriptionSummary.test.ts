@@ -42,6 +42,12 @@ describe("formatMoney", () => {
     expect(formatMoney("HKD", 280)).toBe("HKD 280");
     expect(formatMoney("", 0)).toBe("0");
   });
+
+  it("groups the thousands as the API does - it printed HK$1200 beside the API's HK$1,200", () => {
+    expect(formatMoney("HKD", 1500)).toBe("HKD 1,500");
+    expect(formatMoney("HK$", 1695.09)).toBe("HK$1,695.09");
+    expect(formatMoney("HKD", 1234567.5)).toBe("HKD 1,234,567.50");
+  });
 });
 
 describe("utcDay", () => {

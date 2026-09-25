@@ -15,6 +15,7 @@ import {
   requireApp,
   subscriptionsDark,
 } from "../../../e2e/helpers";
+import { ACCOUNTS } from "../__fixtures__/billing";
 import { RESULT_FIXTURES, SUMMARY_FIXTURES, WALLET } from "../__fixtures__/modulePage";
 import { ENTITIES, INCOMING_TRANSFERS, subscriptionsPage } from "../__fixtures__/subscriptions";
 import type { PayerSubscriptions } from "../api/payerPortal";
@@ -50,6 +51,12 @@ async function stubApi(page: Page, list: PayerSubscriptions, transfers: unknown[
   );
   await page.route(`${BILLING_API_URL}/api/me/billing/entity-payment-method?*`, (route) =>
     route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(WALLET) }),
+  );
+  // What the overview (08-A) reads besides the list, when a result sends the journey back to it:
+  // unstubbed, it would reach the real API with the stand-in token and the 401 would hand the
+  // browser back to Minty's sign-in.
+  await page.route(`${BILLING_API_URL}/api/me/billing/accounts`, (route) =>
+    route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(ACCOUNTS) }),
   );
   await page.route(`${BILLING_API_URL}/api/entities/*/modules/**`, (route) => {
     const req = route.request();

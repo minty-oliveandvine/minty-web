@@ -2,19 +2,20 @@
  * What the billing screens SHOW, derived from what the API SAYS - Figma section 08 ("Billing —
  * details and payment methods"), both of its pages:
  *
- * - the overview (08-A): the account's next bill, how many companies are paying and how many
- *   are on a trial about to end, and a line per company that needs the payer to know something;
- * - the billing page (08-B and its states): who the bill goes to, the saved cards with the
- *   default pinned first, and the invoices already paid.
+ * - the overview (08-A): one billing account's next bill, how many companies are paying and how
+ *   many are on a trial about to end, and a line per company that needs the payer to know
+ *   something;
+ * - the billing page (08-B and its states): one billing account - who the bill goes to, its
+ *   cards with the card it charges pinned first, and its invoices.
  *
- * THREE READS MAKE BOTH PAGES: the payer's companies (`/api/me/subscriptions` - it carries the
- * payer, the billing anchor and every module's state), the saved cards
- * (`/api/me/billing/payment-methods`) and the invoices (`/api/me/invoices`). Everything here is
- * pure: the hooks fetch, this decides what is on the screen.
+ * THE READS: the billing accounts (`/api/me/billing/accounts` - each account's name, cards,
+ * address and companies, and the payer's one next billing date; `lib/billingAccounts.ts` reads
+ * them), the payer's companies (`/api/me/subscriptions` - every module's state, for the
+ * overview) and the invoices (`/api/me/invoices?account=`). Everything here is pure: the hooks
+ * fetch, this decides what is on the screen.
  *
  * What the design draws and the API cannot answer is left out rather than guessed - see
- * `docs/features/subscriptions.md` §15 for the two (the billing company's address, and the
- * estimated amount of the next bill).
+ * `docs/features/subscriptions.md` §15 (the estimated amount of the next bill).
  */
 
 import type {
@@ -43,6 +44,8 @@ export const OVERVIEW_TITLE = "Subscription & Billing";
 export const NEXT_BILLING = "Next billing";
 export const BILL_TO = "Bill to";
 export const NEXT_BILL_DATE = "Next Bill Date";
+export const AMOUNT = "Amount";
+export const ESTIMATED = "(estimated)";
 export const DUE_IMMEDIATELY = "Due Immediately";
 export const PAYMENT_FAILED = "Payment Failed";
 export const PAYMENT_METHODS = "Payment Methods";
@@ -54,6 +57,7 @@ export const NO_CARD_BODY =
   "Trials keep running without one. A subscription cannot start, and nothing is charged, until a card is here.";
 export const ADD_A_PAYMENT_METHOD = "Add a payment method";
 export const NO_INVOICES = "Nothing has been billed yet.";
+export const LOADING_INVOICES = "Loading the invoices…";
 export const BILLING_LOAD_FAILED = "I couldn't load your billing details. Mind trying again?";
 export const CARD_ACTION_FAILED = "That didn't go through. Mind trying again?";
 /** 08-R: the default card cannot be removed while it is the one being charged. */
@@ -61,7 +65,8 @@ export const REMOVE_DEFAULT_TITLE = "Remove default card?";
 export const REMOVE_DEFAULT_TAIL =
   " is currently your default payment method. Another card will need to be selected as the default payment method before this card can be removed.";
 export const REMOVE_TITLE = "Remove this card?";
-export const REMOVE_BODY = "It will be taken off your billing account. You can add it again later.";
+export const REMOVE_BODY =
+  "It will be taken off your billing accounts. You can add it again later.";
 /** 08-N / 08-S: what the page says when a card comes back from the Stripe form. */
 export const CARD_ADDED = "New Card added";
 export const CARD_ADDED_TAIL = "Successfully";
@@ -93,6 +98,12 @@ export const MANAGE_SUBSCRIPTION = "Manage Subscription";
 export const GO_TO_BILLING = "Go to payment details and invoices";
 export const BACK_TO_ENTITIES = "Back to the entity dashboard";
 export const NOTHING_TO_UPDATE = "Nothing needs your attention right now.";
+/** 08-A's card, named for what it is now that the eyebrow ("Payment Method") is gone. */
+export const BILLING_ACCOUNT = "Billing account";
+export const MANAGE_BILLING_DETAILS = "Manage Billing Details and Payment Methods";
+export const NEXT_BILLING_DATE = "Next Billing Date";
+export const CHANGE_BILLING_ACCOUNT = "Change billing account";
+export const CHANGE_BILLING_DETAILS = "Change billing details";
 
 /** 08-B's card rows: the chip each one wears, worst first in meaning, not in order. */
 export type CardChip = "default" | "saved" | "expired";
@@ -104,7 +115,7 @@ export type CardRow = {
   /** "Apr 2029" - a card expires in a month, not on a day (see §15's readings). */
   expiry: string | null;
   chip: CardChip;
-  /** The default card is the one every company is charged to; it cannot be removed. */
+  /** The card the billing account CHARGES - every company on it; it cannot be removed. */
   isDefault: boolean;
 };
 
@@ -179,12 +190,25 @@ export function expiredNotice(rows: CardRow[]): string | null {
 }
 
 export type NextBilling = {
-  /** Who Minty bills - the payer, which is who the account belongs to. */
+  /** Who Minty bills: the billing account's name (the payer, for an account never named). */
   billTo: string;
   email: string | null;
-  /** The payer's monthly billing anchor, already formatted by the API. */
+  /** The account's address, line by line (its charged card's billing address). */
+  addressLines: string[];
+  /**
+   * The payer's NEXT billing date, formatted by the API - one date, every account renews on the
+   * same anchor. Never the anchor itself: that is the FIRST charge, a date in the past from the
+   * second month on (the bug this page shipped with until `next_billing` existed).
+   */
   date: string | null;
-  /** True when a company on this account is past due: the block turns amber (08-K). */
+  /**
+   * What the account's next renewal will charge, ESTIMATED - "HKD 1,500", the currency by its
+   * code and cents only when there are some (the design's "Amount … (estimated)"). The API prices
+   * it with the renewal runner itself. Null with no account to price (the payer-level fallback)
+   * or nothing to bill.
+   */
+  amount: string | null;
+  /** True when the account is in dunning or a company on it is past due: amber (08-K). */
   failed: boolean;
   /** The companies whose payment failed, by name - the block names them rather than a count. */
   failedNames: string[];
@@ -194,12 +218,19 @@ function pastDue(entity: PortalEntity): boolean {
   return entity.modules.some((m) => m.status === "past_due");
 }
 
+/**
+ * The payer-level fallback: what 08-A shows when the billing accounts could not be read - the
+ * payer, and the date from the companies' read. `billingAccounts.accountBilling` is the answer
+ * whenever there is an account to name.
+ */
 export function nextBilling(list: PayerAccount | null): NextBilling {
   const failedNames = (list?.entities ?? []).filter(pastDue).map((e) => e.entity_name);
   return {
     billTo: list?.payer?.name || list?.payer?.email || "",
     email: list?.payer?.email || null,
-    date: list?.billing?.anchor ?? null,
+    addressLines: [],
+    date: list?.billing?.next_billing ?? null,
+    amount: null,
     failed: failedNames.length > 0,
     failedNames,
   };
@@ -225,6 +256,21 @@ export function invoiceLines(invoices: InvoiceRow[]): InvoiceLine[] {
   }));
 }
 
+/** How many invoices a page of 08-B's table holds - the payer picks (the user's call). */
+export const INVOICE_PAGE_SIZES = [10, 50, 100] as const;
+export type InvoicePageSize = (typeof INVOICE_PAGE_SIZES)[number];
+
+export function isInvoicePageSize(value: number): value is InvoicePageSize {
+  return (INVOICE_PAGE_SIZES as readonly number[]).includes(value);
+}
+
+/** "11–13 of 13" - where this page sits in the account's invoices. */
+export function invoiceRange(page: number, perPage: number, total: number): string {
+  if (total <= 0) return "0 of 0";
+  const first = (page - 1) * perPage + 1;
+  return `${first}–${Math.min(page * perPage, total)} of ${total}`;
+}
+
 /** The invoice table's money column names the currency once, in its header (08-B: "Amount (HK$)"). */
 export function amountHeader(invoices: InvoiceRow[]): string {
   const symbol = invoices.find((i) => i.amount)?.amount?.replace(/[\d.,\s]+$/, "") ?? "";
@@ -247,20 +293,30 @@ export type OverviewUpdate = {
 export type Overview = {
   /** Companies with at least one module being paid for. */
   active: number;
-  /** Companies with a trial that ends within the window (the design's "Trial ending"). */
+  /** Companies with a trial ending within `TRIAL_ENDING_DAYS` (the design's "Trial ending"). */
   trialEnding: number;
   updates: OverviewUpdate[];
 };
 
-/** The design's "Trial ending" counts the trials close enough to need a decision. */
-export const TRIAL_ENDING_DAYS = 7;
+/**
+ * How far off a trial's end may be and still count as "Trial ending" - and earn a line under
+ * the figures. Thirty days, a trial's whole length (the user's call, 2026-09-25): in practice
+ * every trial going on. It was a week, which read "0" to a payer with seven trials running.
+ */
+export const TRIAL_ENDING_DAYS = 30;
 
-/** How many update lines 08-A prints before it counts the rest ("and 7 more"). */
+/** How many update lines 08-A shows until *Show more* opens the rest (the user's call). */
 export const UPDATES_SHOWN = 5;
 
-export function moreUpdates(updates: OverviewUpdate[]): string | null {
-  const rest = updates.length - UPDATES_SHOWN;
-  return rest > 0 ? `and ${rest} more` : null;
+/** "Show more (7)" - or nothing, when every line already fits. The same words as 08-J's cards. */
+export function moreUpdatesLabel(updates: OverviewUpdate[]): string | null {
+  const hidden = updates.length - UPDATES_SHOWN;
+  return hidden > 0 ? `Show more (${hidden})` : null;
+}
+
+/** The lines on show: the first `UPDATES_SHOWN`, or every one once opened. */
+export function visibleUpdates(updates: OverviewUpdate[], expanded: boolean): OverviewUpdate[] {
+  return expanded ? updates : updates.slice(0, UPDATES_SHOWN);
 }
 
 function daysUntil(iso: string | null, today: Date): number | null {
@@ -281,37 +337,45 @@ function trialing(entity: PortalEntity): PortalModule[] {
  * "Active subscriptions" counts COMPANIES, not modules (the design says "entities"), and a
  * company counts once however many modules it pays for. A trial is not an active subscription -
  * nothing is being charged yet - which is why a payer with two trials and nothing else reads
- * "0 entities" beside "2 entities", exactly as frame 08-A draws it.
+ * "0 entities" beside "2 entities", exactly as frame 08-A draws it. "Trial ending" counts the
+ * companies with a trial ending within `TRIAL_ENDING_DAYS`.
+ *
+ * THE LINES SAY WHICH: the same trials - the soonest first - under every payment that failed.
+ * Figure and lines share the one window, so "Trial ending 6" never sits over "Nothing needs your
+ * attention right now". The first `UPDATES_SHOWN` are shown; *Show more* opens the rest.
  */
 export function overview(list: PayerAccount | null, today: Date): Overview {
   const entities = list?.entities ?? [];
   let active = 0;
   let trialEnding = 0;
-  const updates: OverviewUpdate[] = [];
+  const failed: OverviewUpdate[] = [];
+  const trials: { update: OverviewUpdate; left: number }[] = [];
 
   for (const entity of entities) {
     if (entity.modules.some((m) => m.status === "active" || m.status === "cancelled")) active += 1;
 
-    const soon = trialing(entity).filter((m) => {
-      const left = daysUntil(m.date_iso, today);
-      return left !== null && left <= TRIAL_ENDING_DAYS;
+    const ending = trialing(entity).flatMap((trial) => {
+      const left = daysUntil(trial.date_iso, today);
+      return left !== null && left <= TRIAL_ENDING_DAYS ? [{ trial, left }] : [];
     });
-    if (soon.length > 0) trialEnding += 1;
+    if (ending.length > 0) trialEnding += 1;
 
-    for (const ending of soon) {
-      const left = daysUntil(ending.date_iso, today) ?? 0;
-      updates.push({
-        entityId: entity.entity_id,
-        entityName: entity.entity_name,
-        module: ending.name,
-        text: left <= 0 ? "trial ends today" : "trial ends in",
-        emphasis: left <= 0 ? null : `${left} ${left === 1 ? "day" : "days"}`,
-        tone: "trial",
+    for (const { trial, left } of ending) {
+      trials.push({
+        left,
+        update: {
+          entityId: entity.entity_id,
+          entityName: entity.entity_name,
+          module: trial.name,
+          text: left <= 0 ? "trial ends today" : "trial ends in",
+          emphasis: left <= 0 ? null : `${left} ${left === 1 ? "day" : "days"}`,
+          tone: "trial",
+        },
       });
     }
 
     if (pastDue(entity)) {
-      updates.push({
+      failed.push({
         entityId: entity.entity_id,
         entityName: entity.entity_name,
         module: null,
@@ -322,9 +386,10 @@ export function overview(list: PayerAccount | null, today: Date): Overview {
     }
   }
 
-  // A failure is the line somebody has to act on, so it sits above the trials counting down.
-  updates.sort((a, b) => (a.tone === b.tone ? 0 : a.tone === "failed" ? -1 : 1));
-  return { active, trialEnding, updates };
+  // A failure is the line somebody has to act on, so it sits above the trials counting down;
+  // the trials run soonest first (a stable sort keeps a company's modules together on a tie).
+  trials.sort((a, b) => a.left - b.left);
+  return { active, trialEnding, updates: [...failed, ...trials.map((t) => t.update)] };
 }
 
 /** "0 entities" / "1 entity" - the design's unit line under each figure. */

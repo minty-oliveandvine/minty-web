@@ -84,7 +84,7 @@ import {
   type ChangeAsked,
   type ChangeResult,
 } from "@/features/subscription/lib/changeResult";
-import { PORTAL, moduleRoutes } from "@/features/subscription/lib/paths";
+import { BILLING, PORTAL, moduleRoutes } from "@/features/subscription/lib/paths";
 import { tickOf, type PendingChange } from "@/features/subscription/lib/subscriptionSummary";
 import {
   useEntitySummary,
@@ -639,7 +639,13 @@ export function useSubscriptionsList({
       router.push(`${PORTAL.incoming}?transfer=${encodeURIComponent(transfer.id)}`),
     [router],
   );
-  const updatePaymentMethod = useCallback(() => router.push(PORTAL.billing), [router]);
+  // The banner is the page's, not a row's, so it names the FIRST company whose payment failed
+  // and the billing page opens the account THAT company is on - the card that needs fixing,
+  // rather than whichever account happens to be the payer's oldest.
+  const updatePaymentMethod = useCallback(() => {
+    const failing = entities.find((e) => e.modules.some((m) => m.status === "past_due"));
+    router.push(BILLING.account({ entity: failing?.entity_id ?? null }));
+  }, [router, entities]);
   const back = useCallback(() => guardLeave(() => router.back()), [guardLeave, router]);
 
   return {

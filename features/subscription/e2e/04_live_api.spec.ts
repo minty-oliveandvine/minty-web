@@ -1,8 +1,9 @@
 // The module settings page and the Manage Subscriptions list over the LIVE API - no page.route,
 // no fixtures. What this proves is the contract meeting the screens: minty-billing-api's answers
-// (Part 2 step 3) render as the pages expect, and the one write the pages make today - Start
-// Trial - lands and comes back as a running trial. Everything the stubbed specs pin (the
-// chrome, every Figma state, the seams) stays in 02/03; this file only follows real data.
+// (Part 2 step 3) render as the pages expect, and two writes land and come back: Start Trial,
+// as a running trial, and 08-C's address - typed into Stripe's own form, over real Stripe in
+// test mode, and put back. Everything the stubbed specs pin (the chrome, every Figma state, the
+// seams) stays in 02/03/06; this file only follows real data.
 //
 // Needs the whole stack up (this app :3002, minty-billing-api :8004 live) and the identity
 // `Minty/scripts/e2e_seed.py --print` creates. The seed is the reset: it hands the
@@ -122,6 +123,108 @@ test.describe("over the live API", () => {
       .getAttribute("href");
     expect(backHref).toContain(`/entity/${c.entityId}/enter?token=`);
     expect(backHref).toContain(encodeURIComponent(`/entity/${c.entityId}/modules`));
+  });
+
+  test("the landing and the billing page read the person's real billing accounts", async ({
+    page,
+  }) => {
+    // Read-only: what minty-billing-api holds for this person, then the two pages over it.
+    const c = requireCredentials();
+    const res = await fetch(`${BILLING_API_URL}/api/me/billing/accounts`, {
+      headers: { Authorization: `Bearer ${mintModuleToken(c, { entity_id: "" })}` },
+    });
+    expect(res.ok, `billing accounts: ${res.status}`).toBe(true);
+    const data = (await res.json()) as {
+      accounts: { id: string; name: string }[];
+      next_billing: string | null;
+    };
+    expect(Array.isArray(data.accounts)).toBe(true);
+
+    await handoff(page, c, "/subscription", { entity_id: "" });
+    const card = body(page).getByRole("region", { name: "Billing account" });
+    await expect(card).toBeVisible();
+    // The accounts answered, so the card is on them - not on the payer-level fallback.
+    await expect(card.getByText("I couldn't load your billing accounts.")).toHaveCount(0);
+    if (data.next_billing) await expect(card).toContainText(data.next_billing);
+
+    if (data.accounts.length > 0) {
+      const [first] = data.accounts;
+      await expect(card).toContainText(first.name);
+      await card.getByText("Next Billing Date").click();
+      const picker = page.getByRole("dialog", { name: "Billing Accounts" });
+      await expect(picker.getByRole("radio")).toHaveCount(data.accounts.length);
+      await page.keyboard.press("Escape");
+      await card.getByRole("button", { name: /Go to payment details and invoices/ }).click();
+      await page.waitForURL(
+        (u) => u.pathname === "/subscription/billing" && u.searchParams.get("account") === first.id,
+      );
+      await expect(body(page).getByRole("region", { name: "Next billing" })).toContainText(
+        first.name,
+      );
+    } else {
+      // A person who has never been billed has no account: the billing page offers one.
+      await handoff(page, c, "/subscription/billing", { entity_id: "" });
+      await expect(body(page).getByText("No billing account yet")).toBeVisible();
+    }
+  });
+
+  test("08-C's address is Stripe's own form, opened on the card - a change reaches the card, and is put back", async ({
+    page,
+  }) => {
+    // WRITES the charged card's billing address at Stripe - TEST MODE only (skipped otherwise)
+    // - and restores it, so the person's card ends as it started.
+    const c = requireCredentials();
+    const token = mintModuleToken(c, { entity_id: "" });
+    const read = async () => {
+      const res = await fetch(`${BILLING_API_URL}/api/me/billing/accounts?countries=1`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      expect(res.ok, `billing accounts: ${res.status}`).toBe(true);
+      return (await res.json()) as {
+        publishable_key: string | null;
+        accounts: {
+          id: string;
+          card: { cardholder: string | null } | null;
+          address: { line1: string | null; line2: string | null } | null;
+        }[];
+      };
+    };
+    const data = await read();
+    const account = data.accounts.find((a) => a.card && a.address?.line1);
+    test.skip(!account, "the person has no account charging a card with an address");
+    test.skip(!data.publishable_key?.startsWith("pk_test_"), "Stripe here is not in test mode");
+    const { id, card, address } = account!;
+    const line2 = address?.line2 ?? "";
+
+    /** 08-C, with Stripe's form open on what the card holds. */
+    const form = async () => {
+      await handoff(page, c, `/subscription/billing/details?account=${id}`, { entity_id: "" });
+      const region = body(page).getByRole("region", { name: "Address (Stripe)" });
+      const stripe = region.locator('iframe[title="Secure address input frame"]').contentFrame();
+      await expect(stripe.getByLabel("Address line 1")).toHaveValue(address!.line1!, {
+        timeout: 20_000,
+      });
+      return stripe;
+    };
+    const save = async () => {
+      await body(page).getByRole("button", { name: "Save billing account" }).click();
+      await page.waitForURL(
+        (u) => u.pathname === "/subscription/billing" && u.searchParams.get("account") === id,
+      );
+    };
+
+    let stripe = await form();
+    await expect(stripe.getByLabel("Full name")).toHaveValue(card!.cardholder ?? "");
+    const marker = `E2E 08-C ${Date.now()}`;
+    await stripe.getByLabel("Address line 2").fill(marker);
+    await save();
+    await expect(body(page).getByRole("region", { name: "Next billing" })).toContainText(marker);
+    expect((await read()).accounts.find((a) => a.id === id)?.address?.line2).toBe(marker);
+
+    stripe = await form();
+    await stripe.getByLabel("Address line 2").fill(line2);
+    await save();
+    expect((await read()).accounts.find((a) => a.id === id)?.address?.line2 ?? "").toBe(line2);
   });
 
   test("the Manage Subscriptions list shows the companies the person pays for", async ({
