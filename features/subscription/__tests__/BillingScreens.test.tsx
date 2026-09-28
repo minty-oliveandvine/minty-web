@@ -220,6 +220,45 @@ describe("the billing page", () => {
     expect(saved.at(-1)?.text).toMatch(/^Entity Name,Subscription,Monthly amount,/);
   });
 
+  it("08-K: the card to fix and the declined invoice are red, and Retry payment asks again", async () => {
+    const user = userEvent.setup();
+    render(<BillingPageScreen fixture="B" />);
+    await screen.findByText("Company A Limited");
+
+    // The card the account CHARGES is the one to fix while its payment fails; the spare is not.
+    const cards = screen.getByRole("region", { name: "Payment Methods" });
+    const [charged, spare] = within(cards).getAllByRole("button", { name: /^Update card/ });
+    expect(charged).toHaveAccessibleName("Update card · Visa ending in 4121");
+    expect(charged).toHaveAttribute("data-attention", "true");
+    expect(spare).not.toHaveAttribute("data-attention");
+
+    // The declined renewal: red, "Failed <day>" under Paid date, and the one button.
+    const invoices = screen.getByRole("region", { name: "Invoice History" });
+    const failed = (await within(invoices).findByText("#11248800121")).closest("tr")!;
+    expect(failed).toHaveAttribute("data-failed", "true");
+    expect(failed).toHaveTextContent(/Failed \d{2} [A-Z][a-z]{2}/);
+    // An abandoned bill is red too, with no button that could only refuse.
+    const abandoned = within(invoices).getByText("#11240077019").closest("tr")!;
+    expect(abandoned).toHaveAttribute("data-failed", "true");
+    expect(within(abandoned).queryByRole("button", { name: /Retry payment/ })).toBeNull();
+    expect(within(invoices).getByText("#11241234113").closest("tr")).not.toHaveAttribute(
+      "data-failed",
+    );
+    expect(within(invoices).getAllByRole("button", { name: /Retry payment/ })).toHaveLength(1);
+
+    // The fixture's card declines again: 06-B's dialog, naming it; Done closes it.
+    await user.click(
+      within(failed).getByRole("button", { name: "Retry payment: invoice #11248800121" }),
+    );
+    const dialog = await screen.findByRole("dialog", { name: "Payment could not be processed" });
+    expect(dialog).toHaveTextContent("Visa 4121");
+    expect(within(invoices).getByRole("alert")).toHaveTextContent(
+      "That card was declined: Your card has insufficient funds.",
+    );
+    await user.click(within(dialog).getByRole("button", { name: "Done" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  });
+
   it("08-H: no card saved, and the way to add one", async () => {
     const user = userEvent.setup();
     render(<BillingPageScreen fixture="H" />);

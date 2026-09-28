@@ -5,10 +5,12 @@
  * "Next billing" block - the account's name, address and billing email with the way to change
  * them (08-C), and when it next bills, amber with "Due Immediately" when a payment on it has
  * failed (08-K); its cards, the one it charges pinned first with its chip, each with the
- * "Update card" menu (08-W/08-X), "Show more (6)" for the rest (08-J), "No card saved" when
- * there are none (08-H) and the red line when the card being charged has expired (08-I); and
- * its invoices, each opening Stripe's own hosted page and giving its billing breakdown - company
- * by company - as a CSV, 10 / 50 / 100 to a page. Everything shown is the hook's
+ * "Update card" menu (08-W/08-X) - red on the card to fix: expired, or the one charged when a
+ * payment failed - "Show more (6)" for the rest (08-J), "No card saved" when there are none
+ * (08-H) and the red line when the card being charged has expired (08-I); and its invoices,
+ * each opening Stripe's own hosted page and giving its billing breakdown - company by company -
+ * as a CSV, 10 / 50 / 100 to a page; a declined one red, "Failed 26 Jul" where it would have
+ * been paid, with *Retry payment* on the one a retry would charge (08-K). Everything shown is the hook's
  * (`useBillingPage`).
  */
 
@@ -43,7 +45,10 @@ import {
   NO_INVOICES,
   PAYMENT_FAILED,
   PAYMENT_METHODS,
+  RETRY_PAYMENT,
+  RETRYING,
   UPDATE_CARD,
+  cardNeedsUpdate,
   invoiceRange,
   isInvoicePageSize,
   type CardMenuItem,
@@ -247,10 +252,13 @@ function BrandTile({ label }: { label: string }) {
 function CardMenu({
   row,
   items,
+  attention,
   onSelect,
 }: {
   row: CardRow;
   items: CardMenuItem[];
+  /** Red: the card the payer has to fix (`cardNeedsUpdate`) - expired, or charged and failing. */
+  attention: boolean;
   onSelect: (item: CardMenuItem) => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -282,8 +290,9 @@ function CardMenu({
         aria-expanded={open}
         aria-controls={menuId}
         aria-label={`${UPDATE_CARD} · ${row.title}`}
+        data-attention={attention || undefined}
         className={`h-[38px] w-[112px] rounded-lg border bg-white text-[13px] font-semibold hover:bg-[#f7f9fa] ${
-          row.chip === "expired"
+          attention
             ? "border-[#e3a1a1] text-[#dc5a5a]"
             : "border-[#d8dee4] text-[#292e38]"
         }`}
@@ -321,10 +330,12 @@ function CardMenu({
 function CardRowView({
   row,
   items,
+  attention,
   onSelect,
 }: {
   row: CardRow;
   items: CardMenuItem[];
+  attention: boolean;
   onSelect: (item: CardMenuItem) => void;
 }) {
   return (
@@ -351,7 +362,7 @@ function CardRowView({
         >
           {CHIP_LABEL[row.chip]}
         </span>
-        <CardMenu row={row} items={items} onSelect={onSelect} />
+        <CardMenu row={row} items={items} attention={attention} onSelect={onSelect} />
       </div>
     </li>
   );
@@ -411,6 +422,7 @@ export function PaymentMethodsPanel({
   onMenu,
   onToggle,
   onAdd,
+  accountFailed = false,
 }: {
   rows: CardRow[];
   shown: CardRow[];
@@ -422,6 +434,8 @@ export function PaymentMethodsPanel({
   onMenu: (row: CardRow, item: CardMenuItem) => void;
   onToggle: () => void;
   onAdd: () => void;
+  /** This account's payment failed (08-K): the card it charges is the one to fix. */
+  accountFailed?: boolean;
 }) {
   return (
     <section aria-label={PAYMENT_METHODS} aria-busy={busy} className="flex flex-col gap-4">
@@ -448,6 +462,7 @@ export function PaymentMethodsPanel({
                 key={row.card.id}
                 row={row}
                 items={menuFor(row)}
+                attention={cardNeedsUpdate(row, accountFailed)}
                 onSelect={(item) => onMenu(row, item)}
               />
             ))}
@@ -491,6 +506,9 @@ export function InvoiceHistoryTable({
   onBreakdown,
   breakdownBusy,
   breakdownError,
+  onRetry,
+  retrying,
+  retryNotice,
 }: {
   invoices: InvoiceLine[];
   amountHeader: string;
@@ -508,6 +526,12 @@ export function InvoiceHistoryTable({
   /** The invoice whose breakdown is being prepared, while it is. */
   breakdownBusy: string | null;
   breakdownError: string | null;
+  /** *Retry payment* on a declined invoice's row: collect it now. */
+  onRetry: (invoiceId: string) => void;
+  /** The invoice being retried, while it is - one at a time. */
+  retrying: string | null;
+  /** What the last retry said, in the API's words. */
+  retryNotice: { tone: "ok" | "error"; text: string } | null;
 }) {
   const perPageId = useId();
   return (
@@ -522,7 +546,7 @@ export function InvoiceHistoryTable({
       ) : (
         <table
           aria-busy={paging.loading || undefined}
-          className={`w-full max-w-[860px] border-collapse text-left ${paging.loading ? "opacity-60" : ""}`}
+          className={`w-full border-collapse text-left ${paging.loading ? "opacity-60" : ""}`}
         >
           <thead>
             <tr className="text-[13px] font-semibold text-[#16202e]">
@@ -542,11 +566,20 @@ export function InvoiceHistoryTable({
               <th scope="col" className="pb-2 text-center">
                 {BILLING_BREAKDOWN}
               </th>
+              <th scope="col" className="pb-2">
+                <span className="sr-only">Actions</span>
+              </th>
             </tr>
           </thead>
           <tbody className="text-[13px] text-[#16202e]">
             {invoices.map((inv) => (
-              <tr key={inv.id} className="border-b border-[#eef1f4]">
+              // A declined charge is red across the row (08-K); the two downloads keep their own
+              // colours - they are actions, not what went wrong.
+              <tr
+                key={inv.id}
+                data-failed={inv.failed || undefined}
+                className={`border-b border-[#eef1f4] ${inv.failed ? "text-[#dc5a5a]" : ""}`}
+              >
                 <td className="py-3">{inv.reference}</td>
                 <td className="py-3 tabular-nums">{inv.amount}</td>
                 <td className="py-3">{inv.paid ?? "—"}</td>
@@ -585,6 +618,22 @@ export function InvoiceHistoryTable({
                     {breakdownBusy === inv.id ? PREPARING_CSV : DOWNLOAD_CSV}
                   </button>
                 </td>
+                <td className="py-2 pl-3 text-right">
+                  {/* Only on the invoice a retry would charge: an abandoned bill stays red, with
+                      no button that could only refuse. */}
+                  {inv.retryable && (
+                    <button
+                      type="button"
+                      onClick={() => onRetry(inv.id)}
+                      disabled={retrying !== null}
+                      aria-busy={retrying === inv.id || undefined}
+                      aria-label={`${RETRY_PAYMENT}: invoice ${inv.reference}`}
+                      className="h-[32px] whitespace-nowrap rounded-lg bg-[#dc5a5a] px-5 text-[13px] font-semibold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {retrying === inv.id ? RETRYING : RETRY_PAYMENT}
+                    </button>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>
@@ -595,11 +644,19 @@ export function InvoiceHistoryTable({
           {breakdownError}
         </p>
       )}
+      {retryNotice && (
+        <p
+          role={retryNotice.tone === "ok" ? "status" : "alert"}
+          className={`text-[13px] ${retryNotice.tone === "ok" ? "text-[#2e9b9b]" : "text-[#b42318]"}`}
+        >
+          {retryNotice.text}
+        </p>
+      )}
       {paging.total > 0 && (
         // The payer's pick of 10, 50 or 100 to a page, and the way through them.
         <nav
           aria-label="Invoice pages"
-          className="flex w-full max-w-[860px] flex-wrap items-center justify-between gap-3 text-[13px] text-[#6b7380]"
+          className="flex w-full flex-wrap items-center justify-between gap-3 text-[13px] text-[#6b7380]"
         >
           <div className="flex items-center gap-2">
             <label htmlFor={perPageId}>Rows per page</label>

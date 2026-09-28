@@ -15,7 +15,7 @@ import type {
   PayerPaymentMethods,
   SavedPaymentMethod,
 } from "@/features/subscription/api/payerPortal";
-import { CardBrand } from "@/features/subscription/components/CardBrand";
+import { CardBrand, SUMMARY_MARK } from "@/features/subscription/components/CardBrand";
 import { CardCapturePanel } from "@/features/subscription/components/CardCaptureForm";
 import { RadioCard } from "@/features/subscription/components/RadioCard";
 import type { SetupIntentState } from "@/features/subscription/hooks/useCardForm";
@@ -262,7 +262,8 @@ export function IncomingRequestReview({
                 <CardBrand
                   brand={card.brand}
                   label={card.brand_label}
-                  className="h-[44px] w-[68px]"
+                  fit="mark"
+                  className={SUMMARY_MARK}
                 />
               )}
             </div>

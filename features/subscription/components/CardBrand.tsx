@@ -54,10 +54,40 @@ const SHORT: Record<string, string> = {
   eftpos_au: "EFTPOS",
 };
 
+/**
+ * The summaries' logo slot (05·A, 07-D here; onboarding's 01-C uses the same), for
+ * `fit="mark"`: 74 wide and as tall as the mark, never over 42 - so VISA's letters land
+ * 73 x 24 as 05·A draws them, and Mastercard 63 x 42 where 01-C draws it 68 x 42.
+ */
+export const SUMMARY_MARK = "w-[74px]";
+
+/* The field every mark is drawn on: a card's proportions, the mark in its middle. */
+const TILE = { viewBox: "0 0 46 30", className: "h-full w-full" };
+/* Mastercard's two circles, and nothing around them. */
+const CIRCLES = { x: 9.5, y: 6, w: 27, h: 18 };
+/* A wordmark's capitals, y 10-20.5 (in Inter and in the system fallback). */
+const CAPS = { y: 10, h: 10.5 };
+/* The narrowest wordmark crop: a four-letter one's (VISA, AMEX). A two-letter mark ("CB")
+   cropped to itself would be drawn as tall as Mastercard's circles. */
+const MIN_CROP = 4 * 6.2;
+
+/* A cropped mark's own width and height go on the <svg> too: they are its intrinsic ratio,
+   which `h-auto` sizes it by - as wide as its slot, as tall as the mark, at most 42px. */
+function cropped(x: number, y: number, w: number, h: number) {
+  return {
+    viewBox: `${x} ${y} ${w} ${h}`,
+    width: w,
+    height: h,
+    preserveAspectRatio: "xMaxYMid meet",
+    className: "block h-auto max-h-[42px] w-full",
+  };
+}
+
 export function CardBrand({
   brand,
   label,
   className = "h-[30px] w-[46px]",
+  fit = "tile",
 }: {
   /** Stripe's brand id (`visa`, `american_express`, …). Any casing or separator. */
   brand?: string | null;
@@ -65,9 +95,18 @@ export function CardBrand({
   label?: string | null;
   /** Where the mark is DRESSED — the summary draws it large, the picker small. */
   className?: string;
+  /**
+   * `tile` (the default): the mark in the middle of a card-shaped field, as a list row draws
+   * it. `mark`: the same drawing with that field cropped away, so the mark itself fills the
+   * width, flush right — the summaries' logo slot (`SUMMARY_MARK`), where the design draws
+   * the network's logo bare. Only the viewBox changes: the marks stay the ones onboarding
+   * draws, and onboarding's copy has the same two fits.
+   */
+  fit?: "tile" | "mark";
 }) {
   const key = (brand || "").toLowerCase().replace(/[\s-]/g, "_");
   const name = label || (brand ? brand.replace(/_/g, " ") : "Card");
+  const mark = fit === "mark";
 
   // Decoration beside a row that already says "Visa ending in 4121" in words. Announcing the
   // brand a second time is noise in a screen reader, so the mark is hidden from the
@@ -88,8 +127,9 @@ export function CardBrand({
   );
 
   if (key === "mastercard" || key === "master_card") {
+    const frame = mark ? cropped(CIRCLES.x, CIRCLES.y, CIRCLES.w, CIRCLES.h) : TILE;
     return shell(
-      <svg viewBox="0 0 46 30" className="h-full w-full" role="presentation">
+      <svg {...frame} role="presentation">
         <circle cx="18.5" cy="15" r="9" fill="#EB001B" />
         <circle cx="27.5" cy="15" r="9" fill="#F79E1B" />
         {/* The overlap is its own shape rather than an opacity trick: two translucent circles
@@ -101,19 +141,25 @@ export function CardBrand({
 
   const ink = BRAND_INK[key] || "#4A4D4B";
   const text = SHORT[key] || name.toUpperCase();
+  // Shrinks to fit rather than overflowing — `textLength` with `spacingAndGlyphs` is the only
+  // way to hold an unknown-length wordmark inside a fixed box without measuring text in
+  // JavaScript.
+  const length = Math.min(38, Math.max(14, text.length * 6.2));
+  // Cropped to the wordmark, flush right; visible overflow keeps an italic's slant.
+  const crop = Math.max(length, MIN_CROP);
+  const frame = mark
+    ? { ...cropped(23 + length / 2 - crop, CAPS.y, crop, CAPS.h), overflow: "visible" }
+    : TILE;
 
   return shell(
-    <svg viewBox="0 0 46 30" className="h-full w-full" role="presentation">
+    <svg {...frame} role="presentation">
       <text
         x="23"
         y="15"
         textAnchor="middle"
         dominantBaseline="central"
         fill={ink}
-        /* Shrinks to fit rather than overflowing — `textLength` with `spacingAndGlyphs` is the
-           only way to hold an unknown-length wordmark inside a fixed box without measuring
-           text in JavaScript. */
-        textLength={Math.min(38, Math.max(14, text.length * 6.2))}
+        textLength={length}
         lengthAdjust="spacingAndGlyphs"
         fontSize="11"
         fontWeight="800"

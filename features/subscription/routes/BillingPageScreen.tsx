@@ -4,8 +4,10 @@
  * "Manage billing details and Payment Methods" - one billing account's page, composed (Figma
  * 08-B and its states): the banner, the account's next bill and who it is addressed to (with
  * the way to 08-C), the expired-card line when there is one (08-I), its cards with their menus
- * (08-W/08-X, 08-H when there are none, 08-J expanded), its invoices, and the two things a card
- * can ask - it has just been added (08-N/08-S) or it is being removed (08-R). A payer with no
+ * (08-W/08-X, 08-H when there are none, 08-J expanded), its invoices - a declined one red, with
+ * *Retry payment* and, when the card declines again, 06·B's "Payment could not be processed"
+ * (08-K) - and the two things a card can ask - it has just been added (08-N/08-S) or it is
+ * being removed (08-R). A payer with no
  * account at all is offered one instead, opened in onboarding's sheet (`NewAccountDialog`).
  * `BillingPage` reads the URL and hands the parameters here; the tests render this directly with
  * fixtures.
@@ -20,7 +22,12 @@ import {
   NoAccountPanel,
   PaymentMethodsPanel,
 } from "@/features/subscription/components/BillingPanels";
-import { CardAddedDialog, RemoveCardDialog } from "@/features/subscription/components/CardDialogs";
+import {
+  CardAddedDialog,
+  RemoveCardDialog,
+  shortCardName,
+} from "@/features/subscription/components/CardDialogs";
+import { PaymentFailedDialog } from "@/features/subscription/components/InterruptedDialogs";
 import {
   useBillingPage,
   type UseBillingPageArgs,
@@ -71,6 +78,7 @@ export function BillingPageScreen(args: UseBillingPageArgs) {
             onMenu={b.onMenu}
             onToggle={b.toggleExpanded}
             onAdd={b.addCard}
+            accountFailed={b.next.failed}
           />
           <InvoiceHistoryTable
             invoices={b.invoices}
@@ -81,6 +89,9 @@ export function BillingPageScreen(args: UseBillingPageArgs) {
             onBreakdown={(invoiceId) => void b.downloadBreakdown(invoiceId)}
             breakdownBusy={b.breakdownBusy}
             breakdownError={b.breakdownError}
+            onRetry={(invoiceId) => void b.retryInvoice(invoiceId)}
+            retrying={b.retrying}
+            retryNotice={b.retryNotice}
           />
         </div>
       )}
@@ -100,6 +111,21 @@ export function BillingPageScreen(args: UseBillingPageArgs) {
           error={b.actionError}
           onConfirm={b.confirmRemove}
           onBack={b.dismissPrompt}
+        />
+      )}
+      {b.declined && (
+        // The card declined again: the account's own card named, and the scheduled retries
+        // promised only while collection is running.
+        <PaymentFailedDialog
+          card={
+            b.account?.card
+              ? shortCardName(b.account.card.brand_label, b.account.card.last4)
+              : null
+          }
+          autoRetry={Boolean(b.account?.in_dunning)}
+          busy={b.retrying !== null}
+          onTryAgain={b.tryAgain}
+          onDone={b.closeDeclined}
         />
       )}
       {b.opening && (

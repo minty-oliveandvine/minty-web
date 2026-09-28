@@ -35,6 +35,7 @@ import {
   type SummaryView,
 } from "@/features/subscription/lib/subscriptionSummary";
 
+import { CardBrand, SUMMARY_MARK } from "@/features/subscription/components/CardBrand";
 import { MODULE_ART } from "@/features/subscription/components/ModuleCard";
 import { RowFooter } from "@/features/subscription/components/RowFooter";
 import { RowMenu } from "@/features/subscription/components/RowMenu";
@@ -311,8 +312,16 @@ function SummaryPanel({
               <PlanLines lines={view.panel.lines} />
             </div>
             {view.paymentMethod && (
-              <div className="flex flex-col items-end gap-1 text-right">
+              <div className="flex flex-col items-end text-right">
                 <p className="text-[15px] text-[#737a87]">Payment method</p>
+                {/* The network's mark above the card it names, bare and at the design's size
+                    (73 x 24), the same slot as the handover summary's (07-D). */}
+                <CardBrand
+                  brand={view.paymentMethod.network}
+                  label={view.paymentMethod.brand}
+                  fit="mark"
+                  className={`mt-[19px] ${SUMMARY_MARK}`}
+                />
                 <p className="text-xl font-bold text-black" data-payment-method>
                   {view.paymentMethod.label}
                 </p>

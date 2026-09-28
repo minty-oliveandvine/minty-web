@@ -260,7 +260,12 @@ describe("the panel", () => {
 
 describe("the payment method and the footer", () => {
   it("names the nominated card and says how to change it; none when nothing is nominated", () => {
-    expect(view("M44").paymentMethod).toEqual({ brand: "Visa", last4: "4121", label: "Visa 4121" });
+    expect(view("M44").paymentMethod).toEqual({
+      brand: "Visa",
+      network: "visa",
+      last4: "4121",
+      label: "Visa 4121",
+    });
     expect(buildSummaryView(SUMMARY_FIXTURES.M44, ENTITY, null, TODAY).paymentMethod).toBeNull();
     expect(
       buildSummaryView(SUMMARY_FIXTURES.M44, ENTITY, { ...WALLET, nominated_id: null }, TODAY)

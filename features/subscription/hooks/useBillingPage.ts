@@ -20,6 +20,12 @@
  * and after every write the accounts are taken from the answer (or re-read) rather than patched
  * locally, so the page cannot drift from what the server holds.
  *
+ * *RETRY PAYMENT* on a declined invoice's row (08-K) collects it now, on the account's card
+ * (`POST /api/me/invoices/{id}/retry` - the engine's own manual collection, with its budget and
+ * deadline); the API offers it only on the invoice a retry would charge. A decline again is 06·B's
+ * dialog, with *Try again now*; every other answer is the API's sentence. Either way the account
+ * and its invoices are read again quietly, so a paid retry clears the amber block by itself.
+ *
  * Landings: *+ Add payment method* → 08-Y for this account, which comes back with `?added=` so
  * this page can say what happened (08-N when it is not the default, 08-S when it is); *Edit* →
  * 08-D; *Change billing details* → 08-C; *Invoice PDF* → Stripe's hosted page, in a new tab;
@@ -38,17 +44,20 @@ import {
   fetchInvoiceBreakdown,
   fetchPayerInvoices,
   removePaymentMethod,
+  retryInvoice as requestRetry,
   setAccountDefaultCard,
   type BillingAccount,
   type BillingAccounts,
   type InvoiceBreakdown,
   type InvoiceRow,
+  type RetryOutcome,
   type SavedPaymentMethod,
 } from "@/features/subscription/api/payerPortal";
 import type { OpenedAccount } from "@/features/subscription/hooks/useCardForm";
 import {
   BILLING_LOAD_FAILED,
   CARD_ACTION_FAILED,
+  RETRY_FAILED,
   amountHeader,
   cardMenu,
   cardRows,
@@ -126,6 +135,17 @@ export type UseBillingPageResult = {
   /** The invoice whose breakdown is being prepared, while it is. */
   breakdownBusy: string | null;
   breakdownError: string | null;
+  /** *Retry payment* on a failed invoice's row: collect it now, on the account's card. */
+  retryInvoice: (invoiceId: string) => Promise<void>;
+  /** The invoice being retried, while it is - one at a time. */
+  retrying: string | null;
+  /** What the last retry said, when it was not a decline (the decline is the dialog). */
+  retryNotice: RetryNotice | null;
+  /** 06·B's "Payment could not be processed" is up: the card declined again. */
+  declined: boolean;
+  /** "Try again now" on that dialog: the same invoice, retried again. */
+  tryAgain: () => void;
+  closeDeclined: () => void;
   addCard: () => void;
   changeDetails: () => void;
   /** The sheet that opens a billing account is up (a payer with none). */
@@ -137,6 +157,9 @@ export type UseBillingPageResult = {
   back: () => void;
   reload: () => void;
 };
+
+/** A retry's outcome under the table, in the API's words: paid, or why it did not happen. */
+export type RetryNotice = { tone: "ok" | "error"; text: string };
 
 export type InvoicePaging = {
   page: number;
@@ -180,6 +203,17 @@ async function loadBreakdown(
   return fetchInvoiceBreakdown(invoiceId);
 }
 
+async function sendRetry(
+  fixture: string | null | undefined,
+  invoiceId: string,
+): Promise<RetryOutcome> {
+  if (process.env.NODE_ENV !== "production" && fixture) {
+    const f = await import("@/features/subscription/__fixtures__/billing");
+    if (f.isBillingFixture(fixture)) return f.RETRY_DECLINED;
+  }
+  return requestRetry(invoiceId);
+}
+
 async function loadInvoices(
   fixture: string | null | undefined,
   accountId: string,
@@ -190,7 +224,7 @@ async function loadInvoices(
   if (process.env.NODE_ENV !== "production" && fixture) {
     const f = await import("@/features/subscription/__fixtures__/billing");
     if (f.isBillingFixture(fixture)) {
-      const rows = f.INVOICES;
+      const rows = f.FIXTURE_INVOICES;
       return {
         accountId,
         page,
@@ -226,6 +260,9 @@ export function useBillingPage({
   const [perPage, setPerPage] = useState<InvoicePageSize>(10);
   const [breakdownBusy, setBreakdownBusy] = useState<string | null>(null);
   const [breakdownError, setBreakdownError] = useState<string | null>(null);
+  const [retrying, setRetrying] = useState<string | null>(null);
+  const [retryNotice, setRetryNotice] = useState<RetryNotice | null>(null);
+  const [declinedId, setDeclinedId] = useState<string | null>(null);
   const [expanded, setExpanded] = useState(false);
   const [prompt, setPrompt] = useState<CardPrompt | null>(null);
   const [busy, setBusy] = useState(false);
@@ -332,6 +369,33 @@ export function useBillingPage({
     },
     [breakdownBusy, fixture],
   );
+  // *Retry payment*: the engine collects this invoice on its account's card - or says why not.
+  // A decline is 06·B's dialog (with Try again); every other answer is the API's sentence under
+  // the table. Whatever happened, the account and its invoices are read again QUIETLY (no
+  // loading state): a paid retry clears the amber block and turns the row into a paid one.
+  const retryInvoice = useCallback(
+    async (invoiceId: string) => {
+      if (retrying) return;
+      setRetrying(invoiceId);
+      setRetryNotice(null);
+      try {
+        const outcome = await sendRetry(fixture, invoiceId);
+        if (outcome.status === "failed") setDeclinedId(invoiceId);
+        else setDeclinedId(null);
+        setRetryNotice({ tone: outcome.ok ? "ok" : "error", text: outcome.message });
+      } catch (err) {
+        setRetryNotice({ tone: "error", text: sentence(err, RETRY_FAILED) });
+      } finally {
+        setRetrying(null);
+        setGeneration((g) => g + 1);
+      }
+    },
+    [retrying, fixture],
+  );
+  const tryAgain = useCallback(() => {
+    if (declinedId) void retryInvoice(declinedId);
+  }, [declinedId, retryInvoice]);
+  const closeDeclined = useCallback(() => setDeclinedId(null), []);
   // A new page size starts at the first page: "page 3 of 50 rows" is not page 3 of 10.
   const setInvoicesPerPage = useCallback(
     (size: InvoicePageSize) => {
@@ -448,6 +512,12 @@ export function useBillingPage({
     downloadBreakdown,
     breakdownBusy,
     breakdownError,
+    retryInvoice,
+    retrying,
+    retryNotice,
+    declined: declinedId !== null,
+    tryAgain,
+    closeDeclined,
     addCard,
     changeDetails,
     opening,

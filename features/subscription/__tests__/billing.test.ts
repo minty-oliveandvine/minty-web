@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 
 import { TODAY } from "@/features/subscription/__fixtures__/modulePage";
 import {
+  FAILED_INVOICES,
   INVOICES,
   WALLET_EXPIRED,
   WALLET_MANY,
@@ -20,10 +21,12 @@ import {
   amountHeader,
   cardExpiry,
   cardMenu,
+  cardNeedsUpdate,
   cardRows,
   cardTitle,
   entityCount,
   expiredNotice,
+  failedLabel,
   UPDATES_SHOWN,
   invoiceLines,
   moreUpdatesLabel,
@@ -61,6 +64,17 @@ describe("a saved card, as the page names it", () => {
     const rows = cardRows(WALLET_TWO);
     expect(cardMenu(rows[0])).toEqual(["edit", "delete"]);
     expect(cardMenu(rows[1])).toEqual(["set_default", "edit", "delete"]);
+  });
+
+  // 08-K: the charged card is the one to fix when the account's payment failed - red like an
+  // expired card; a spare card on the same account is not the problem.
+  it("draws Update card red on the card to fix: expired, or charged while the payment fails", () => {
+    const [charged, spare] = cardRows(WALLET_TWO);
+    expect(cardNeedsUpdate(charged, true)).toBe(true);
+    expect(cardNeedsUpdate(spare, true)).toBe(false);
+    expect(cardNeedsUpdate(charged, false)).toBe(false);
+    const expired = cardRows(WALLET_EXPIRED).find((r) => r.chip === "expired")!;
+    expect(cardNeedsUpdate(expired, false)).toBe(true);
   });
 
   it("shows the default and one other until Show more says how many are left", () => {
@@ -123,6 +137,38 @@ describe("the invoice table", () => {
     expect(lines[2].pdf).toBeNull();
     expect(amountHeader(INVOICES)).toBe("Amount (HK$)");
     expect(amountHeader([])).toBe("Amount");
+  });
+
+  // The column is headed "Paid date". It once read `date`, the day the invoice was RAISED,
+  // and so printed a plausible wrong date on every row instead of failing.
+  it("reads the settlement date, not the day the invoice was raised", () => {
+    const lines = invoiceLines(INVOICES);
+    expect(lines[0].paid).toBe(INVOICES[0].paid);
+    expect(lines[0].paid).not.toBe(INVOICES[0].date);
+  });
+
+  it("leaves an invoice not yet settled with no date rather than borrowing one", () => {
+    const draft = { ...INVOICES[0], status: "draft", paid: null, paid_iso: null };
+    expect(invoiceLines([draft])[0]).toMatchObject({ paid: null, failed: false });
+  });
+
+  // 08-K: "Failed 26 Jul" under Paid date, the whole row red, and Retry payment only where a
+  // retry would charge - the API's `retryable`, never assumed from the status alone.
+  it("says a declined charge failed, on the day it was raised, and offers the retry the API allows", () => {
+    const [current, abandoned] = invoiceLines(FAILED_INVOICES, new Date(TODAY));
+    expect(current).toMatchObject({ failed: true, retryable: true });
+    expect(current.paid).toBe(failedLabel(FAILED_INVOICES[0].date, new Date(TODAY)));
+    expect(current.paid).toMatch(/^Failed \d{2} [A-Z][a-z]{2}$/);
+    expect(abandoned).toMatchObject({ failed: true, retryable: false });
+    // A paid invoice never offers one, whatever the API says.
+    expect(invoiceLines([{ ...INVOICES[0], retryable: true }])[0].retryable).toBe(false);
+  });
+
+  it("names the year of a failure only when it is not this one", () => {
+    const today = new Date("2026-09-28T00:00:00Z");
+    expect(failedLabel("26 Jul 2026", today)).toBe("Failed 26 Jul");
+    expect(failedLabel("26 Dec 2025", today)).toBe("Failed 26 Dec 2025");
+    expect(failedLabel(null, today)).toBe("Failed");
   });
 });
 

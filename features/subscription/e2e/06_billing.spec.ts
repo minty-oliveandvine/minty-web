@@ -22,6 +22,8 @@ import {
 import {
   ADDED_CARD,
   BREAKDOWN,
+  FAILED_INVOICES,
+  INVOICES,
   WALLET_ADDED,
   WALLET_EXPIRED,
   WALLET_NONE,
@@ -411,6 +413,57 @@ test.describe("billing", () => {
       "Aetheria Capital Limited,Payment Request,280,26-Jul-26,25-Aug-26,280.00",
       "Company E Limited,Petty Cash,280,26-Jul-26,5-Aug-26,90.32",
     ]);
+  });
+
+  test("08-K: the card to fix and the declined invoice are red, and Retry payment settles it", async ({
+    page,
+  }) => {
+    await stubBilling(page, WALLET_TWO);
+    // This period's renewal declined; once retried, the next read has it paid.
+    let settled = false;
+    const retries: string[] = [];
+    await page.route(`${BILLING_API_URL}/api/me/invoices?*`, (route) =>
+      route.fulfill(
+        json(
+          invoicePage(
+            settled
+              ? [{ ...FAILED_INVOICES[0], status: "paid", paid: "28 Sep 2026", retryable: false }, ...INVOICES]
+              : [FAILED_INVOICES[0], ...INVOICES],
+          ),
+        ),
+      ),
+    );
+    await page.route(`${BILLING_API_URL}/api/me/invoices/*/retry`, (route) => {
+      retries.push(new URL(route.request().url()).pathname);
+      settled = true;
+      return route.fulfill(json({ ok: true, status: "paid", message: "Payment received — your subscription is active again." }));
+    });
+    await handoff(page, creds(), "/subscription/billing", { entity_id: "" });
+
+    // The card the account charges is the one to fix while its payment fails: red, as drawn.
+    const cards = body(page).getByRole("region", { name: "Payment Methods" });
+    const charged = cards.getByRole("button", { name: "Update card · Visa ending in 4121" });
+    await expect(charged).toHaveAttribute("data-attention", "true");
+    await expect(charged).toHaveCSS("border-top-color", "rgb(227, 161, 161)");
+    await expect(
+      cards.getByRole("button", { name: "Update card · Mastercard ending in 4651" }),
+    ).not.toHaveAttribute("data-attention");
+
+    // The declined invoice: the whole row red, "Failed <day>" under Paid date, Retry payment.
+    const invoices = body(page).getByRole("region", { name: "Invoice History" });
+    const row = invoices.getByRole("row").filter({ hasText: "#11248800121" });
+    await expect(row).toHaveAttribute("data-failed", "true");
+    await expect(row).toContainText(/Failed \d{2} [A-Z][a-z]{2}/);
+    await expect(row.getByText("#11248800121")).toHaveCSS("color", "rgb(220, 90, 90)");
+    const retry = row.getByRole("button", { name: "Retry payment: invoice #11248800121" });
+    await expect(retry).toHaveCSS("background-color", "rgb(220, 90, 90)");
+
+    await retry.click();
+    await expect(invoices.getByRole("status")).toHaveText("Payment received — your subscription is active again.");
+    // Read again: a paid invoice now, and nothing left to retry.
+    await expect(row).not.toHaveAttribute("data-failed");
+    await expect(invoices.getByRole("button", { name: /Retry payment/ })).toHaveCount(0);
+    expect(retries).toEqual(["/api/me/invoices/in_failed/retry"]);
   });
 
   test("08-W: another card becomes the one the account charges, and the chips swap", async ({

@@ -94,6 +94,15 @@ describe("SubscriptionSummaryRow", () => {
     expect(within(p).getByText("Super Minty")).toBeInTheDocument();
     expect(within(p).getByText("Payment method")).toBeInTheDocument();
     expect(within(p).getByText("Visa 4121")).toBeInTheDocument();
+    // The network's mark sits ABOVE the card it names (it was missing - the user, 2026-09-28).
+    const mark = p.querySelector('[data-brand="visa"]');
+    expect(mark).not.toBeNull();
+    expect(
+      mark!.compareDocumentPosition(within(p).getByText("Visa 4121")) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    // Bare, at the design's size: the card-shaped field is cropped away, flush right.
+    expect(mark!.querySelector("svg")).toHaveAttribute("preserveAspectRatio", "xMaxYMid meet");
     expect(within(p).getByText("HK$400")).toBeInTheDocument();
     expect(within(p).getByText("/month")).toBeInTheDocument();
     expect(within(p).getByText("No pending changes")).toBeInTheDocument();

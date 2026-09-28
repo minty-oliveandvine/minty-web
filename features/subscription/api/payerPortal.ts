@@ -634,6 +634,9 @@ export type InvoiceRow = {
   reference: string;
   date: string | null;
   date_iso: string | null;
+  /** WHEN IT SETTLED, not when it was raised. Null while open and on one that failed. */
+  paid: string | null;
+  paid_iso: string | null;
   period_start: string | null;
   period_end: string | null;
   /** WHAT HAPPENED, then the plans - "Upgrade · Petty Cash → Super Minty". */
@@ -647,6 +650,11 @@ export type InvoiceRow = {
   /** Stripe's vocabulary: paid / open / draft / uncollectible / void. */
   status: string;
   status_label: string;
+  /**
+   * *Retry payment* would charge THIS invoice now: the one per card the engine's rule picks - the
+   * current period's renewal, else an open mid-period charge, never an abandoned give-up bill.
+   */
+  retryable?: boolean;
   payment_method: string | null;
   /** A CAPABILITY URL (Stripe's hosted invoice page): open with rel="noopener noreferrer", never log. */
   hosted_invoice_url: string | null;
@@ -712,6 +720,25 @@ export async function fetchInvoiceBreakdown(invoiceId: string): Promise<InvoiceB
     `/api/me/invoices/${encodeURIComponent(invoiceId)}/breakdown`,
   );
   if (!data || !Array.isArray(data.rows) || !data.invoice) {
+    throw new ApiError(502, UNEXPECTED_SHAPE);
+  }
+  return data;
+}
+
+/**
+ * What *Retry payment* answered, in the words the module page's retry uses: `paid`, `failed` (the
+ * processor's reason in `message`), `no_card`, `gave_up`, `nothing_owed`, `older_debt_only`,
+ * `not_this_invoice`. `ok` is true when nothing is owed any more.
+ */
+export type RetryOutcome = { ok: boolean; status: string; message: string };
+
+/** 08-B's *Retry payment*: collect this failed invoice now, on its billing account's card. */
+export async function retryInvoice(invoiceId: string): Promise<RetryOutcome> {
+  const data = await apiFetch<RetryOutcome>(
+    `/api/me/invoices/${encodeURIComponent(invoiceId)}/retry`,
+    { method: "POST", json: {} },
+  );
+  if (!data || typeof data.status !== "string" || typeof data.message !== "string") {
     throw new ApiError(502, UNEXPECTED_SHAPE);
   }
   return data;

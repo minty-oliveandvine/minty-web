@@ -2,8 +2,8 @@
 // on, else the oldest), its two reads (and what survives the second failing), Show more, the card
 // menu's three items, the card the ACCOUNT charges switched, its own card refused removal (08-R)
 // and another one removed, the card that just arrived on it (08-N → 08-S), a payer with no
-// account at all (and the sheet that opens one), and where Add / Edit / Change billing details /
-// Back go.
+// account at all (and the sheet that opens one), where Add / Edit / Change billing details /
+// Back go, and Retry payment on a declined invoice (08-K): paid, declined again, or refused.
 
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -16,6 +16,7 @@ import {
   ACCOUNTS_OPENED,
   ADDED_CARD,
   BREAKDOWN,
+  FIXTURE_INVOICES,
   INVOICES,
   WALLET_ADDED,
   WALLET_MANY,
@@ -198,6 +199,80 @@ describe("useBillingPage", () => {
     await act(async () => result.current.downloadBreakdown("in_2"));
     expect(result.current.breakdownError).toBe("That invoice couldn't be found.");
     expect(saved).toHaveLength(1); // nothing saved for a refusal
+  });
+
+  it("retries a declined invoice: paid says so, and the account is read again QUIETLY", async () => {
+    serve(accountsFor(WALLET_TWO), {
+      "/api/me/invoices/in_failed/retry": {
+        status: 200,
+        body: { ok: true, status: "paid", message: "Payment received — your subscription is active again." },
+      },
+    });
+    const { result } = renderHook(() => useBillingPage());
+    await waitFor(() => expect(result.current.invoices).toHaveLength(INVOICES.length));
+    const reads = () =>
+      fetchMock.mock.calls.filter((c) => String(c[0]).includes("/billing/accounts")).length;
+    const before = reads();
+
+    await act(async () => result.current.retryInvoice("in_failed"));
+
+    expect(posts).toEqual([{ path: "/api/me/invoices/in_failed/retry", body: {} }]);
+    expect(result.current.retryNotice).toEqual({ tone: "ok", text: "Payment received — your subscription is active again." });
+    expect(result.current.declined).toBe(false);
+    expect(result.current.retrying).toBeNull();
+    // Read again - a paid retry clears the amber block - without the page's loading state.
+    await waitFor(() => expect(reads()).toBe(before + 1));
+    expect(result.current.status).toBe("ready");
+  });
+
+  it("a decline again is 06-B's dialog: Try again retries the same invoice, Done closes it", async () => {
+    const declined = "That card was declined: Your card has insufficient funds.";
+    serve(accountsFor(WALLET_TWO), {
+      "/api/me/invoices/in_failed/retry": {
+        status: 200,
+        body: { ok: false, status: "failed", message: declined },
+      },
+    });
+    const { result } = renderHook(() => useBillingPage());
+    await waitFor(() => expect(result.current.status).toBe("ready"));
+
+    await act(async () => result.current.retryInvoice("in_failed"));
+    expect(result.current.declined).toBe(true);
+    // The processor's words stay under the table once the dialog is closed.
+    expect(result.current.retryNotice).toEqual({ tone: "error", text: declined });
+
+    await act(async () => result.current.tryAgain());
+    await waitFor(() => expect(posts).toHaveLength(2));
+    expect(posts[1].path).toBe("/api/me/invoices/in_failed/retry");
+
+    act(() => result.current.closeDeclined());
+    expect(result.current.declined).toBe(false);
+  });
+
+  it("any other answer is the API's own sentence, and so is a refusal", async () => {
+    const noCard = "There's no card on file to charge. Add a payment method, then try again.";
+    serve(accountsFor(WALLET_TWO), {
+      "/api/me/invoices/in_failed/retry": {
+        status: 200,
+        body: { ok: false, status: "no_card", message: noCard },
+      },
+      "/api/me/invoices/in_gone/retry": {
+        status: 404,
+        body: { error: "That invoice couldn't be found." },
+      },
+    });
+    const { result } = renderHook(() => useBillingPage());
+    await waitFor(() => expect(result.current.status).toBe("ready"));
+
+    await act(async () => result.current.retryInvoice("in_failed"));
+    expect(result.current.retryNotice).toEqual({ tone: "error", text: noCard });
+    expect(result.current.declined).toBe(false);
+
+    await act(async () => result.current.retryInvoice("in_gone"));
+    expect(result.current.retryNotice).toEqual({
+      tone: "error",
+      text: "That invoice couldn't be found.",
+    });
   });
 
   it("keeps the page when the invoices fail - they are not its subject", async () => {
@@ -405,6 +480,6 @@ describe("useBillingPage", () => {
     await waitFor(() => expect(result.current.status).toBe("ready"));
     expect(fetchMock).not.toHaveBeenCalled();
     expect(result.current.rows).toHaveLength(8);
-    expect(result.current.invoices).toHaveLength(INVOICES.length);
+    expect(result.current.invoices).toHaveLength(FIXTURE_INVOICES.length);
   });
 });

@@ -103,7 +103,16 @@ export type SummaryPanel =
   | { kind: "simple"; lines: PlanLine[]; price: string; greyed: boolean }
   | { kind: "changing"; current: SummaryBlock; future: SummaryBlock | null };
 
-export type SummaryPayment = { brand: string; last4: string | null; label: string };
+/**
+ * The nominated card: `brand` is its display name ("Visa"), `network` Stripe's id for it (`visa`) -
+ * what the brand mark above "Visa 4121" is drawn from; null for a wallet with no card object.
+ */
+export type SummaryPayment = {
+  brand: string;
+  network: string | null;
+  last4: string | null;
+  label: string;
+};
 
 /** A pending change to confirm: the first module changed decides which confirmation opens. */
 export type PendingChange = { code: ModuleCode; seam: TickSeam; codes: ModuleCode[] };
@@ -452,6 +461,7 @@ export function buildSummaryView(
   const paymentMethod: SummaryPayment | null = nominated
     ? {
         brand: nominated.brand_label || nominated.wallet_label || "Card",
+        network: nominated.brand || null,
         last4: nominated.last4,
         label: nominated.last4
           ? `${nominated.brand_label || "Card"} ${nominated.last4}`

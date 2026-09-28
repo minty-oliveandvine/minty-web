@@ -519,9 +519,20 @@ design's rules live (`buildSummaryView(page, entity, wallet, today, pending)`, `
   day after>" card (the survivors — "Petty Cash only", the bundle, or "No modules selected").
 - **The payment method** shows when a card is nominated for the company (`nominated_id` on the
   entity route): "Visa 4121" and _Change_ → `moduleRoutes(id).paymentMethod` (the per-company
-  nomination screen, still to be built - the ACCOUNT's cards are the billing page, §15); the brand is
-  the API's `brand_label`, a datum, not the design's Visa artwork. A 403 (not the payer) or a
-  Stripe failure there simply leaves the column out.
+  nomination screen, still to be built - the ACCOUNT's cards are the billing page, §15). The
+  network's mark sits above that line, as the design draws it (2026-09-28, "the brand logo is
+  missing above the card"): `components/CardBrand.tsx` with `fit="mark"` in `SUMMARY_MARK`
+  (74 wide, as tall as the mark, at most 42), keyed on the card's `brand` (`visa`,
+  `mastercard`, …) with the API's `brand_label` as its fallback. `mark` is the list rows'
+  drawing with its card-shaped field cropped away, flush right, so it fills the design's logo
+  slot (78×64, the logo 73×24) instead of sitting small in its middle: measured, VISA renders
+  66×24 with the design's gaps (25 px under the label, 10 px over "Visa 4121"), and Mastercard
+  63×42, as onboarding's 01-C draws its 68×42. No crop is narrower than a four-letter mark's,
+  so a short one ("CB") is not drawn as tall as the circles. The handover summary (07-D) and
+  onboarding's summary (`sub-pay-mark`, the same crops in its copy of the component) draw the
+  same slot the same way. It is our wordmark, not the issuers' licensed artwork (see that
+  file), and it is hidden from screen readers because the line under it already names the
+  card. A 403 (not the payer) or a Stripe failure there simply leaves the column out.
 - **The footer** (`components/RowFooter.tsx`, the same one under a result row): "Minty for
   <company> was originally created <created_at>. Your next subscription renewal date is <date>
   and each month after. Minty subscriptions auto-renew monthly until cancellation is initiated.
@@ -543,9 +554,13 @@ design's rules live (`buildSummaryView(page, entity, wallet, today, pending)`, `
   model answers, and the boxes wait for it) and for `CALCULATING_MS` = 1.2 s after every tick
   (the cards flip and take their chip at once; the panel and its confirm button follow). The
   design's beat, not a wait for anything.
-- **Dev switch**: `?summary=M44` (any of `M11 M21 M22 M31 M44 M45 M51 M61 N21a`) serves the
+- **Dev switch**: `?summary=M44` (any of `M11 M21 M22 M24 M31 M44 M45 M51 M61 N21a`) serves the
   open row from `__fixtures__/modulePage.ts` outside production; the list fixture opens M44 unless
   named. A 05·B state is reached by pressing a box on it.
+  - M24 draws a state the engine never produces: a trial beside a paid module is always
+    confirmed, so the live twin is N24a.
+  - Real data for 38 of the 48 frames is the replay catalogue ("Ang - M44 Nexora Health Limited"
+    and the rest). See minty-billing-api `docs/features/subscriptions-api.md` §8.
 - **The ⋮ on the open row** is the list's `RowMenu` in the same three shapes (section "05·D ·
   Other options — the entity panel ⋮", `1795:3165`, K44/K45/K66): its items are ticks (§13).
 
@@ -952,7 +967,17 @@ schema change), which 08-C writes.
   payer picks 50 or 100, with the range and the way back and on; the invoices are their own
   read, so turning a page never re-reads the accounts. Amber with "Due
   Immediately" and a **Payment Failed** chip when THIS account is in dunning or a company on it
-  is past due (**08-K**); a red line over the list when the card it charges has already expired
+  is past due (**08-K**) - and then the card it charges has a **red-outlined _Update card_**
+  (the card to fix, `cardNeedsUpdate`; an expired card's is red too, a spare stays grey), and a
+  declined invoice's **whole row is red** with **"Failed 26 Jul"** under Paid date (the day it
+  was raised and declined; the year only when not this one) and a red **Retry payment** on the
+  one the API marks `retryable` - the invoice a retry would charge; an abandoned bill stays red
+  with no button that could only refuse (2026-09-28, the user's design). _Retry payment_ →
+  `POST /api/me/invoices/{id}/retry`: paid says "Payment received — …" under the table, a decline
+  again opens 06·B's **Payment could not be processed** (the card named; _Try again now_ /
+  _Done_; "We'll automatically retry" only while the account is in dunning), any other answer is
+  the API's sentence - and the account and its invoices are read again quietly, so a paid retry
+  clears the amber by itself; a red line over the list when the card it charges has already expired
   (**08-I**); "No card saved · Trials keep running without one…" when none of its cards is
   left (**08-H**); "No billing account yet" with _Open a billing account_ for a payer who has
   none, which opens the sheet straight on the form (onboarding's empty wallet) and makes the page

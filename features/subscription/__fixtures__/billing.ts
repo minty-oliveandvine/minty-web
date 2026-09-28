@@ -122,6 +122,10 @@ export const INVOICES: InvoiceRow[] = [
     reference: "#11241234113",
     date: inDays(-59).text,
     date_iso: inDays(-59).iso,
+    // Settled the day AFTER it was raised, deliberately: the grid's "Paid date" column
+    // must read this and not `date`, and identical values would hide the difference.
+    paid: inDays(-58).text,
+    paid_iso: inDays(-58).iso,
     period_start: inDays(-89).text,
     period_end: inDays(-59).text,
     description: "Renewal · Super Minty",
@@ -141,6 +145,8 @@ export const INVOICES: InvoiceRow[] = [
     reference: "#1134125533",
     date: inDays(-89).text,
     date_iso: inDays(-89).iso,
+    paid: inDays(-88).text,
+    paid_iso: inDays(-88).iso,
     period_start: inDays(-119).text,
     period_end: inDays(-89).text,
     description: "Renewal · Super Minty",
@@ -160,6 +166,8 @@ export const INVOICES: InvoiceRow[] = [
     reference: "#13512512311",
     date: inDays(-120).text,
     date_iso: inDays(-120).iso,
+    paid: inDays(-119).text,
+    paid_iso: inDays(-119).iso,
     period_start: inDays(-150).text,
     period_end: inDays(-120).text,
     description: "Renewal · Super Minty",
@@ -175,6 +183,57 @@ export const INVOICES: InvoiceRow[] = [
     entities: ["Company A Limited"],
   },
 ];
+
+/**
+ * 08-K's failed invoices: this period's renewal, declined three days ago - the one *Retry payment*
+ * would charge (`retryable`) - and an old renewal left open when an earlier collection gave up,
+ * shown failed with no button (the business does not chase those, 2026-08-11).
+ */
+export const FAILED_INVOICES: InvoiceRow[] = [
+  {
+    ...INVOICES[0],
+    id: "in_failed",
+    reference: "#11248800121",
+    date: inDays(-3).text,
+    date_iso: inDays(-3).iso,
+    paid: null,
+    paid_iso: null,
+    period_start: inDays(-3).text,
+    period_end: inDays(27).text,
+    status: "open",
+    status_label: "Unpaid",
+    payment_method: null,
+    hosted_invoice_url: "https://invoice.stripe.test/in_failed",
+    retryable: true,
+  },
+  {
+    ...INVOICES[2],
+    id: "in_abandoned",
+    reference: "#11240077019",
+    date: inDays(-150).text,
+    date_iso: inDays(-150).iso,
+    paid: null,
+    paid_iso: null,
+    period_start: inDays(-150).text,
+    period_end: inDays(-120).text,
+    status: "open",
+    status_label: "Unpaid",
+    payment_method: null,
+    hosted_invoice_url: "https://invoice.stripe.test/in_abandoned",
+    retryable: false,
+  },
+];
+
+/** What `?fixture=` serves in the table, newest first: 08-K's declined renewal, the paid history,
+ *  and the abandoned one. */
+export const FIXTURE_INVOICES: InvoiceRow[] = [FAILED_INVOICES[0], ...INVOICES, FAILED_INVOICES[1]];
+
+/** What a fixture-mode *Retry payment* answers: declined, so the page's 06·B dialog can be seen. */
+export const RETRY_DECLINED = {
+  ok: false,
+  status: "failed",
+  message: "That card was declined: Your card has insufficient funds.",
+};
 
 /**
  * The breakdown of invoice #11241234113 - the user's sample file, row for row: two renewals

@@ -181,6 +181,15 @@ export function cardMenu(row: CardRow): CardMenuItem[] {
   return row.isDefault ? ["edit", "delete"] : ["set_default", "edit", "delete"];
 }
 
+/**
+ * "Update card" drawn in red (08-K): the card has expired, or it is the one this account CHARGES
+ * and the account's payment failed - the card the payer has to fix. A spare card on a failing
+ * account is not the problem, and stays grey.
+ */
+export function cardNeedsUpdate(row: CardRow, accountFailed: boolean): boolean {
+  return row.chip === "expired" || (row.isDefault && accountFailed);
+}
+
 /** 08-I: the banner over the list when the card being charged has already expired. */
 export function expiredNotice(rows: CardRow[]): string | null {
   const card = rows.find((r) => r.isDefault && r.card.expired) ?? null;
@@ -236,24 +245,61 @@ export function nextBilling(list: PayerAccount | null): NextBilling {
   };
 }
 
+/**
+ * A charge made and DECLINED. Nothing leaves an invoice open without trying - one issued without
+ * collecting stays a draft (the API's `FAILED_INVOICE_STATUSES`).
+ */
+const FAILED_INVOICE_STATUSES: readonly string[] = ["open", "uncollectible"];
+export const FAILED = "Failed";
+export const RETRY_PAYMENT = "Retry payment";
+export const RETRYING = "Retrying…";
+export const RETRY_FAILED = "That retry didn't go through. Mind trying again?";
+
 /** The invoice table's rows (08-B). The API formats the money and the date; this only picks. */
 export type InvoiceLine = {
   id: string;
   reference: string;
   amount: string;
+  /** What "Paid date" shows: the day it settled, "Failed 26 Jul" for a declined charge, or null. */
   paid: string | null;
+  /** Its charge was declined: the whole row is drawn red (08-K). */
+  failed: boolean;
+  /** *Retry payment* would charge THIS invoice now - the API's own rule, one per card. */
+  retryable: boolean;
   /** Stripe's hosted invoice page - a capability URL, opened with rel="noopener noreferrer". */
   pdf: string | null;
 };
 
-export function invoiceLines(invoices: InvoiceRow[]): InvoiceLine[] {
-  return invoices.map((inv) => ({
-    id: inv.id,
-    reference: inv.reference,
-    amount: inv.amount,
-    paid: inv.date,
-    pdf: inv.hosted_invoice_url,
-  }));
+/**
+ * "Failed 26 Jul" - the day the invoice was raised and its charge declined (the API's `date`,
+ * "26 Jul 2026"), with the year only when it is not this one.
+ */
+export function failedLabel(date: string | null, today: Date = new Date()): string {
+  const raised = (date ?? "").trim();
+  const match = /^(\d{1,2} [A-Za-z]{3}) (\d{4})$/.exec(raised);
+  if (!match) return raised ? `${FAILED} ${raised}` : FAILED;
+  return Number(match[2]) === today.getFullYear()
+    ? `${FAILED} ${match[1]}`
+    : `${FAILED} ${raised}`;
+}
+
+export function invoiceLines(invoices: InvoiceRow[], today: Date = new Date()): InvoiceLine[] {
+  return invoices.map((inv) => {
+    const failed = FAILED_INVOICE_STATUSES.includes(inv.status);
+    return {
+      id: inv.id,
+      reference: inv.reference,
+      amount: inv.amount,
+      // The column is headed "Paid date", so it reads `paid` and NOT `date`: `date` is when
+      // the invoice was raised, and an open invoice has no settlement date at all. Null renders
+      // as an em dash rather than borrowing a date that means something else - except on a
+      // declined charge, which says so there with the day it failed (the user's call, 08-K).
+      paid: failed ? failedLabel(inv.date, today) : inv.paid,
+      failed,
+      retryable: failed && inv.retryable === true,
+      pdf: inv.hosted_invoice_url,
+    };
+  });
 }
 
 /** How many invoices a page of 08-B's table holds - the payer picks (the user's call). */
