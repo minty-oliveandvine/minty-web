@@ -17,7 +17,9 @@ const FLOWS: { test: RegExp; name: string }[] = [
   // ticked (`lib/paths.ts::moduleRoutes`).
   { test: /\/modules\/cancel(\/|$)/, name: "Cancel subscription" },
   { test: /\/modules\/payment-method$/, name: "Payment method" },
-  { test: /\/invoices$/, name: "Invoices" },
+  // A standalone /invoices route is NOT a flow waiting to be built - it was deliberately
+  // removed (`lib/paths.ts::PORTAL`, `PortalTabs.tsx`), so it falls through to "This page"
+  // like any other stray path rather than naming a feature that no longer exists.
 ];
 
 export function NotBuiltYet() {

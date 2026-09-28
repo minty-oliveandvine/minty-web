@@ -71,6 +71,9 @@ function show(
 
 const panel = () => screen.getByRole("region", { name: "Subscription Summary" });
 
+/** The plan line a tag sits on: the name and its tag share one row, the tag beside the name. */
+const lineOf = (tag: HTMLElement) => tag.closest("[data-plan-line]");
+
 /** A click on the card itself, away from the checkbox that sits below it. */
 const cardBody = (name: string) =>
   within(screen.getByRole("article", { name })).getByRole("heading", { level: 3, name });
@@ -188,7 +191,10 @@ describe("SubscriptionSummaryRow", () => {
     expect(on.onTick).toHaveBeenCalledWith("PETTY_CASH");
     const p = panel();
     expect(within(p).getByText("Petty Cash")).toBeInTheDocument();
-    expect(within(p).getByText("(Free Trial)")).toBeInTheDocument();
+    // Beside the name, on the same line - not under it (the user, 2026-09-28).
+    expect(lineOf(within(p).getByText("(Free Trial)"))).toHaveTextContent(
+      /^Petty Cash\s*\(Free Trial\)$/,
+    );
     expect(within(p).getByText("HK$0")).toBeInTheDocument();
     expect(screen.getByRole("article", { name: "Petty Cash" })).toHaveAttribute(
       "data-ticked",
@@ -200,12 +206,16 @@ describe("SubscriptionSummaryRow", () => {
     show("M45");
     const p = panel();
     expect(within(p).getByText(/Current Subscription/)).toBeInTheDocument();
-    expect(within(p).getByText("(Active)")).toBeInTheDocument();
-    expect(within(p).getByText("(Cancellation in progress)")).toBeInTheDocument();
+    expect(lineOf(within(p).getByText("(Active)"))).toHaveTextContent(
+      /^Petty Cash\s*\(Active\)$/,
+    );
+    expect(lineOf(within(p).getByText("(Cancellation in progress)"))).toHaveTextContent(
+      /^Payment Request\s*\(Cancellation in progress\)$/,
+    );
     expect(within(p).getByText("HK$560")).toBeInTheDocument();
     expect(within(p).getByText("HK$400")).toBeInTheDocument();
     expect(within(p).getByText(/Future Subscription/)).toBeInTheDocument();
-    expect(within(p).getByText("only")).toBeInTheDocument();
+    expect(lineOf(within(p).getByText("only"))).toHaveTextContent(/^Petty Cash\s*only$/);
     expect(within(p).getByText("HK$280")).toBeInTheDocument();
     expect(within(p).queryByText("No pending changes")).not.toBeInTheDocument();
     expect(

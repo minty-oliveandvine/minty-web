@@ -26,13 +26,8 @@ function tabsOn(path: string) {
 }
 
 describe("PortalTabs", () => {
-  it("offers the landing, the list, billing and invoices", () => {
-    expect(tabsOn("/subscription").all).toEqual([
-      "Overview",
-      "Manage Subscriptions",
-      "Billing",
-      "Invoices",
-    ]);
+  it("offers the landing, the list and billing - no standalone invoices tab", () => {
+    expect(tabsOn("/subscription").all).toEqual(["Overview", "Manage Subscriptions", "Billing"]);
   });
 
   it("marks exactly one tab current, whichever page you are on", () => {
@@ -42,7 +37,6 @@ describe("PortalTabs", () => {
       "/subscription/billing",
       "/subscription/billing/add",
       "/subscription/billing/details",
-      "/subscription/invoices",
       "/subscription/subscriptions/incoming",
     ]) {
       expect(tabsOn(path).current, path).toHaveLength(1);

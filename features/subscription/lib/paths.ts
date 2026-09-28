@@ -13,14 +13,19 @@ export function subscriptionPath(sub = ""): string {
   return `${SUBSCRIPTION_BASE_PATH}${sub.startsWith("/") ? sub : `/${sub}`}`;
 }
 
-/** The portal's pages (billing-frontend's /profile/{subscriptions,billing,invoices}, re-homed). */
+/**
+ * The portal's pages (billing-frontend's /profile/{subscriptions,billing}, re-homed). A
+ * standalone invoices page (billing-frontend's third tab) was deliberately NOT built here: the
+ * billing page's own invoice list (`InvoiceHistoryTable`, §15) already covers it - every
+ * invoice, paged, with Stripe's PDF and the billing-breakdown CSV - so a second page listing
+ * the same rows would be the one link nobody could tell apart from the other.
+ */
 export const PORTAL = {
   index: subscriptionPath(),
   subscriptions: subscriptionPath("/subscriptions"),
   subscriber: subscriptionPath("/subscriptions/subscriber"),
   incoming: subscriptionPath("/subscriptions/incoming"),
   billing: subscriptionPath("/billing"),
-  invoices: subscriptionPath("/invoices"),
 } as const;
 
 /** `path?a=1&b=2`, the empty ones left out - so an absent account keeps the URL bare. */

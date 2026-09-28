@@ -104,5 +104,8 @@ the account's NAME is _Change billing account_; "Trial ending" counts the trials
 days and the update lines have _Show more_; 08-B shows the next bill's estimated amount (the API's
 `next_bill`, priced by its renewal runner), pages its invoices 10 / 50 / 100 and downloads each
 one's billing breakdown as the user's sample CSV (`lib/breakdown`, `lib/download`).
-`components/ModalFrame` is shared by the other modals, `RadioCard` by 07-E's picker (§15). Next:
-the invoices page (section 09).
+`components/ModalFrame` is shared by the other modals, `RadioCard` by 07-E's picker (§15). A
+standalone invoices page (billing-frontend's section 09) was deliberately NOT built: the billing
+page's own invoice list already lists every invoice, paged, with Stripe's PDF and the
+billing-breakdown CSV, so a second page listing the same rows would be pure duplication - see
+`lib/paths.ts::PORTAL`.

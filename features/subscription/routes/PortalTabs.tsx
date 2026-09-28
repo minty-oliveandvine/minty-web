@@ -18,12 +18,15 @@ import { PORTAL } from "@/features/subscription/lib/paths";
  *
  * `exact` marks a tab whose href is a PREFIX of every other one. Without it the landing's tab
  * would be current on every page in the portal, and two tabs would be lit at once.
+ *
+ * NO INVOICES TAB. A standalone invoices page was deliberately not built - the billing
+ * page's own invoice list already covers it (`lib/paths.ts::PORTAL`), so a third tab here
+ * would only have pointed at a second copy of the same rows.
  */
 const TABS = [
   { href: PORTAL.index, label: "Overview", exact: true },
   { href: PORTAL.subscriptions, label: "Manage Subscriptions", exact: false },
   { href: PORTAL.billing, label: "Billing", exact: false },
-  { href: PORTAL.invoices, label: "Invoices", exact: false },
 ] as const;
 
 export function PortalTabs() {

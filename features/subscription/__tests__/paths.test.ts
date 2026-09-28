@@ -22,14 +22,13 @@ describe("subscription paths", () => {
     expect(subscriptionPath("/billing")).toBe("/subscription/billing");
   });
 
-  it("names the portal pages billing-frontend had under /profile", () => {
+  it("names the portal pages billing-frontend had under /profile - no standalone invoices page", () => {
     expect(PORTAL).toEqual({
       index: "/subscription",
       subscriptions: "/subscription/subscriptions",
       subscriber: "/subscription/subscriptions/subscriber",
       incoming: "/subscription/subscriptions/incoming",
       billing: "/subscription/billing",
-      invoices: "/subscription/invoices",
     });
   });
 

@@ -204,17 +204,23 @@ export function PlanLines({ lines, size = "text-xl" }: { lines: PlanLine[]; size
   return (
     <ul className="flex flex-col gap-1">
       {lines.map((line) => (
-        // THE TAG SITS BELOW THE NAME, on its own line and at the same left edge - "only",
-        // "(Free Trial)", "(Active)" qualify the module above them rather than continuing its
-        // name. Beside it, a long name pushed it to the right and it read as a stray word.
-        <li key={line.name}>
-          <div className="flex items-center gap-2">
+        <li key={line.name} className="flex items-center gap-2">
+          {/* THE TAG SITS BESIDE THE NAME, on its baseline - "Petty Cash (Free Trial)",
+              "Payment Request only" (the user, 2026-09-28, reversing an earlier "under the
+              name"). It wraps below only when the column cannot hold both, and never breaks
+              inside itself. The transfer review (07-D) draws its own lines and keeps its own
+              layout, deliberately. */}
+          <span data-plan-line className="flex flex-wrap items-baseline gap-x-2">
             <span className={`${size} font-bold ${PLAN_TONE[line.tone]}`}>{line.name}</span>
-            {line.tone === "bundle" && (
-              <Image src="/portal/super-minty.png" alt="" width={60} height={56} unoptimized />
+            {line.tag && (
+              <span className="whitespace-nowrap text-sm text-[#737a87]">{line.tag}</span>
             )}
-          </div>
-          {line.tag && <span className="block text-sm text-[#737a87]">{line.tag}</span>}
+          </span>
+          {/* Outside the baseline group: an image aligned to a baseline sits its bottom on
+              the text's and rides up. */}
+          {line.tone === "bundle" && (
+            <Image src="/portal/super-minty.png" alt="" width={60} height={56} unoptimized />
+          )}
         </li>
       ))}
     </ul>

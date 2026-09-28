@@ -39,11 +39,11 @@ test.describe("landing and the gates", () => {
     test.skip(subscriptionsDark(), "dark: the page goes to not-available instead (see below)");
     // The gate is a server-side 307 from proxy.ts. Read it directly rather than following it: a
     // browser follows the redirect at network level, where page.route cannot stub Flask.
-    const res = await page.request.get("/subscription/invoices?page=2", { maxRedirects: 0 });
+    const res = await page.request.get("/subscription/billing?page=2", { maxRedirects: 0 });
     expect(res.status()).toBe(307);
     const location = new URL(res.headers()["location"]);
     expect(location.origin + location.pathname).toBe(FLASK_URL + "/handoff/minty-web");
-    expect(location.searchParams.get("next")).toBe("/subscription/invoices?page=2");
+    expect(location.searchParams.get("next")).toBe("/subscription/billing?page=2");
   });
 
   test("the handoff stores the token and lands on next", async ({ page, context }) => {
@@ -70,7 +70,7 @@ test.describe("landing and the gates", () => {
     // of companies is a page on from it.
     await expect(page.getByRole("heading", { name: "Subscription & Billing" })).toBeVisible();
     await expect(page.getByRole("navigation", { name: "Subscription sections" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Invoices" }).first()).toBeVisible();
+    await expect(page.getByRole("link", { name: "Billing" }).first()).toBeVisible();
   });
 
   test("an unsafe next is ignored", async ({ page }) => {
