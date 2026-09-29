@@ -11,8 +11,8 @@ the verifying half `minty-billing-api/docs/features/authentication.md`.
 Stores the three values in cookies (`lib/auth.ts`: `minty_token`, `minty_entity_id`,
 `minty_entity_name`; `SameSite=Lax`, `Secure` on https, **max-age = the token's `exp`**, so an
 expired session is caught by proxy.ts before a page renders) and `router.replace`s to
-`next` — same-origin, absolute, not protocol-relative (`lib/handoff.ts::safeNext`), else
-`/subscription`. Reached with no token it goes to Flask's re-handoff for `next`.
+`next` — same-origin, absolute, not protocol-relative (`lib/handoff.ts::safeNext`), else the
+entity list (`lib/hubPaths.ts::HUB_HOME`). Reached with no token it goes to Flask's re-handoff for `next`.
 
 Two tokens arrive here: the **unscoped** one (`entity_id: ""`) from Minty's entity list for the
 portal, and the **scoped** one from inside a company for its module settings page. Both are
@@ -31,9 +31,49 @@ Flask mint the payer's token, back through `/landing`. This app still mints noth
    Flask's login-gated route (Minty's `/handoff/minty-web`, landed 2026-09-21) that mints the same token and comes back to
    `/landing`. Silent while the Flask session (24 h) is alive; a login when it is not. This app
    has no login form of its own.
-2. **The switch.** `NEXT_PUBLIC_SUBSCRIPTION_ENABLED` off → `/subscription/*` and `/` go to the
+2. **The switch.** `NEXT_PUBLIC_SUBSCRIPTION_ENABLED` off → `/subscription/*` goes to the
    static `/not-available` page (`lib/env.ts`). The backends 404 in that state anyway; this keeps
-   the doors out of sight.
+   the doors out of sight. The entity list and My Profile are not the subscription feature's and
+   answer either way (`/` is the list).
+
+## Talking to Flask (`lib/apiClient.ts::mintyFetch`)
+
+The entity list and My Profile read Flask's bearer routes (`GET /api/me/entities`, `GET` /
+`PATCH /api/me/profile` - Minty's `blueprints/shared/hub_api.py`): the same bearer, the base
+`NEXT_PUBLIC_MINTY_URL`, and never `X-Entity-Id` (Flask's CORS allows only `Authorization` and
+`Content-Type`; a company travels as `?entity=`). A 401 re-authenticates keeping the cookie's
+company - except for the header's initials (`lib/viewer.ts`, `onUnauthorized: "reject"`),
+which are decoration and must never move the page. Flask refuses a token for a deactivated
+account like a bad one.
+
+## The Terms gate (`components/ui/TermsGate.tsx`)
+
+Every page but the three open ones (`lib/hubPaths.ts::isOpenPath`) asks Flask, once per token,
+whether the person owes a Terms & Conditions acceptance: `GET /api/me/terms` (`lib/terms.ts`,
+Minty's `blueprints/legal/routes/hub.py`). Since 2026-09-29 Flask's `/entity` hands the browser
+here whether or not one is owed, so this is where most people meet the Terms. Owed, the page is
+`inert` behind `TermsModal` - Flask's panel (`templates/legal/_terms_panel.html`), ported as it
+looks: the document scrolled inside its card, the tick box locked until the end is reached (4 px
+of tolerance; a document that does not scroll unlocks at once), _Accept & Continue_ and _Cancel_.
+
+- **A gate, not a dialog.** No close button, no click-outside, no Escape; focus stays inside.
+  _Cancel_ is Log Out (`lib/logout.ts`) - someone who will not agree has nowhere else to go.
+- **Accepting** posts `{accepted: true, terms_version}` - the version on screen - to
+  `POST /api/me/terms/accept`. Flask runs its own panel's checks (`consent.accept_current_terms`)
+  and records the row with the registry's fingerprint and `source = "hub"`. The gate lifts and
+  the person stays on the page they are on. A **409** (the Terms changed while it sat open)
+  reads them again: a new version is a new reading, unticked and locked. Any other refusal is
+  said in the panel, and Accept can be tried again.
+- **It fails open, as Flask's gate does.** A check that errors - Flask down, a 500, an answer it
+  cannot read - shows the page and logs `Terms check failed: showing the page WITHOUT the Terms
+  gate` to the console. The gate is a backstop here: entering a company still passes Flask's own
+  gate, and the bearer APIs are not Terms-gated (Minty's gate only sees session requests).
+- **The page behind still loads** (inert, hidden from assistive technology) - the trade Flask's
+  own modal makes over its list.
+- **Once per token.** An answer of "nothing owed", or an acceptance, is remembered for the token
+  (`termsSettled`); a revamp reaches everyone within one token (30 minutes) of going live. The
+  gate re-asks after a client-side move, because the landing stores the token and then moves on
+  without a reload.
 
 ## Talking to the API (`lib/apiClient.ts`)
 
@@ -63,6 +103,10 @@ for the current page, once (several requests fail together; one navigation). Not
 ## Tests
 
 `features/subscription/__tests__/apiClient.test.ts` (bearer, opt-in header, the 401 → one
-redirect, the error sentence with its status); in the browser `e2e/01_landing.spec.ts` (no token →
-re-handoff; no cookie → re-handoff for that page; the handoff stores a cookie that lives as long
-as the token; an unsafe `next` is ignored; dark → not-available).
+redirect, the error sentence with its status), `components/ui/__tests__/TermsGate.test.tsx` (the
+panel, the lock, accept, 409, refusals, Cancel, once per token, the open pages, failing open); in
+the browser `e2e/01_landing.spec.ts` (no token → re-handoff; no cookie → re-handoff for that page;
+the handoff stores a cookie that lives as long as the token; an unsafe `next` is ignored; dark →
+not-available) and `e2e/09_terms.spec.ts` (the gate over the list in a real layout). Every other
+spec arrives with the Terms answered "nothing owed" (`e2e/helpers.ts::handoff`). Flask's side:
+Minty's `tests/test_hub_terms.py`.

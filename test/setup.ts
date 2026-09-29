@@ -5,7 +5,16 @@
 
 import "@testing-library/jest-dom/vitest";
 import { cleanup, configure } from "@testing-library/react";
-import { afterEach } from "vitest";
+import { afterEach, beforeEach } from "vitest";
+
+import { _setViewerLoaderForTests } from "@/lib/viewer";
+
+// The header's badge and the side menu read the viewer from Flask on mount (lib/viewer.ts).
+// A screen test queues its fetch answers in order and counts the calls - a read it never
+// asked for would take one of them. So nobody is looking unless a test says who.
+beforeEach(() => {
+  _setViewerLoaderForTests(() => Promise.resolve(null));
+});
 
 // findBy*/waitFor wait 2.5s, not the default 1s. The screens here render a list of twenty-odd
 // companies, read two endpoints for the row that opens and hold a 1.2s "Calculating…" beat -

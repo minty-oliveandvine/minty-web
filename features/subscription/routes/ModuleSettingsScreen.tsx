@@ -22,7 +22,6 @@ import { SettingsTabs } from "@/features/subscription/components/SettingsTabs";
 import { StartTrialDialog } from "@/features/subscription/components/StartTrialDialog";
 import { useModulePage, type UseModulePageArgs } from "@/features/subscription/hooks/useModulePage";
 import { backLink, settingsTabs, type PageOrigin } from "@/features/subscription/lib/flaskLinks";
-import { modulesPath } from "@/features/subscription/lib/paths";
 
 export type ModuleSettingsScreenProps = UseModulePageArgs & { from: PageOrigin };
 
@@ -41,17 +40,6 @@ const readClaims = (): ModuleClaims | null => {
   return claimsCache.claims;
 };
 const serverClaims = (): ModuleClaims | null => null;
-
-/** "Olive & Vine Limited" -> "O&VL", as billing-frontend abbreviates the company. */
-function abbreviate(name: string): string {
-  if (!name) return "---";
-  return name
-    .split(/\s+/)
-    .map((w) => w[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 3);
-}
 
 export function ModuleSettingsScreen({ from, ...args }: ModuleSettingsScreenProps) {
   const m = useModulePage(args);
@@ -80,9 +68,8 @@ export function ModuleSettingsScreen({ from, ...args }: ModuleSettingsScreenProp
         title="Settings"
         back={backLink(entityId, from)}
         companyName={entityName || "Loading…"}
-        companyAbbreviation={abbreviate(entityName)}
         viewer={m.page?.viewer ?? null}
-        nav={{ modules: access, settingsHref: modulesPath(entityId) }}
+        nav={{ modules: access }}
         noBorder
       />
       <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto overflow-x-hidden pb-[env(safe-area-inset-bottom,0px)]">

@@ -31,9 +31,9 @@ function flag(raw: string | undefined): boolean {
 export const env = {
   /** minty-billing-api - every API call this app makes. */
   BILLING_API_URL: url(process.env.NEXT_PUBLIC_BILLING_API_URL, "http://localhost:8004"),
-  /** The Flask app - login, the re-handoff, and where "Back to Minty" goes. */
+  /** The Flask app - login, the re-handoff, the entity list's and the profile's reads, Petty Cash. */
   MINTY_URL: url(process.env.NEXT_PUBLIC_MINTY_URL, "http://localhost:5001"),
-  /** The payment-request app (billing-frontend) - the profile lives there until Part 3. */
+  /** The payment-request app (billing-frontend) - the side menu's Bills, the profile's way back. */
   PAYMENTS_WEB_URL: url(process.env.NEXT_PUBLIC_PAYMENTS_WEB_URL, "http://localhost:3000"),
   SUBSCRIPTION_ENABLED: flag(process.env.NEXT_PUBLIC_SUBSCRIPTION_ENABLED),
 } as const;

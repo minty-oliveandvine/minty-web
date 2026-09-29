@@ -12,7 +12,7 @@
  * directly with fixtures.
  */
 
-import { env } from "@/lib/env";
+import { HUB_PATHS } from "@/lib/hubPaths";
 
 import { AccountPickerDialog } from "@/features/subscription/components/BillingAccountDialogs";
 import { ChangeDialog } from "@/features/subscription/components/ChangeDialog";
@@ -82,13 +82,18 @@ export function ManageSubscriptionsScreen(args: UseSubscriptionsListArgs) {
       {m.paymentFailed && <PaymentFailedBanner onUpdatePaymentMethod={m.updatePaymentMethod} />}
 
       {m.status !== "error" && m.hasEntities && (
-        <SearchField value={m.searchInput} onChange={m.setSearchInput} />
+        // Sticks under the sticky header (the user, 2026-09-29). The white band (py-3, taken back
+        // by -my-3 so the gap is unchanged) hides the rows scrolling past its rounded corners; z
+        // above a row's ⋮ menu (z-30), below the header (z-40).
+        <div className="sticky top-[var(--app-header-h)] z-[35] -my-3 bg-white py-3">
+          <SearchField value={m.searchInput} onChange={m.setSearchInput} />
+        </div>
       )}
 
       {m.status === "loading" && <ListSkeleton />}
       {m.status === "error" && <ListError message={m.error ?? ""} onRetry={m.reload} />}
       {m.status === "ready" && !m.hasEntities && (
-        <ListEmpty entityListHref={`${env.MINTY_URL}/entity`} />
+        <ListEmpty entityListHref={HUB_PATHS.entities} />
       )}
       {m.status === "ready" && m.hasEntities && nothingShown && <ListNoMatch />}
       {m.status === "ready" && !nothingShown && (

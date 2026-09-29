@@ -38,6 +38,15 @@
   --font-sans:
     var(--font-inter), ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
   --font-mono: ui-monospace, monospace;
+  /* AppHeader's height (its row is h-16 / sm:h-18, plus the 1px border and the notch): what a
+     bar that sticks UNDER the sticky header uses as its top. Change the two together. */
+  --app-header-h: calc(4rem + 1px + env(safe-area-inset-top, 0px));
+}
+
+@media (width >= 40rem) {
+  :root {
+    --app-header-h: calc(4.5rem + 1px + env(safe-area-inset-top, 0px));
+  }
 }
 
 @theme {

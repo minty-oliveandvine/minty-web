@@ -1,12 +1,15 @@
 // The shell's contract: how a person gets in, and what they see while the feature is dark.
 //
 //   live  the handoff stores the cookie and lands on `next`; no token -> Flask's re-handoff;
-//         no cookie on a page -> Flask's re-handoff for THAT page; `/` -> /subscription
-//   dark  /subscription and / -> the not-available page; the landing still stores the cookie
+//         no cookie on a page -> Flask's re-handoff for THAT page; `/` -> /entities (the list)
+//   dark  /subscription -> the not-available page; `/` is still the entity list (the list is
+//         not the subscription feature's); the landing still stores the cookie
 //
 // Skeletal screens are located by role and text, never by class: the design pass may change
 // every class name and these must still pass.
 import { expect, test } from "@playwright/test";
+
+import type { Page } from "@playwright/test";
 
 import {
   FLASK_URL,
@@ -17,6 +20,17 @@ import {
   stubFlaskHandoff,
   subscriptionsDark,
 } from "./helpers";
+
+/** The entity list reads Flask; answer it, with nobody's companies - these specs are about where
+ *  the browser lands, not what the list says. */
+async function stubEntityList(page: Page) {
+  await page.route(`${FLASK_URL}/api/me/**`, (route) =>
+    route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ entities: [], notices: [], user: null, entity: null }) }),
+  );
+}
+
+/** Arriving with no company - as Minty's /entity sends people - so the list keeps the token. */
+const unscoped = (creds: ReturnType<typeof requireCredentials>) => ({ ...creds, entityId: "", entityName: "" });
 
 test.describe("landing and the gates", () => {
   test.beforeEach(async () => {
@@ -74,20 +88,19 @@ test.describe("landing and the gates", () => {
     await expect(page.getByRole("navigation", { name: "Subscription sections" })).toHaveCount(0);
   });
 
-  test("an unsafe next is ignored", async ({ page }) => {
-    test.skip(subscriptionsDark(), "dark: /subscription is not reachable (see below)");
+  test("an unsafe next is ignored: the entity list instead", async ({ page }) => {
     const creds = requireCredentials();
-    await stubBillingApi(page);
-    await handoff(page, creds, "//evil.example/phish");
-    expect(new URL(page.url()).pathname).toBe("/subscription");
+    await stubEntityList(page);
+    await handoff(page, unscoped(creds), "//evil.example/phish");
+    expect(new URL(page.url()).pathname).toBe("/entities");
   });
 
-  test("/ is the feature", async ({ page }) => {
-    test.skip(subscriptionsDark(), "dark: / goes to not-available (see below)");
+  test("/ is the entity list, the hub's first page", async ({ page }) => {
     const creds = requireCredentials();
-    await stubBillingApi(page);
-    await handoff(page, creds, "/");
-    expect(new URL(page.url()).pathname).toBe("/subscription");
+    await stubEntityList(page);
+    await handoff(page, unscoped(creds), "/");
+    expect(new URL(page.url()).pathname).toBe("/entities");
+    await expect(page.getByRole("heading", { level: 1, name: "Select Company" })).toBeVisible();
   });
 });
 
@@ -97,16 +110,23 @@ test.describe("dark", () => {
     test.skip(!subscriptionsDark(), "the app runs live (E2E_SUBSCRIPTIONS != 0)");
   });
 
-  test("/subscription and / show the not-available page, cookie or not", async ({ page }) => {
-    for (const path of ["/subscription", "/subscription/billing", "/"]) {
+  test("/subscription shows the not-available page, cookie or not", async ({ page }) => {
+    for (const path of ["/subscription", "/subscription/billing"]) {
       await page.goto(path);
       await page.waitForURL((u) => u.pathname === "/not-available", { timeout: 15_000 });
       await expect(page.getByRole("heading", { name: /aren't available yet/ })).toBeVisible();
-      await expect(page.getByRole("link", { name: "Back to Minty" })).toHaveAttribute(
+      await expect(page.getByRole("link", { name: "Back to your entities" })).toHaveAttribute(
         "href",
-        FLASK_URL,
+        "/entities",
       );
     }
+  });
+
+  test("dark, / is still the entity list", async ({ page }) => {
+    const creds = requireCredentials();
+    await stubEntityList(page);
+    await handoff(page, unscoped(creds), "/");
+    expect(new URL(page.url()).pathname).toBe("/entities");
   });
 
   test("the landing still stores the token and then lands on not-available", async ({

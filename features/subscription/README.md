@@ -32,7 +32,8 @@ and text, never by class).
 1. This folder imports only itself, `@/lib/**`, `@/components/ui/**` and packages — never
    `@/app/**`, never another feature.
 2. Nothing outside imports `@/features/subscription/*` except `app/subscription/**`, and it
-   imports the index only.
+   imports the index only - and `app/profile/page.tsx`, which puts this feature's
+   `SubscriptionsOverviewCard` into My Profile's slot (the one place two features meet).
 3. `app/subscription/**/page.tsx` and `layout.tsx` are one-line re-exports
    (`__tests__/reexports.test.ts`). The portal pages sit in the route group
    `app/subscription/(portal)/` so their portal layout (the header) stays off the module settings page.
@@ -42,7 +43,9 @@ and text, never by class).
 
 1. `git mv features/subscription <new-repo>/features/subscription` and
    `git mv app/subscription <new-repo>/app/subscription`; delete `FEATURE_PREFIX` from this
-   app's `proxy.ts` and the `/` redirect in `app/page.tsx`.
+   app's `proxy.ts` and the feature's lines from `lib/hubPaths.ts` (`/` is the entity list's,
+   not this feature's, since 2026-09-29), and fill or empty My Profile's `subscriptions` slot in
+   `app/profile/page.tsx`.
 2. In the new repo, point `@/lib/*` and `@/components/ui/*` at `@minty/shared` (they are its
    seed) or copy `lib/` + `components/ui/` across — nothing in this folder imports anything else.
 3. Change `SUBSCRIPTION_BASE_PATH` in `lib/paths.ts` if the new app mounts it elsewhere.

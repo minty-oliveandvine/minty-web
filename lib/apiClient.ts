@@ -1,5 +1,8 @@
 /**
- * The one way this app talks to minty-billing-api.
+ * The one way this app talks to its two backends: minty-billing-api (`apiFetch`) and Flask's
+ * bearer surface for the hub pages - the entity list and My Profile (`mintyFetch`,
+ * Minty's `blueprints/shared/hub_api.py`). Both share everything below except where they go
+ * and `X-Entity-Id`, which only the billing API takes.
  *
  * - The bearer is the cookie token (lib/auth.ts); `X-Entity-Id` is OPT-IN, per call: the payer
  *   portal is person-scoped and sends none, the module settings page names its company (the
@@ -70,11 +73,25 @@ function errorSentence(body: unknown): string | null {
   return null;
 }
 
-/**
- * Call the billing API and return the parsed JSON (`null` for an empty body).
- * Rejects with `ApiError`; a 401 also sends the browser to the re-handoff.
- */
-export async function apiFetch<T = unknown>(path: string, init: ApiRequest = {}): Promise<T> {
+export type MintyRequest = Omit<ApiRequest, "entityId"> & {
+  /**
+   * What a 401 means to the caller. `"handoff"` (the default): the token lapsed, so the
+   * browser goes back through Flask for a fresh one, as `apiFetch` does. `"reject"`: only
+   * reject - for a read that is decoration (the header's initials), which must never move the
+   * page; the page's own reads re-authenticate when the token really has lapsed.
+   */
+  onUnauthorized?: "handoff" | "reject";
+};
+
+const SESSION_ENDED = "Your session has ended. Signing you back in…";
+
+async function send<T>(
+  base: string,
+  path: string,
+  init: ApiRequest,
+  onUnauthorized: "handoff" | "reject",
+  handoffEntityId: string | undefined,
+): Promise<T> {
   const { entityId, json, query, headers: extraHeaders, ...rest } = init;
   const auth = getAuth();
 
@@ -84,15 +101,15 @@ export async function apiFetch<T = unknown>(path: string, init: ApiRequest = {})
   if (entityId) headers.set("X-Entity-Id", entityId);
   if (json !== undefined) headers.set("Content-Type", "application/json");
 
-  const res = await fetch(`${env.BILLING_API_URL}${withQuery(path, query)}`, {
+  const res = await fetch(`${base}${withQuery(path, query)}`, {
     ...rest,
     headers,
     body: json === undefined ? undefined : JSON.stringify(json),
   });
 
   if (res.status === 401) {
-    redirectToHandoff(undefined, entityId);
-    throw new ApiError(401, "Your session has ended. Signing you back in…");
+    if (onUnauthorized === "handoff") redirectToHandoff(undefined, handoffEntityId);
+    throw new ApiError(401, SESSION_ENDED);
   }
 
   const body = await readBody(res);
@@ -100,4 +117,24 @@ export async function apiFetch<T = unknown>(path: string, init: ApiRequest = {})
     throw new ApiError(res.status, errorSentence(body) ?? HOUSE_FALLBACK, body);
   }
   return body as T;
+}
+
+/**
+ * Call the billing API and return the parsed JSON (`null` for an empty body).
+ * Rejects with `ApiError`; a 401 also sends the browser to the re-handoff.
+ */
+export async function apiFetch<T = unknown>(path: string, init: ApiRequest = {}): Promise<T> {
+  return send<T>(env.BILLING_API_URL, path, init, "handoff", init.entityId);
+}
+
+/**
+ * Call Flask's hub surface (`/api/me/entities`, `/api/me/profile`) and return the parsed JSON.
+ *
+ * Never sends `X-Entity-Id`: Flask's CORS allows only `Authorization` and `Content-Type`, so
+ * the header would fail every preflight - a company travels as `?entity=` instead. A 401's
+ * re-handoff keeps the company in the cookie, so a profile opened inside one comes back to it.
+ */
+export async function mintyFetch<T = unknown>(path: string, init: MintyRequest = {}): Promise<T> {
+  const { onUnauthorized = "handoff", ...rest } = init;
+  return send<T>(env.MINTY_URL, path, rest, onUnauthorized, getAuth()?.entityId || undefined);
 }

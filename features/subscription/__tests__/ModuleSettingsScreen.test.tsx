@@ -75,19 +75,22 @@ describe("ModuleSettingsScreen", () => {
       env.PAYMENTS_WEB_URL,
     );
     expect(screen.getByText("Olive & Vine Limited")).toBeInTheDocument();
-    expect(screen.getByRole("img", { name: "Olive Vine" })).toHaveTextContent("OV");
-    // billing-frontend's header: the hamburger opens the drawer with the sections the company has
+    // the initials: My Profile (a link to the page here - no sidebar around a lone screen)
+    expect(screen.getByRole("link", { name: "Olive Vine, My Profile" })).toHaveTextContent("OV");
+    // the side menu (Figma 02-D, inside a company): the person first - the way to My Profile -
+    // then Select Entity, the sections the company has, and Settings (this page) above Logout
     await userEvent.click(screen.getByRole("button", { name: "Open navigation menu" }));
     const drawer = within(screen.getByRole("navigation", { name: "Main navigation" }));
-    expect(drawer.getByRole("link", { name: "Select entity" })).toHaveAttribute(
+    expect(drawer.getByRole("link", { name: "Olive Vine, My Profile" })).toHaveAttribute(
       "href",
-      `${env.MINTY_URL}/entity`,
+      "/profile",
     );
+    expect(drawer.getByRole("link", { name: "Select Entity" })).toHaveAttribute("href", "/entities");
     expect(drawer.getByRole("group", { name: "Petty Cash" })).toBeInTheDocument();
     expect(drawer.queryByRole("group", { name: "Payment Request" })).toBeNull(); // billing off in A
     expect(drawer.getByRole("link", { name: "Settings" })).toHaveAttribute("aria-current", "page");
     expect(drawer.getByRole("button", { name: "Logout" })).toBeInTheDocument();
-    await userEvent.click(drawer.getByRole("button", { name: "Close menu" }));
+    await userEvent.keyboard("{Escape}");
 
     const tabs = within(screen.getByRole("navigation", { name: "Settings sections" }));
     expect(tabs.getByRole("link", { name: "Users" })).toHaveAttribute(

@@ -1,9 +1,11 @@
 import { redirect } from "next/navigation";
 
+import { HUB_HOME } from "@/lib/hubPaths";
+
 /**
- * The hub has one feature for now, so `/` is `/subscription`. Part 3 puts the dashboard here;
- * this file is the only place that knows the feature is the home page.
+ * `/` is the hub's first page: the entity list, where a person picks a company (it replaced
+ * Flask's /entity on 2026-09-29). It answers whether or not subscriptions are switched on.
  */
 export default function Home() {
-  redirect("/subscription");
+  redirect(HUB_HOME);
 }

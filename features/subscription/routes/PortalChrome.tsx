@@ -2,64 +2,29 @@
 
 /**
  * The header of the payer portal's pages: billing-frontend's header (`components/ui/AppHeader`),
- * as every page here must read as one of its pages. The portal is person-scoped - the way back
- * is Minty's entity list, and the drawer's module sections follow the token's claims (the
- * company in the cookie, when the person came from one).
+ * as every page here must read as one of its pages. Its left is the page's own way back
+ * (`PortalBack`), lined up with the teal banner - no "‹ Entity List" and no title since
+ * 2026-09-29 (the user); the banner names the page. The side menu works out for itself whether a
+ * company is in the cookie (its Petty Cash / Payment Request sections and Settings show only
+ * then).
  */
 
 import { useSyncExternalStore } from "react";
 
 import { AppHeader } from "@/components/ui/AppHeader";
 import { getAuth } from "@/lib/auth";
-import { env } from "@/lib/env";
-import { getModuleClaims, type ModuleClaims } from "@/lib/moduleClaims";
 
-import { modulesPath, PORTAL } from "@/features/subscription/lib/paths";
+import { PortalBackSlot } from "@/features/subscription/components/PortalBack";
 
 // Primitives only: a fresh object per read would make useSyncExternalStore loop.
 const noSubscribe = () => () => {};
-const readEntityId = () => getAuth()?.entityId ?? "";
 const readEntityName = () => getAuth()?.entityName ?? "";
 const serverEmpty = () => "";
 
-let claimsCache: { token: string; claims: ModuleClaims } | null = null;
-const readClaims = (): ModuleClaims => {
-  const token = getAuth()?.token ?? "";
-  if (!claimsCache || claimsCache.token !== token) {
-    claimsCache = { token, claims: getModuleClaims() };
-  }
-  return claimsCache.claims;
-};
-const NONE: ModuleClaims = { pettyCash: false, billing: false };
-const serverClaims = () => NONE;
-
-function abbreviate(name: string): string {
-  if (!name) return "---";
-  return name
-    .split(/\s+/)
-    .map((w) => w[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 3);
-}
-
 export function PortalChrome() {
-  const entityId = useSyncExternalStore(noSubscribe, readEntityId, serverEmpty);
   const entityName = useSyncExternalStore(noSubscribe, readEntityName, serverEmpty);
-  const claims = useSyncExternalStore(noSubscribe, readClaims, serverClaims);
 
   return (
-    <AppHeader
-      title="Subscriptions"
-      // The way back is Minty's entity list, so the link says what it DOES rather than
-      // where it goes - "Minty" named the product, which is also the app you are already in.
-      back={{ href: `${env.MINTY_URL}/entity`, label: "Entity List" }}
-      companyName={entityName || "My entities"}
-      companyAbbreviation={abbreviate(entityName)}
-      nav={{
-        modules: entityId ? claims : NONE,
-        settingsHref: entityId ? modulesPath(entityId) : PORTAL.index,
-      }}
-    />
+    <AppHeader lead={<PortalBackSlot />} companyName={entityName || "My entities"} />
   );
 }

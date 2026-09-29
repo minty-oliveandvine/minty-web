@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { env } from "@/lib/env";
+import { HUB_HOME } from "@/lib/hubPaths";
 
 /**
  * Where /subscription/* lands while the feature is dark (NEXT_PUBLIC_SUBSCRIPTION_ENABLED=0 -
@@ -13,8 +13,8 @@ export default function NotAvailable() {
       <h1 className="text-xl font-semibold">Subscriptions aren&apos;t available yet</h1>
       <p className="mt-2 text-muted">This part of Minty isn&apos;t switched on for your account.</p>
       <p className="mt-6">
-        <Link className="underline" href={env.MINTY_URL}>
-          Back to Minty
+        <Link className="underline" href={HUB_HOME}>
+          Back to your entities
         </Link>
       </p>
     </main>

@@ -603,10 +603,10 @@ describe("08-A, the portal's landing", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
     await user.click(within(overview).getByRole("button", { name: "Manage Subscription" }));
     expect(push).toHaveBeenCalledWith("/subscription/subscriptions");
-    // With no company scoped, the way back can only be Minty's entity list.
+    // With no company scoped, the way back can only be the entity list - this app's own.
     expect(screen.getByRole("link", { name: "Back to the entity dashboard" })).toHaveAttribute(
       "href",
-      `${env.MINTY_URL}/entity`,
+      "/entities",
     );
   });
 

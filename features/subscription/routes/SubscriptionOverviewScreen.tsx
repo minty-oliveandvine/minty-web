@@ -2,7 +2,7 @@
 
 /**
  * "Subscription & Billing" - the portal's landing, composed (Figma 08-A): the way back into
- * Minty, the banner, the billing-account card and the Subscription Overview, and the two
+ * Minty (in the header bar, `PortalBack`), the banner, the billing-account card and the Subscription Overview, and the two
  * account dialogs the card opens - which account to show, and "Change billing account" - each
  * of which can open a new account in place (onboarding's sheet, `BillingAccountDialogs`).
  * `SubscriptionOverview` reads the URL and hands the parameters here; the tests render this
@@ -28,6 +28,7 @@ import {
   BillingAccountCard,
   SubscriptionOverviewCard,
 } from "@/features/subscription/components/BillingOverviewPanels";
+import { BACK_LINE_CLASS, PortalBack } from "@/features/subscription/components/PortalBack";
 import { TransferOutcomeDialog } from "@/features/subscription/components/TransferOutcomeDialog";
 import {
   useBillingOverview,
@@ -46,12 +47,11 @@ export function SubscriptionOverviewScreen(args: UseBillingOverviewArgs) {
 
   return (
     <div className="flex flex-col gap-6 pb-16">
-      <a
-        href={mintyModulesUrl(entityId)}
-        className="self-start text-base text-[var(--ink-soft)] hover:underline"
-      >
-        {BACK_TO_ENTITIES}
-      </a>
+      <PortalBack>
+        <a href={mintyModulesUrl(entityId)} className={BACK_LINE_CLASS}>
+          {BACK_TO_ENTITIES}
+        </a>
+      </PortalBack>
       <div className="rounded-[32px] bg-gradient-to-r from-[#18c4c7] via-[#42ccc5] via-[74%] to-[#78d7c5] px-[54px] py-10">
         <h1 className="text-[40px] font-bold leading-none text-white">{OVERVIEW_TITLE}</h1>
       </div>

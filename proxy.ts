@@ -7,6 +7,7 @@ import { NextResponse } from "next/server";
 import { AUTH_COOKIE_NAME } from "@/lib/auth";
 import { env } from "@/lib/env";
 import { handoffUrl } from "@/lib/handoff";
+import { HUB_PATHS, isOpenPath } from "@/lib/hubPaths";
 
 /**
  * Two gates, in this order:
@@ -16,21 +17,16 @@ import { handoffUrl } from "@/lib/handoff";
  *    login-gated re-handoff for the page it asked for - not to a login form of this app's,
  *    which has none. The cookie's max-age is the token's `exp`, so "no cookie" and "expired
  *    token" are the same case here.
- * 2. THE SWITCH. With NEXT_PUBLIC_SUBSCRIPTION_ENABLED off (lib/env.ts), the feature's routes
- *    go to the static not-available page. The backends are the real guard (404 while dark);
- *    this keeps the doors out of sight, the same rule billing-frontend applies to its portal.
+ * 2. THE SWITCH. With NEXT_PUBLIC_SUBSCRIPTION_ENABLED off (lib/env.ts), the subscription
+ *    feature's routes go to the static not-available page; the hub's own pages (the entity
+ *    list, the profile - and `/`, which is the list) are not the feature's and stay
+ *    reachable. The backends are the real guard (404 while dark); this keeps the doors out of
+ *    sight, the same rule billing-frontend applies to its portal.
  *
- * Only the shell knows the feature lives at /subscription - the folder app/subscription is the
- * shell's, and this constant is the one place outside it that spells the prefix. Extracting
- * the feature into its own app deletes both.
+ * Only the shell knows where the feature is mounted (`lib/hubPaths.ts`, beside the folder
+ * app/subscription). Extracting the feature into its own app deletes both.
  */
-const FEATURE_PREFIX = "/subscription";
-
-const OPEN_PATHS = ["/landing", "/maintenance", "/not-available"];
-
-function isOpen(pathname: string): boolean {
-  return OPEN_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"));
-}
+const FEATURE_PREFIX = HUB_PATHS.subscription;
 
 function isFeature(pathname: string): boolean {
   return pathname === FEATURE_PREFIX || pathname.startsWith(FEATURE_PREFIX + "/");
@@ -39,11 +35,12 @@ function isFeature(pathname: string): boolean {
 export function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
 
-  if (isOpen(pathname)) {
+  if (isOpenPath(pathname)) {
     return NextResponse.next();
   }
 
-  if (!env.SUBSCRIPTION_ENABLED && (isFeature(pathname) || pathname === "/")) {
+  // The entity list and the profile (and `/`, which is the list) answer whatever the switch says.
+  if (!env.SUBSCRIPTION_ENABLED && isFeature(pathname)) {
     const url = request.nextUrl.clone();
     url.pathname = "/not-available";
     url.search = "";

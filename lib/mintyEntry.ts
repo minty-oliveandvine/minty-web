@@ -5,20 +5,33 @@
  * re-establishes the Flask session and forwards to `next` - so the person lands where they were
  * going, signed in, instead of on a login screen. billing-frontend goes in the same way.
  *
- * With no company or no token there is nothing to enter, so the entity list is the fallback:
- * a URL that always works rather than one built around an empty id.
+ * With no company or no token there is nothing to enter, so the entity list is the fallback -
+ * this app's own (`HUB_PATHS.entities`): a URL that always works rather than one built around
+ * an empty id.
  */
 
 import { getAuth } from "@/lib/auth";
 import { env } from "@/lib/env";
+import { HUB_PATHS } from "@/lib/hubPaths";
 
-export function mintyEntryUrl(path?: string): string {
+export function mintyEntryUrl(path?: string, entityId?: string): string {
   const auth = getAuth();
-  if (auth?.entityId && auth.token) {
-    const base = `${env.MINTY_URL}/entity/${encodeURIComponent(auth.entityId)}/enter?token=${encodeURIComponent(auth.token)}`;
+  const company = entityId || auth?.entityId;
+  if (company && auth?.token) {
+    const base = `${env.MINTY_URL}/entity/${encodeURIComponent(company)}/enter?token=${encodeURIComponent(auth.token)}`;
     return path ? `${base}&next=${encodeURIComponent(path)}` : base;
   }
-  return `${env.MINTY_URL}/entity`;
+  return HUB_PATHS.entities;
+}
+
+/**
+ * Into ANY company from the entity list: `/entity/<id>/enter` re-establishes the Flask session
+ * from the token (it checks the token, not a membership - an unscoped one is fine) and hands
+ * on to that company's module selector, which checks the membership, records the visit on
+ * the list's clock and picks the module.
+ */
+export function mintyEnterCompanyUrl(entityId: string): string {
+  return mintyEntryUrl(`/entity/${entityId}/modules`, entityId);
 }
 
 /**

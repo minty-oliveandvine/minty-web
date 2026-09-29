@@ -3,6 +3,8 @@
 
 import { describe, expect, it } from "vitest";
 
+import { companySettingsPath, HUB_PATHS } from "@/lib/hubPaths";
+
 import {
   BILLING,
   PORTAL,
@@ -70,5 +72,14 @@ describe("subscription paths", () => {
     );
     // The open row's Change is a sheet, not a route: nothing else is named here.
     expect(Object.keys(r).sort()).toEqual(["activate", "manage", "reactivate", "resume", "started"]);
+  });
+});
+
+describe("the shell's spelling of this feature's paths", () => {
+  // lib/hubPaths.ts spells the mount point and a company's settings page for the shared chrome,
+  // which may not import the feature - so the two spellings are pinned together here.
+  it("agrees with the feature's own", () => {
+    expect(HUB_PATHS.subscription).toBe(SUBSCRIPTION_BASE_PATH);
+    expect(companySettingsPath("e 1")).toBe(modulesPath("e 1"));
   });
 });

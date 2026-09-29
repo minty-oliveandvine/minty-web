@@ -308,7 +308,7 @@ describe("ManageSubscriptionsScreen", () => {
     expect(screen.getByText("You're not paying for anything yet.")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Go to entity list" })).toHaveAttribute(
       "href",
-      `${env.MINTY_URL}/entity`,
+      "/entities",
     );
     expect(screen.queryByRole("searchbox")).toBeNull();
   });

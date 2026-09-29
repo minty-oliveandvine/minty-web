@@ -1,11 +1,12 @@
 // The way back into Minty: /entity/<id>/enter re-establishes the Flask session and forwards to
-// `next`, so the person lands signed in. With no company there is nothing to enter.
+// `next`, so the person lands signed in. With no company there is nothing to enter, and the
+// fallback is this app's own entity list.
 
 import { afterEach, describe, expect, it } from "vitest";
 
 import { clearAuth, setAuth } from "@/lib/auth";
 import { env } from "@/lib/env";
-import { mintyEntryUrl, mintyModulesUrl } from "@/lib/mintyEntry";
+import { mintyEnterCompanyUrl, mintyEntryUrl, mintyModulesUrl } from "@/lib/mintyEntry";
 
 const TOKEN = "h.eyJ1c2VyX2lkIjoidTEifQ.s";
 
@@ -23,9 +24,21 @@ describe("mintyEntryUrl", () => {
 
   it("falls back to the entity list when there is no company to enter", () => {
     setAuth(TOKEN, "", "");
-    expect(mintyEntryUrl("/entity/e1/reports")).toBe(`${env.MINTY_URL}/entity`);
+    expect(mintyEntryUrl("/entity/e1/reports")).toBe("/entities");
     clearAuth();
-    expect(mintyEntryUrl()).toBe(`${env.MINTY_URL}/entity`);
+    expect(mintyEntryUrl()).toBe("/entities");
+  });
+
+  it("enters ANY company from the entity list, whatever the token is scoped to", () => {
+    setAuth(TOKEN, "", "");
+    expect(mintyEnterCompanyUrl("e7")).toBe(
+      `${env.MINTY_URL}/entity/e7/enter?token=${encodeURIComponent(TOKEN)}` +
+        `&next=${encodeURIComponent("/entity/e7/modules")}`,
+    );
+    setAuth(TOKEN, "e1", "Olive & Vine Limited");
+    expect(mintyEnterCompanyUrl("e7")).toContain("/entity/e7/enter?");
+    clearAuth();
+    expect(mintyEnterCompanyUrl("e7")).toBe("/entities"); // no token, nothing to enter with
   });
 
   it("mintyModulesUrl asks Minty to route: the module selection, or the only module on", () => {
@@ -34,6 +47,6 @@ describe("mintyEntryUrl", () => {
     // The caller passes the cookie's own id, so "no id" means no company at all: the list,
     // never a URL built around an empty one.
     clearAuth();
-    expect(mintyModulesUrl("")).toBe(`${env.MINTY_URL}/entity`);
+    expect(mintyModulesUrl("")).toBe("/entities");
   });
 });

@@ -18,6 +18,7 @@ import {
   handoff,
   requireApp,
   storedScope,
+  stubBillingApi,
   subscriptionsDark,
 } from "../../../e2e/helpers";
 import { FIXTURES, NON_MANAGER, WALLET, type FixtureFrame } from "../__fixtures__/modulePage";
@@ -135,6 +136,9 @@ test.describe("module settings page", () => {
     page,
   }) => {
     const c = creds();
+    // Every billing route this journey does not stub answers 501, never a live API's 401 for
+    // the stub token (the portal's landing reads more than the list) - routes added later win.
+    await stubBillingApi(page);
     const posts = await stubApi(page, frame("A"), frame("B"));
     await stubList(page, c.entityId, c.entityName);
     await handoff(page, c, MODULES(c.entityId));

@@ -2,9 +2,11 @@
 
 Minty's Next.js hub — port **3002**. Born in Part 2 of `Minty/docs/modernisation/modernisation_plan.md`
 with one feature, **subscriptions** (the payer portal from billing-frontend and the module
-settings page from Flask's Jinja), talking to `minty-billing-api` (:8004). Part 3 brings login,
-the dashboard, profile and settings here; the subscription feature is built so it can be lifted
-into its own app if that is ever wanted (`features/subscription/README.md`).
+settings page from Flask's Jinja), talking to `minty-billing-api` (:8004). Since 2026-09-29 it
+also has the **entity list** ("Select Company", its first page, from Flask's Jinja) and **My
+Profile** (from billing-frontend, redrawn to Figma 10-A/10-B), over Flask's bearer routes -
+Part 3 step 4, pulled forward; login, the dashboard and settings follow in Part 3. Each feature
+is a bounded folder that can be lifted into its own app (`features/*/README.md`).
 
 **Status: the shell (Part 2 step 1).** Landing, the two gates, the plumbing, the UI seed, the
 bounded feature folder with its three typed API clients and a skeletal index. Step 4 ports the
@@ -30,19 +32,30 @@ This app never mints or refreshes a token (cross-cutting rule 1). `docs/features
 ## The switch
 
 `NEXT_PUBLIC_SUBSCRIPTION_ENABLED` — **on unless `0`** (the opposite default to the backends, so
-`next dev` with no env file works). Off, `proxy.ts` sends `/subscription/*` and `/` to the
-static `/not-available` page. The backends are the real guard (404 while dark); this only keeps
+`next dev` with no env file works). Off, `proxy.ts` sends `/subscription/*` to the static
+`/not-available` page; the entity list (`/`, `/entities`) and My Profile stay, and the side menu
+and the profile leave out their ways into subscriptions. The backends are the real guard (404 while dark); this only keeps
 the doors out of sight. The deployed app is switched off at the cutover with minty-billing-api
 and switched on at launch **after** the API (Part 2 step 7, 8b).
 
 ## Layout
 
 ```
-app/                    shell routes only: layout · globals.css · page (→ /subscription) · landing · maintenance · not-available
-app/subscription/       one-line re-exports from "@/features/subscription" (layout, page; the rest arrive in step 4)
-features/subscription/  THE bounded folder — index.ts is its whole public surface; README.md has the extraction recipe
-lib/                    env (the four NEXT_PUBLIC_*) · auth (the cookie) · apiClient (bearer, X-Entity-Id opt-in, 401 → handoff) · handoff
-components/ui/          Header · Toast · Icon · MintySelect · Pagination — Part 3's @minty/shared seed
+app/                    shell routes only: layout · globals.css · page (→ /entities) · landing · maintenance · not-available
+app/subscription/       one-line re-exports from "@/features/subscription"
+app/entities/           one-line re-export from "@/features/entities"
+app/profile/            a composition: the My Profile page with the subscription feature's overview card in its slot
+app/layout.tsx          the other composition: every page's shell - the sidebar (its My Profile view is the profile
+                        feature's panel, the overview card in its slot) over the Terms gate
+features/subscription/  a bounded folder — index.ts is its whole public surface; README.md has the extraction recipe
+features/entities/      the entity list, bounded the same way
+features/profile/       My Profile, bounded the same way
+lib/                    env · auth (the cookie) · apiClient (apiFetch → billing API, mintyFetch → Flask) · handoff
+                        · hubPaths (where each feature is mounted; the open pages) · viewer (who is looking) · logout · mintyEntry
+                        · moduleClaims · terms (what is owed, and agreeing)
+components/ui/          AppHeader · Sidebar (one drawer, two views: the menu and My Profile) · SideMenu (the Figma 02 menu)
+                        · NavMenu (the ≡) · ViewerBadge (the initials: My Profile) · TermsGate + TermsModal (Flask's Terms panel)
+                        · Toast · Icon · MintySelect · Pagination — Part 3's @minty/shared seed
 proxy.ts                cookie gate + dark redirect (Next 16's name for middleware.ts)
 e2e/                    the shell's Playwright specs + helpers (JWT mint); features/*/e2e is picked up by the same config
 eslint.config.mjs       next + typescript + the BOUNDARY RULES (eslint-plugin-boundaries)
@@ -50,16 +63,18 @@ eslint.config.mjs       next + typescript + the BOUNDARY RULES (eslint-plugin-bo
 
 ### The boundary (enforced by `npm run lint` and `npm test`)
 
-1. `features/subscription/**` imports only itself, `@/lib/**`, `@/components/ui/**` and packages.
-2. Nothing outside imports `@/features/subscription/*` except `app/subscription/**`, and only the index.
-3. `app/subscription/**/page.tsx` and `layout.tsx` are one-line re-exports (`__tests__/reexports.test.ts`).
+1. `features/<name>/**` imports only itself, `@/lib/**`, `@/components/ui/**` and packages.
+2. Nothing outside imports `@/features/<name>/*` except its own `app/` folder, and only the index
+   (and `app/profile/page.tsx` the subscription index too, for the overview card).
+3. Each `app/<folder>/**` is one-line re-exports - `app/profile/page.tsx` the one composition -
+   asserted by each feature's `__tests__/reexports.test.ts`.
 
 ## Run it
 
 ```bash
 npm ci
 copy .env.example .env.local
-npm run dev                       # http://localhost:3002 → /subscription
+npm run dev                       # http://localhost:3002 → /entities
 ```
 
 The four variables are `NEXT_PUBLIC_BILLING_API_URL` (8004), `NEXT_PUBLIC_MINTY_URL` (5001),

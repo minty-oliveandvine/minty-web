@@ -443,7 +443,12 @@ export function overview(list: PayerAccount | null, today: Date): Overview {
   return { active, trialEnding, updates: [...failed, ...trials.map((t) => t.update)] };
 }
 
+/** "entity" / "entities" - the unit alone, for a figure drawn above it (My Profile, 10-A). */
+export function entityUnit(n: number): string {
+  return n === 1 ? "entity" : "entities";
+}
+
 /** "0 entities" / "1 entity" - the design's unit line under each figure. */
 export function entityCount(n: number): string {
-  return n === 1 ? "1 entity" : `${n} entities`;
+  return `${n} ${entityUnit(n)}`;
 }

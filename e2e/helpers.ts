@@ -114,13 +114,30 @@ export function subscriptionsDark(): boolean {
   return raw === "0" || raw === "false" || raw === "off";
 }
 
-/** Arrive the way Minty sends people: /landing stores the token and forwards to ``next``. */
+/**
+ * Answer Flask's Terms check (`GET /api/me/terms`, the gate over every page - components/ui/
+ * TermsGate.tsx) ourselves. `handoff` answers "nothing owed" unless a spec says otherwise: the
+ * gate is 09_terms.spec.ts's subject, every other spec is about its own page, and the shared
+ * e2e account owes an acceptance that nobody may give on it.
+ */
+export async function answerTerms(page: Page, answer: unknown = { owed: false }): Promise<void> {
+  await page.route(`${FLASK_URL}/api/me/terms`, (route) =>
+    route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(answer) }),
+  );
+}
+
+/**
+ * Arrive the way Minty sends people: /landing stores the token and forwards to ``next``.
+ * `terms`: what the Terms check answers on the way in (`answerTerms`) - nothing owed by default.
+ */
 export async function handoff(
   page: Page,
   creds: Credentials,
   next = "/subscription",
   overrides: Record<string, unknown> = {},
+  { terms = { owed: false } as unknown } = {},
 ): Promise<void> {
+  await answerTerms(page, terms);
   const token = mintModuleToken(creds, overrides);
   const qs = new URLSearchParams({
     next,
