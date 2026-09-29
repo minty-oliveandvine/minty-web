@@ -95,8 +95,6 @@ describe("ModuleSettingsScreen", () => {
       `${env.MINTY_URL}/entity/settings/users/e1`,
     );
     expect(tabs.getByText("Module")).toHaveAttribute("aria-current", "page");
-    // the portal's tabs are not this page's
-    expect(screen.queryByRole("navigation", { name: "Subscription sections" })).toBeNull();
   });
 
   it("without from=bills the way back is Petty Cash's Reports, and Payment Settings hides when billing is off", async () => {
@@ -192,14 +190,15 @@ describe("ModuleSettingsScreen", () => {
     expect(push).toHaveBeenCalledWith("/subscription/subscriptions?entity=e1&tick=PETTY_CASH");
   });
 
-  it("03-F: both suspended, the banner, and 'here' opens the payment method", async () => {
+  it("03-F: both suspended, the banner, and 'here' opens the company's billing account", async () => {
     await show(FIXTURES.F);
     expect(screen.getAllByText("Subscription Suspended")).toHaveLength(2);
     expect(screen.getAllByRole("button", { name: "Reactivate Subscription" })).toHaveLength(2);
     const banner = screen.getByRole("alert");
     expect(banner).toHaveTextContent("Payment failed. Update your payment method here.");
     await userEvent.click(within(banner).getByRole("button", { name: "here" }));
-    expect(push).toHaveBeenCalledWith("/subscription/entities/e1/modules/payment-method");
+    // the failed card is the billing account's, so 08-B by `?entity=` (2026-09-29)
+    expect(push).toHaveBeenCalledWith("/subscription/billing?entity=e1");
   });
 
   it("Start Free Trial asks first (04-G), then posts and lands on the list's row", async () => {

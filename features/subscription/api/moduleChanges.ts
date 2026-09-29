@@ -15,6 +15,10 @@
  *   subscribe       an expired trial, ticked - `restart-billing` (THIS CHARGES); a 402 means
  *                   no card is nominated, so Stripe's card form first
  *
+ * Before any of it, for a change that bills (`billsAnything`), Manage Subscriptions has already
+ * put the company on the billing account the payer picked (`POST /billing/accounts/move`), so
+ * every call below charges - or records consent for - that account's card.
+ *
  * The answer says where the browser must go (Stripe), or that the bank declined the charge
  * (`declined`, with the API's sentence - Figma 06·B's "Payment could not be processed" asks
  * to try again), or why the change stopped otherwise (`refused`), or that everything was
@@ -71,10 +75,25 @@ export function seamsOf(
   return out;
 }
 
+/**
+ * Whether the change starts or continues billing anything - every seam but `cancel`. Manage
+ * Subscriptions asks which billing account pays before applying one that does; a change that
+ * only cancels bills nothing and is applied as confirmed.
+ */
+export function billsAnything(before: ModulePage, codes: ModuleCode[]): boolean {
+  return Object.keys(seamsOf(before, codes)).some((seam) => seam !== "cancel");
+}
+
 export async function applyChange(
   entityId: string,
   before: ModulePage,
   codes: ModuleCode[],
+  /**
+   * `cardChosen`: the company was just put on a billing account that has a card (Manage
+   * Subscriptions' account picker), so `before`'s "no card at all" is out of date - a trial is
+   * confirmed on that card instead of sending the browser to Stripe for another.
+   */
+  { cardChosen = false }: { cardChosen?: boolean } = {},
 ): Promise<AppliedChange> {
   const by = seamsOf(before, codes);
 
@@ -93,7 +112,7 @@ export async function applyChange(
   const trials = by.confirm_trial ?? [];
   if (trials.length > 0) {
     // No card at all: the consent would sit on nothing, and the trial would still expire.
-    if (trials.some((c) => c.needs_card && !c.needs_consent_only)) {
+    if (!cardChosen && trials.some((c) => c.needs_card && !c.needs_consent_only)) {
       const { url } = await openPaymentMethodCapture(entityId);
       return { ...NONE, redirect: url };
     }

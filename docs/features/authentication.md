@@ -16,7 +16,13 @@ expired session is caught by proxy.ts before a page renders) and `router.replace
 
 Two tokens arrive here: the **unscoped** one (`entity_id: ""`) from Minty's entity list for the
 portal, and the **scoped** one from inside a company for its module settings page. Both are
-stored the same way; the difference matters only at the API (below).
+stored the same way; the difference matters at the API (below) and in the portal's chrome (the
+company's name, its modules in the drawer, the way out to its modules). The module settings
+page's CTAs carry the scoped one into the portal's list; a result's _Back to Manage
+Subscriptions_ **trades it for an unscoped one** (2026-09-29): `lib/auth.ts::isEntityScoped`
+says the stored token names a company, and `lib/handoff.ts::redirectToHandoff(next)` - the
+same re-handoff a lapsed token takes, asked with no `entity_id` - clears the cookies and has
+Flask mint the payer's token, back through `/landing`. This app still mints nothing.
 
 ## The two gates (`proxy.ts`)
 

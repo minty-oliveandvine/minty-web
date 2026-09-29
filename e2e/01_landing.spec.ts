@@ -69,8 +69,9 @@ test.describe("landing and the gates", () => {
     // /subscription is the portal's landing - the account at a glance (Figma 08-A); the list
     // of companies is a page on from it.
     await expect(page.getByRole("heading", { name: "Subscription & Billing" })).toBeVisible();
-    await expect(page.getByRole("navigation", { name: "Subscription sections" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Billing" }).first()).toBeVisible();
+    // No tab row above the page (removed 2026-09-29): the landing's own buttons lead on (not
+    // asserted here - the API is a 501 stub in this spec, so the page shows its retry state).
+    await expect(page.getByRole("navigation", { name: "Subscription sections" })).toHaveCount(0);
   });
 
   test("an unsafe next is ignored", async ({ page }) => {

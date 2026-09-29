@@ -159,3 +159,43 @@ export async function stubFlaskHandoff(page: Page): Promise<void> {
     route.fulfill({ status: 200, contentType: "text/html", body: "<title>handoff stub</title>" }),
   );
 }
+
+/**
+ * Answer Flask's re-handoff AS Flask does, for the journeys that go through it and carry on: a
+ * token for the company asked for (`entity_id`) - or an unscoped one when none is - and the
+ * browser sent on to this app's landing with it. The portal's Back to Manage Subscriptions goes
+ * this way to trade a company's token for an unscoped one. The hop is client-side because
+ * Playwright cannot stub the target of a server redirect. Returns each query Flask was asked.
+ */
+export async function bounceFlaskHandoff(page: Page, creds: Credentials): Promise<string[]> {
+  const asked: string[] = [];
+  await page.route(`${FLASK_URL}/handoff/minty-web**`, (route) => {
+    const url = new URL(route.request().url());
+    asked.push(url.search);
+    const entityId = url.searchParams.get("entity_id") ?? "";
+    const qs = new URLSearchParams({
+      next: url.searchParams.get("next") ?? "/subscription",
+      entity_id: entityId,
+      entity_name: entityId ? creds.entityName : "",
+      token: mintModuleToken({ ...creds, entityId }),
+    });
+    return route.fulfill({
+      status: 200,
+      contentType: "text/html",
+      body: `<script>location.replace(${JSON.stringify(`${BASE_URL}/landing?${qs}`)})</script>`,
+    });
+  });
+  return asked;
+}
+
+/** What the stored token names: the `minty_entity_id` cookie and the token's own claim. */
+export async function storedScope(page: Page): Promise<{ cookie: string; claim: unknown }> {
+  const jar = await page.context().cookies(BASE_URL);
+  const token = jar.find((c) => c.name === "minty_token")?.value ?? "";
+  const payload = decodeURIComponent(token).split(".")[1] ?? "";
+  const claims = payload ? JSON.parse(Buffer.from(payload, "base64url").toString()) : {};
+  return {
+    cookie: decodeURIComponent(jar.find((c) => c.name === "minty_entity_id")?.value ?? ""),
+    claim: claims.entity_id,
+  };
+}

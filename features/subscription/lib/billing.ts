@@ -124,6 +124,11 @@ export function cardTitle(card: SavedPaymentMethod): string {
   return `${card.brand_label || "Card"} ending in ${card.last4}`;
 }
 
+/** "Mastercard 8842" - how the modals name a card, shorter than the row's own line. */
+export function shortCardName(brandLabel: string, last4: string | null): string {
+  return last4 ? `${brandLabel || "Card"} ${last4}` : brandLabel || "Card";
+}
+
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 /** "4 / 2029" → "Apr 2029"; a wallet with no expiry keeps the API's own label, or nothing. */

@@ -8,6 +8,7 @@ import { expect, test, type Page } from "@playwright/test";
 
 import {
   BILLING_API_URL,
+  bounceFlaskHandoff,
   credentials,
   handoff,
   requireApp,
@@ -209,6 +210,8 @@ test.describe("transfers", () => {
     await expect(landed).toContainText(
       "You are now the owner of the New Company Limited subscription and have full control of this Minty.",
     );
+    // A company's token (real credentials name one) is traded for an unscoped one on the way.
+    await bounceFlaskHandoff(page, creds());
     await landed.getByRole("button", { name: "Back to Manage Subscriptions" }).click();
     await page.waitForURL((u) => u.pathname === "/subscription");
     await expect(body(page).getByRole("heading", { level: 1 })).toHaveText(

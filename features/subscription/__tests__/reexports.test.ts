@@ -41,9 +41,9 @@ describe("app/subscription is re-exports only", () => {
     expect(names).toContain("app/subscription/(portal)/billing/details/page.tsx");
     expect(names).not.toContain("app/subscription/(portal)/billing/new-account/page.tsx");
     expect(names).toContain("app/subscription/entities/[entityId]/modules/page.tsx");
-    // the seams: every not-yet-built flow under the module page and the portal says so
-    expect(names).toContain("app/subscription/entities/[entityId]/modules/[...flow]/page.tsx");
-    expect(names).toContain("app/subscription/(portal)/[...rest]/page.tsx");
+    // No catch-all routes: every flow has its page, so a stray path is Next's own not-found
+    // (the "Not built yet" placeholder went on 2026-09-29 with its last flow).
+    expect(names.filter((n) => n.includes("[..."))).toEqual([]);
   });
 
   it.each(files.map((f) => [relative(ROOT, f).replace(/\\/g, "/"), f]))(

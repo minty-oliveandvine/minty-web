@@ -17,7 +17,9 @@
 import Image from "next/image";
 import { useEffect, useId, useRef, useState } from "react";
 
+import { fromControl } from "@/features/subscription/components/SubscriptionSummaryRow";
 import {
+  CHOOSE_ACCOUNT,
   NO_ACCOUNT_BODY,
   NO_ACCOUNT_TITLE,
   OPEN_BILLING_ACCOUNT,
@@ -126,18 +128,27 @@ function CatArt({ cat, width, className = "" }: { cat: keyof typeof CATS; width:
 /**
  * 08-B's first block: who Minty bills - the account's name, its address (the charged card's)
  * and its billing email - and when it next will. "Change billing details" is 08-C.
+ *
+ * The top card of 08-B, so it opens the same billing-account picker 08-A's card does (`onPick`):
+ * clicking anywhere on it that is not one of its own controls (`fromControl`), with a sr-only
+ * keyboard button doing the same, out of sight until focused.
  */
 export function NextBillingCard({
   next,
   onChangeDetails,
+  onPick,
 }: {
   next: NextBilling;
   onChangeDetails?: () => void;
+  onPick: () => void;
 }) {
   return (
     <section
       aria-label={NEXT_BILLING}
       data-state={next.failed ? "failed" : "ok"}
+      onClick={(e) => {
+        if (!fromControl(e)) onPick();
+      }}
       // THREE COLUMNS from a tablet up, as the design draws them: "Bill to", the date and the
       // amount, and Minty - the cat is a column of its own, not an ornament. The date and amount
       // stay beside "Bill to" however long the name, address or email (it was once a wrapping
@@ -145,11 +156,22 @@ export function NextBillingCard({
       // other two leave, with the gaps kept tight to give it room; what still does not fit
       // WRAPS rather than clipping - an email after its "@". Only a phone stacks them, and
       // drops the cat.
-      className={`grid grid-cols-1 gap-x-6 gap-y-5 rounded-[20px] px-8 py-7 sm:grid-cols-[minmax(0,1fr)_auto_auto] ${
+      className={`grid cursor-pointer grid-cols-1 gap-x-6 gap-y-5 rounded-[20px] px-8 py-7 sm:grid-cols-[minmax(0,1fr)_auto_auto] ${
         next.failed ? "bg-[#fdf6ec]" : "bg-[#e7f6f5]"
       }`}
     >
-      <h2 className="text-[17px] font-bold text-[#16202e] sm:col-span-2">{NEXT_BILLING}</h2>
+      <div className="flex flex-wrap items-start justify-between gap-3 sm:col-span-2">
+        <h2 className="text-[17px] font-bold text-[#16202e]">{NEXT_BILLING}</h2>
+        {/* What a click on the card does, for the keyboard - shown only while focused. */}
+        <button
+          type="button"
+          onClick={onPick}
+          aria-haspopup="dialog"
+          className="sr-only shrink-0 rounded-md text-[13px] font-semibold text-[#2e9b9b] underline underline-offset-4 focus-visible:not-sr-only focus-visible:px-2 focus-visible:py-1"
+        >
+          {CHOOSE_ACCOUNT}
+        </button>
+      </div>
       <div className="min-w-0 [overflow-wrap:anywhere] sm:col-start-1 sm:row-start-2">
         <p className="text-[17px] font-bold text-[#16202e]">{BILL_TO}</p>
         <p className="mt-2 text-[17px] text-[#16202e]">{next.billTo || "—"}</p>
@@ -411,6 +433,11 @@ export function NoCardPanel({ onAdd }: { onAdd: () => void }) {
   );
 }
 
+/**
+ * 08-B's second block: this account's cards. Also a top card of the page, so it opens the same
+ * billing-account picker as `NextBillingCard` does (`onPick`) - anywhere on it that is not one
+ * of its own controls (`fromControl`: "Add a payment method", a card's "Update card" menu).
+ */
 export function PaymentMethodsPanel({
   rows,
   shown,
@@ -422,6 +449,7 @@ export function PaymentMethodsPanel({
   onMenu,
   onToggle,
   onAdd,
+  onPick,
   accountFailed = false,
 }: {
   rows: CardRow[];
@@ -434,13 +462,30 @@ export function PaymentMethodsPanel({
   onMenu: (row: CardRow, item: CardMenuItem) => void;
   onToggle: () => void;
   onAdd: () => void;
+  onPick: () => void;
   /** This account's payment failed (08-K): the card it charges is the one to fix. */
   accountFailed?: boolean;
 }) {
   return (
-    <section aria-label={PAYMENT_METHODS} aria-busy={busy} className="flex flex-col gap-4">
+    <section
+      aria-label={PAYMENT_METHODS}
+      aria-busy={busy}
+      onClick={(e) => {
+        if (!fromControl(e)) onPick();
+      }}
+      className="flex cursor-pointer flex-col gap-4"
+    >
       <div className="flex items-center justify-between gap-4">
         <h2 className="text-[15px] font-bold text-[#16202e]">{PAYMENT_METHODS}</h2>
+        {/* What a click on the card does, for the keyboard - shown only while focused. */}
+        <button
+          type="button"
+          onClick={onPick}
+          aria-haspopup="dialog"
+          className="sr-only shrink-0 rounded-md text-[13px] font-semibold text-[#2e9b9b] underline underline-offset-4 focus-visible:not-sr-only focus-visible:px-2 focus-visible:py-1"
+        >
+          {CHOOSE_ACCOUNT}
+        </button>
         {rows.length > 0 && (
           <button
             type="button"

@@ -98,6 +98,18 @@ export function clearAuth() {
   document.cookie = `${ENTITY_NAME_KEY}=;${expire}`;
 }
 
+/**
+ * Whether the stored token was minted INSIDE a company - its `entity_id` claim, or the company
+ * the landing stored beside it (Flask sets the two together). The module settings page's token
+ * is; the one Minty's entity list hands the payer portal is not.
+ */
+export function isEntityScoped(): boolean {
+  const auth = getAuth();
+  if (!auth) return false;
+  const claim = decodeJwtPayload(auth.token)?.entity_id;
+  return auth.entityId !== "" || (typeof claim === "string" && claim !== "");
+}
+
 /** Whether the stored token is already past its `exp` (5 s of clock-skew tolerance). */
 export function isTokenExpired(): boolean {
   const auth = getAuth();

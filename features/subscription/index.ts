@@ -12,7 +12,6 @@ export { BillingDetails } from "@/features/subscription/routes/BillingDetailsPag
 export { BillingPage } from "@/features/subscription/routes/BillingPage";
 export { ManageSubscriptions } from "@/features/subscription/routes/ManageSubscriptions";
 export { ModuleSettingsPage } from "@/features/subscription/routes/ModuleSettingsPage";
-export { NotBuiltYet } from "@/features/subscription/routes/NotBuiltYet";
 export { SubscriptionOverview } from "@/features/subscription/routes/SubscriptionOverview";
 export { SubscriptionRequests } from "@/features/subscription/routes/SubscriptionRequests";
 export { TransferSubscription } from "@/features/subscription/routes/TransferSubscription";

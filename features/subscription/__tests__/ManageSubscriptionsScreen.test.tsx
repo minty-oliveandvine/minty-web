@@ -10,6 +10,7 @@ import { ToastProvider } from "@/components/ui/Toast";
 import { setAuth } from "@/lib/auth";
 import { env } from "@/lib/env";
 
+import { ACCOUNTS } from "@/features/subscription/__fixtures__/billing";
 import { SUMMARY_FIXTURES, TODAY, WALLET } from "@/features/subscription/__fixtures__/modulePage";
 import {
   ENTITIES,
@@ -387,6 +388,203 @@ describe("ManageSubscriptionsScreen", () => {
       "true",
     );
     expect(fetchMock.mock.calls.some((c) => c[1]?.method === "POST")).toBe(false);
+  });
+
+  it("the panel's Change opens Billing Accounts as a move: where it is billed now says so, another account takes it, the card follows", async () => {
+    // Lantern Bay is on Vine Consulting (Amex 1007) in the accounts fixture.
+    const lantern = ENTITIES.find((e) => e.entity_name === "Lantern Bay Limited")!;
+    const posts: [string, unknown][] = [];
+    const moved = {
+      ...ACCOUNTS,
+      accounts: ACCOUNTS.accounts.map((a) =>
+        a.id === "acc-vine"
+          ? { ...a, companies: a.companies.filter((c) => c.entity_id !== lantern.entity_id) }
+          : a.id === "acc-company-a"
+            ? {
+                ...a,
+                companies: [
+                  ...a.companies,
+                  { entity_id: lantern.entity_id, entity_name: lantern.entity_name, past_due: false },
+                ],
+              }
+            : a,
+      ),
+      moved: null,
+    };
+    // The card is the ACCOUNT's: once moved, the company's read answers Company A's Visa.
+    const onAmex = {
+      ...WALLET,
+      nominated_id: "pm_amex1007",
+      methods: [
+        {
+          ...WALLET.methods[0],
+          id: "pm_amex1007",
+          brand: "amex",
+          brand_label: "Amex",
+          last4: "1007",
+          label: "Amex •••• 1007",
+        },
+      ],
+    };
+    fetchMock.mockImplementation(async (input, init) => {
+      const url = new URL(String(input));
+      if (url.pathname.endsWith("/transfers")) return reply(200, { transfers: [] });
+      if (url.pathname === "/api/me/billing/accounts") return reply(200, ACCOUNTS);
+      if (init?.method === "POST") {
+        posts.push([url.pathname, JSON.parse(String(init.body ?? "{}"))]);
+        return reply(200, moved);
+      }
+      if (url.pathname === "/api/me/billing/entity-payment-method")
+        return reply(200, posts.length ? WALLET : onAmex);
+      if (/^\/api\/entities\/[^/]+\/modules$/.test(url.pathname))
+        return reply(200, SUMMARY_FIXTURES.M44);
+      return reply(200, subscriptionsPage());
+    });
+    render(
+      <ToastProvider>
+        <ManageSubscriptionsScreen today={TODAY} focusEntityId={lantern.entity_id} />
+      </ToastProvider>,
+    );
+    const panel = await screen.findByRole("region", { name: "Subscription Summary", busy: false });
+    expect(panel).toHaveTextContent("Amex 1007");
+    await userEvent.click(within(panel).getByRole("button", { name: "Change" }));
+
+    // The same sheet Confirm Subscription Change opens - with no change behind it: nothing is
+    // posted, nothing is preselected, and the account the company is on is not a choice.
+    const sheet = await screen.findByRole("dialog", { name: "Billing Accounts" });
+    expect(
+      within(sheet).getByText(`Choose the account that pays for ${lantern.entity_name}.`),
+    ).toBeInTheDocument();
+    expect(posts).toEqual([]);
+    expect(push).not.toHaveBeenCalled();
+    const radios = within(sheet).getAllByRole("radio") as HTMLInputElement[];
+    expect(radios.map((r) => [r.value, r.checked, r.disabled])).toEqual([
+      ["acc-company-a", false, false],
+      ["acc-vine", false, true],
+      ["acc-legacy", false, true],
+    ]);
+    expect(radios[1].closest("label")).toHaveTextContent("Billed here now");
+    expect(radios[2].closest("label")).toHaveTextContent("Payment failed");
+    expect(within(sheet).getByRole("button", { name: "Confirm" })).toBeDisabled();
+
+    await userEvent.click(radios[0]);
+    await userEvent.click(within(sheet).getByRole("button", { name: "Confirm" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    // The move, and ONLY the move: a change of account applies nothing and charges nothing.
+    expect(posts).toEqual([
+      ["/api/me/billing/accounts/move", { entity: lantern.entity_id, account: "acc-company-a" }],
+    ]);
+    expect(
+      await screen.findByText("Lantern Bay Limited is now billed to Company A Limited."),
+    ).toBeInTheDocument();
+    // The row read its card again, and the card is the account's.
+    await waitFor(() =>
+      expect(screen.getByRole("region", { name: "Subscription Summary" })).toHaveTextContent(
+        "Visa 4121",
+      ),
+    );
+    expect(screen.getByRole("region", { name: "Subscription Summary" })).not.toHaveTextContent(
+      "Amex 1007",
+    );
+  });
+
+  it("06 → Billing Accounts → payment: a change that bills asks in its modal, then which account pays", async () => {
+    const posts: [string, unknown][] = [];
+    // The payment is held until released: the sheet must say it is working meanwhile.
+    let pay!: () => void;
+    const paid = new Promise<void>((resolve) => (pay = resolve));
+    fetchMock.mockImplementation(async (input, init) => {
+      const url = new URL(String(input));
+      if (url.pathname.endsWith("/transfers")) return reply(200, { transfers: [] });
+      if (url.pathname === "/api/me/billing/entity-payment-method") return reply(200, WALLET);
+      if (url.pathname === "/api/me/billing/accounts") return reply(200, ACCOUNTS);
+      if (init?.method === "POST") {
+        posts.push([url.pathname, JSON.parse(String(init.body ?? "{}"))]);
+        if (url.pathname.endsWith("/accounts/move")) return reply(200, { ...ACCOUNTS, moved: null });
+        await paid;
+        return reply(200, { ok: true });
+      }
+      // M45 (Payment Request's cancellation pending) until it is renewed, M44 after.
+      if (/^\/api\/entities\/[^/]+\/modules$/.test(url.pathname))
+        return reply(
+          200,
+          posts.some(([p]) => p.endsWith("/renew")) ? SUMMARY_FIXTURES.M44 : SUMMARY_FIXTURES.M45,
+        );
+      return reply(200, subscriptionsPage());
+    });
+    render(
+      <ToastProvider>
+        <ManageSubscriptionsScreen today={TODAY} focusEntityId={ENTITIES[0].entity_id} />
+      </ToastProvider>,
+    );
+    const row = await screen.findByRole("region", { name: "Subscription Summary", busy: false });
+    const item = row.closest("li")!;
+    await userEvent.click(
+      within(item).getByRole("checkbox", { name: "Payment Request subscription" }),
+    );
+    await userEvent.click(
+      await within(item).findByRole(
+        "button",
+        { name: "Confirm Subscription Change" },
+        { timeout: 2500 },
+      ),
+    );
+
+    // The change's modal asks first; nothing is read about accounts or posted yet.
+    const unlocked = await screen.findByRole("dialog", { name: "You have unlocked Super Minty" });
+    expect(within(unlocked).getByText("You’ve activated both modules.")).toBeInTheDocument();
+    expect(fetchMock.mock.calls.some((c) => String(c[0]).includes("/billing/accounts"))).toBe(
+      false,
+    );
+    // It bills: its Confirm opens "Billing Accounts" in its place. Nothing is posted until an
+    // account is chosen.
+    await userEvent.click(within(unlocked).getByRole("button", { name: "Confirm" }));
+    const sheet = await screen.findByRole("dialog", { name: "Billing Accounts" });
+    expect(screen.getAllByRole("dialog")).toHaveLength(1);
+    expect(
+      within(sheet).getByText(`Choose the account that pays for ${ENTITIES[0].entity_name}.`),
+    ).toBeInTheDocument();
+    expect(posts).toEqual([]);
+    // The company is on no account: the first that can take it is picked; the account whose
+    // collection is failing cannot, and says so.
+    const radios = within(sheet).getAllByRole("radio") as HTMLInputElement[];
+    expect(radios.map((r) => [r.value, r.checked, r.disabled])).toEqual([
+      ["acc-company-a", true, false],
+      ["acc-vine", false, false],
+      ["acc-legacy", false, true],
+    ]);
+    expect(radios[2].closest("label")).toHaveTextContent("Payment failed");
+
+    await userEvent.click(radios[1]);
+    await userEvent.click(within(sheet).getByRole("button", { name: "Confirm" }));
+    await waitFor(() =>
+      expect(posts.map(([path]) => path)).toEqual([
+        "/api/me/billing/accounts/move",
+        `/api/entities/${ENTITIES[0].entity_id}/modules/renew`,
+      ]),
+    );
+    expect(posts[0][1]).toEqual({ entity: ENTITIES[0].entity_id, account: "acc-vine" });
+
+    // Moved, and the payment is on its way: the sheet stays up - the only dialog - and says it
+    // is working; nothing in it can be pressed, and Escape does not close it.
+    const confirming = within(sheet).getByRole("button", { name: "Confirming…" });
+    expect(confirming).toBeDisabled();
+    expect(confirming).toHaveAttribute("aria-busy", "true");
+    expect(within(sheet).getByRole("button", { name: "Close" })).toBeDisabled();
+    expect(radios.every((r) => r.disabled)).toBe(true);
+    await userEvent.keyboard("{Escape}");
+    expect(screen.getAllByRole("dialog")).toEqual([sheet]);
+
+    // Paid: the sheet goes and the row lands on its result - no second modal - brought into
+    // view, so nobody has to scroll to find it.
+    vi.mocked(Element.prototype.scrollIntoView).mockClear();
+    pay();
+    const landed = await screen.findByText("Congratulations!", {}, { timeout: 2500 });
+    expect(screen.queryByRole("dialog")).toBeNull();
+    const resultRow = landed.closest("li[data-result]")!;
+    expect(
+      vi.mocked(Element.prototype.scrollIntoView).mock.contexts.includes(resultRow),
+    ).toBe(true);
   });
 
   it("05·C: a cancellation retitles the banner and stands alone", async () => {

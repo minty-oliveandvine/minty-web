@@ -39,7 +39,7 @@ is in `features/subscription/README.md`).
 ```
 index.ts        THE public surface: SubscriptionOverview, ManageSubscriptions, ModuleSettingsPage, BillingPage,
                 AddCard, EditCard, BillingDetails, TransferSubscription, SubscriptionRequests,
-                NotBuiltYet, SubscriptionLayout,
+                SubscriptionLayout,
                 SUBSCRIPTION_BASE_PATH
 api/            payerPortal.ts (the /api/me routes - Flask's 15 plus transfer/seen and the four billing-account
                 routes; billing-frontend's function names) · moduleSettings.ts
@@ -86,10 +86,10 @@ components/     the module page's pieces: SettingsTabs (billing-frontend's pills
                 (AccountPickerDialog / MoveCompanyDialog / NewAccountDialog), BillingDetailsForm (08-C); shared:
                 ModalFrame (every other modal's backdrop, Escape and card - ConfirmDialog is built on it) and
                 RadioCard (07-E's card picker row)
-routes/         SubscriptionLayout (PortalChrome = billing-frontend's header + PortalTabs), ManageSubscriptions (+ Screen),
+routes/         SubscriptionLayout (PortalChrome = billing-frontend's header; no tab row), ManageSubscriptions (+ Screen),
                 ModuleSettingsPage (+ Screen), TransferSubscription (+ Screen), SubscriptionRequests (+ Screen),
                 SubscriptionOverview (+ Screen), BillingPage (+ Screen), CardPages (AddCard / EditCard) +
-                CardScreens, BillingDetailsPage (+ Screen), NotBuiltYet
+                CardScreens, BillingDetailsPage (+ Screen)
 __fixtures__/   modulePage.ts — the page model in each Figma state (03's A–F, 05·A's M11 … N21a, 05·C's RU22 … RNX21a
                 as before/asked/after), the nominated card; subscriptions.ts — frame 04-A's 21 companies, the
                 transfer request, and the list's A/B/F frames; transfers.ts — 07's subscriber options (A, C with an
@@ -374,12 +374,22 @@ redrawn to the Figma design (section "03 · Settings › Module", six frames). W
   (`useSubscriptionsList`, the same wait `?started=` makes; the ticks are keyed per company, so
   seeding early would be invisible and would burn the "Calculating…" beat), and `ticksFor`
   refuses a code the company does not have or one with no tick to give.
-- **The seams.** Every CTA but _Start Free Trial_ navigates to a page under the module page
-  (`lib/paths.ts::moduleRoutes`: `/manage`, `/activate/{code}`, `/resume/{code}`,
-  `/reactivate/{code}`, `/payment-method`) that the next steps build from their own Figma frames; until
-  then a seam lands on the **Not built yet** page (`routes/NotBuiltYet.tsx`, the catch-all routes
-  `app/subscription/entities/[entityId]/modules/[...flow]` and `app/subscription/(portal)/[...rest]`),
-  which names the flow and offers the way back. The tests pin those URLs now.
+- **The "Payment failed" banner opens the billing account** (2026-09-29, the user: "it opens
+  the Manage billing details and Payment Methods of the problematic billing account"). Frame
+  03-F's "here" is `useModulePage.updatePaymentMethod` → `BILLING.account({ entity })` =
+  `/subscription/billing?entity=<id>`, 08-B resolving "the account this company is on" (§15)
+  — the same landing as the list's banner. The card that failed belongs to the company's
+  billing account, not to the company, so there is no per-company screen behind this button.
+- **The seams.** Every CTA but _Start Free Trial_ lands on Manage Subscriptions with this
+  company's row open (`lib/paths.ts::moduleRoutes`: `manage`, and `activate` / `resume` /
+  `reactivate` with that module ticked); there is no per-company payment-method page any more -
+  the open row's _Change_ opens the "Billing Accounts" sheet in place (§13, 2026-09-29). **The
+  "Not built yet" page is gone** (2026-09-29, the user: "can it be removed?"): its last entry,
+  _Cancel subscription_ at `/modules/cancel`, had no link left to it since the ⋮'s items became
+  ticks on 2026-09-23 (cancel is the open row's untick → 06's modal → 05·C), so the page, its
+  two catch-all routes (`[...flow]`, `[...rest]`) and the `NotBuiltYet` export were deleted. A
+  stray path under the portal is Next's own not-found now; `reexports.test.ts` pins that no
+  catch-all route exists.
 - **Not on this page any more** (moved to the Manage Subscription flow by the design): the "Your
   subscription" panel, the next-payment-date card, the decision dialog and the lapsed-trial
   restart takeover Flask forced on every load.
@@ -453,8 +463,13 @@ re-homed and redrawn to Figma section "04 · Manage Subscriptions — the payer 
   here would read as 'you pay for nothing', which is a worse lie than an error you can retry
   from". The API's 501 stub and its dark 404 read as sentences here too.
 - **Chrome**: billing-frontend's header (`routes/PortalChrome.tsx` over `components/ui/AppHeader`)
-  and the portal tabs, in the design's 1298px column; the icons and cats are exported from the
-  Figma file into `public/portal/`.
+  in the design's 1298px column; the icons and cats are exported from the Figma file into
+  `public/portal/`. **The tab row is gone** (2026-09-29, the user: "remove this navigation
+  header"): the Overview / Manage Subscriptions / Billing tabs that sat above every portal page
+  (`PortalTabs.tsx`, deleted with its test) duplicated what the pages already offer - 08-A's
+  _Manage Subscription_ button and its account card, every result's _Back to Manage
+  Subscriptions_, the header's _Entity List_ - so the portal now navigates only through the
+  design's own hotspots. `e2e/01_landing.spec.ts` pins the absence.
 - **Seeing it without the API**: `?fixture=A` (the full list + a transfer), `B` (empty), `F`
   (the suspended companies) — dev only, as the module page's; with a list fixture the open row
   is served from a 05·A frame too, `?summary=M11 … N21a` (M44 unless named).
@@ -522,8 +537,13 @@ design's rules live (`buildSummaryView(page, entity, wallet, today, pending)`, `
   (`PlanLines`, one `data-plan-line` row per module). The transfer review's summary (07-D, §14)
   draws its own lines and keeps its tag row under them, by the user's call.
 - **The payment method** shows when a card is nominated for the company (`nominated_id` on the
-  entity route): "Visa 4121" and _Change_ → `moduleRoutes(id).paymentMethod` (the per-company
-  nomination screen, still to be built - the ACCOUNT's cards are the billing page, §15). The
+  entity route - its billing ACCOUNT's card): "Visa 4121" and _Change_ → the **"Billing
+  Accounts" sheet as a move of this company alone** (2026-09-29, the user's call; the same
+  sheet Confirm Subscription Change opens, §13): the account it is on reads "Billed here now"
+  and cannot be picked, the rows the API would refuse are disabled with their reason, nothing is
+  preselected; Confirm → `POST /billing/accounts/move` (nothing charged, nothing applied), the
+  sheet closes, the row reads its card again - it is the account's - and a toast says where the
+  company is billed now (`accountChangeChoice`, `useSubscriptionsList.changePaymentMethod`). The
   network's mark sits above that line, as the design draws it (2026-09-28, "the brand logo is
   missing above the card"): `components/CardBrand.tsx` with `fit="mark"` in `SUMMARY_MARK`
   (74 wide, as tall as the mark, at most 42), keyed on the card's `brand` (`visa`,
@@ -574,8 +594,11 @@ Figma section "05·C · After Confirm — the result screens" (`1626:2031`): six
 108 generated ones (RU/RV/RW + the 05·B frame they follow), "where every Confirm Subscription
 button in 05·B lands". Built 2026-09-22.
 
-- **Applying the change** (`api/moduleChanges.ts` `applyChange`, once the modal of §13 is
-  confirmed): one API action per module
+- **Applying the change** (`api/moduleChanges.ts` `applyChange` - for a change that only
+  cancels, once its modal of §13 is confirmed; for one that bills, once the company is on the
+  billing account picked in "Billing Accounts" (§13), so every charge and consent below is that
+  account's card; a trial is then confirmed on it rather than sent to Stripe for "no card at
+  all", unless the account picked has no card it can charge (`cardChosen`)): one API action per module
   changed, from the card's state — an active module (or a confirmed trial) unticked → `cancel`;
   a cancellation pending, ticked → `renew`; a running trial, ticked → `authorize-billing` (this
   company's consent; consent is per company, so every trial it runs converts); a suspended
@@ -616,8 +639,14 @@ button in 05·B lands". Built 2026-09-22.
   `/subscription`) — all 103 frames of 05·C carry `▶ Back to Manage Subscriptions → 08-A`, and so
   does 07-M, so every result screen ends the same way (2026-09-23; it used to clear the result in
   place). One handler serves all five kinds and both layouts, and the list unmounts, so nothing
-  is reset and nothing is reloaded on the way out. Back into the list from there:
-  _Manage Subscription_ on the landing, or the _Subscriptions_ tab. The illustrations are the design's (`public/portal/minty-celebrating.png`,
+  is reset and nothing is reloaded on the way out. It **lands UNSCOPED** (2026-09-29, the user:
+  "Back to Manage Subscriptions button should reset the token to unscoped"): a token minted
+  inside a company - the module settings page's, which its CTAs bring to the list - is traded
+  for the payer's on the way, through Flask's `/handoff/minty-web?next=/subscription` with no
+  `entity_id` (`lib/auth.ts::isEntityScoped`, `lib/handoff.ts::redirectToHandoff`; only Flask
+  mints). A token already unscoped goes straight there. So 08-A after a result is the payer's:
+  "My entities" in the header, and its way out is Minty's entity list. Back into the list from
+  there: _Manage Subscription_ on the landing. The illustrations are the design's (`public/portal/minty-celebrating.png`,
   `minty-heart.png`, cropped and shrunk).
 - **Readings and gaps, for the design**: the base frame 05·C-4 ("Subscription Update
   Confirmed", a full page) is not what the generated grid draws for a mixed change (RU24 and
@@ -639,7 +668,8 @@ module" (`1410:1588`; two template frames from the admin design and 108 generate
 seven shapes read off the ticks, `components/ConfirmDialog.tsx` is the shell (the 04-G dialog's,
 now shared with `StartTrialDialog` - the design's B-02) and `components/ChangeDialog.tsx` draws
 them; `useSubscriptionsList` holds the prompt (`changePrompt`, `dismissChangePrompt`,
-`applyChangePrompt`) between the button and `applyChange`.
+`applyChangePrompt`) between the button and `applyChange` for a change that cancels, and
+`accountStep` / `confirmed` for one that bills (below).
 
 - **Which modal**: a removal beside an addition → **Subscription Changes** (C-01: "<Removed>
   will be **removed**. You'll continue to have access for another 30 days. <Added> will be
@@ -670,6 +700,40 @@ them; `useSubscriptionsList` holds the prompt (`changePrompt`, `dismissChangePro
   so the row reaches back out by 9px a side. A single button (`hideBack`: a card already the
   default, a transfer outcome) stays centred at 169px. The confirming button carries a
   transparent border so the bordered one beside it cannot come out 2px wider.
+- **Every change asks in its modal first; one that bills then asks which account pays**
+  (2026-09-29, the user's calls, in order: "confirm should then ask for a billing account to
+  nominate a payment method"; then for a while the sheet came first and the modal only once
+  paid; then "Have to redo again the activate modal opens after confirm subscription change.
+  then it will open billing account picker", with NO modal after the payment - the row's
+  result is the news). _Confirm Subscription Change_ opens the change's section-06 modal
+  ("You have unlocked Super Minty", "Continue …", "Reactivating …", "Activate …", "Subscription
+  Changes", "Cancel Subscription?", "Remove …?"). For a change that bills anything - a trial
+  confirmed, an expired trial bought back, a cancellation resumed, a suspension reactivated,
+  and the ⋮'s _Reactivate_ (`moduleChanges.billsAnything`) - its Confirm opens **Billing
+  Accounts** in its place (the modal stays up, busy, while the accounts are read; a failed read
+  is a toast and the modal stays), 08-A's picker (`AccountPickerDialog`, onboarding's sheet),
+  over the row: "Choose the account that pays for
+  <company>.", the accounts as radio rows, _New billing account_, _Confirm_. Once paid, the row
+  lands on its result, brought into view (`ChangeResultRow` scrolls itself there - the user: "i
+  have to scroll down to find it"); a decline shows 06·B. A change that only CANCELS bills
+  nothing: its modal's Confirm applies it, and no account is asked for. Preselected: the
+  account the company is on, else the first that can take it. The rows the API would refuse are shown disabled with their reason
+  (`lib/billingAccounts.ts` `nominationChoice`): another account whose collection is failing
+  ("Payment failed") or with no card ("No card"), and - while the company itself is past due -
+  every account but its own ("Settle payment first": its debt and its retries follow the
+  account it is on). Its own account is always pickable, with its own flags. _Confirm_ puts the
+  company on it (`POST /api/me/billing/accounts/move`, which since 2026-09-29 also PLACES a
+  company on no account yet - a card-free trial) and only then applies the change; a refusal
+  stays in the sheet in the API's words and nothing is applied. The sheet STAYS UP through the
+  move and the payment (2026-09-29, the user: "no loading during confirm on billing account it
+  just closes"): its Confirm reads "Confirming…" (onboarding's `BillingSheet` word), the rows,
+  _New billing account_ and the X are shut, Escape and the backdrop do nothing, and it gives way
+  only to the answer - the result once paid, 06·B on a decline, a toast when the change is
+  refused. _New billing account_ turns the
+  sheet into onboarding's form (01-D → 01-J); on Done the sheet returns to its list with the new
+  account picked and the company goes on it the same way. Closing the sheet applies nothing and
+  keeps the ticks pending. 06·B's "Payment could not be processed" then names the card of the
+  account picked, and _Try again now_ does not ask again.
 - **The ⋮'s items are the same ticks** (section 05·D: "Cancel subscription … unticks every
   ACTIVE module. Reactivate … ticks every one of them. Each item lands on the confirm modal in
   06 for exactly that change"). `menuCodes(page, item)`: _Cancel subscription_ names every
@@ -677,9 +741,11 @@ them; `useSubscriptionsList` holds the prompt (`changePrompt`, `dismissChangePro
   tick to give — a trial running or expired, a cancellation pending, a suspension; a module never
   started has no tick (its Start Free Trial button is on the row). From a closed row the hook
   reads the page model, opens the row, sets those ticks (`ticksFor`, `useEntitySummary`'s
-  `setTicksFor`) and asks with the modal built from that page model (`changePrompt.page`, so a
-  quick Confirm never waits for the row's own read); from the open row the loaded page model
-  serves. _Go back_ leaves the ticks pending on the open row, as the design's "returns to 05·A".
+  `setTicksFor`) and asks exactly as that change's button would, from that page model
+  (`changePrompt.page`, so a quick Confirm never waits for the row's own read): _Cancel
+  subscription_ with its modal, _Reactivate_ with its modal and then (it bills) "Billing
+  Accounts"; from the open row the loaded page model serves. _Go back_ leaves the ticks pending
+  on the open row, as the design's "returns to 05·A".
   An item with nothing to change says so in a toast and leaves the row open. _Request transfer_
   opens the change-subscriber page (§14).
 - **When it fails or gets interrupted** (section "06·B", `1670:2116`;
@@ -689,7 +755,8 @@ them; `useSubscriptionsList` holds the prompt (`changePrompt`, `dismissChangePro
   follows (a suspension's outstanding invoice — the dunning retries), "If you've resolved the
   issue, feel free to try again. You can also use a different payment method to avoid
   interruption to your service.", then _Try again now_ (the same change applied again, from the
-  page model it was read against) or _Done_ (the ticks stay pending on the row; Escape and the
+  page model it was read against; the dialog stays up, busy, until the retry answers, as the
+  billing page's does) or _Done_ (the ticks stay pending on the row; Escape and the
   backdrop are Done). **A-11 "Leave without saving?"** when the open row has ticks pending and
   the person closes it, opens another company, goes back, or takes another company's ⋮ —
   "You have unsaved changes." / "Your changes will be lost if you leave this page.", _Discard
@@ -916,9 +983,10 @@ schema change), which 08-C writes.
   so the person arrives with their Flask session re-established and Minty's `module_selector`
   routes them — one module enabled goes straight in (Petty Cash's dashboard, or the payments
   app), two offer the module selection. Minty decides, from `entity_function_map`; this app
-  counts no modules. With no company in the cookie the link falls back to the entity list, which
-  is a safety net rather than a second design: the only live way in here is a company's module
-  settings page (`Minty/blueprints/entity/routes/settings.py:1287`), which is always scoped.
+  counts no modules. With no company in the cookie the link goes to the entity list - which,
+  since 2026-09-29, is also where it goes after a result's _Back to Manage Subscriptions_: that
+  button trades the company's token for an unscoped one (§12, Layouts), so the landing it
+  reaches is the payer's.
   Then the billing-account card: **"Manage Billing Details and Payment Methods"** (the frame's
   "Payment Method" eyebrow is gone), **Bill to** = the shown account's name, **Next Billing
   Date** = the payer's `next_billing` - the end of the anchor period now is in, NEVER the anchor
@@ -951,8 +1019,12 @@ schema change), which 08-C writes.
   at the desk is MIRRORED (`-scale-x-100`, the user's call 2026-09-25) so it faces the figures,
   not out of the card; its cap's lettering reads mirrored with it.
 - **08-B, one account's page** at `/subscription/billing?account=` (or `?entity=` - "the account
-  this company is on", what the list's payment-failed banner knows; with neither, the oldest):
-  "Next billing" — **Bill to** (the account's name, its address line by line, its billing email,
+  this company is on", what the list's payment-failed banner knows; with neither, the oldest).
+  Both its top cards - "Next billing" and "Payment Methods" - are 08-A's own whole-card hotspot
+  (2026-09-29, the user's call): a click anywhere on either that is not one of its own controls
+  opens the SAME billing-account picker (`AccountPickerDialog`), with a sr-only keyboard button
+  doing the same; picking another account lands THIS page on it (`confirmPick`), rather than only
+  rewriting the URL as 08-A does. "Next billing" — **Bill to** (the account's name, its address line by line, its billing email,
   and _Change billing details_ → 08-C), **Next Bill Date** (the payer's `next_billing`) and
   **Amount** - what THIS account's next renewal will charge, large in the price teal with
   "(estimated)" under it, by the currency's code with cents only when there are some ("HKD
@@ -1098,8 +1170,9 @@ schema change), which 08-C writes.
     The frame's whole-card hotspot to 08-B opens the sheet (the user's call); the link still goes
     to 08-B. Two changes from onboarding, both toward safety: the sheet cannot be closed
     mid-save, and a card form that fails to open offers Try again in place.
-  - **The tabs do not carry `?account=`**: the Billing tab opens the oldest account; the
-    payment-failed banner does carry its company's account.
+  - **`/subscription/billing` with no `?account=` opens the oldest account** (the tab that
+    used to land there is gone, 2026-09-29); the payment-failed banners - the list's and the
+    module page's - do carry their company's account.
   - **"Amount (estimated)" is the renewal runner's own figure** (2026-09-25; it was left out on
     09-23 because the API had no forecast): `next_bill` on each account, from
     `renewals.build_renewal` for the period starting on the next billing date plus the trials

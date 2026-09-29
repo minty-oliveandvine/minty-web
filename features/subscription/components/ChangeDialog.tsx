@@ -1,10 +1,14 @@
 "use client";
 
 /**
- * The confirmation a pending change gets before it is applied (Figma section 06): one of the
- * seven shapes `lib/changeModal.ts` builds, in the `ConfirmDialog` shell - the module's name in
- * its colour (or the bundle's in teal), Minty in the mood the change calls for, the design's
- * sentences, and the confirming button in its tone.
+ * A pending change's modal (Figma section 06): one of the seven shapes `lib/changeModal.ts`
+ * builds, in the `ConfirmDialog` shell - the module's name in its colour (or the bundle's in
+ * teal), Minty in the mood the change calls for, the design's sentences, and the confirming
+ * button in its tone.
+ *
+ * Every change is asked here first (the user, 2026-09-29, the second time): Go back, or its
+ * Confirm. For a change that bills, Confirm goes on to "Billing Accounts" - which account pays -
+ * and the change is applied from there; for one that only cancels, it is applied at once.
  */
 
 import type { ChangeModal } from "@/features/subscription/lib/changeModal";

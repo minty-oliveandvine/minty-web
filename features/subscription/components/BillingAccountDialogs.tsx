@@ -8,7 +8,9 @@
  *   as radio rows, *New billing account* under them, Confirm. Picking changes nothing but the
  *   page (the choice rides in the URL). *New billing account* turns the SAME sheet into the form,
  *   and a saved account into 01-J; Done lands 08-A on it. With no account to list, it opens on
- *   the form (onboarding's empty wallet).
+ *   the form (onboarding's empty wallet). Manage Subscriptions asks with it too - WHICH ACCOUNT
+ *   PAYS for a company, when Confirm Subscription Change is pressed on a change that bills -
+ *   with the rows the API would refuse disabled, as the move's step 2 does.
  * - "CHANGE BILLING ACCOUNT" (`MoveCompanyDialog`) - moves ONE company to another account, in
  *   two steps: the company (each row names the account it is on now), then where it goes.
  *   Nothing is charged; its paid days travel with it. The rows the API would refuse are shown
@@ -45,6 +47,7 @@ import {
 import type { OpenedAccount } from "@/features/subscription/hooks/useCardForm";
 import {
   BILLING_ACCOUNTS,
+  CONFIRM_BUSY,
   MOVE_BLOCK_LABEL,
   MOVE_BUSY,
   MOVE_NO_COMPANIES,
@@ -54,13 +57,24 @@ import {
   PAYMENT_FAILED_CHIP,
   moveTargets,
   movableCompanies,
+  type MoveTarget,
 } from "@/features/subscription/lib/billingAccounts";
 
-/** Which billing account 08-A shows - and the way to open another. */
+/**
+ * Which billing account 08-A shows - and the way to open another. Manage Subscriptions asks
+ * with the same sheet which account PAYS for a company before a change that bills is applied:
+ * it passes `targets` (the rows that cannot take the company, disabled with their reason),
+ * `busy` from Confirm until the change is paid for (Confirm reads "Confirming…" and nothing
+ * closes the sheet), the API's refusal as `error`, and a `lead` line.
+ */
 export function AccountPickerDialog({
   data,
   currentId,
   fixture,
+  targets,
+  busy = false,
+  error = null,
+  lead,
   onConfirm,
   onOpened,
   onClose,
@@ -68,6 +82,12 @@ export function AccountPickerDialog({
   data: BillingAccounts;
   currentId: string | null;
   fixture?: string | null;
+  /** Every account, each with the reason it cannot be picked; absent, all can (08-A). */
+  targets?: MoveTarget[];
+  busy?: boolean;
+  /** The API's refusal, as written. */
+  error?: string | null;
+  lead?: string;
   onConfirm: (accountId: string) => void;
   /** An account was opened here, and the payer said Done. */
   onOpened: (opened: OpenedAccount) => void;
@@ -77,6 +97,8 @@ export function AccountPickerDialog({
   const [picked, setPicked] = useState<string | null>(currentId);
   const [adding, setAdding] = useState(empty);
   const sheet = useNewAccountSheet(onOpened);
+  const rows = targets ?? data.accounts.map((account) => ({ account, block: null }));
+  const pickable = rows.some((r) => r.account.id === picked && r.block === null);
 
   if (adding || sheet.opened) {
     return (
@@ -96,32 +118,55 @@ export function AccountPickerDialog({
       size="list"
       label={BILLING_ACCOUNTS}
       title={BILLING_ACCOUNTS}
-      busy={false}
+      sub={lead}
+      busy={busy}
       onClose={onClose}
       onDismiss={onClose}
     >
       <ul className={SHEET_LIST}>
-        {data.accounts.map((account) => (
+        {rows.map(({ account, block }) => (
           <AccountRow
             key={account.id}
             name="billing-account"
             account={account}
             checked={picked === account.id}
+            disabled={busy || block !== null}
             onSelect={setPicked}
+            // A row that cannot be picked says why; the others keep the account's own flags
+            // (`undefined`, not null - AccountRow reads null as "no flags").
+            flags={
+              block ? (
+                <SheetFlag
+                  text={MOVE_BLOCK_LABEL[block]}
+                  tone={block === "in_dunning" || block === "no_card" ? "red" : "grey"}
+                />
+              ) : undefined
+            }
           />
         ))}
       </ul>
-      <button type="button" onClick={() => setAdding(true)} className={SHEET_ADD}>
+      <button
+        type="button"
+        onClick={() => setAdding(true)}
+        disabled={busy}
+        className={SHEET_ADD}
+      >
         {NEW_BILLING_ACCOUNT}
       </button>
+      {error && (
+        <p role="alert" className={SHEET_ERROR}>
+          {error}
+        </p>
+      )}
       <div className={SHEET_SINGLE}>
         <button
           type="button"
           onClick={() => picked && onConfirm(picked)}
-          disabled={!picked}
+          disabled={busy || !pickable}
+          aria-busy={busy || undefined}
           className={`${SHEET_PRIMARY} min-w-[130px]`}
         >
-          Confirm
+          {busy ? CONFIRM_BUSY : "Confirm"}
         </button>
       </div>
     </SheetFrame>

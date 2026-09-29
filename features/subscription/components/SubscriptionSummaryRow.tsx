@@ -50,6 +50,7 @@ export type SummaryRowHandlers = {
   /** "Confirm Subscription Change": the pending change, to confirm. */
   onConfirmChange: (change: PendingChange) => void;
   onMenu: (item: MenuItem) => void;
+  /** "Change" beside the nominated card: which billing account the company is on. */
   onChangePaymentMethod: () => void;
   onRetry: () => void;
 };

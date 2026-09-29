@@ -7,13 +7,19 @@
  * (08-W/08-X, 08-H when there are none, 08-J expanded), its invoices - a declined one red, with
  * *Retry payment* and, when the card declines again, 06·B's "Payment could not be processed"
  * (08-K) - and the two things a card can ask - it has just been added (08-N/08-S) or it is
- * being removed (08-R). A payer with no
+ * being removed (08-R). Both top cards - Next billing and Payment Methods - open 08-A's own
+ * billing-account picker (`AccountPickerDialog`) on a click, the same way 08-A's card does;
+ * picking another account lands this same page on IT (`confirmPick`), rather than only
+ * rewriting the URL as 08-A does. A payer with no
  * account at all is offered one instead, opened in onboarding's sheet (`NewAccountDialog`).
  * `BillingPage` reads the URL and hands the parameters here; the tests render this directly with
  * fixtures.
  */
 
-import { NewAccountDialog } from "@/features/subscription/components/BillingAccountDialogs";
+import {
+  AccountPickerDialog,
+  NewAccountDialog,
+} from "@/features/subscription/components/BillingAccountDialogs";
 import { PortalHero } from "@/features/subscription/components/PortalHero";
 import {
   ExpiredCardNotice,
@@ -65,6 +71,7 @@ export function BillingPageScreen(args: UseBillingPageArgs) {
           <NextBillingCard
             next={b.next}
             onChangeDetails={b.account ? b.changeDetails : undefined}
+            onPick={b.openPicker}
           />
           {b.expired && <ExpiredCardNotice text={b.expired} onAdd={b.addCard} />}
           <PaymentMethodsPanel
@@ -78,6 +85,7 @@ export function BillingPageScreen(args: UseBillingPageArgs) {
             onMenu={b.onMenu}
             onToggle={b.toggleExpanded}
             onAdd={b.addCard}
+            onPick={b.openPicker}
             accountFailed={b.next.failed}
           />
           <InvoiceHistoryTable
@@ -133,6 +141,18 @@ export function BillingPageScreen(args: UseBillingPageArgs) {
           fixture={args.fixture}
           onOpened={b.accountOpened}
           onClose={b.closeOpening}
+        />
+      )}
+      {/* Sibling of the cards, never inside them: a click in the dialog would otherwise bubble
+          to a card's own click and reopen the picker under it (the same rule 08-A follows). */}
+      {b.picking && b.accounts && (
+        <AccountPickerDialog
+          data={b.accounts}
+          currentId={b.account?.id ?? null}
+          fixture={args.fixture}
+          onConfirm={b.confirmPick}
+          onOpened={b.accountOpened}
+          onClose={b.closePicker}
         />
       )}
     </div>

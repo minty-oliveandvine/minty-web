@@ -10,6 +10,7 @@ import { expect, test, type Page } from "@playwright/test";
 
 import {
   BILLING_API_URL,
+  bounceFlaskHandoff,
   credentials,
   handoff,
   requireApp,
@@ -29,8 +30,16 @@ const STUB_CREDS = {
 const creds = () => credentials() ?? STUB_CREDS;
 const body = (page: Page) => page.getByRole("main");
 
-async function stubApi(page: Page, list: PayerSubscriptions, transfers: unknown[] = []) {
+async function stubApi(
+  page: Page,
+  list: PayerSubscriptions,
+  transfers: unknown[] = [],
+  moves: unknown[] = [],
+) {
   const posts: { url: string; body: unknown; entity: string | null }[] = [];
+  // A result's Back to Manage Subscriptions trades a company's token (real credentials name
+  // one) for an unscoped one through Flask's handoff: answered as Flask would.
+  await bounceFlaskHandoff(page, creds());
   await page.route(`${BILLING_API_URL}/api/me/subscriptions/transfers`, (route) =>
     route.fulfill({
       status: 200,
@@ -58,6 +67,16 @@ async function stubApi(page: Page, list: PayerSubscriptions, transfers: unknown[
   await page.route(`${BILLING_API_URL}/api/me/billing/accounts`, (route) =>
     route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(ACCOUNTS) }),
   );
+  // "Billing Accounts" after a billing change's Confirm: the company goes on the account picked
+  // (recorded in `moves`, apart from the module actions).
+  await page.route(`${BILLING_API_URL}/api/me/billing/accounts/move`, (route) => {
+    moves.push(route.request().postDataJSON());
+    return route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ ...ACCOUNTS, moved: null }),
+    });
+  });
   await page.route(`${BILLING_API_URL}/api/entities/*/modules/**`, (route) => {
     const req = route.request();
     posts.push({
@@ -325,8 +344,14 @@ test.describe("manage subscriptions", () => {
     const opened = body(page).locator("li[data-open]");
     await opened.getByRole("checkbox", { name: "Payment Request subscription" }).click();
     await opened.getByRole("button", { name: "Confirm Subscription Change" }).click();
+    // The change's modal asks first; its Confirm then asks which account pays - Company A,
+    // preselected, charges Visa 4121.
     await page
       .getByRole("dialog", { name: "You have unlocked Super Minty" })
+      .getByRole("button", { name: "Confirm" })
+      .click();
+    await page
+      .getByRole("dialog", { name: "Billing Accounts" })
       .getByRole("button", { name: "Confirm" })
       .click();
     const failed = page.getByRole("dialog", { name: "Payment could not be processed" });
@@ -334,6 +359,8 @@ test.describe("manage subscriptions", () => {
     await expect(failed).toContainText("Visa 4121");
     await expect(failed).not.toContainText("We'll automatically retry");
     await expect(failed).toContainText("If you've resolved the issue, feel free to try again.");
+    // Not paid: no result lands.
+    await expect(body(page).locator("li[data-result]")).toHaveCount(0);
     await failed.getByRole("button", { name: "Done" }).click();
     await expect(page.getByRole("dialog")).toHaveCount(0);
     await expect(opened.locator("[data-chip]")).toHaveText("Restoring");
@@ -343,7 +370,8 @@ test.describe("manage subscriptions", () => {
   test("06 + 05·C: a change asks in its modal, then lands on its result - in the row, or on the cancellation page", async ({
     page,
   }) => {
-    const posts = await stubApi(page, subscriptionsPage());
+    const moves: unknown[] = [];
+    const posts = await stubApi(page, subscriptionsPage(), [], moves);
     await handoff(page, creds(), "/subscription/subscriptions", { entity_id: "" });
     const serveModules = (model: unknown) =>
       page.route(`${BILLING_API_URL}/api/entities/*/modules`, (route) =>
@@ -360,15 +388,39 @@ test.describe("manage subscriptions", () => {
     await opened.getByRole("checkbox", { name: "Payment Request subscription" }).click();
     await serveModules(RESULT_FIXTURES.RW45.after);
     await opened.getByRole("button", { name: "Confirm Subscription Change" }).click();
-    // The modal asks first: both ticked after the change is the bundle's modal.
+    // The change's modal asks first ("You have unlocked Super Minty"); nothing is posted.
     const unlock = page.getByRole("dialog", { name: "You have unlocked Super Minty" });
-    await expect(unlock).toBeVisible();
     await expect(unlock).toContainText("You’ve activated both modules.");
     await expect(unlock).toContainText("Kestrel Foods Limited");
     expect(posts).toEqual([]);
+    // It bills: its Confirm opens "Billing Accounts" in its place. The company is on no account,
+    // so the first that can take it is picked; the one whose collection is failing is shut.
     await unlock.getByRole("button", { name: "Confirm" }).click();
-    await expect(page.getByRole("dialog")).toHaveCount(0);
+    const accounts = page.getByRole("dialog", { name: "Billing Accounts" });
+    await expect(accounts).toContainText("Choose the account that pays for Kestrel Foods Limited.");
+    await expect(page.getByRole("dialog")).toHaveCount(1);
+    await expect(accounts.getByRole("radio", { name: /Company A Limited/ })).toBeChecked();
+    await expect(accounts.getByRole("radio", { name: /Vine Consulting Limited/ })).toBeEnabled();
+    const legacy = accounts.locator('input[value="acc-legacy"]');
+    await expect(legacy).toBeDisabled();
+    expect(posts).toEqual([]);
+    await accounts.getByRole("radio", { name: /Vine Consulting Limited/ }).check();
+    // The payment is held until released: meanwhile the sheet stays up and says it is working.
+    let pay!: () => void;
+    const paid = new Promise<void>((resolve) => (pay = resolve));
+    await page.route(`${BILLING_API_URL}/api/entities/*/modules/renew`, async (route) => {
+      await paid;
+      await route.fallback();
+    });
+    await accounts.getByRole("button", { name: "Confirm" }).click();
+    await expect(accounts.getByRole("button", { name: "Confirming…" })).toBeDisabled();
+    await expect(page.getByRole("dialog")).toHaveCount(1);
+    pay();
+    // Paid: the sheet goes and the row lands on its result - no second modal - in view.
     const result = body(page).locator("li[data-result]");
+    await expect(result).toBeInViewport();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    expect(moves).toEqual([{ entity: "e-kestrel-foods-limited", account: "acc-vine" }]);
     await expect(result).toHaveAttribute("data-result", "celebrate");
     await expect(result).toHaveAttribute("data-entity", "e-kestrel-foods-limited");
     await expect(result).toContainText("Congratulations!");

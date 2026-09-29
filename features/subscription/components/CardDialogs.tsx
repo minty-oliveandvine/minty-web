@@ -19,13 +19,12 @@ import {
   REMOVE_TITLE,
   SET_AS_DEFAULT,
   cardTitle,
+  shortCardName,
 } from "@/features/subscription/lib/billing";
 import type { AddedCard, CardPrompt } from "@/features/subscription/hooks/useBillingPage";
 
-/** "Mastercard 8842" - how the modals name a card, shorter than the row's own line. */
-export function shortCardName(brandLabel: string, last4: string | null): string {
-  return last4 ? `${brandLabel || "Card"} ${last4}` : brandLabel || "Card";
-}
+// Lives in `lib/billing` (a hook names a card with it too); re-exported for its callers here.
+export { shortCardName };
 
 function CardName({ text }: { text: string }) {
   return <span className="text-[#ea9713]">{text}</span>;

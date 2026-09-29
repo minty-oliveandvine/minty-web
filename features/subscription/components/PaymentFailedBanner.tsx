@@ -1,6 +1,6 @@
 /**
- * Frame 03-F: a renewal failed and the modules are suspended. "here" opens the payment-method
- * screen (a seam - `moduleRoutes(id).paymentMethod`).
+ * Frame 03-F: a renewal failed and the modules are suspended. "here" opens the billing page on
+ * the account the failing company is on (`BILLING.account`) - the card that needs fixing.
  */
 
 import { Icon } from "@/components/ui/Icon";

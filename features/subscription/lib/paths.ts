@@ -76,13 +76,13 @@ function tickPath(entityId: string, code: string): string {
 }
 
 /**
- * Where a module card's CTA leads. Most of them are not pages at all: a change to one module is
+ * Where a module card's CTA leads. None of them is a page of its own: a change to one module is
  * what the open row in Manage Subscriptions already says, so they land there with that module
- * ticked. Only the payment-method screen is still a page waiting to be built, and a seam to it
- * lands on `routes/NotBuiltYet.tsx` until it is.
+ * ticked. 03-F's "Payment failed" banner goes to the company's billing account
+ * (`BILLING.account`), and the open row's _Change_ beside its card opens the "Billing Accounts"
+ * sheet in place - neither is a route.
  */
 export function moduleRoutes(entityId: string) {
-  const b = modulesPath(entityId);
   return {
     /**
      * Manage Subscription - a trialing or active module. The design's target is the payer
@@ -108,7 +108,5 @@ export function moduleRoutes(entityId: string) {
     resume: (code: string) => tickPath(entityId, code),
     /** Reactivate Subscription - a module suspended for a failed payment. */
     reactivate: (code: string) => tickPath(entityId, code),
-    /** The payment-method screen the "Payment failed" banner links to. */
-    paymentMethod: `${b}/payment-method`,
   } as const;
 }

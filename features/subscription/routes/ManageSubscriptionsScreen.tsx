@@ -3,8 +3,10 @@
 /**
  * The payer portal's Manage Subscriptions page, composed (Figma section 04): the banner, the
  * transfer requests, the payment-failed line when a renewal failed, the search, and the list -
- * or its empty / no-match / loading / could-not-load state. A change being confirmed asks in
- * its modal (Figma section 06); a change that just landed shows its result (05·C): in the list,
+ * or its empty / no-match / loading / could-not-load state. A change asks in its modal (Figma
+ * section 06) first; one that bills then asks which account pays ("Billing Accounts", 08-A's
+ * sheet) before it is applied. A change that just
+ * landed shows its result (05·C): in the list,
  * as that company's row, or - a cancellation - as the whole page, the banner retitled.
  * `ManageSubscriptions` reads the URL and hands the parameters here; the tests render this
  * directly with fixtures.
@@ -12,6 +14,7 @@
 
 import { env } from "@/lib/env";
 
+import { AccountPickerDialog } from "@/features/subscription/components/BillingAccountDialogs";
 import { ChangeDialog } from "@/features/subscription/components/ChangeDialog";
 import {
   LeaveDialog,
@@ -123,7 +126,7 @@ export function ManageSubscriptionsScreen(args: UseSubscriptionsListArgs) {
         />
       )}
 
-      {m.changePrompt && !m.declined && (
+      {m.changePrompt && (
         <ChangeDialog
           modal={m.changePrompt.modal}
           entityName={m.changePrompt.entity.entity_name}
@@ -133,9 +136,24 @@ export function ManageSubscriptionsScreen(args: UseSubscriptionsListArgs) {
         />
       )}
 
+      {m.accountStep && (
+        <AccountPickerDialog
+          key={m.accountStep.key}
+          data={m.accountStep.data}
+          currentId={m.accountStep.picked}
+          targets={m.accountStep.targets}
+          busy={m.changeBusy}
+          error={m.accountStep.error}
+          lead={m.accountStep.lead}
+          onConfirm={(accountId) => void m.confirmAccount(accountId)}
+          onOpened={m.accountOpened}
+          onClose={m.dismissAccountStep}
+        />
+      )}
+
       {m.declined && (
         <PaymentFailedDialog
-          card={m.summary.view?.paymentMethod?.label ?? null}
+          card={m.declined.prompt.card ?? m.summary.view?.paymentMethod?.label ?? null}
           autoRetry={m.declined.autoRetry}
           busy={m.changeBusy}
           onTryAgain={() => void m.retryDeclined()}

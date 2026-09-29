@@ -68,7 +68,7 @@ describe("subscription paths", () => {
     expect(r.reactivate("PAYMENT_REQUEST")).toBe(
       "/subscription/subscriptions?entity=abc-123&tick=PAYMENT_REQUEST",
     );
-    // Still a page of its own, still unbuilt.
-    expect(r.paymentMethod).toBe("/subscription/entities/abc-123/modules/payment-method");
+    // The open row's Change is a sheet, not a route: nothing else is named here.
+    expect(Object.keys(r).sort()).toEqual(["activate", "manage", "reactivate", "resume", "started"]);
   });
 });

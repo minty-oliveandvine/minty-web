@@ -35,7 +35,7 @@ and text, never by class).
    imports the index only.
 3. `app/subscription/**/page.tsx` and `layout.tsx` are one-line re-exports
    (`__tests__/reexports.test.ts`). The portal pages sit in the route group
-   `app/subscription/(portal)/` so their tabbed layout stays off the module settings page.
+   `app/subscription/(portal)/` so their portal layout (the header) stays off the module settings page.
 4. Links inside the feature are built with `lib/paths.ts`, never a literal `/subscription/…`.
 
 ## Extraction recipe (Part 3 step 4, or whenever subscription becomes its own app)
@@ -68,10 +68,13 @@ step 3's routers with no stubs (a real card-free trial started from the page and
 against the seed's `E2E Subscription Shop`; and the open row from Figma 05·A and 05·B - `hooks/
 useEntitySummary` (the answer and the ticks pending on it), `lib/subscriptionSummary`,
 `components/SubscriptionSummaryRow` (`docs/features/subscriptions.md` §11); a tick is a change
-pending on the row until *Confirm Subscription Change*, which asks first in the change's modal
-from Figma section 06 - `lib/changeModal`, `components/ConfirmDialog` (the shell, shared with
-the Start Trial dialog) and `components/ChangeDialog` (§13) - then applies it
-(`api/moduleChanges`, one API action per module) and lands on its result from Figma 05·C -
+pending on the row until *Confirm Subscription Change*, which asks in the change's modal from
+Figma section 06 - `lib/changeModal`, `components/ConfirmDialog` (the shell, shared with the
+Start Trial dialog) and `components/ChangeDialog` (§13). Its Confirm, for a change that bills
+anything, opens "Billing Accounts" (08-A's `AccountPickerDialog`, `lib/billingAccounts`
+`nominationChoice`; since 2026-09-29), puts the company on the account picked and applies it;
+for a change that only cancels, it applies it (`api/moduleChanges`, one API action per module). Either lands on its result from
+Figma 05·C -
 `lib/changeResult`, `components/ChangeResultView` (§12): in the row for what was added,
 confirmed, restored or started (Start Trial lands there too), the whole page for a
 cancellation. The ⋮'s Cancel subscription / Reactivate (Figma 05·D) are those same ticks - every

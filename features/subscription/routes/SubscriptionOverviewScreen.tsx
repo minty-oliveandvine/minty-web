@@ -8,9 +8,11 @@
  * `SubscriptionOverview` reads the URL and hands the parameters here; the tests render this
  * directly with fixtures.
  *
- * The way back goes to the COMPANY this browser is scoped to, not to Minty's entity picker:
- * everyone here arrived from a company's module settings, so `/entity/<id>/modules` takes them
- * to its module selection - or straight into the module, when only one is on (Minty routes it).
+ * The way back goes to the COMPANY this browser is scoped to, not to Minty's entity picker: a
+ * person here from a company's module settings goes back through `/entity/<id>/modules`, to its
+ * module selection - or straight into the module, when only one is on (Minty routes it). A
+ * result's Back to Manage Subscriptions lands here UNSCOPED (it trades the company's token for
+ * the payer's), and then the way back is Minty's entity list.
  */
 
 import { useSyncExternalStore } from "react";

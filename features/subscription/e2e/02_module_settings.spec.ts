@@ -13,9 +13,11 @@ import { expect, test, type Page } from "@playwright/test";
 
 import {
   BILLING_API_URL,
+  bounceFlaskHandoff,
   credentials,
   handoff,
   requireApp,
+  storedScope,
   subscriptionsDark,
 } from "../../../e2e/helpers";
 import { FIXTURES, NON_MANAGER, WALLET, type FixtureFrame } from "../__fixtures__/modulePage";
@@ -116,7 +118,6 @@ test.describe("module settings page", () => {
     const tabs = page.getByRole("navigation", { name: "Settings sections" });
     await expect(tabs.getByRole("link", { name: "Users" })).toBeVisible();
     await expect(tabs.getByText("Module")).toHaveAttribute("aria-current", "page");
-    await expect(page.getByRole("navigation", { name: "Subscription sections" })).toHaveCount(0);
 
     const petty = body(page).getByRole("article", { name: "Petty Cash" });
     const request = body(page).getByRole("article", { name: "Payment Request" });
@@ -156,12 +157,18 @@ test.describe("module settings page", () => {
     expect(posts).toEqual([{ action: "start-trial", body: { codes: ["PAYMENT_REQUEST"] } }]);
     await expect(page.getByRole("dialog")).toHaveCount(0);
 
-    // Back to Manage Subscriptions leaves for the portal's landing (08-A).
+    // Back to Manage Subscriptions leaves for the portal's landing (08-A) - and, arrived with
+    // the company's token, trades it for an unscoped one on the way: Flask's handoff is asked
+    // with no company, and the portal lands on the token it mints.
+    expect(await storedScope(page)).toEqual({ cookie: c.entityId, claim: c.entityId });
+    const asked = await bounceFlaskHandoff(page, c);
     await landed.getByRole("button", { name: "Back to Manage Subscriptions" }).click();
     await page.waitForURL((u) => u.pathname === "/subscription");
     await expect(body(page).getByRole("heading", { level: 1 })).toHaveText(
       "Subscription & Billing",
     );
+    expect(asked).toEqual([`?next=${encodeURIComponent("/subscription")}`]);
+    expect(await storedScope(page)).toEqual({ cookie: "", claim: "" });
   });
 
   test("04-G's modal is laid out as the design draws it, without the design's collision", async ({
@@ -234,7 +241,7 @@ test.describe("module settings page", () => {
     );
   });
 
-  test("03-F: the payment-failed banner, and 'here' opens the payment method", async ({ page }) => {
+  test("03-F: the payment-failed banner, and 'here' opens the company's billing account", async ({ page }) => {
     const c = creds();
     await stubApi(page, frame("F"));
     await handoff(page, c, MODULES(c.entityId));
@@ -255,7 +262,10 @@ test.describe("module settings page", () => {
     expect(heights[0]).toBe(heights[1]);
     expect(heights[0]).toBeLessThan(504);
     await banner.getByRole("button", { name: "here" }).click();
-    await page.waitForURL((u) => u.pathname.endsWith("/modules/payment-method"));
+    // The failing card is the company's billing account's: its page (08-B), by `?entity=`.
+    await page.waitForURL(
+      (u) => u.pathname.endsWith("/subscription/billing") && u.searchParams.get("entity") === c.entityId,
+    );
   });
 
   test("back from Checkout: checkout-complete is posted once and session_id leaves the URL", async ({

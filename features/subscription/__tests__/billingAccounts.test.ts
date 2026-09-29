@@ -29,6 +29,7 @@ import {
   moveTargets,
   movableCompanies,
   movedNotice,
+  nominationChoice,
   pickAccount,
   validateDetails,
   validateIdentity,
@@ -162,6 +163,45 @@ describe("moving a company - Change billing account", () => {
       ["acc-legacy", "in_dunning"],
       ["acc-nocard", "no_card"],
     ]);
+  });
+
+  it("Manage Subscriptions' picker: the company's own account always, others as the API allows", () => {
+    // Nexora is on Company A. Company A stays pickable and keeps its own flags; Legacy's
+    // collection is failing, and an account with no card cannot bill anything.
+    const noCard: BillingAccount = { ...VINE, id: "acc-nocard", card: null };
+    const data = { ...ACCOUNTS, accounts: [...ACCOUNTS.accounts, noCard] };
+    const nexora = nominationChoice(data, "e-nexora-health-limited");
+    expect(nexora.targets.map((t) => [t.account.id, t.block])).toEqual([
+      ["acc-company-a", null],
+      ["acc-vine", null],
+      ["acc-legacy", "in_dunning"],
+      ["acc-nocard", "no_card"],
+    ]);
+    expect(nexora.picked).toBe("acc-company-a");
+
+    // Halcyon is on the failing Legacy account: staying is still allowed, it is preselected.
+    expect(nominationChoice(ACCOUNTS, "e-halcyon-labs-limited").picked).toBe("acc-legacy");
+  });
+
+  it("a past-due company settles where it is; a company on no account gets the first that can take it", () => {
+    // Willow Court's own payment failed: every other account says to settle first.
+    const willow = nominationChoice(ACCOUNTS, "e-willow-court-limited");
+    expect(willow.targets.map((t) => [t.account.id, t.block])).toEqual([
+      ["acc-company-a", null],
+      ["acc-vine", "settle_first"],
+      ["acc-legacy", "settle_first"],
+    ]);
+    expect(willow.picked).toBe("acc-company-a");
+
+    // A card-free trial is on none: the first account that could bill it is offered.
+    const loose = nominationChoice(
+      { ...ACCOUNTS, accounts: [UNNAMED, VINE, COMPANY_A] },
+      "e-harbour-vine-limited",
+    );
+    expect(loose.picked).toBe("acc-vine");
+    // With nothing that can take it, nothing is preselected - Confirm waits.
+    expect(nominationChoice({ ...ACCOUNTS, accounts: [UNNAMED] }, "e-x").picked).toBeNull();
+    expect(nominationChoice(ACCOUNTS_NONE, "e-x")).toEqual({ targets: [], picked: null });
   });
 
   it("tells where a company went, or that the new account is ready without it", () => {

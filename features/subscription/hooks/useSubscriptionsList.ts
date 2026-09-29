@@ -15,9 +15,13 @@
  * row's chevron opens it in place (Figma 05·A, "Subscription Summary" - one row at a time;
  * `useEntitySummary` fetches the open company's page model and card); the module page's
  * *Manage Subscription* arrives with `?entity=` and finds that row open. A tick is local (05·B):
- * the row shows the change pending until *Confirm Subscription Change*, which ASKS first -
- * section 06's modal for that change (`lib/changeModal.ts`) - and, confirmed there, applies it
- * (`api/moduleChanges.ts` - one API action per module) and lands on its RESULT (05·C,
+ * the row shows the change pending until *Confirm Subscription Change*, which asks with the
+ * change's section-06 modal (`lib/changeModal.ts` - "Activate …", "You have unlocked …"). Its
+ * Confirm, for a change that BILLS anything, opens WHICH BILLING ACCOUNT PAYS for the company
+ * (the 08-A "Billing Accounts" sheet, the rows the API would refuse disabled -
+ * `nominationChoice`), puts the company on the one picked (`POST /billing/accounts/move`, which
+ * also places a card-free trial on its first account) and applies it; for a change that only
+ * CANCELS it applies it at once (`api/moduleChanges.ts` - one API action per module). Either lands on its RESULT (05·C,
  * `lib/changeResult.ts`): in the row for what was added, confirmed, restored or started - where
  * Start Trial lands too - or the whole page for a cancellation. Back to Manage Subscriptions
  * leaves for the portal's landing (08-A), as every result frame's hotspot says. When a card must
@@ -26,17 +30,23 @@
  *
  * The ⋮'s *Cancel subscription* and *Reactivate* (05·D, on a closed row or the open one) are
  * the same ticks - every ACTIVE module unticked, every module that is not ticked - so they open
- * the row, set those ticks and ask with the modal for exactly that change.
+ * the row, set those ticks and ask exactly as that change's button would: with its modal, and
+ * the reactivation (it bills) then with "Billing Accounts".
  *
  * When it fails or gets interrupted (06·B): a charge the bank declined asks with "Payment could
  * not be processed" - Try again now applies the same change again, Done leaves the ticks
  * pending; and leaving the open row with ticks pending (closing it, opening another company,
  * going back) asks "Leave without saving?" first - Discard changes drops the ticks and goes.
  *
+ * The panel's *Change* beside the company's card opens the SAME "Billing Accounts" sheet with no
+ * change behind it (the user, 2026-09-29): the account the company is on reads "Billed here
+ * now", picking another moves the company there (`POST /billing/accounts/move`, nothing
+ * charged), the row reads its card again - it is the account's - and a toast says where it is
+ * billed now.
+ *
  * Everything else is a seam that navigates to the screen that owns the flow (`lib/paths.ts`):
  * *Subscribe* → the activate flow, *Request transfer* → the change-subscriber page, *Review and
- * accept* → the incoming-transfers page, the banner's "here" and the panel's *Change* → the
- * payment-method screen.
+ * accept* → the incoming-transfers page, the banner's "here" → the company's billing account.
  *
  * `fixture`: dev-only, as the module page's - `?fixture=A|B|F` serves the design's frames;
  * `?result=RU22` lands the open row on a 05·C frame.
@@ -46,10 +56,11 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { ApiError } from "@/lib/apiClient";
-import { leaveTo } from "@/lib/handoff";
+import { isEntityScoped } from "@/lib/auth";
+import { leaveTo, redirectToHandoff } from "@/lib/handoff";
 import { useToast } from "@/components/ui/Toast";
 
-import { applyChange } from "@/features/subscription/api/moduleChanges";
+import { applyChange, billsAnything } from "@/features/subscription/api/moduleChanges";
 import {
   getModulePage,
   startTrial as postStartTrial,
@@ -58,10 +69,24 @@ import {
 } from "@/features/subscription/api/moduleSettings";
 import {
   fetchAllPayerSubscriptions,
+  fetchBillingAccounts,
   listIncomingTransfers,
+  moveCompanyToAccount,
+  type BillingAccounts,
   type IncomingTransfer,
   type PortalEntity,
 } from "@/features/subscription/api/payerPortal";
+import { shortCardName } from "@/features/subscription/lib/billing";
+import {
+  ACCOUNTS_LOAD_FAILED,
+  MOVE_FAILED,
+  accountChangeChoice,
+  movedNotice,
+  nominateLead,
+  nominationChoice,
+  type MoveTarget,
+} from "@/features/subscription/lib/billingAccounts";
+import type { OpenedAccount } from "@/features/subscription/hooks/useCardForm";
 import {
   matches,
   nextSort,
@@ -113,6 +138,33 @@ export type ChangePrompt = {
   change: PendingChange;
   modal: ChangeModal;
   page: ModulePage;
+  /** The card of the billing account picked to pay for it ("Visa 4242") - what 06·B names. */
+  card?: string | null;
+};
+
+/**
+ * "Billing Accounts": which account pays for the company - asked by Confirm Subscription Change
+ * for a change that bills, or opened on its own by the panel's _Change_. `key` changes when the
+ * accounts are replaced (one opened in place), so the sheet is drawn again on its list.
+ */
+export type AccountStep = {
+  data: BillingAccounts;
+  targets: MoveTarget[];
+  picked: string | null;
+  /** The API's refusal of the account picked, as written. */
+  error: string | null;
+  lead: string;
+  key: number;
+};
+
+type AccountAsk = {
+  entity: PortalEntity;
+  /** The change waiting on the pick; null when the pick IS the whole ask (the panel's _Change_). */
+  prompt: ChangePrompt | null;
+  data: BillingAccounts;
+  picked: string | null;
+  error: string | null;
+  key: number;
 };
 
 /** The bank declined the charge of a change: what was being applied, to try again. */
@@ -177,15 +229,23 @@ export type UseSubscriptionsListResult = {
   summary: UseEntitySummaryResult;
   toggleRow: (entity: PortalEntity) => void;
   closeRow: () => void;
-  /** The open row's "Confirm Subscription Change": ask first (section 06's modal). */
+  /** The open row's "Confirm Subscription Change": section 06's modal asks first. */
   confirmChange: (entity: PortalEntity, change: PendingChange) => void;
-  /** The modal, while it asks. */
+  /** The asking modal, while it asks. */
   changePrompt: ChangePrompt | null;
   dismissChangePrompt: () => void;
-  /** The modal's Confirm: apply the change, land on the result. */
+  /** Its Confirm: a change that bills goes on to "Billing Accounts"; one that cancels is applied. */
   applyChangePrompt: () => Promise<void>;
   changeBusy: boolean;
-  /** "Payment could not be processed", while it asks. */
+  /** "Billing Accounts", while it asks - and, busy, until its Confirm has an answer. */
+  accountStep: AccountStep | null;
+  /** Its Confirm: put the company on that account, then apply the change. */
+  confirmAccount: (accountId: string) => Promise<void>;
+  /** An account opened in its place: the company goes on it, then the change is applied. */
+  accountOpened: (opened: OpenedAccount) => void;
+  /** Closed: nothing is applied; the ticks stay pending. */
+  dismissAccountStep: () => void;
+  /** "Payment could not be processed", while it asks - and, busy, while Try again now runs. */
   declined: DeclinedPrompt | null;
   retryDeclined: () => Promise<void>;
   dismissDeclined: () => void;
@@ -196,6 +256,7 @@ export type UseSubscriptionsListResult = {
   /** The result screen of the last change, until Back to Manage Subscriptions. */
   result: ListResult | null;
   dismissResult: () => void;
+  /** The panel's _Change_ beside the card: "Billing Accounts" as a move of this company alone. */
   changePaymentMethod: (entity: PortalEntity) => void;
   subscribe: (entity: PortalEntity, code: ModuleCode) => void;
   requestTransfer: (entity: PortalEntity) => void;
@@ -283,6 +344,7 @@ export function useSubscriptionsList({
   const [landingDismissed, setLandingDismissed] = useState(false);
   const [changePrompt, setChangePrompt] = useState<ChangePrompt | null>(null);
   const [changeBusy, setChangeBusy] = useState(false);
+  const [accountAsk, setAccountAsk] = useState<AccountAsk | null>(null);
   const [declined, setDeclined] = useState<DeclinedPrompt | null>(null);
   const [leavePrompt, setLeavePrompt] = useState<LeavePrompt | null>(null);
 
@@ -488,6 +550,30 @@ export function useSubscriptionsList({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resultFixture, openEntity?.entity_id, summaryPage !== null]);
 
+  // "Billing Accounts" opens on accounts read now, fresh - for a change that bills (which
+  // account pays first, the company's own preselected) or on its own from the panel's Change
+  // (a move: nothing preselected, since staying is nothing to confirm).
+  const openAccounts = useCallback(
+    async (entity: PortalEntity, prompt: ChangePrompt | null) => {
+      setChangeBusy(true);
+      try {
+        const data = await fetchBillingAccounts();
+        const { picked } = prompt
+          ? nominationChoice(data, entity.entity_id)
+          : accountChangeChoice(data, entity.entity_id);
+        // The asking modal gives way to the sheet only now: a failed read leaves it up, to try
+        // its Confirm again.
+        setChangePrompt(null);
+        setAccountAsk({ entity, prompt, data, picked, error: null, key: 0 });
+      } catch (err) {
+        showToast(err instanceof ApiError ? err.message : ACCOUNTS_LOAD_FAILED, "error");
+      } finally {
+        setChangeBusy(false);
+      }
+    },
+    [showToast],
+  );
+
   const confirmChange = useCallback(
     (entity: PortalEntity, change: PendingChange) => {
       const before = summary.page;
@@ -548,31 +634,42 @@ export function useSubscriptionsList({
     if (!changeBusy) setChangePrompt(null);
   }, [changeBusy]);
 
-  // Apply a change asked about: from the modal's Confirm, or again after the bank declined.
+  // Apply a change: from the asking modal's Confirm (a cancellation), from "Billing Accounts"
+  // once the company is on the account picked (a change that bills), or again after a decline.
+  // Whatever asked STAYS UP, busy, until the answer takes its place - the result and its modal,
+  // 06·B, a toast - so a payment never runs with nothing on the screen saying so.
   const apply = useCallback(
     async (prompt: ChangePrompt) => {
       const { entity, change, page: before } = prompt;
+      const closeAsking = () => {
+        setChangePrompt(null);
+        setAccountAsk(null);
+        setDeclined(null);
+      };
       setChangeBusy(true);
       try {
-        const applied = await applyChange(entity.entity_id, before, change.codes);
+        const applied = await applyChange(entity.entity_id, before, change.codes, {
+          cardChosen: Boolean(prompt.card),
+        });
         if (applied.redirect) {
           leaveTo(applied.redirect);
           return;
         }
         if (applied.declined) {
-          // The bank said no: the modal asks to try again; the ticks stay pending.
+          // The bank said no: 06·B asks to try again; the ticks stay pending.
+          closeAsking();
           setDeclined({ prompt, ...applied.declined });
           return;
         }
         if (applied.refused) {
           showToast(applied.refused, "error");
-          setChangePrompt(null);
+          closeAsking();
           summary.reload();
           return;
         }
         const after = await getModulePage(entity.entity_id);
         summary.resetTicks();
-        setChangePrompt(null);
+        closeAsking();
         land(entity, { kind: "ticks", codes: change.codes }, before, after);
         // READ BOTH AGAIN. `after` is fetched to say what CHANGED and nothing more - the open
         // row keeps its own page model and the list its own rows, and neither had heard. A
@@ -583,7 +680,7 @@ export function useSubscriptionsList({
         reload();
       } catch (err) {
         showToast(sentence(err), "error");
-        setChangePrompt(null);
+        closeAsking();
         summary.reload();
       } finally {
         setChangeBusy(false);
@@ -591,30 +688,123 @@ export function useSubscriptionsList({
     },
     [summary, showToast, land, reload],
   );
+  // The asking modal's Confirm (the user, 2026-09-29, the second time: the modal asks FIRST,
+  // then which account pays). A change that bills goes on to "Billing Accounts" and is applied
+  // from there; one that only cancels bills nothing and is applied at once.
   const applyChangePrompt = useCallback(async () => {
     if (!changePrompt || changeBusy) return;
+    if (billsAnything(changePrompt.page, changePrompt.change.codes)) {
+      await openAccounts(changePrompt.entity, changePrompt);
+      return;
+    }
     await apply(changePrompt);
-  }, [changePrompt, changeBusy, apply]);
+  }, [changePrompt, changeBusy, apply, openAccounts]);
+  // The account picked: the company goes on it (placed, if it was on none - a card-free trial),
+  // THEN the change is applied, so every charge and consent below is that account's. The sheet
+  // stays open through both, its Confirm "Confirming…", and `apply` closes it with the answer. A
+  // refusal stays in the sheet in the API's words and nothing is applied. The summary is NOT
+  // read again in between: a reload drops the pending ticks, which 06·B's Done promises to keep.
+  const confirmAccount = useCallback(
+    async (accountId: string, accounts?: BillingAccounts) => {
+      if (!accountAsk || changeBusy) return;
+      const { entity, prompt } = accountAsk;
+      setChangeBusy(true);
+      // A refusal of the last try is not the answer to this one.
+      setAccountAsk((ask) => ask && { ...ask, error: null });
+      let placed: BillingAccounts;
+      try {
+        placed = await moveCompanyToAccount(entity.entity_id, accountId);
+      } catch (err) {
+        const error = err instanceof ApiError ? err.message : MOVE_FAILED;
+        setAccountAsk((ask) => ask && { ...ask, picked: accountId, error });
+        setChangeBusy(false);
+        return;
+      }
+      if (!prompt) {
+        // The panel's Change: the move was the whole ask. The row reads its card again - it is
+        // the account's, and no ticks can be pending (the link is drawn only when none are) -
+        // and the toast says where the company is billed now.
+        setAccountAsk(null);
+        setChangeBusy(false);
+        summary.reload();
+        const said = movedNotice(placed, entity.entity_id);
+        if (said) showToast(said);
+        return;
+      }
+      const account =
+        placed.accounts.find((a) => a.id === accountId) ??
+        (accounts ?? accountAsk.data).accounts.find((a) => a.id === accountId);
+      const card = account?.card ? shortCardName(account.card.brand_label, account.card.last4) : null;
+      await apply({ ...prompt, card });
+    },
+    [accountAsk, changeBusy, apply, summary, showToast],
+  );
+  // "New billing account" in the sheet opened one: the sheet goes back to its list with the new
+  // account in it and picked, and the company goes on it as if it had been picked there.
+  const accountOpened = useCallback(
+    (opened: OpenedAccount) => {
+      if (!accountAsk) return;
+      const data = opened.accounts ?? accountAsk.data;
+      setAccountAsk({
+        ...accountAsk,
+        data,
+        picked: opened.accountId ?? accountAsk.picked,
+        error: null,
+        key: accountAsk.key + 1,
+      });
+      if (opened.accountId) void confirmAccount(opened.accountId, data);
+    },
+    [accountAsk, confirmAccount],
+  );
+  const dismissAccountStep = useCallback(() => {
+    if (changeBusy) return;
+    setAccountAsk(null);
+    setChangePrompt(null);
+  }, [changeBusy]);
+  const accountStep = useMemo<AccountStep | null>(() => {
+    if (!accountAsk) return null;
+    const { entity, prompt, data } = accountAsk;
+    const choice = prompt ? nominationChoice : accountChangeChoice;
+    return {
+      data,
+      targets: choice(data, entity.entity_id).targets,
+      picked: accountAsk.picked,
+      error: accountAsk.error,
+      lead: nominateLead(entity.entity_name),
+      key: accountAsk.key,
+    };
+  }, [accountAsk]);
+  // Try again now: 06·B stays up, busy, while the same change is applied again - its answer
+  // takes the dialog's place, as the first try's did.
   const retryDeclined = useCallback(async () => {
     if (!declined || changeBusy) return;
-    setDeclined(null);
     await apply(declined.prompt);
   }, [declined, changeBusy, apply]);
   const dismissDeclined = useCallback(() => {
-    setDeclined(null);
-    setChangePrompt(null);
-  }, []);
+    if (!changeBusy) setDeclined(null);
+  }, [changeBusy]);
   /**
    * The result screens' "Back to Manage Subscriptions" - every one of them, row or page, since
    * they share this handler. It LEAVES for the portal's landing (Figma 08-A): all 103 frames of
    * section 05·C carry `▶ Back to Manage Subscriptions → 08-A`, and so does 07-M. This list
    * unmounts on the way, so there is nothing to reset and nothing to reload - the landing does
-   * its own read, and coming back here reloads anyway.
+   * its own read, and coming back here reloads anyway. It lands UNSCOPED (below).
    */
-  const dismissResult = useCallback(() => router.push(PORTAL.index), [router]);
+  const dismissResult = useCallback(() => {
+    // The portal is the PAYER's, not a company's (the user, 2026-09-29: "Back to Manage
+    // Subscriptions ... should reset the token to unscoped"). A token minted inside a company -
+    // the module settings page's, which its CTAs bring here - is swapped for an unscoped one on
+    // the way. Only Flask mints, so that is a trip through its handoff with no company, back
+    // to the same landing; a token already unscoped just goes.
+    if (isEntityScoped()) redirectToHandoff(PORTAL.index);
+    else router.push(PORTAL.index);
+  }, [router]);
+  // The panel's Change beside the company's card: which account it is billed on, as a move.
   const changePaymentMethod = useCallback(
-    (entity: PortalEntity) => router.push(moduleRoutes(entity.entity_id).paymentMethod),
-    [router],
+    (entity: PortalEntity) => {
+      if (!changeBusy) void openAccounts(entity, null);
+    },
+    [changeBusy, openAccounts],
   );
   const subscribe = useCallback(
     (entity: PortalEntity, code: ModuleCode) =>
@@ -676,6 +866,10 @@ export function useSubscriptionsList({
     dismissChangePrompt,
     applyChangePrompt,
     changeBusy,
+    accountStep,
+    confirmAccount,
+    accountOpened,
+    dismissAccountStep,
     declined,
     retryDeclined,
     dismissDeclined,

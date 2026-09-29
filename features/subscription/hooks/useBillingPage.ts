@@ -154,6 +154,13 @@ export type UseBillingPageResult = {
   closeOpening: () => void;
   /** Done on the sheet's success card: this page becomes the new account's. */
   accountOpened: (opened: OpenedAccount) => void;
+  /** The accounts, for the picker the top cards open (08-A's sheet, reused here). */
+  accounts: BillingAccounts | null;
+  /** The picker the top cards open: which account's page to show (08-A's own sheet). */
+  picking: boolean;
+  openPicker: () => void;
+  closePicker: () => void;
+  confirmPick: (accountId: string) => void;
   back: () => void;
   reload: () => void;
 };
@@ -269,6 +276,7 @@ export function useBillingPage({
   const [actionError, setActionError] = useState<string | null>(null);
   const [addedDismissed, setAddedDismissed] = useState(false);
   const [opening, setOpening] = useState(false);
+  const [picking, setPicking] = useState(false);
   const [generation, setGeneration] = useState(0);
 
   // The page's subject: the accounts. Which one is shown is derived from the URL below, so
@@ -418,6 +426,7 @@ export function useBillingPage({
   const accountOpened = useCallback(
     (opened: OpenedAccount) => {
       setOpening(false);
+      setPicking(false);
       if (opened.accounts) setData(opened.accounts);
       // The page is the account's now: its URL names it, which reads its invoices too. Without an
       // id to name, read everything again.
@@ -425,6 +434,13 @@ export function useBillingPage({
       else reload();
     },
     [router, reload],
+  );
+  const confirmPick = useCallback(
+    (id: string) => {
+      setPicking(false);
+      router.replace(BILLING.account({ id }), { scroll: false });
+    },
+    [router],
   );
   const back = useCallback(() => router.push(overviewPath(account?.id ?? null)), [router, account]);
 
@@ -524,6 +540,11 @@ export function useBillingPage({
     openAccount,
     closeOpening,
     accountOpened,
+    accounts: data,
+    picking,
+    openPicker: useCallback(() => setPicking(true), []),
+    closePicker: useCallback(() => setPicking(false), []),
+    confirmPick,
     back,
     reload,
   };

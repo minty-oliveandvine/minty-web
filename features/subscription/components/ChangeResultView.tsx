@@ -16,6 +16,7 @@
  */
 
 import Image from "next/image";
+import { useEffect, useRef } from "react";
 
 import type { MenuItem } from "@/features/subscription/lib/portalRows";
 import type { PortalEntity } from "@/features/subscription/api/payerPortal";
@@ -71,11 +72,20 @@ export function ChangeResultRow({
   onBack: () => void;
 }) {
   const celebrate = result.kind === "celebrate" || result.kind === "transferred";
+  // The news is what the person is waiting for: bring it into view where it lands, rather than
+  // leave it wherever the list's own re-read left the scroll (the user, 2026-09-29: "i have to
+  // scroll down to find it"). Once per landing - the row mounts again only when the list does.
+  const ref = useRef<HTMLLIElement>(null);
+  useEffect(() => {
+    const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    ref.current?.scrollIntoView?.({ block: "start", behavior: reduce ? "auto" : "smooth" });
+  }, []);
   return (
     <li
+      ref={ref}
       data-entity={entity.entity_id}
       data-result={result.kind}
-      className="flex flex-col gap-8 rounded-xl bg-white px-8 pb-8 pt-10 shadow-[0px_2px_8px_0px_rgba(0,0,0,0.1)]"
+      className="scroll-mt-6 flex flex-col gap-8 rounded-xl bg-white px-8 pb-8 pt-10 shadow-[0px_2px_8px_0px_rgba(0,0,0,0.1)]"
     >
       <div className="flex items-center justify-between gap-4">
         <h3 className="min-w-0 truncate text-[25px] font-bold text-black">{entity.entity_name}</h3>

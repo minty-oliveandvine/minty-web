@@ -7,7 +7,7 @@ import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ToastProvider } from "@/components/ui/Toast";
-import { setAuth } from "@/lib/auth";
+import { getAuth, setAuth } from "@/lib/auth";
 import { env } from "@/lib/env";
 import { _resetHandoffForTests } from "@/lib/handoff";
 
@@ -22,12 +22,18 @@ import {
   INCOMING_TRANSFERS,
   subscriptionsPage,
 } from "@/features/subscription/__fixtures__/subscriptions";
+import { ACCOUNTS, ACCOUNTS_OPENED } from "@/features/subscription/__fixtures__/billing";
+import type { BillingAccounts } from "@/features/subscription/api/payerPortal";
 import {
   LIST_NOT_WIRED_YET,
   LIST_SERVICE_DARK,
   SEARCH_DEBOUNCE_MS,
   useSubscriptionsList,
+  type UseSubscriptionsListResult,
 } from "@/features/subscription/hooks/useSubscriptionsList";
+
+/** "Change billing account" - the Billing Accounts sheet puts the company on the one picked. */
+const MOVE = "accounts/move";
 
 const push = vi.fn();
 const back = vi.fn();
@@ -235,10 +241,8 @@ describe("useSubscriptionsList", () => {
     act(() => result.current.requestTransfer(e));
     act(() => result.current.reviewTransfer(INCOMING_TRANSFERS[0]));
     act(() => result.current.updatePaymentMethod());
-    act(() => result.current.changePaymentMethod(e));
     act(() => result.current.back());
 
-    const b = `/subscription/entities/${e.entity_id}/modules`;
     expect(push.mock.calls.map((c) => c[0])).toEqual([
       `/subscription/subscriptions?entity=${e.entity_id}&tick=PAYMENT_REQUEST`,
       `/subscription/subscriptions/subscriber?entity=${e.entity_id}`,
@@ -246,8 +250,8 @@ describe("useSubscriptionsList", () => {
       // The banner names the first company whose payment failed; the billing page opens the
       // account THAT company is on - the card that needs fixing.
       "/subscription/billing?entity=e-willow-court-limited",
-      `${b}/payment-method`,
     ]);
+    // The panel's Change is not a seam any more: it opens "Billing Accounts" in place.
     expect(back).toHaveBeenCalledTimes(1);
   });
 
@@ -259,14 +263,23 @@ describe("useSubscriptionsList", () => {
     fetchMock: ReturnType<typeof vi.fn<typeof fetch>>,
     frame: keyof typeof RESULT_FIXTURES,
     answers: Record<string, { status: number; body: unknown }> = {},
+    accounts: BillingAccounts = ACCOUNTS,
   ) {
     const { before, after } = RESULT_FIXTURES[frame];
     const posts: { action: string; body: unknown; entity: string | null }[] = [];
+    // The page model answers `after` once a MODULE action is in - the account move is not one.
+    const acted = () => posts.some((p) => p.action !== MOVE);
     fetchMock.mockImplementation(async (input, init) => {
       const url = new URL(String(input));
       if (url.pathname === "/api/me/subscriptions/transfers") return reply(200, { transfers: [] });
       if (url.pathname === "/api/me/subscriptions") return reply(200, subscriptionsPage());
       if (url.pathname === "/api/me/billing/entity-payment-method") return reply(200, WALLET);
+      if (url.pathname === "/api/me/billing/accounts") return reply(200, accounts);
+      if (url.pathname === `/api/me/billing/${MOVE}` && init?.method === "POST") {
+        posts.push({ action: MOVE, body: JSON.parse(String(init.body)), entity: null });
+        const a = answers[MOVE];
+        return a ? reply(a.status, a.body) : reply(200, { ...accounts, moved: null });
+      }
       const m = /^\/api\/entities\/[^/]+\/modules(?:\/(.+))?$/.exec(url.pathname);
       if (m && init?.method === "POST") {
         const action = m[1]!;
@@ -278,10 +291,49 @@ describe("useSubscriptionsList", () => {
         const a = answers[action];
         return a ? reply(a.status, a.body) : reply(200, { ok: true });
       }
-      if (m) return reply(200, posts.length > 0 ? after : before);
+      if (m) return reply(200, acted() ? after : before);
       return reply(404, { error: "not_found" });
     });
     return posts;
+  }
+
+  /**
+   * Hold every MODULE action's answer (the payment) until the release is called: what is on the
+   * screen meanwhile is the point. The action is still recorded when it is posted; the account
+   * move is not held.
+   */
+  function holdPayment(fetchMock: ReturnType<typeof vi.fn<typeof fetch>>) {
+    let release!: () => void;
+    const held = new Promise<void>((resolve) => (release = resolve));
+    const answer = fetchMock.getMockImplementation()!;
+    fetchMock.mockImplementation(async (input, init) => {
+      const res = await answer(input, init);
+      const path = new URL(String(input)).pathname;
+      if (init?.method === "POST" && /^\/api\/entities\/[^/]+\/modules\//.test(path)) await held;
+      return res;
+    });
+    return release;
+  }
+
+  /**
+   * Confirm Subscription Change on a change that bills: its modal asks first, and its Confirm
+   * opens the Billing Accounts sheet, answered on the account it preselects. The list fixture's
+   * first company is on no account, so that is the first one that can take it: Company A (Visa 4121).
+   */
+  async function confirmBilled(
+    result: { current: UseSubscriptionsListResult },
+    entity: (typeof ENTITIES)[number],
+  ) {
+    await act(async () => {
+      result.current.confirmChange(entity, result.current.summary.view!.pendingChange!);
+    });
+    expect(result.current.changePrompt).not.toBeNull();
+    expect(result.current.accountStep).toBeNull();
+    await act(() => result.current.applyChangePrompt());
+    await waitFor(() => expect(result.current.accountStep).not.toBeNull());
+    expect(result.current.changePrompt).toBeNull();
+    expect(result.current.accountStep?.picked).toBe("acc-company-a");
+    await act(() => result.current.confirmAccount(result.current.accountStep!.picked!));
   }
 
   it("after a successful change the row is read again - a stale CTA cannot linger", async () => {
@@ -300,8 +352,7 @@ describe("useSubscriptionsList", () => {
 
     act(() => result.current.summary.toggleTick("PETTY_CASH"));
     act(() => result.current.summary.toggleTick("PAYMENT_REQUEST"));
-    act(() => result.current.confirmChange(e, result.current.summary.view!.pendingChange!));
-    await act(() => result.current.applyChangePrompt());
+    await confirmBilled(result, e);
 
     await waitFor(() => {
       const now = result.current.summary.view?.modules.find((m) => m.code === "PAYMENT_REQUEST");
@@ -322,19 +373,43 @@ describe("useSubscriptionsList", () => {
     act(() => result.current.summary.toggleTick("PAYMENT_REQUEST"));
     const change = result.current.summary.view!.pendingChange!;
     expect(change.codes).toEqual(["PETTY_CASH", "PAYMENT_REQUEST"]);
-    // Section 06: the button asks first - the bundle's modal here - and its Confirm applies.
-    act(() => result.current.confirmChange(e, change));
+    // The change's modal asks first ("You have unlocked Super Minty"); nothing is read or posted.
+    await act(async () => result.current.confirmChange(e, change));
     expect(result.current.changePrompt?.modal.kind).toBe("bundle");
-    expect(posts).toEqual([]);
+    expect(result.current.accountStep).toBeNull();
+    expect(fetchMock.mock.calls.some((c) => String(c[0]).includes("/billing/accounts"))).toBe(
+      false,
+    );
+    // It bills: its Confirm opens "Billing Accounts", the first account that can take the
+    // company preselected - and the modal gives way to it.
     await act(() => result.current.applyChangePrompt());
+    await waitFor(() => expect(result.current.accountStep).not.toBeNull());
+    expect(result.current.changePrompt).toBeNull();
+    expect(result.current.accountStep).toMatchObject({
+      picked: "acc-company-a",
+      error: null,
+      lead: `Choose the account that pays for ${e.entity_name}.`,
+    });
+    expect(result.current.accountStep?.targets.map((t) => [t.account.id, t.block])).toEqual([
+      ["acc-company-a", null],
+      ["acc-vine", null],
+      ["acc-legacy", "in_dunning"],
+    ]);
+    expect(posts).toEqual([]);
+    await act(() => result.current.confirmAccount("acc-vine"));
+    expect(result.current.accountStep).toBeNull();
     expect(result.current.changePrompt).toBeNull();
 
-    // The company's consent for its trial, then the lapsed trial bought back - with the id.
+    // The company goes on the account picked FIRST; then its consent for its trial, then the
+    // lapsed trial bought back - each with the company's id.
     expect(posts.map((p) => [p.action, p.body])).toEqual([
+      [MOVE, { entity: e.entity_id, account: "acc-vine" }],
       ["authorize-billing", {}],
       ["restart-billing", { codes: ["PAYMENT_REQUEST"] }],
     ]);
-    expect(posts.every((p) => p.entity === e.entity_id)).toBe(true);
+    expect(posts.filter((p) => p.action !== MOVE).every((p) => p.entity === e.entity_id)).toBe(
+      true,
+    );
     expect(result.current.result?.entity.entity_id).toBe(e.entity_id);
     expect(result.current.result?.result.kind).toBe("celebrate");
     expect(result.current.result?.result.lines.map((l) => l.text)).toEqual([
@@ -356,6 +431,78 @@ describe("useSubscriptionsList", () => {
     ).toBe(listCalls);
   });
 
+  it("Back to Manage Subscriptions trades a company's token for an unscoped one", async () => {
+    // Arrived from the module settings page, the token names the company. The portal is the
+    // payer's: Back goes through Flask's handoff with NO company, which mints an unscoped token
+    // and lands on 08-A, rather than carrying the company's scope into the portal.
+    serveChange(fetchMock, "RV44");
+    const e = ENTITIES[0];
+    const claims = btoa(JSON.stringify({ user_id: "u1", entity_id: e.entity_id })).replace(/=+$/, "");
+    setAuth(`h.${claims}.s`, e.entity_id, e.entity_name);
+    const left: string[] = [];
+    _resetHandoffForTests((url) => left.push(url));
+    const { result } = renderHook(() => useSubscriptionsList({ today: TODAY }), { wrapper });
+    await waitFor(() => expect(result.current.status).toBe("ready"));
+
+    act(() => result.current.dismissResult());
+    expect(left).toEqual([`${env.MINTY_URL}/handoff/minty-web?next=%2Fsubscription`]);
+    expect(push).not.toHaveBeenCalled();
+    // The company's token is dropped on the way out; the landing stores the new one.
+    expect(getAuth()).toBeNull();
+    _resetHandoffForTests();
+  });
+
+  it("Billing Accounts stays up, busy, until the payment has answered - then the modal takes its place", async () => {
+    // The bug: the sheet closed as soon as the company was on the account, and the payment ran
+    // with nothing on the screen until "You have unlocked …" appeared.
+    const refusal =
+      "A payment on Vine Consulting Limited didn't go through. Settle it before moving a company onto it.";
+    const answers: Record<string, { status: number; body: unknown }> = {
+      [MOVE]: { status: 409, body: { error: refusal } },
+    };
+    const posts = serveChange(fetchMock, "RU23", answers);
+    const release = holdPayment(fetchMock);
+    const e = ENTITIES[0];
+    const { result } = renderHook(
+      () => useSubscriptionsList({ today: TODAY, focusEntityId: e.entity_id }),
+      { wrapper },
+    );
+    await waitFor(() => expect(result.current.summary.status).toBe("ready"));
+    act(() => result.current.summary.toggleTick("PETTY_CASH"));
+    act(() => result.current.summary.toggleTick("PAYMENT_REQUEST"));
+    await act(async () =>
+      result.current.confirmChange(e, result.current.summary.view!.pendingChange!),
+    );
+    await act(() => result.current.applyChangePrompt());
+    await waitFor(() => expect(result.current.accountStep).not.toBeNull());
+    await act(() => result.current.confirmAccount("acc-vine"));
+    expect(result.current.accountStep?.error).toBe(refusal);
+
+    // Another account: the last refusal goes, and the sheet stays up and busy through the move
+    // AND the payment - nothing closes it, nothing has landed.
+    delete answers[MOVE];
+    let confirming!: Promise<void>;
+    act(() => {
+      confirming = result.current.confirmAccount("acc-company-a");
+    });
+    await waitFor(() =>
+      expect(posts.map((p) => p.action)).toEqual([MOVE, MOVE, "authorize-billing"]),
+    );
+    expect(result.current.accountStep).toMatchObject({ error: null });
+    expect(result.current.changeBusy).toBe(true);
+    act(() => result.current.dismissAccountStep());
+    expect(result.current.accountStep).not.toBeNull();
+    expect(result.current.result).toBeNull();
+
+    // Paid: the sheet gives way to the result.
+    release();
+    await act(() => confirming);
+    expect(result.current.accountStep).toBeNull();
+    expect(result.current.changeBusy).toBe(false);
+    expect(result.current.changePrompt).toBeNull();
+    expect(result.current.result?.result.kind).toBe("celebrate");
+  });
+
   it("a removal posts cancel and lands on the page layout, the row closed", async () => {
     const posts = serveChange(fetchMock, "RV44");
     const e = ENTITIES[0];
@@ -368,16 +515,22 @@ describe("useSubscriptionsList", () => {
     act(() => result.current.confirmChange(e, result.current.summary.view!.pendingChange!));
     expect(result.current.changePrompt?.modal.kind).toBe("remove");
     await act(() => result.current.applyChangePrompt());
+    // A cancellation bills nothing: asked with its modal first, no Billing Accounts sheet, no
+    // account read, no move - and no modal after it either.
+    expect(result.current.accountStep).toBeNull();
+    expect(fetchMock.mock.calls.some((c) => String(c[0]).includes("/billing/accounts"))).toBe(
+      false,
+    );
     expect(posts.map((p) => [p.action, p.body])).toEqual([["cancel", { code: "PETTY_CASH" }]]);
     expect(result.current.result?.result.kind).toBe("module_cancelled");
     expect(result.current.result?.result.layout).toBe("page");
     expect(result.current.openEntityId).toBeNull();
   });
 
-  it("a trial confirmed with no card at all goes to Stripe's card form instead", async () => {
-    const posts = serveChange(fetchMock, "RU22", {
-      "payment-method": { status: 200, body: { url: "https://stripe.test/setup" } },
-    });
+  it("a trial with no card at all is put on the account picked and confirmed on its card", async () => {
+    // RU22's trial has no card: it used to leave for Stripe's form. Picked onto an account that
+    // has one, it is confirmed on that card - the page read before the modal is out of date.
+    const posts = serveChange(fetchMock, "RU22");
     const left: string[] = [];
     _resetHandoffForTests((url) => left.push(url));
     const e = ENTITIES[0];
@@ -387,12 +540,48 @@ describe("useSubscriptionsList", () => {
     );
     await waitFor(() => expect(result.current.summary.status).toBe("ready"));
     act(() => result.current.summary.toggleTick("PETTY_CASH"));
-    act(() => result.current.confirmChange(e, result.current.summary.view!.pendingChange!));
-    expect(result.current.changePrompt?.modal.kind).toBe("activate");
-    await act(() => result.current.applyChangePrompt());
-    expect(posts.map((p) => p.action)).toEqual(["payment-method"]);
+    await confirmBilled(result, e);
+    expect(posts.map((p) => p.action)).toEqual([MOVE, "authorize-billing"]);
+    expect(left).toEqual([]);
+    expect(result.current.result?.entity.entity_id).toBe(e.entity_id);
+    expect(result.current.result?.result.kind).toBe("celebrate");
+    _resetHandoffForTests();
+  });
+
+  it("an account with no card it can charge still sends the trial to Stripe's card form", async () => {
+    // The company's own account is always pickable, card or not; with none, the consent would
+    // sit on nothing, so Stripe's form collects one first, as before.
+    const e = ENTITIES[0];
+    const [companyA] = ACCOUNTS.accounts;
+    const cardless = {
+      ...ACCOUNTS,
+      accounts: [
+        {
+          ...companyA,
+          card: null,
+          companies: [{ entity_id: e.entity_id, entity_name: e.entity_name, past_due: false }],
+        },
+      ],
+    };
+    const posts = serveChange(
+      fetchMock,
+      "RU22",
+      { "payment-method": { status: 200, body: { url: "https://stripe.test/setup" } } },
+      cardless,
+    );
+    const left: string[] = [];
+    _resetHandoffForTests((url) => left.push(url));
+    const { result } = renderHook(
+      () => useSubscriptionsList({ today: TODAY, focusEntityId: e.entity_id }),
+      { wrapper },
+    );
+    await waitFor(() => expect(result.current.summary.status).toBe("ready"));
+    act(() => result.current.summary.toggleTick("PETTY_CASH"));
+    await confirmBilled(result, e);
+    expect(posts.map((p) => p.action)).toEqual([MOVE, "payment-method"]);
     expect(left).toEqual(["https://stripe.test/setup"]);
     expect(result.current.result).toBeNull();
+    // Nothing is paid yet: no modal says it is.
     _resetHandoffForTests();
   });
 
@@ -415,24 +604,44 @@ describe("useSubscriptionsList", () => {
     );
     await waitFor(() => expect(result.current.summary.status).toBe("ready"));
     act(() => result.current.summary.toggleTick("PETTY_CASH"));
-    act(() => result.current.confirmChange(e, result.current.summary.view!.pendingChange!));
-    expect(result.current.changePrompt?.modal.kind).toBe("reactivate");
-    await act(() => result.current.applyChangePrompt());
-    expect(posts.map((p) => [p.action, p.body])).toEqual([["retry-payment", {}]]);
+    await confirmBilled(result, e);
+    expect(posts.map((p) => [p.action, p.body])).toEqual([
+      [MOVE, { entity: e.entity_id, account: "acc-company-a" }],
+      ["retry-payment", {}],
+    ]);
     // "Payment could not be processed": the API's sentence, a scheduled retry follows, the
-    // ticks stay pending, nothing landed, no toast.
+    // ticks stay pending, nothing landed, no toast - and it names the card of the account
+    // picked, not whichever one the summary showed before.
     expect(result.current.declined).toMatchObject({
       message: "That card was declined: insufficient funds",
       autoRetry: true,
     });
+    expect(result.current.declined?.prompt.card).toBe("Visa 4121");
+    // The sheet gave way to it.
+    expect(result.current.accountStep).toBeNull();
     expect(result.current.result).toBeNull();
+    // Not paid: the reactivation's own modal does not show.
     expect(result.current.summary.view?.pendingChange?.codes).toEqual(["PETTY_CASH"]);
     expect(document.body.textContent).not.toContain("That card was declined");
 
-    // Try again now: the same change, applied again - this time the bank says yes.
+    // Try again now: the same change, applied again - the account is already set, so it is not
+    // asked or moved again - and this time the bank says yes. 06·B stays up, busy, while it is
+    // tried; it does not vanish and leave the page saying nothing.
     answers["retry-payment"] = { status: 200, body: { ok: true, status: "paid", message: "" } };
-    await act(() => result.current.retryDeclined());
-    expect(posts.map((p) => p.action)).toEqual(["retry-payment", "retry-payment"]);
+    const release = holdPayment(fetchMock);
+    let retrying!: Promise<void>;
+    act(() => {
+      retrying = result.current.retryDeclined();
+    });
+    await waitFor(() =>
+      expect(posts.map((p) => p.action)).toEqual([MOVE, "retry-payment", "retry-payment"]),
+    );
+    expect(result.current.declined).not.toBeNull();
+    expect(result.current.changeBusy).toBe(true);
+    act(() => result.current.dismissDeclined());
+    expect(result.current.declined).not.toBeNull();
+    release();
+    await act(() => retrying);
     expect(result.current.declined).toBeNull();
     expect(result.current.result?.result.kind).toBe("celebrate");
   });
@@ -456,9 +665,8 @@ describe("useSubscriptionsList", () => {
     await waitFor(() => expect(result.current.summary.status).toBe("ready"));
     act(() => result.current.summary.toggleTick("PETTY_CASH"));
     act(() => result.current.summary.toggleTick("PAYMENT_REQUEST"));
-    act(() => result.current.confirmChange(e, result.current.summary.view!.pendingChange!));
-    await act(() => result.current.applyChangePrompt());
-    expect(posts.map((p) => p.action)).toEqual(["authorize-billing", "restart-billing"]);
+    await confirmBilled(result, e);
+    expect(posts.map((p) => p.action)).toEqual([MOVE, "authorize-billing", "restart-billing"]);
     expect(result.current.declined).toMatchObject({ autoRetry: false });
     expect(result.current.declined?.message).toMatch(/couldn't set up the subscription/);
     act(() => result.current.dismissDeclined());
@@ -628,14 +836,22 @@ describe("useSubscriptionsList", () => {
     await act(() => {
       result.current.reactivate(e);
     });
+    // The item asks as the button would: the modal for exactly that change, then - it bills -
+    // "Billing Accounts".
     await waitFor(() => expect(result.current.changePrompt).not.toBeNull());
-    // The open row's page model served the change: nothing was read again.
-    expect(fetchMock.mock.calls.filter((c) => /\/modules$/.test(String(c[0]))).length).toBe(reads);
     expect(result.current.changePrompt?.modal.kind).toBe("bundle");
     expect(result.current.changePrompt?.change.codes).toEqual(["PAYMENT_REQUEST"]);
-    expect(result.current.summary.view?.modules[1].chip).toBe("Restoring");
     await act(() => result.current.applyChangePrompt());
-    expect(posts.map((p) => [p.action, p.body])).toEqual([["renew", { code: "PAYMENT_REQUEST" }]]);
+    await waitFor(() => expect(result.current.accountStep).not.toBeNull());
+    expect(result.current.changePrompt).toBeNull();
+    // The open row's page model served the change: nothing was read again.
+    expect(fetchMock.mock.calls.filter((c) => /\/modules$/.test(String(c[0]))).length).toBe(reads);
+    expect(result.current.summary.view?.modules[1].chip).toBe("Restoring");
+    await act(() => result.current.confirmAccount(result.current.accountStep!.picked!));
+    expect(posts.map((p) => [p.action, p.body])).toEqual([
+      [MOVE, { entity: e.entity_id, account: "acc-company-a" }],
+      ["renew", { code: "PAYMENT_REQUEST" }],
+    ]);
     expect(result.current.result?.result.kind).toBe("celebrate");
   });
 
@@ -668,6 +884,79 @@ describe("useSubscriptionsList", () => {
     expect(posts).toEqual([]);
     expect(result.current.summary.view?.pendingChange?.codes).toEqual(["PETTY_CASH"]);
     expect(result.current.result).toBeNull();
+  });
+
+  it("an account the API refuses stays in the sheet in its words; closing it applies nothing", async () => {
+    const refusal = "A payment on Vine Consulting Limited didn't go through. Settle it before moving a company onto it.";
+    const posts = serveChange(fetchMock, "RU23", {
+      [MOVE]: { status: 409, body: { error: refusal } },
+    });
+    const e = ENTITIES[0];
+    const { result } = renderHook(
+      () => useSubscriptionsList({ today: TODAY, focusEntityId: e.entity_id }),
+      { wrapper },
+    );
+    await waitFor(() => expect(result.current.summary.status).toBe("ready"));
+    act(() => result.current.summary.toggleTick("PETTY_CASH"));
+    act(() => result.current.summary.toggleTick("PAYMENT_REQUEST"));
+    await act(async () =>
+      result.current.confirmChange(e, result.current.summary.view!.pendingChange!),
+    );
+    await act(() => result.current.applyChangePrompt());
+    await waitFor(() => expect(result.current.accountStep).not.toBeNull());
+    await act(() => result.current.confirmAccount("acc-vine"));
+
+    // Refused: the sentence in the sheet, the account still picked, NOTHING applied.
+    expect(result.current.accountStep).toMatchObject({ picked: "acc-vine", error: refusal });
+    expect(posts.map((p) => p.action)).toEqual([MOVE]);
+    expect(result.current.changeBusy).toBe(false);
+
+    // Closed: nothing is applied, no modal shows, the ticks stay pending for another try.
+    act(() => result.current.dismissAccountStep());
+    expect(result.current.accountStep).toBeNull();
+    expect(result.current.changePrompt).toBeNull();
+    expect(result.current.summary.view?.pendingChange?.codes).toEqual([
+      "PETTY_CASH",
+      "PAYMENT_REQUEST",
+    ]);
+    expect(posts.map((p) => p.action)).toEqual([MOVE]);
+  });
+
+  it("an account opened in the sheet takes the company, then the change is applied", async () => {
+    const posts = serveChange(fetchMock, "RU23", {}, ACCOUNTS);
+    const e = ENTITIES[0];
+    const { result } = renderHook(
+      () => useSubscriptionsList({ today: TODAY, focusEntityId: e.entity_id }),
+      { wrapper },
+    );
+    await waitFor(() => expect(result.current.summary.status).toBe("ready"));
+    act(() => result.current.summary.toggleTick("PETTY_CASH"));
+    act(() => result.current.summary.toggleTick("PAYMENT_REQUEST"));
+    await act(async () =>
+      result.current.confirmChange(e, result.current.summary.view!.pendingChange!),
+    );
+    await act(() => result.current.applyChangePrompt());
+    await waitFor(() => expect(result.current.accountStep).not.toBeNull());
+
+    // What the sheet reports once the new account is saved and Done is pressed (01-J).
+    await act(async () => {
+      result.current.accountOpened({
+        accountId: "acc-acme",
+        accounts: ACCOUNTS_OPENED,
+        moved: null,
+        moveFailed: null,
+        card: null,
+        isDefault: true,
+      });
+    });
+
+    await waitFor(() => expect(result.current.result).not.toBeNull());
+    expect(posts.map((p) => [p.action, p.body])).toEqual([
+      [MOVE, { entity: e.entity_id, account: "acc-acme" }],
+      ["authorize-billing", {}],
+      ["restart-billing", { codes: ["PAYMENT_REQUEST"] }],
+    ]);
+    expect(result.current.accountStep).toBeNull();
   });
 
   it("Start Trial lands on the result row too", async () => {

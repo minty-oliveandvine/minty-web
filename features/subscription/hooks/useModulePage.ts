@@ -43,7 +43,7 @@ import {
   type ModuleCta,
   type ModuleView,
 } from "@/features/subscription/lib/moduleState";
-import { moduleRoutes } from "@/features/subscription/lib/paths";
+import { BILLING, moduleRoutes } from "@/features/subscription/lib/paths";
 
 export type UseModulePageArgs = {
   entityId: string;
@@ -249,9 +249,12 @@ export function useModulePage({
     (code: ModuleCode) => router.push(routes.reactivate(code)),
     [router, routes],
   );
+  // 03-F's "Payment failed … here": the card that failed is the company's BILLING ACCOUNT's
+  // card, so this opens that account's page (08-B, its details and payment methods) by
+  // `?entity=`, as the list's banner does - not a per-company screen (the user, 2026-09-29).
   const updatePaymentMethod = useCallback(
-    () => router.push(routes.paymentMethod),
-    [router, routes],
+    () => router.push(BILLING.account({ entity: entityId })),
+    [router, entityId],
   );
 
   return {

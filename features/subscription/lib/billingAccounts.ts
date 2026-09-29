@@ -50,6 +50,9 @@ export const MOVE_PICK_COMPANY_LEAD = "Which company's bills should move?";
 export const MOVE_NO_COMPANIES =
   "No company is on a billing account yet. A company gets one when its billing is confirmed.";
 export const MOVE_BUSY = "Moving…";
+/** Manage Subscriptions' "Billing Accounts" Confirm while the company is put on the account and
+ * the change is paid for - onboarding's `BillingSheet` says the same on its Confirm. */
+export const CONFIRM_BUSY = "Confirming…";
 export const MOVE_FAILED = "That didn't go through. Mind trying again?";
 /** 08-C. */
 export const DETAILS_TITLE = "Update Billing Information";
@@ -214,12 +217,13 @@ export function movableCompanies(data: BillingAccounts | null): MovableCompany[]
   return rows.sort((a, b) => a.entityName.localeCompare(b.entityName));
 }
 
-export type MoveBlock = "current" | "in_dunning" | "no_card";
+export type MoveBlock = "current" | "in_dunning" | "no_card" | "settle_first";
 
 export const MOVE_BLOCK_LABEL: Record<MoveBlock, string> = {
   current: "Billed here now",
   in_dunning: PAYMENT_FAILED_CHIP,
   no_card: "No card",
+  settle_first: "Settle payment first",
 };
 
 export type MoveTarget = { account: BillingAccount; block: MoveBlock | null };
@@ -241,6 +245,74 @@ export function moveTargets(data: BillingAccounts | null, from: MovableCompany):
             ? null
             : "no_card",
   }));
+}
+
+/** Manage Subscriptions' Billing Accounts picker: the line under its title. */
+export function nominateLead(companyName: string): string {
+  return `Choose the account that pays for ${companyName}.`;
+}
+
+export type NominationChoice = { targets: MoveTarget[]; picked: string | null };
+
+/**
+ * Manage Subscriptions' Billing Accounts picker, opened by Confirm Subscription Change for
+ * every change that bills (not a cancellation): the accounts, each with the reason it cannot
+ * pay for this company when it cannot. They are the API's own refusals
+ * (`POST /billing/accounts/move`), said on the row rather than after Confirm:
+ *
+ * - the account the company is on is ALWAYS pickable - staying is not a move - and keeps its
+ *   own flags ("Payment failed" while its collection is failing);
+ * - another account whose collection is failing, or with no card it can charge, cannot;
+ * - while the COMPANY is past due no other account can: its debt, its retries and "Pay now"
+ *   follow the account it is on, so it settles there (a reactivation).
+ *
+ * Preselected: the account the company is on, else the first that can take it - a card-free
+ * trial is on none, and the API places it on the one picked.
+ */
+export function nominationChoice(
+  data: BillingAccounts | null,
+  entityId: string,
+): NominationChoice {
+  const accounts = data?.accounts ?? [];
+  const current = accounts.find((a) => a.companies.some((c) => c.entity_id === entityId)) ?? null;
+  const pastDue = current?.companies.find((c) => c.entity_id === entityId)?.past_due ?? false;
+  const targets = accounts.map(
+    (account): MoveTarget => ({
+      account,
+      block:
+        account.id === current?.id
+          ? null
+          : pastDue
+            ? "settle_first"
+            : account.in_dunning
+              ? "in_dunning"
+              : account.card
+                ? null
+                : "no_card",
+    }),
+  );
+  const picked = current?.id ?? targets.find((t) => t.block === null)?.account.id ?? null;
+  return { targets, picked };
+}
+
+/**
+ * The open row's _Change_ beside its card: the same sheet, but as a MOVE and nothing else. The
+ * account the company is on is where it is billed now, not a choice ("Billed here now", as the
+ * 08-A move's step 2 says it); every other row keeps `nominationChoice`'s reasons. Nothing is
+ * preselected - there is no change to apply, so Confirm waits for a pick.
+ */
+export function accountChangeChoice(
+  data: BillingAccounts | null,
+  entityId: string,
+): NominationChoice {
+  const current = data?.accounts.find((a) => a.companies.some((c) => c.entity_id === entityId));
+  const { targets } = nominationChoice(data, entityId);
+  return {
+    targets: targets.map((t) =>
+      current && t.account.id === current.id ? { ...t, block: "current" } : t,
+    ),
+    picked: null,
+  };
 }
 
 /** Told on 08-A once a company has moved. */

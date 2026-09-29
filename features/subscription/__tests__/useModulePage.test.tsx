@@ -230,7 +230,8 @@ describe("useModulePage", () => {
       "/subscription/subscriptions?entity=e1&tick=PETTY_CASH",
       "/subscription/subscriptions?entity=e1&tick=PETTY_CASH",
       "/subscription/subscriptions?entity=e1&tick=PAYMENT_REQUEST",
-      "/subscription/entities/e1/modules/payment-method",
+      // 03-F's banner: the company's billing account, not a per-company screen.
+      "/subscription/billing?entity=e1",
     ]);
   });
 

@@ -14,10 +14,12 @@ import { expect, test, type Page } from "@playwright/test";
 
 import {
   BILLING_API_URL,
+  bounceFlaskHandoff,
   handoff,
   mintModuleToken,
   requireCredentials,
   requireStack,
+  storedScope,
   subscriptionsDark,
   type Credentials,
 } from "../../../e2e/helpers";
@@ -110,19 +112,22 @@ test.describe("over the live API", () => {
     // The other module was not touched - its own offer is still open.
     expect(after.cards.find((card) => card.code === "PETTY_CASH")?.trial_eligible).toBe(true);
 
-    // Back to Manage Subscriptions leaves for the landing (08-A), over live data.
+    // Back to Manage Subscriptions leaves for the landing (08-A), over live data - trading the
+    // company's token for an unscoped one through Flask's handoff, asked with no company. The
+    // portal is then the payer's, so its way out is Minty's entity list (the scoped way out,
+    // to the company's modules, is BillingScreens.test.tsx's).
+    const asked = await bounceFlaskHandoff(page, c);
     await landed.getByRole("button", { name: "Back to Manage Subscriptions" }).click();
     await page.waitForURL((u) => u.pathname === "/subscription");
     await expect(body(page).getByRole("heading", { level: 1 })).toHaveText(
       "Subscription & Billing",
     );
-    // And the way out of the portal goes back to THIS company's modules, not the entity picker:
-    // Minty routes /entity/<id>/modules to the module selection, or into the only module on.
-    const backHref = await body(page)
+    expect(asked).toEqual([`?next=${encodeURIComponent("/subscription")}`]);
+    expect(await storedScope(page)).toEqual({ cookie: "", claim: "" });
+    const wayOut = await body(page)
       .getByRole("link", { name: "Back to the entity dashboard" })
       .getAttribute("href");
-    expect(backHref).toContain(`/entity/${c.entityId}/enter?token=`);
-    expect(backHref).toContain(encodeURIComponent(`/entity/${c.entityId}/modules`));
+    expect(wayOut).toMatch(/\/entity$/);
   });
 
   test("the landing and the billing page read the person's real billing accounts", async ({

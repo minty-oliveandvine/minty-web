@@ -220,6 +220,51 @@ describe("the billing page", () => {
     expect(saved.at(-1)?.text).toMatch(/^Entity Name,Subscription,Monthly amount,/);
   });
 
+  it("clicking either top card opens the SAME billing-account picker 08-A's card does", async () => {
+    const user = userEvent.setup();
+    replace.mockReset();
+    render(<BillingPageScreen fixture="B" />);
+    await screen.findByText("Company A Limited");
+
+    // Anywhere on "Next billing" that is not one of its own controls.
+    const next = screen.getByRole("region", { name: "Next billing" });
+    await user.click(within(next).getByText("Next Bill Date"));
+    const picker = await screen.findByRole("dialog", { name: "Billing Accounts" });
+    expect(within(picker).getAllByRole("radio")).toHaveLength(3);
+    await user.click(within(picker).getByRole("button", { name: "Close" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+
+    // "Change billing details" is a control of its own: it navigates, no picker opens under it.
+    await user.click(within(next).getByRole("button", { name: "Change billing details" }));
+    expect(push).toHaveBeenCalledWith("/subscription/billing/details?account=acc-company-a");
+    expect(screen.queryByRole("dialog")).toBeNull();
+
+    // Anywhere on "Payment Methods" that is not one of ITS controls opens the same picker.
+    const cards = screen.getByRole("region", { name: "Payment Methods" });
+    await user.click(within(cards).getByText("Payment Methods"));
+    await screen.findByRole("dialog", { name: "Billing Accounts" });
+  });
+
+  it("picking another account from either card lands this page on it, not the URL alone", async () => {
+    const user = userEvent.setup();
+    replace.mockReset();
+    render(<BillingPageScreen fixture="B" />);
+    await screen.findByText("Company A Limited");
+
+    const cards = screen.getByRole("region", { name: "Payment Methods" });
+    await user.click(within(cards).getByText("Payment Methods"));
+    const picker = await screen.findByRole("dialog", { name: "Billing Accounts" });
+    await user.click(within(picker).getByText("Vine Consulting Limited"));
+    await user.click(within(picker).getByRole("button", { name: "Confirm" }));
+
+    // Unlike 08-A's own picker (which only rewrites the URL it is shown on), this page IS one
+    // account's profile, so picking another sends it there.
+    expect(replace).toHaveBeenCalledWith("/subscription/billing?account=acc-vine", {
+      scroll: false,
+    });
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  });
+
   it("08-K: the card to fix and the declined invoice are red, and Retry payment asks again", async () => {
     const user = userEvent.setup();
     render(<BillingPageScreen fixture="B" />);
@@ -1051,7 +1096,7 @@ describe("08-A, the portal's landing", () => {
   });
 
   it("the way back goes to the scoped company's modules, signed in", () => {
-    // Everyone here arrived from a company's module settings, so the token names one. Minty's
+    // Arrived from a company's module settings, the token names one. Minty's
     // /entity/<id>/modules then routes: one module in, two to the module selection.
     setAuth(TOKEN, "e1", "Olive & Vine Limited");
     render(<SubscriptionOverviewScreen fixture="A" today={TODAY} />);
