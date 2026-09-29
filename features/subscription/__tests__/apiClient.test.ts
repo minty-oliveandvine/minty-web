@@ -1,17 +1,19 @@
 // The one way the feature talks to the API (lib/apiClient.ts), pinned from the feature's side:
 // the bearer comes from the cookie, X-Entity-Id is opt-in, a 401 goes back through the
 // re-handoff exactly once, and every other failure surfaces the API's `error` sentence with
-// its status - which is what the screens branch on.
+// its status - which is what the screens branch on. The same for the one route that answers a
+// file (an invoice's PDF, `apiFetchBlob`), whose failures are JSON like every other.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { ApiError, HOUSE_FALLBACK, apiFetch } from "@/lib/apiClient";
+import { ApiError, HOUSE_FALLBACK, apiFetch, apiFetchBlob } from "@/lib/apiClient";
 import { getAuth, setAuth } from "@/lib/auth";
 import { env } from "@/lib/env";
 import { _resetHandoffForTests } from "@/lib/handoff";
 
+import { INVOICE_PDF } from "@/features/subscription/__fixtures__/billing";
 import { getModulePage, postModuleAction } from "@/features/subscription/api/moduleSettings";
-import { fetchPayerSubscriptions } from "@/features/subscription/api/payerPortal";
+import { fetchInvoicePdf, fetchPayerSubscriptions } from "@/features/subscription/api/payerPortal";
 
 function jwt(claims: Record<string, unknown>): string {
   const b64 = (s: string) => Buffer.from(s).toString("base64url");
@@ -114,5 +116,67 @@ describe("apiFetch", () => {
     const target = new URL(navigated[0]);
     expect(target.origin + target.pathname).toBe(`${env.MINTY_URL}/handoff/minty-web`);
     expect(target.searchParams.get("next")).toBe("/subscription/billing?page=2");
+  });
+
+  describe("a file (apiFetchBlob)", () => {
+    const pdf = (type = "application/pdf") =>
+      new Response(INVOICE_PDF, { status: 200, headers: { "Content-Type": type } });
+
+    it("returns the file itself, asked for as a PDF with the bearer", async () => {
+      fetchMock.mockResolvedValueOnce(pdf());
+      const file = await apiFetchBlob("/api/me/invoices/in_1/pdf");
+
+      // Its type is the response's; `Response.blob()`'s Blob is not jsdom's, so no instanceof.
+      expect(file.type).toBe("application/pdf");
+      expect(await file.text()).toBe(INVOICE_PDF);
+      const [url, init] = fetchMock.mock.calls[0];
+      expect(String(url)).toBe(`${env.BILLING_API_URL}/api/me/invoices/in_1/pdf`);
+      const headers = new Headers(init?.headers);
+      expect(headers.get("Accept")).toBe("application/pdf, application/json");
+      expect(headers.get("Authorization")).toBe(`Bearer ${TOKEN}`);
+      expect(headers.has("X-Entity-Id")).toBe(false);
+    });
+
+    it("a refusal is JSON here too: the API's sentence, with its status", async () => {
+      fetchMock.mockResolvedValueOnce(reply(409, { error: "There's no PDF for that invoice." }));
+      const err = (await apiFetchBlob("/api/me/invoices/in_1/pdf").catch(
+        (e: unknown) => e,
+      )) as ApiError;
+      expect(err).toBeInstanceOf(ApiError);
+      expect(err.status).toBe(409);
+      expect(err.message).toBe("There's no PDF for that invoice.");
+    });
+
+    it("on 401 goes back through Flask's re-handoff, once", async () => {
+      window.history.replaceState({}, "", "/subscription/billing?account=acc-1");
+      fetchMock.mockResolvedValue(reply(401, { error: "Unauthorized" }));
+
+      for (const id of ["in_1", "in_2"]) {
+        await expect(apiFetchBlob(`/api/me/invoices/${id}/pdf`)).rejects.toMatchObject({
+          status: 401,
+        });
+      }
+
+      expect(getAuth()).toBeNull();
+      expect(navigated).toHaveLength(1);
+      expect(new URL(navigated[0]).searchParams.get("next")).toBe(
+        "/subscription/billing?account=acc-1",
+      );
+    });
+
+    it("fetchInvoicePdf asks for THAT invoice, and refuses an answer that is not a PDF", async () => {
+      fetchMock.mockResolvedValueOnce(pdf("application/pdf; charset=binary"));
+      expect((await fetchInvoicePdf("in 1/x")).size).toBe(INVOICE_PDF.length);
+      expect(String(fetchMock.mock.calls[0][0])).toBe(
+        `${env.BILLING_API_URL}/api/me/invoices/in%201%2Fx/pdf`,
+      );
+
+      // A 200 that is not the document - a proxy's page, say - is never handed on to be saved.
+      fetchMock.mockResolvedValueOnce(pdf("text/html"));
+      await expect(fetchInvoicePdf("in_1")).rejects.toMatchObject({
+        status: 502,
+        message: "That came back in a shape I didn't expect. Mind trying again?",
+      });
+    });
   });
 });

@@ -1,11 +1,12 @@
 // 08-B's "Billing Breakdown · Download csv": the file written to the user's sample, line for line
 // - its columns, its dates ("26-Jul-26", a month to the day before the next begins, an extension
 // to the day access ended), its numbers (a rate trimmed, a charge to the cent) - and what a
-// spreadsheet needs (quoted fields, CRLF) and the file's name.
+// spreadsheet needs (quoted fields, CRLF) and the file's name, whose stem the invoice's PDF shares.
 
 import { describe, expect, it } from "vitest";
 
 import { BREAKDOWN } from "@/features/subscription/__fixtures__/billing";
+import { invoiceFileStem, invoicePdfFilename } from "@/features/subscription/lib/billing";
 import {
   BREAKDOWN_HEADERS,
   breakdownCsv,
@@ -58,5 +59,13 @@ describe("the billing breakdown CSV", () => {
     expect(breakdownFilename("in_1UJ9BX")).toBe("Inv-in_1UJ9BX Breakdown by Entity.csv");
     expect(sheetDate(new Date(Date.UTC(2026, 7, 5)))).toBe("5-Aug-26");
     expect(sheetDate(null)).toBe("");
+  });
+
+  // One stem for both of an invoice's files, so its PDF and its breakdown are named alike.
+  it("names the invoice's PDF after the same stem", () => {
+    expect(invoiceFileStem("#11241234113")).toBe("11241234113");
+    expect(invoiceFileStem("in_1UJ9BX ")).toBe("in_1UJ9BX");
+    expect(invoicePdfFilename("#11241234113")).toBe("Inv-11241234113.pdf");
+    expect(invoicePdfFilename("in_1UJ9BX")).toBe("Inv-in_1UJ9BX.pdf");
   });
 });

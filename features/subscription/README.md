@@ -112,6 +112,8 @@ days and the update lines have _Show more_; 08-B shows the next bill's estimated
 one's billing breakdown as the user's sample CSV (`lib/breakdown`, `lib/download`).
 `components/ModalFrame` is shared by the other modals, `RadioCard` by 07-E's picker (§15). A
 standalone invoices page (billing-frontend's section 09) was deliberately NOT built: the billing
-page's own invoice list already lists every invoice, paged, with Stripe's PDF and the
+page's own invoice list already lists every invoice, paged, with its PDF and the
 billing-breakdown CSV, so a second page listing the same rows would be pure duplication - see
-`lib/paths.ts::PORTAL`.
+`lib/paths.ts::PORTAL`. 2026-09-29: that PDF is our own document (Figma 09-A), downloaded -
+`api/payerPortal.fetchInvoicePdf` over `@/lib/apiClient.apiFetchBlob`, saved by
+`lib/download.saveBlob` - where it had linked Stripe's hosted invoice page (§15).

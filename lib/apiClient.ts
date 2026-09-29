@@ -1,8 +1,9 @@
 /**
- * The one way this app talks to its two backends: minty-billing-api (`apiFetch`) and Flask's
- * bearer surface for the hub pages - the entity list and My Profile (`mintyFetch`,
- * Minty's `blueprints/shared/hub_api.py`). Both share everything below except where they go
- * and `X-Entity-Id`, which only the billing API takes.
+ * The one way this app talks to its two backends: minty-billing-api (`apiFetch`; `apiFetchBlob`
+ * for its one route that answers a file, an invoice's PDF) and Flask's bearer surface for the
+ * hub pages - the entity list and My Profile (`mintyFetch`, Minty's
+ * `blueprints/shared/hub_api.py`). Both share everything below except where they go and
+ * `X-Entity-Id`, which only the billing API takes.
  *
  * - The bearer is the cookie token (lib/auth.ts); `X-Entity-Id` is OPT-IN, per call: the payer
  *   portal is person-scoped and sends none, the module settings page names its company (the
@@ -85,38 +86,60 @@ export type MintyRequest = Omit<ApiRequest, "entityId"> & {
 
 const SESSION_ENDED = "Your session has ended. Signing you back in…";
 
-async function send<T>(
-  base: string,
+/** Where a call goes and what a 401 there means - all that differs between the two backends. */
+type Backend = {
+  base: string;
+  onUnauthorized: "handoff" | "reject";
+  /** The company a 401's re-handoff keeps. */
+  handoffEntityId: string | undefined;
+};
+
+/**
+ * One call, up to its answer: the headers, the 401's re-handoff, and every other non-2xx
+ * rejected as an `ApiError` with the body's sentence - a failure is JSON even from a route whose
+ * success is a file, so `accept` names both there. Reading a success is the caller's: JSON
+ * (`requestJson`) or a file (`apiFetchBlob`).
+ */
+async function request(
+  backend: Backend,
   path: string,
   init: ApiRequest,
-  onUnauthorized: "handoff" | "reject",
-  handoffEntityId: string | undefined,
-): Promise<T> {
+  accept: string,
+): Promise<Response> {
   const { entityId, json, query, headers: extraHeaders, ...rest } = init;
   const auth = getAuth();
 
   const headers = new Headers(extraHeaders);
-  headers.set("Accept", "application/json");
+  headers.set("Accept", accept);
   if (auth?.token) headers.set("Authorization", `Bearer ${auth.token}`);
   if (entityId) headers.set("X-Entity-Id", entityId);
   if (json !== undefined) headers.set("Content-Type", "application/json");
 
-  const res = await fetch(`${base}${withQuery(path, query)}`, {
+  const res = await fetch(`${backend.base}${withQuery(path, query)}`, {
     ...rest,
     headers,
     body: json === undefined ? undefined : JSON.stringify(json),
   });
 
   if (res.status === 401) {
-    if (onUnauthorized === "handoff") redirectToHandoff(undefined, handoffEntityId);
+    if (backend.onUnauthorized === "handoff") redirectToHandoff(undefined, backend.handoffEntityId);
     throw new ApiError(401, SESSION_ENDED);
   }
-
-  const body = await readBody(res);
   if (!res.ok) {
+    const body = await readBody(res);
     throw new ApiError(res.status, errorSentence(body) ?? HOUSE_FALLBACK, body);
   }
-  return body as T;
+  return res;
+}
+
+/** A JSON answer, parsed (`null` for an empty body). */
+async function requestJson<T>(backend: Backend, path: string, init: ApiRequest): Promise<T> {
+  return (await readBody(await request(backend, path, init, "application/json"))) as T;
+}
+
+/** The billing API: a 401 always goes back through the re-handoff, for the company named. */
+function billingApi(init: ApiRequest): Backend {
+  return { base: env.BILLING_API_URL, onUnauthorized: "handoff", handoffEntityId: init.entityId };
 }
 
 /**
@@ -124,7 +147,16 @@ async function send<T>(
  * Rejects with `ApiError`; a 401 also sends the browser to the re-handoff.
  */
 export async function apiFetch<T = unknown>(path: string, init: ApiRequest = {}): Promise<T> {
-  return send<T>(env.BILLING_API_URL, path, init, "handoff", init.entityId);
+  return requestJson<T>(billingApi(init), path, init);
+}
+
+/**
+ * Call a billing API route that answers a FILE - an invoice's PDF - and return it as a Blob
+ * (typed as the response named it). Fails exactly as `apiFetch` does: its failures are JSON.
+ */
+export async function apiFetchBlob(path: string, init: ApiRequest = {}): Promise<Blob> {
+  const res = await request(billingApi(init), path, init, "application/pdf, application/json");
+  return res.blob();
 }
 
 /**
@@ -136,5 +168,10 @@ export async function apiFetch<T = unknown>(path: string, init: ApiRequest = {})
  */
 export async function mintyFetch<T = unknown>(path: string, init: MintyRequest = {}): Promise<T> {
   const { onUnauthorized = "handoff", ...rest } = init;
-  return send<T>(env.MINTY_URL, path, rest, onUnauthorized, getAuth()?.entityId || undefined);
+  const flask: Backend = {
+    base: env.MINTY_URL,
+    onUnauthorized,
+    handoffEntityId: getAuth()?.entityId || undefined,
+  };
+  return requestJson<T>(flask, path, rest);
 }

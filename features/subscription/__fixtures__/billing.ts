@@ -2,7 +2,8 @@
  * Section 08's answers, shaped as the API gives them: the saved cards in each state the design
  * draws (08-B two cards, 08-H none, 08-I the default expired, 08-J eight of them), the billing
  * accounts they sit on (`/api/me/billing/accounts`), an account being opened in the sheet (the
- * confirm's answer, and the accounts after it), and the invoices already paid (08-B's table).
+ * confirm's answer, and the accounts after it), and the invoices already paid (08-B's table, and
+ * the PDF each one downloads).
  * Shared by the Vitest suites, the Playwright specs and the dev-only `?fixture=` switches. The
  * money is pre-formatted, as `/api/me/invoices` answers.
  */
@@ -138,6 +139,7 @@ export const INVOICES: InvoiceRow[] = [
     status_label: "Paid",
     payment_method: "Visa •••• 4121",
     hosted_invoice_url: "https://invoice.stripe.test/in_1",
+    has_pdf: true,
     entities: ["Company A Limited"],
   },
   {
@@ -159,6 +161,7 @@ export const INVOICES: InvoiceRow[] = [
     status_label: "Paid",
     payment_method: "Visa •••• 4121",
     hosted_invoice_url: "https://invoice.stripe.test/in_2",
+    has_pdf: true,
     entities: ["Company A Limited"],
   },
   {
@@ -180,6 +183,7 @@ export const INVOICES: InvoiceRow[] = [
     status_label: "Paid",
     payment_method: "Visa •••• 4121",
     hosted_invoice_url: null,
+    has_pdf: true,
     entities: ["Company A Limited"],
   },
 ];
@@ -187,7 +191,8 @@ export const INVOICES: InvoiceRow[] = [
 /**
  * 08-K's failed invoices: this period's renewal, declined three days ago - the one *Retry payment*
  * would charge (`retryable`) - and an old renewal left open when an earlier collection gave up,
- * shown failed with no button (the business does not chase those, 2026-08-11).
+ * shown failed with no button (the business does not chase those, 2026-08-11). Both were sent
+ * and are open, so both keep their PDF.
  */
 export const FAILED_INVOICES: InvoiceRow[] = [
   {
@@ -234,6 +239,29 @@ export const RETRY_DECLINED = {
   status: "failed",
   message: "That card was declined: Your card has insufficient funds.",
 };
+
+/**
+ * An invoice's PDF, whole and tiny - one blank A4 page, its offsets exact - so a viewer opens
+ * it. What a fixture-mode *Invoice PDF* saves and the specs' stubbed
+ * `GET /api/me/invoices/{id}/pdf` answers, for every invoice.
+ */
+export const INVOICE_PDF = [
+  "%PDF-1.4",
+  "1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj",
+  "2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj",
+  "3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] >> endobj",
+  "xref",
+  "0 4",
+  "0000000000 65535 f ",
+  "0000000009 00000 n ",
+  "0000000058 00000 n ",
+  "0000000115 00000 n ",
+  "trailer << /Size 4 /Root 1 0 R >>",
+  "startxref",
+  "186",
+  "%%EOF",
+  "",
+].join("\n");
 
 /**
  * The breakdown of invoice #11241234113 - the user's sample file, row for row: two renewals

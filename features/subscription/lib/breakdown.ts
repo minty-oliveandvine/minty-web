@@ -11,6 +11,7 @@
  */
 
 import type { BreakdownRow, InvoiceBreakdown } from "@/features/subscription/api/payerPortal";
+import { invoiceFileStem } from "@/features/subscription/lib/billing";
 import { utcDay } from "@/features/subscription/lib/subscriptionSummary";
 
 export const BILLING_BREAKDOWN = "Billing Breakdown";
@@ -87,5 +88,5 @@ export function breakdownCsv(breakdown: InvoiceBreakdown): string {
 
 /** "Inv-11241234113 Breakdown by Entity.csv" - the sample's name, the reference's "#" dropped. */
 export function breakdownFilename(reference: string): string {
-  return `Inv-${reference.replace(/^#/, "").trim()} Breakdown by Entity.csv`;
+  return `Inv-${invoiceFileStem(reference)} Breakdown by Entity.csv`;
 }

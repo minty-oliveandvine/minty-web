@@ -259,6 +259,7 @@ export const FAILED = "Failed";
 export const RETRY_PAYMENT = "Retry payment";
 export const RETRYING = "Retrying…";
 export const RETRY_FAILED = "That retry didn't go through. Mind trying again?";
+export const INVOICE_PDF_FAILED = "I couldn't prepare that invoice's PDF. Mind trying again?";
 
 /** The invoice table's rows (08-B). The API formats the money and the date; this only picks. */
 export type InvoiceLine = {
@@ -271,9 +272,22 @@ export type InvoiceLine = {
   failed: boolean;
   /** *Retry payment* would charge THIS invoice now - the API's own rule, one per card. */
   retryable: boolean;
-  /** Stripe's hosted invoice page - a capability URL, opened with rel="noopener noreferrer". */
-  pdf: string | null;
+  /**
+   * *Invoice PDF* has a file to save - our own document (the API's `has_pdf`). An API older
+   * than the field says nothing, which reads as none: "—", never a button that can only fail.
+   */
+  hasPdf: boolean;
 };
+
+/** What an invoice's files are named after: its reference, the "#" dropped ("11241234113"). */
+export function invoiceFileStem(reference: string): string {
+  return reference.replace(/^#/, "").trim();
+}
+
+/** "Inv-11241234113.pdf" - the invoice's own PDF, named as its breakdown's CSV is. */
+export function invoicePdfFilename(reference: string): string {
+  return `Inv-${invoiceFileStem(reference)}.pdf`;
+}
 
 /**
  * "Failed 26 Jul" - the day the invoice was raised and its charge declined (the API's `date`,
@@ -302,7 +316,7 @@ export function invoiceLines(invoices: InvoiceRow[], today: Date = new Date()): 
       paid: failed ? failedLabel(inv.date, today) : inv.paid,
       failed,
       retryable: failed && inv.retryable === true,
-      pdf: inv.hosted_invoice_url,
+      hasPdf: inv.has_pdf === true,
     };
   });
 }

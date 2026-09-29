@@ -1,6 +1,6 @@
 // Section 08's rules: how a card is named and dated, the default pinned first, what its menu
 // offers, the expired line, who the bill goes to and when it turns amber, the invoice table's
-// header, and the overview's two figures and update lines.
+// header and which rows have a PDF, and the overview's two figures and update lines.
 
 import { describe, expect, it } from "vitest";
 
@@ -15,6 +15,7 @@ import {
   card,
 } from "@/features/subscription/__fixtures__/billing";
 import { ENTITIES, subscriptionsPage } from "@/features/subscription/__fixtures__/subscriptions";
+import type { InvoiceRow } from "@/features/subscription/api/payerPortal";
 import {
   CARDS_SHOWN,
   TRIAL_ENDING_DAYS,
@@ -133,10 +134,21 @@ describe("the invoice table", () => {
   it("takes the API's own money and dates, and names the currency in its header", () => {
     const lines = invoiceLines(INVOICES);
     expect(lines[0]).toMatchObject({ reference: "#11241234113", amount: "HK$19,383" });
-    expect(lines[0].pdf).toBe("https://invoice.stripe.test/in_1");
-    expect(lines[2].pdf).toBeNull();
     expect(amountHeader(INVOICES)).toBe("Amount (HK$)");
     expect(amountHeader([])).toBe("Amount");
+  });
+
+  // The Invoice PDF is our own document, offered where the API says there is one - never read
+  // off Stripe's hosted page, which the third invoice lacks while still having its PDF.
+  it("offers the PDF the API says there is, and none where it says nothing", () => {
+    expect(invoiceLines(INVOICES).map((line) => line.hasPdf)).toEqual([true, true, true]);
+    expect(INVOICES[2].hosted_invoice_url).toBeNull();
+    const draft: InvoiceRow = { ...INVOICES[0], status: "draft", has_pdf: false };
+    expect(invoiceLines([draft])[0].hasPdf).toBe(false);
+    // An API older than the field: no PDF, rather than a button that can only fail.
+    const older: InvoiceRow = { ...INVOICES[0] };
+    delete older.has_pdf;
+    expect(invoiceLines([older])[0].hasPdf).toBe(false);
   });
 
   // The column is headed "Paid date". It once read `date`, the day the invoice was RAISED,

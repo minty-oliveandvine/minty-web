@@ -8,10 +8,10 @@
  * "Update card" menu (08-W/08-X) - red on the card to fix: expired, or the one charged when a
  * payment failed - "Show more (6)" for the rest (08-J), "No card saved" when there are none
  * (08-H) and the red line when the card being charged has expired (08-I); and its invoices,
- * each opening Stripe's own hosted page and giving its billing breakdown - company by company -
- * as a CSV, 10 / 50 / 100 to a page; a declined one red, "Failed 26 Jul" where it would have
- * been paid, with *Retry payment* on the one a retry would charge (08-K). Everything shown is the hook's
- * (`useBillingPage`).
+ * each downloading as our own PDF and giving its billing breakdown - company by company - as a
+ * CSV, 10 / 50 / 100 to a page; a declined one red, "Failed 26 Jul" where it would have been
+ * paid, with *Retry payment* on the one a retry would charge (08-K). Everything shown is the
+ * hook's (`useBillingPage`).
  */
 
 import Image from "next/image";
@@ -538,9 +538,11 @@ export function PaymentMethodsPanel({
 }
 
 /**
- * 08-B's invoice history. "Invoice PDF" is Stripe's own hosted invoice page - a CAPABILITY URL,
- * so it opens in a new tab with `rel="noopener noreferrer"` and is never logged or rewritten.
- * The design's "Billing Breakdown · Download csv" column belongs to section 09 and waits for it.
+ * 08-B's invoice history and its two downloads, one at a time whichever file: "Invoice PDF"
+ * saves the invoice as our own document (Figma 09-A) - a button, since the file is fetched with
+ * the bearer and saved, not linked - with "—" where it has none (never sent, or void); "Billing
+ * Breakdown · Download csv" saves it company by company. A refusal is the API's sentence under
+ * the table.
  */
 export function InvoiceHistoryTable({
   invoices,
@@ -548,6 +550,9 @@ export function InvoiceHistoryTable({
   paging,
   onPage,
   onPerPage,
+  onPdf,
+  pdfBusy,
+  pdfError,
   onBreakdown,
   breakdownBusy,
   breakdownError,
@@ -566,6 +571,11 @@ export function InvoiceHistoryTable({
   };
   onPage: (page: number) => void;
   onPerPage: (perPage: InvoicePageSize) => void;
+  /** "Invoice PDF": the invoice as our own document. */
+  onPdf: (invoiceId: string) => void;
+  /** The invoice whose PDF is being prepared, while it is. */
+  pdfBusy: string | null;
+  pdfError: string | null;
   /** "Download csv": one invoice, company by company. */
   onBreakdown: (invoiceId: string) => void;
   /** The invoice whose breakdown is being prepared, while it is. */
@@ -579,6 +589,7 @@ export function InvoiceHistoryTable({
   retryNotice: { tone: "ok" | "error"; text: string } | null;
 }) {
   const perPageId = useId();
+  const downloading = pdfBusy !== null || breakdownBusy !== null;
   return (
     <section aria-label={INVOICE_HISTORY} className="flex flex-col gap-3">
       <h2 className="text-[15px] font-bold text-[#16202e]">{INVOICE_HISTORY}</h2>
@@ -629,13 +640,14 @@ export function InvoiceHistoryTable({
                 <td className="py-3 tabular-nums">{inv.amount}</td>
                 <td className="py-3">{inv.paid ?? "—"}</td>
                 <td className="py-3 text-center">
-                  {inv.pdf ? (
-                    <a
-                      href={inv.pdf}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                  {inv.hasPdf ? (
+                    <button
+                      type="button"
+                      onClick={() => onPdf(inv.id)}
+                      disabled={downloading}
+                      aria-busy={pdfBusy === inv.id || undefined}
                       aria-label={`Invoice ${inv.reference} (PDF)`}
-                      className="inline-flex text-[#16202e] hover:text-[#2e9b9b]"
+                      className="inline-flex cursor-pointer text-[#16202e] hover:text-[#2e9b9b] disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
                         <path
@@ -646,7 +658,7 @@ export function InvoiceHistoryTable({
                           strokeLinejoin="round"
                         />
                       </svg>
-                    </a>
+                    </button>
                   ) : (
                     <span className="text-[#c7cdd4]">—</span>
                   )}
@@ -655,7 +667,7 @@ export function InvoiceHistoryTable({
                   <button
                     type="button"
                     onClick={() => onBreakdown(inv.id)}
-                    disabled={breakdownBusy !== null}
+                    disabled={downloading}
                     aria-busy={breakdownBusy === inv.id || undefined}
                     aria-label={`${DOWNLOAD_CSV}: the billing breakdown of invoice ${inv.reference}`}
                     className="text-[13px] text-[#18c4c7] hover:underline hover:underline-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
@@ -683,6 +695,11 @@ export function InvoiceHistoryTable({
             ))}
           </tbody>
         </table>
+      )}
+      {pdfError && (
+        <p role="alert" className="text-[13px] text-[#b42318]">
+          {pdfError}
+        </p>
       )}
       {breakdownError && (
         <p role="alert" className="text-[13px] text-[#b42318]">

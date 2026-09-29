@@ -3,7 +3,8 @@
 // menu's three items, the card the ACCOUNT charges switched, its own card refused removal (08-R)
 // and another one removed, the card that just arrived on it (08-N → 08-S), a payer with no
 // account at all (and the sheet that opens one), where Add / Edit / Change billing details /
-// Back go, and Retry payment on a declined invoice (08-K): paid, declined again, or refused.
+// Back go, Retry payment on a declined invoice (08-K): paid, declined again, or refused - and an
+// invoice's two downloads, its PDF and its breakdown, one at a time.
 
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -18,6 +19,7 @@ import {
   BREAKDOWN,
   FIXTURE_INVOICES,
   INVOICES,
+  INVOICE_PDF,
   WALLET_ADDED,
   WALLET_MANY,
   WALLET_TWO,
@@ -30,9 +32,10 @@ import { BILLING_LOAD_FAILED } from "@/features/subscription/lib/billing";
 import { breakdownCsv } from "@/features/subscription/lib/breakdown";
 
 // What would have been handed to the browser to save - the file itself, not the Blob plumbing.
-const saved = vi.hoisted(() => [] as { filename: string; text: string }[]);
+const saved = vi.hoisted(() => [] as { filename: string; text?: string; blob?: Blob }[]);
 vi.mock("@/features/subscription/lib/download", () => ({
   saveTextFile: (filename: string, text: string) => saved.push({ filename, text }),
+  saveBlob: (filename: string, blob: Blob) => saved.push({ filename, blob }),
 }));
 
 const push = vi.fn();
@@ -78,6 +81,10 @@ describe("useBillingPage", () => {
       after?: BillingAccounts;
       invoiceTotal?: number;
       breakdown?: boolean;
+      /** The PDF route's refusal, in place of the file. */
+      pdf?: { status: number; error: string };
+      /** Holds every PDF answer back until it settles. */
+      pdfGate?: Promise<void>;
     } = {},
   ) {
     posts.length = 0;
@@ -101,6 +108,15 @@ describe("useBillingPage", () => {
         return options.breakdown === false
           ? reply(404, { error: "That invoice couldn't be found." })
           : reply(200, BREAKDOWN);
+      }
+      if (/^\/api\/me\/invoices\/[^/]+\/pdf$/.test(url.pathname)) {
+        await options.pdfGate;
+        return options.pdf
+          ? reply(options.pdf.status, { error: options.pdf.error })
+          : new Response(INVOICE_PDF, {
+              status: 200,
+              headers: { "Content-Type": "application/pdf" },
+            });
       }
       if (url.pathname === "/api/me/invoices") {
         invoiceQueries.push(url.search);
@@ -199,6 +215,56 @@ describe("useBillingPage", () => {
     await act(async () => result.current.downloadBreakdown("in_2"));
     expect(result.current.breakdownError).toBe("That invoice couldn't be found.");
     expect(saved).toHaveLength(1); // nothing saved for a refusal
+  });
+
+  it("saves an invoice's PDF under its reference - the API's own document; a refusal says why", async () => {
+    serve(accountsFor(WALLET_TWO));
+    const { result } = renderHook(() => useBillingPage());
+    await waitFor(() => expect(result.current.invoices).toHaveLength(INVOICES.length));
+
+    await act(async () => result.current.downloadInvoicePdf("in_1"));
+    expect(saved.map((s) => s.filename)).toEqual(["Inv-11241234113.pdf"]);
+    expect(saved[0].blob?.type).toBe("application/pdf");
+    expect(await saved[0].blob?.text()).toBe(INVOICE_PDF);
+    expect(result.current.pdfBusy).toBeNull();
+    expect(result.current.pdfError).toBeNull();
+
+    const unreachable =
+      "We couldn't reach the payment processor for the billing address. Please try again in a moment.";
+    serve(accountsFor(WALLET_TWO), {}, { pdf: { status: 502, error: unreachable } });
+    await act(async () => result.current.downloadInvoicePdf("in_2"));
+    expect(result.current.pdfError).toBe(unreachable);
+    expect(saved).toHaveLength(1); // nothing saved for a refusal
+    // Its own line: the breakdown has said nothing.
+    expect(result.current.breakdownError).toBeNull();
+  });
+
+  it("prepares one download at a time, whichever file, naming the row it is busy on", async () => {
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    serve(accountsFor(WALLET_TWO), {}, { pdfGate: gate });
+    const { result } = renderHook(() => useBillingPage());
+    await waitFor(() => expect(result.current.invoices).toHaveLength(INVOICES.length));
+
+    let first: Promise<void> = Promise.resolve();
+    act(() => {
+      first = result.current.downloadInvoicePdf("in_1");
+    });
+    expect(result.current.pdfBusy).toBe("in_1");
+    expect(result.current.breakdownBusy).toBeNull();
+    // A second click - on either file - waits for the first rather than starting another.
+    await act(async () => result.current.downloadBreakdown("in_2"));
+    await act(async () => result.current.downloadInvoicePdf("in_2"));
+    const downloads = () =>
+      fetchMock.mock.calls.filter((c) => /\/(pdf|breakdown)$/.test(String(c[0])));
+    expect(downloads()).toHaveLength(1);
+
+    release();
+    await act(async () => first);
+    expect(result.current.pdfBusy).toBeNull();
+    expect(saved.map((s) => s.filename)).toEqual(["Inv-11241234113.pdf"]);
   });
 
   it("retries a declined invoice: paid says so, and the account is read again QUIETLY", async () => {
@@ -481,5 +547,11 @@ describe("useBillingPage", () => {
     expect(fetchMock).not.toHaveBeenCalled();
     expect(result.current.rows).toHaveLength(8);
     expect(result.current.invoices).toHaveLength(FIXTURE_INVOICES.length);
+
+    // An invoice's PDF too: the fixture's document, under the row's reference.
+    await act(async () => result.current.downloadInvoicePdf(FIXTURE_INVOICES[0].id));
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(saved.map((s) => s.filename)).toEqual(["Inv-11248800121.pdf"]);
+    expect(await saved[0].blob?.text()).toBe(INVOICE_PDF);
   });
 });

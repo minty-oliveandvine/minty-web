@@ -26,12 +26,15 @@
  * dialog, with *Try again now*; every other answer is the API's sentence. Either way the account
  * and its invoices are read again quietly, so a paid retry clears the amber block by itself.
  *
+ * AN INVOICE'S TWO DOWNLOADS, one at a time whichever file: *Invoice PDF* saves our own document
+ * (`GET /api/me/invoices/{id}/pdf`, Figma 09-A) as `Inv-<reference>.pdf`, and *Download csv* its
+ * billing breakdown; each has its own busy row and its own refusal, in the API's words.
+ *
  * Landings: *+ Add payment method* → 08-Y for this account, which comes back with `?added=` so
  * this page can say what happened (08-N when it is not the default, 08-S when it is); *Edit* →
- * 08-D; *Change billing details* → 08-C; *Invoice PDF* → Stripe's hosted page, in a new tab;
- * back → 08-A showing this account. A payer with no account at all opens one here, in
- * onboarding's sheet (`opening`), and lands on its page. `fixture`: dev-only,
- * `?fixture=B|H|I|J|N`.
+ * 08-D; *Change billing details* → 08-C; back → 08-A showing this account. A payer with no
+ * account at all opens one here, in onboarding's sheet (`opening`), and lands on its page.
+ * `fixture`: dev-only, `?fixture=B|H|I|J|N`.
  */
 
 import { useRouter } from "next/navigation";
@@ -42,6 +45,7 @@ import { ApiError } from "@/lib/apiClient";
 import {
   fetchBillingAccounts,
   fetchInvoiceBreakdown,
+  fetchInvoicePdf,
   fetchPayerInvoices,
   removePaymentMethod,
   retryInvoice as requestRetry,
@@ -57,12 +61,14 @@ import type { OpenedAccount } from "@/features/subscription/hooks/useCardForm";
 import {
   BILLING_LOAD_FAILED,
   CARD_ACTION_FAILED,
+  INVOICE_PDF_FAILED,
   RETRY_FAILED,
   amountHeader,
   cardMenu,
   cardRows,
   expiredNotice,
   invoiceLines,
+  invoicePdfFilename,
   showMoreLabel,
   visibleCards,
   type CardMenuItem,
@@ -81,7 +87,7 @@ import {
   breakdownCsv,
   breakdownFilename,
 } from "@/features/subscription/lib/breakdown";
-import { saveTextFile } from "@/features/subscription/lib/download";
+import { saveBlob, saveTextFile } from "@/features/subscription/lib/download";
 import { BILLING, overviewPath } from "@/features/subscription/lib/paths";
 
 export type BillingStatus = "loading" | "ready" | "error";
@@ -130,6 +136,11 @@ export type UseBillingPageResult = {
   invoicePaging: InvoicePaging;
   goToInvoicePage: (page: number) => void;
   setInvoicesPerPage: (perPage: InvoicePageSize) => void;
+  /** "Invoice PDF": the invoice as our own document, saved as `Inv-<reference>.pdf`. */
+  downloadInvoicePdf: (invoiceId: string) => Promise<void>;
+  /** The invoice whose PDF is being prepared, while it is. */
+  pdfBusy: string | null;
+  pdfError: string | null;
   /** "Billing Breakdown · Download csv": one invoice, company by company, saved as a CSV. */
   downloadBreakdown: (invoiceId: string) => Promise<void>;
   /** The invoice whose breakdown is being prepared, while it is. */
@@ -187,6 +198,14 @@ type InvoicePage = {
   pages: number;
 };
 
+/** One of an invoice's downloads, as the page tells it: the row it is preparing, and why not. */
+type DownloadState = {
+  setBusy: (invoiceId: string | null) => void;
+  setError: (error: string | null) => void;
+  /** Said when the API gave no sentence of its own (the network failed, say). */
+  fallback: string;
+};
+
 function sentence(err: unknown, fallback: string): string {
   return err instanceof ApiError ? err.message : fallback;
 }
@@ -208,6 +227,17 @@ async function loadBreakdown(
     if (f.isBillingFixture(fixture)) return f.BREAKDOWN;
   }
   return fetchInvoiceBreakdown(invoiceId);
+}
+
+async function loadInvoicePdf(
+  fixture: string | null | undefined,
+  invoiceId: string,
+): Promise<Blob> {
+  if (process.env.NODE_ENV !== "production" && fixture) {
+    const f = await import("@/features/subscription/__fixtures__/billing");
+    if (f.isBillingFixture(fixture)) return new Blob([f.INVOICE_PDF], { type: "application/pdf" });
+  }
+  return fetchInvoicePdf(invoiceId);
 }
 
 async function sendRetry(
@@ -265,6 +295,8 @@ export function useBillingPage({
     page: 1,
   });
   const [perPage, setPerPage] = useState<InvoicePageSize>(10);
+  const [pdfBusy, setPdfBusy] = useState<string | null>(null);
+  const [pdfError, setPdfError] = useState<string | null>(null);
   const [breakdownBusy, setBreakdownBusy] = useState<string | null>(null);
   const [breakdownError, setBreakdownError] = useState<string | null>(null);
   const [retrying, setRetrying] = useState<string | null>(null);
@@ -360,22 +392,49 @@ export function useBillingPage({
     },
     [shownId, invoicePaging.pages],
   );
-  // One at a time: the row being prepared says so, and a second click waits for it.
-  const downloadBreakdown = useCallback(
-    async (invoiceId: string) => {
-      if (breakdownBusy) return;
-      setBreakdownBusy(invoiceId);
-      setBreakdownError(null);
+  // An invoice's two downloads, ONE at a time whichever file: the row being prepared says so, a
+  // second click waits for it, and a refusal is the API's sentence under the table.
+  const downloading = pdfBusy !== null || breakdownBusy !== null;
+  const download = useCallback(
+    async (invoiceId: string, state: DownloadState, save: () => Promise<void>) => {
+      if (downloading) return;
+      state.setBusy(invoiceId);
+      state.setError(null);
       try {
-        const breakdown = await loadBreakdown(fixture, invoiceId);
-        saveTextFile(breakdownFilename(breakdown.invoice.reference), breakdownCsv(breakdown));
+        await save();
       } catch (err) {
-        setBreakdownError(sentence(err, BREAKDOWN_FAILED));
+        state.setError(sentence(err, state.fallback));
       } finally {
-        setBreakdownBusy(null);
+        state.setBusy(null);
       }
     },
-    [breakdownBusy, fixture],
+    [downloading],
+  );
+  const downloadInvoicePdf = useCallback(
+    (invoiceId: string) => {
+      // Named here, after the row's reference (its id, should the row be gone): the API names
+      // the file too, but CORS keeps its Content-Disposition from the page.
+      const reference = invoices.find((inv) => inv.id === invoiceId)?.reference ?? invoiceId;
+      return download(
+        invoiceId,
+        { setBusy: setPdfBusy, setError: setPdfError, fallback: INVOICE_PDF_FAILED },
+        async () =>
+          saveBlob(invoicePdfFilename(reference), await loadInvoicePdf(fixture, invoiceId)),
+      );
+    },
+    [download, fixture, invoices],
+  );
+  const downloadBreakdown = useCallback(
+    (invoiceId: string) =>
+      download(
+        invoiceId,
+        { setBusy: setBreakdownBusy, setError: setBreakdownError, fallback: BREAKDOWN_FAILED },
+        async () => {
+          const breakdown = await loadBreakdown(fixture, invoiceId);
+          saveTextFile(breakdownFilename(breakdown.invoice.reference), breakdownCsv(breakdown));
+        },
+      ),
+    [download, fixture],
   );
   // *Retry payment*: the engine collects this invoice on its account's card - or says why not.
   // A decline is 06·B's dialog (with Try again); every other answer is the API's sentence under
@@ -525,6 +584,9 @@ export function useBillingPage({
     invoicePaging,
     goToInvoicePage,
     setInvoicesPerPage,
+    downloadInvoicePdf,
+    pdfBusy,
+    pdfError,
     downloadBreakdown,
     breakdownBusy,
     breakdownError,

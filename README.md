@@ -50,7 +50,7 @@ app/layout.tsx          the other composition: every page's shell - the sidebar 
 features/subscription/  a bounded folder — index.ts is its whole public surface; README.md has the extraction recipe
 features/entities/      the entity list, bounded the same way
 features/profile/       My Profile, bounded the same way
-lib/                    env · auth (the cookie) · apiClient (apiFetch → billing API, mintyFetch → Flask) · handoff
+lib/                    env · auth (the cookie) · apiClient (apiFetch / apiFetchBlob → billing API, mintyFetch → Flask) · handoff
                         · hubPaths (where each feature is mounted; the open pages) · viewer (who is looking) · logout · mintyEntry
                         · moduleClaims · terms (what is owed, and agreeing)
 components/ui/          AppHeader · Sidebar (one drawer, two views: the menu and My Profile) · SideMenu (the Figma 02 menu)

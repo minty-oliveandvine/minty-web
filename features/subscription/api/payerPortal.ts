@@ -1,6 +1,8 @@
 /**
  * The payer portal's API: the `/api/me/*` routes, typed to the contract - Flask's fifteen
- * paths, plus `transfer/seen` and the four `billing/accounts` routes minty-billing-api added.
+ * paths, plus what minty-billing-api added: `transfer/seen`, the four `billing/accounts` routes
+ * and an invoice's `breakdown`, `retry` and `pdf`. Every one answers JSON but `pdf`, the file
+ * itself (`apiFetchBlob`).
  *
  * billing-frontend/lib/payerPortal.ts, moved: the same function names, parameters, request
  * bodies, query names and response types, so the portal screens port mechanically (Part 2
@@ -12,7 +14,7 @@
  * the query string or the body (`entity`), as Flask's routes/portal.py did.
  */
 
-import { ApiError, apiFetch } from "@/lib/apiClient";
+import { ApiError, apiFetch, apiFetchBlob } from "@/lib/apiClient";
 
 // --- Subscriptions ------------------------------------------------------------
 
@@ -656,8 +658,16 @@ export type InvoiceRow = {
    */
   retryable?: boolean;
   payment_method: string | null;
-  /** A CAPABILITY URL (Stripe's hosted invoice page): open with rel="noopener noreferrer", never log. */
+  /**
+   * A CAPABILITY URL (Stripe's hosted invoice page): never log it. Nothing here links it any
+   * more - the Invoice PDF is our own document (`has_pdf`, `fetchInvoicePdf`).
+   */
   hosted_invoice_url: string | null;
+  /**
+   * There is a PDF of it to download (`fetchInvoicePdf`): it reached the processor and is paid,
+   * open or uncollectible - never a draft or a void one. Absent on an API older than the PDF.
+   */
+  has_pdf?: boolean;
   entities: string[];
 };
 
@@ -723,6 +733,20 @@ export async function fetchInvoiceBreakdown(invoiceId: string): Promise<InvoiceB
     throw new ApiError(502, UNEXPECTED_SHAPE);
   }
   return data;
+}
+
+/**
+ * 08-B's *Invoice PDF*: the invoice as our own document (Figma 09-A), the file itself for the
+ * page to save. Someone else's invoice is a 404, one with no PDF a 409, and the processor out of
+ * reach for the billing address a 502 - each in the API's words.
+ */
+export async function fetchInvoicePdf(invoiceId: string): Promise<Blob> {
+  const pdf = await apiFetchBlob(`/api/me/invoices/${encodeURIComponent(invoiceId)}/pdf`);
+  // The type the response named, its parameters aside: anything else is not the document.
+  if (pdf.type.split(";")[0].trim().toLowerCase() !== "application/pdf") {
+    throw new ApiError(502, UNEXPECTED_SHAPE);
+  }
+  return pdf;
 }
 
 /**

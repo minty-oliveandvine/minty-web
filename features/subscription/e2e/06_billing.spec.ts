@@ -1,6 +1,7 @@
 // The billing area (Figma section 08) in a browser, over a STUBBED API: the portal's landing
 // (08-A) - one billing account, picked by clicking its card, and its name ("Change billing
-// account") moving a company between accounts - one account's page with its cards and invoices (08-B),
+// account") moving a company between accounts - one account's page with its cards and invoices,
+// each downloading as its PDF and its breakdown's CSV (08-B),
 // the "Update card" menu and what it does - switch the card the account charges (08-W), refuse
 // to remove that card (08-R), remove another one - the empty and expired states (08-H, 08-I),
 // the card that just arrived (08-N → 08-S), the account's name and email (08-C), and the
@@ -24,6 +25,7 @@ import {
   BREAKDOWN,
   FAILED_INVOICES,
   INVOICES,
+  INVOICE_PDF,
   WALLET_ADDED,
   WALLET_EXPIRED,
   WALLET_NONE,
@@ -156,6 +158,9 @@ async function stubBilling(page: Page, wallet: PayerPaymentMethods) {
   );
   await page.route(`${BILLING_API_URL}/api/me/invoices/*/breakdown`, (route) =>
     route.fulfill(json(BREAKDOWN)),
+  );
+  await page.route(`${BILLING_API_URL}/api/me/invoices/*/pdf`, (route) =>
+    route.fulfill({ status: 200, contentType: "application/pdf", body: INVOICE_PDF }),
   );
   await page.route(`${BILLING_API_URL}/api/me/invoices?*`, (route) => {
     const params = new URL(route.request().url()).searchParams;
@@ -336,9 +341,15 @@ test.describe("billing", () => {
     const invoices = body(page).getByRole("region", { name: "Invoice History" });
     await expect(invoices).toContainText("Amount (HK$)");
     await expect(invoices).toContainText("#11241234113");
-    await expect(
-      invoices.getByRole("link", { name: "Invoice #11241234113 (PDF)" }),
-    ).toHaveAttribute("href", "https://invoice.stripe.test/in_1");
+    // Its PDF is our own document, downloaded - and named here after the invoice, since CORS
+    // keeps the API's Content-Disposition from the page.
+    const [download] = await Promise.all([
+      page.waitForEvent("download"),
+      invoices.getByRole("button", { name: "Invoice #11241234113 (PDF)" }).click(),
+    ]);
+    expect(download.suggestedFilename()).toBe("Inv-11241234113.pdf");
+    const pdf = await readFile(await download.path());
+    expect(pdf.subarray(0, 5).toString("latin1")).toBe("%PDF-");
     // Ten to a page until the payer picks 50 or 100 - which reads the first page at that size.
     const paging = invoices.getByRole("navigation", { name: "Invoice pages" });
     await expect(paging.getByLabel("Rows per page")).toHaveValue("10");

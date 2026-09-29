@@ -94,6 +94,9 @@ export function BillingPageScreen(args: UseBillingPageArgs) {
             paging={b.invoicePaging}
             onPage={b.goToInvoicePage}
             onPerPage={b.setInvoicesPerPage}
+            onPdf={(invoiceId) => void b.downloadInvoicePdf(invoiceId)}
+            pdfBusy={b.pdfBusy}
+            pdfError={b.pdfError}
             onBreakdown={(invoiceId) => void b.downloadBreakdown(invoiceId)}
             breakdownBusy={b.breakdownBusy}
             breakdownError={b.breakdownError}

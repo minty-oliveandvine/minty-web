@@ -1,5 +1,6 @@
 // Section 08's screens, rendered from the fixtures: the billing page in each state the design
-// draws (08-B two cards, 08-H none, 08-I expired, 08-J all of them, 08-K a payment failed), the
+// draws (08-B two cards and an invoice's two downloads - its PDF and its breakdown, 08-H none,
+// 08-I expired, 08-J all of them, 08-K a payment failed), the
 // "Update card" menu and what it opens (08-W/08-X, 08-R), the card that just arrived (08-N /
 // 08-S), the edit screen (08-D), the add screen around Stripe's form (08-Y), the portal's
 // landing (08-A), and the billing-account sheet - onboarding's list → form → 01-J, in place.
@@ -19,10 +20,13 @@ import {
   ACCOUNTS_NONE,
   ACCOUNTS_OPENED,
   ADDED_CARD,
+  INVOICES,
+  INVOICE_PDF,
   WALLET_ADDED,
   WALLET_NONE,
   WALLET_TWO,
   accountsFor,
+  invoicePage,
 } from "@/features/subscription/__fixtures__/billing";
 import { ADDRESS_UNAVAILABLE } from "@/features/subscription/lib/billingAccounts";
 import { BillingDetailsScreen } from "@/features/subscription/routes/BillingDetailsScreen";
@@ -33,9 +37,10 @@ import { SubscriptionOverviewScreen } from "@/features/subscription/routes/Subsc
 const push = vi.fn();
 const replace = vi.fn();
 // What would have been handed to the browser to save.
-const saved = vi.hoisted(() => [] as { filename: string; text: string }[]);
+const saved = vi.hoisted(() => [] as { filename: string; text?: string; blob?: Blob }[]);
 vi.mock("@/features/subscription/lib/download", () => ({
   saveTextFile: (filename: string, text: string) => saved.push({ filename, text }),
+  saveBlob: (filename: string, blob: Blob) => saved.push({ filename, blob }),
 }));
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push, replace, back: vi.fn() }),
@@ -193,9 +198,6 @@ describe("the billing page", () => {
     expect(
       within(invoices).getByRole("columnheader", { name: "Amount (HK$)" }),
     ).toBeInTheDocument();
-    expect(
-      within(invoices).getByRole("link", { name: "Invoice #11241234113 (PDF)" }),
-    ).toHaveAttribute("target", "_blank");
     // Ten to a page until the payer picks 50 or 100; one page here, so no way on.
     const pages = within(invoices).getByRole("navigation", { name: "Invoice pages" });
     expect(within(pages).getByLabelText("Rows per page")).toHaveValue("10");
@@ -218,6 +220,70 @@ describe("the billing page", () => {
       expect(saved.at(-1)?.filename).toBe("Inv-11241234113 Breakdown by Entity.csv"),
     );
     expect(saved.at(-1)?.text).toMatch(/^Entity Name,Subscription,Monthly amount,/);
+
+    // The invoice itself, as our own PDF under its reference - the fixture's, no network.
+    await user.click(within(invoices).getByRole("button", { name: "Invoice #11241234113 (PDF)" }));
+    await waitFor(() => expect(saved.at(-1)?.filename).toBe("Inv-11241234113.pdf"));
+    expect(await saved.at(-1)?.blob?.text()).toBe(INVOICE_PDF);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("08-B: Invoice PDF saves our own document, one download at a time; a refusal is the API's sentence", async () => {
+    const user = userEvent.setup();
+    saved.length = 0;
+    let release = () => {};
+    const held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    let refusal: { status: number; error: string } | null = null;
+    // A draft was never sent, so it has no PDF.
+    const draft = { ...INVOICES[2], id: "in_draft", reference: "#11249900000", has_pdf: false };
+    fetchMock.mockImplementation(async (input) => {
+      const url = new URL(String(input));
+      if (url.pathname === "/api/me/billing/accounts") return reply(200, accountsFor(WALLET_TWO));
+      if (url.pathname === "/api/me/invoices") return reply(200, invoicePage([...INVOICES, draft]));
+      if (url.pathname.endsWith("/pdf")) {
+        await held;
+        return refusal
+          ? reply(refusal.status, { error: refusal.error })
+          : new Response(INVOICE_PDF, {
+              status: 200,
+              headers: { "Content-Type": "application/pdf" },
+            });
+      }
+      return reply(404, { error: "not_found" });
+    });
+    render(<BillingPageScreen accountId="acc-company-a" />);
+    const invoices = await screen.findByRole("region", { name: "Invoice History" });
+
+    // "—" where there is none, never a button that could only fail.
+    const draftRow = (await within(invoices).findByText("#11249900000")).closest("tr")!;
+    expect(within(draftRow).getAllByRole("cell")[3]).toHaveTextContent("—");
+    expect(within(draftRow).queryByRole("button", { name: /\(PDF\)/ })).toBeNull();
+
+    // Being prepared, that row says so - and no download, of either file, can start meanwhile.
+    const pdf = within(invoices).getByRole("button", { name: "Invoice #11241234113 (PDF)" });
+    await user.click(pdf);
+    await waitFor(() => expect(pdf).toHaveAttribute("aria-busy", "true"));
+    expect(
+      within(invoices).getByRole("button", { name: "Invoice #1134125533 (PDF)" }),
+    ).toBeDisabled();
+    expect(
+      within(invoices).getByRole("button", { name: /billing breakdown of invoice #11241234113/ }),
+    ).toBeDisabled();
+    release();
+    await waitFor(() => expect(saved.at(-1)?.filename).toBe("Inv-11241234113.pdf"));
+    expect(saved.at(-1)?.blob?.type).toBe("application/pdf");
+    await waitFor(() => expect(pdf).not.toHaveAttribute("aria-busy"));
+    expect(pdf).toBeEnabled();
+
+    // When it cannot, the API's own sentence under the table.
+    refusal = { status: 409, error: "There's no PDF for that invoice." };
+    await user.click(pdf);
+    expect(await within(invoices).findByRole("alert")).toHaveTextContent(
+      "There's no PDF for that invoice.",
+    );
+    expect(saved).toHaveLength(1);
   });
 
   it("clicking either top card opens the SAME billing-account picker 08-A's card does", async () => {
