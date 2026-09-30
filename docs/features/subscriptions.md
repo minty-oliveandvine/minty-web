@@ -1061,7 +1061,9 @@ schema change), which 08-C writes.
   (2026-09-29, the user's call): a click anywhere on either that is not one of its own controls
   opens the SAME billing-account picker (`AccountPickerDialog`), with a sr-only keyboard button
   doing the same; picking another account lands THIS page on it (`confirmPick`), rather than only
-  rewriting the URL as 08-A does. "Next billing" — **Bill to** (the account's name, its address line by line, its billing email,
+  rewriting the URL as 08-A does. "Next billing" — **Bill to** (the account's name, its address line by line, its email - the API's
+  `bill_to_email`: the billing email, else the business email every company on it shares, else
+  the payer's, the same address its money emails reach and its invoice PDFs print (2026-09-30) -
   and _Change billing details_ → 08-C), **Next Bill Date** (the payer's `next_billing`) and
   **Amount** - what THIS account's next renewal will charge, large in the price teal with
   "(estimated)" under it, by the currency's code with cents only when there are some ("HKD

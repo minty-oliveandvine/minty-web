@@ -1,5 +1,5 @@
-// Who is looking (lib/viewer.ts): read once per token, never twice, quiet when it fails, and
-// updated at once when My Profile saves a new name.
+// Who is looking (lib/viewer.ts): read once per token, never twice, harmless but not silent when it
+// fails, and updated at once when My Profile saves a new name.
 
 import { act, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -32,14 +32,19 @@ describe("useViewer", () => {
     expect(loader).toHaveBeenCalledTimes(1);
   });
 
-  it("a failed read leaves nobody shown, and does not throw", async () => {
+  it("a failed read leaves nobody shown, does not throw, and says why on the console", async () => {
     setAuth("h.eyJ1c2VyX2lkIjoidTEifQ.s", "", "");
-    const loader = vi.fn(() => Promise.reject(new Error("Flask is down")));
+    const failure = new Error("Flask is down");
+    const loader = vi.fn(() => Promise.reject(failure));
     _setViewerLoaderForTests(loader);
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
 
     render(<Probe />);
-    await waitFor(() => expect(loader).toHaveBeenCalled());
+    await waitFor(() =>
+      expect(logged).toHaveBeenCalledWith("[viewer] the name and initials did not load", failure),
+    );
     expect(shown()).toBe("nobody");
+    logged.mockRestore();
   });
 
   it("a viewer the page already knows is used as it stands, with no read", () => {

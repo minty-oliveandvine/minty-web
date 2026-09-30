@@ -367,7 +367,7 @@ test.describe("billing", () => {
     await stubBilling(page, WALLET_TWO);
     const long = accountsFor(WALLET_TWO);
     const email = "angelika.tardaguela+catalogue@oliveandvinehk.com";
-    long.accounts[0] = { ...long.accounts[0], billing_email: email };
+    long.accounts[0] = { ...long.accounts[0], billing_email: email, bill_to_email: email };
     const serveLong = (route: Route) => route.fulfill(json(long));
     await page.route(`${BILLING_API_URL}/api/me/billing/accounts`, serveLong);
     await page.route(`${BILLING_API_URL}/api/me/billing/accounts?*`, serveLong);

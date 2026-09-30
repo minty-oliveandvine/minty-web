@@ -171,9 +171,9 @@ export function accountBilling(
 ): NextBilling {
   return {
     billTo: account?.name ?? "",
-    // The account's own address for invoices; one never given it reads as the payer's, like
-    // its name does.
-    email: account ? account.billing_email || data?.payer.email || null : null,
+    // The address its invoices name and its money emails reach, resolved by the API: the
+    // billing email, else the business email its companies share, else the payer's.
+    email: account ? account.bill_to_email || null : null,
     addressLines: addressLines(account?.address ?? null),
     date: data?.next_billing ?? null,
     // The currency by its CODE - "HKD 1,500" (the user's call) - cents only when there are some.

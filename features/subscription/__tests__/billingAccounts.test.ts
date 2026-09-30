@@ -121,6 +121,17 @@ describe("the Bill to block", () => {
     expect(next.failed).toBe(true); // its collection is failing
   });
 
+  it("prints the address the API resolved, not the raw billing email", () => {
+    // No billing email, but every company on it gave the same business email: that is
+    // where its money emails go, so it is what Bill to names (the API's `bill_to_email`).
+    const shared: BillingAccount = {
+      ...UNNAMED,
+      billing_email: null,
+      bill_to_email: "ap@group.test",
+    };
+    expect(accountBilling(ACCOUNTS, shared).email).toBe("ap@group.test");
+  });
+
   it("with no account at all, nothing to name", () => {
     expect(accountBilling(ACCOUNTS_NONE, null)).toMatchObject({ billTo: "", email: null });
   });

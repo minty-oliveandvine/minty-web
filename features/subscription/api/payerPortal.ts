@@ -508,6 +508,12 @@ export type BillingAccount = {
   /** Raw, so a form can tell "unnamed" from "named after the payer". */
   billing_company: string | null;
   billing_email: string | null;
+  /**
+   * What "Bill to" prints - where the account's money emails go and what its invoices name,
+   * resolved by the API: the billing email, else the business email every company on it
+   * shares, else the payer's. `billing_email` stays raw for 08-C's form.
+   */
+  bill_to_email: string | null;
   /** The card the account CHARGES. */
   default_id: string;
   /** That card, or null when Stripe no longer holds it - an account that cannot pay. */
