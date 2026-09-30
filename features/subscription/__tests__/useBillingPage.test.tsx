@@ -3,8 +3,9 @@
 // menu's three items, the card the ACCOUNT charges switched, its own card refused removal (08-R)
 // and another one removed, the card that just arrived on it (08-N → 08-S), a payer with no
 // account at all (and the sheet that opens one), where Add / Edit / Change billing details /
-// Back go, Retry payment on a declined invoice (08-K): paid, declined again, or refused - and an
-// invoice's two downloads, its PDF and its breakdown, one at a time.
+// Back go, Retry payment on a declined invoice (08-K): paid, declined again, or refused - an
+// invoice's two downloads, its PDF and its breakdown, one at a time - and its Inv# preview:
+// the PDF's bytes for the dialog, nothing saved, a late answer dropped.
 
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -265,6 +266,126 @@ describe("useBillingPage", () => {
     await act(async () => first);
     expect(result.current.pdfBusy).toBeNull();
     expect(saved.map((s) => s.filename)).toEqual(["Inv-11241234113.pdf"]);
+  });
+
+  it("previews an invoice's PDF - its bytes for the dialog, nothing saved; a refusal is the API's sentence", async () => {
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    serve(accountsFor(WALLET_TWO), {}, { pdfGate: gate });
+    const { result } = renderHook(() => useBillingPage());
+    await waitFor(() => expect(result.current.invoices).toHaveLength(INVOICES.length));
+    expect(result.current.preview).toBeNull();
+
+    // Open at once, titled by the row, while the PDF is on its way.
+    let opened: Promise<void> = Promise.resolve();
+    act(() => {
+      opened = result.current.previewInvoice("in_1");
+    });
+    expect(result.current.preview).toEqual({
+      invoiceId: "in_1",
+      reference: "#11241234113",
+      status: "loading",
+      bytes: null,
+      error: null,
+    });
+    release();
+    await act(async () => opened);
+    expect(result.current.preview).toMatchObject({
+      invoiceId: "in_1",
+      reference: "#11241234113",
+      status: "ready",
+      error: null,
+    });
+    expect(new TextDecoder().decode(result.current.preview?.bytes ?? undefined)).toBe(INVOICE_PDF);
+    // Not a download: nothing saved, and the downloads neither held nor told anything.
+    expect(saved).toEqual([]);
+    expect(result.current.pdfBusy).toBeNull();
+    expect(result.current.pdfError).toBeNull();
+
+    act(() => result.current.closePreview());
+    expect(result.current.preview).toBeNull();
+
+    // Refused: the API's sentence, on the preview - the table's line stays quiet.
+    serve(
+      accountsFor(WALLET_TWO),
+      {},
+      { pdf: { status: 409, error: "There's no PDF for that invoice." } },
+    );
+    await act(async () => result.current.previewInvoice("in_2"));
+    expect(result.current.preview).toEqual({
+      invoiceId: "in_2",
+      reference: "#1134125533",
+      status: "error",
+      bytes: null,
+      error: "There's no PDF for that invoice.",
+    });
+    expect(result.current.pdfError).toBeNull();
+    expect(saved).toEqual([]);
+  });
+
+  it("drops a preview's late answer - another invoice opened meanwhile, or the preview closed", async () => {
+    let releaseFirst = () => {};
+    const first = new Promise<void>((resolve) => {
+      releaseFirst = resolve;
+    });
+    // The first answer is held - and is a refusal, so showing it would be plain to see.
+    serve(
+      accountsFor(WALLET_TWO),
+      {},
+      { pdfGate: first, pdf: { status: 502, error: "Too late." } },
+    );
+    const { result } = renderHook(() => useBillingPage());
+    await waitFor(() => expect(result.current.invoices).toHaveLength(INVOICES.length));
+
+    let a: Promise<void> = Promise.resolve();
+    act(() => {
+      a = result.current.previewInvoice("in_1");
+    });
+    // Another row's preview opens while the first is on its way, and answers first.
+    serve(accountsFor(WALLET_TWO));
+    await act(async () => result.current.previewInvoice("in_2"));
+    expect(result.current.preview).toMatchObject({ invoiceId: "in_2", status: "ready" });
+    releaseFirst();
+    await act(async () => a);
+    expect(result.current.preview).toMatchObject({
+      invoiceId: "in_2",
+      reference: "#1134125533",
+      status: "ready",
+      error: null,
+    });
+
+    // Closed while its PDF is on its way: it stays closed when the PDF arrives.
+    let releaseLate = () => {};
+    const late = new Promise<void>((resolve) => {
+      releaseLate = resolve;
+    });
+    serve(accountsFor(WALLET_TWO), {}, { pdfGate: late });
+    let c: Promise<void> = Promise.resolve();
+    act(() => {
+      c = result.current.previewInvoice("in_3");
+    });
+    expect(result.current.preview).toMatchObject({ invoiceId: "in_3", status: "loading" });
+    act(() => result.current.closePreview());
+    releaseLate();
+    await act(async () => c);
+    expect(result.current.preview).toBeNull();
+    expect(saved).toEqual([]);
+  });
+
+  it("?fixture= previews the fixture's document without the API", async () => {
+    const { result } = renderHook(() => useBillingPage({ fixture: "B" }));
+    await waitFor(() => expect(result.current.invoices).toHaveLength(FIXTURE_INVOICES.length));
+    await act(async () => result.current.previewInvoice(FIXTURE_INVOICES[0].id));
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(result.current.preview).toMatchObject({
+      invoiceId: "in_failed",
+      reference: "#11248800121",
+      status: "ready",
+    });
+    expect(new TextDecoder().decode(result.current.preview?.bytes ?? undefined)).toBe(INVOICE_PDF);
+    expect(saved).toEqual([]);
   });
 
   it("retries a declined invoice: paid says so, and the account is read again QUIETLY", async () => {

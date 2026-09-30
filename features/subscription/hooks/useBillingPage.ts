@@ -30,6 +30,12 @@
  * (`GET /api/me/invoices/{id}/pdf`, Figma 09-A) as `Inv-<reference>.pdf`, and *Download csv* its
  * billing breakdown; each has its own busy row and its own refusal, in the API's words.
  *
+ * AND ITS INV# PREVIEW (`preview`): the row's reference opens that same PDF in a dialog, read the
+ * same way - VIEW-ONLY, the user's call (2026-09-30): nothing is saved from it, the Invoice PDF
+ * column is the download. Not a download, so the one-at-a-time rule does not hold it back; its
+ * refusal is the API's sentence, in the dialog. Only the latest request may answer - closing the
+ * preview, or opening another row's, drops whatever was still on its way.
+ *
  * Landings: *+ Add payment method* → 08-Y for this account, which comes back with `?added=` so
  * this page can say what happened (08-N when it is not the default, 08-S when it is); *Edit* →
  * 08-D; *Change billing details* → 08-C; back → 08-A showing this account. A payer with no
@@ -38,7 +44,7 @@
  */
 
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { ApiError } from "@/lib/apiClient";
 
@@ -98,6 +104,18 @@ export type CardPrompt = { kind: "remove" | "remove_default"; row: CardRow };
 /** 08-N / 08-S: the card that just came back from the Stripe form. */
 export type AddedCard = { card: SavedPaymentMethod; isDefault: boolean };
 
+/**
+ * The Inv# preview: which invoice, and its PDF's bytes once they are here - for the dialog to
+ * draw, never to save. `error` is the API's sentence when it refused.
+ */
+export type InvoicePreview = {
+  invoiceId: string;
+  reference: string;
+  status: "loading" | "ready" | "error";
+  bytes: Uint8Array | null;
+  error: string | null;
+};
+
 export type UseBillingPageArgs = {
   /** `?account=` - the billing account this page is the profile of. */
   accountId?: string | null;
@@ -141,6 +159,11 @@ export type UseBillingPageResult = {
   /** The invoice whose PDF is being prepared, while it is. */
   pdfBusy: string | null;
   pdfError: string | null;
+  /** The Inv# preview on show, when one is: the invoice's PDF, drawn - view-only, never saved. */
+  preview: InvoicePreview | null;
+  /** The Inv#: the invoice's PDF, read for the preview (the latest request is the one shown). */
+  previewInvoice: (invoiceId: string) => Promise<void>;
+  closePreview: () => void;
   /** "Billing Breakdown · Download csv": one invoice, company by company, saved as a CSV. */
   downloadBreakdown: (invoiceId: string) => Promise<void>;
   /** The invoice whose breakdown is being prepared, while it is. */
@@ -297,6 +320,9 @@ export function useBillingPage({
   const [perPage, setPerPage] = useState<InvoicePageSize>(10);
   const [pdfBusy, setPdfBusy] = useState<string | null>(null);
   const [pdfError, setPdfError] = useState<string | null>(null);
+  const [preview, setPreview] = useState<InvoicePreview | null>(null);
+  // Bumped by every preview opened or closed: an answer for an older one is too late.
+  const previewRequest = useRef(0);
   const [breakdownBusy, setBreakdownBusy] = useState<string | null>(null);
   const [breakdownError, setBreakdownError] = useState<string | null>(null);
   const [retrying, setRetrying] = useState<string | null>(null);
@@ -424,6 +450,37 @@ export function useBillingPage({
     },
     [download, fixture, invoices],
   );
+  // The Inv# preview: that same PDF read into memory for the dialog to draw - nothing is saved.
+  // Each request takes a number; an answer whose number is no longer the latest (the preview was
+  // closed, or another row's opened) is dropped rather than shown over the wrong invoice.
+  const previewInvoice = useCallback(
+    async (invoiceId: string) => {
+      const request = ++previewRequest.current;
+      // The dialog's title is the row's reference (its id, should the row be gone).
+      const reference = invoices.find((inv) => inv.id === invoiceId)?.reference ?? invoiceId;
+      setPreview({ invoiceId, reference, status: "loading", bytes: null, error: null });
+      try {
+        const pdf = await loadInvoicePdf(fixture, invoiceId);
+        const bytes = new Uint8Array(await pdf.arrayBuffer());
+        if (request !== previewRequest.current) return;
+        setPreview({ invoiceId, reference, status: "ready", bytes, error: null });
+      } catch (err) {
+        if (request !== previewRequest.current) return;
+        setPreview({
+          invoiceId,
+          reference,
+          status: "error",
+          bytes: null,
+          error: sentence(err, INVOICE_PDF_FAILED),
+        });
+      }
+    },
+    [fixture, invoices],
+  );
+  const closePreview = useCallback(() => {
+    previewRequest.current += 1;
+    setPreview(null);
+  }, []);
   const downloadBreakdown = useCallback(
     (invoiceId: string) =>
       download(
@@ -587,6 +644,9 @@ export function useBillingPage({
     downloadInvoicePdf,
     pdfBusy,
     pdfError,
+    preview,
+    previewInvoice,
+    closePreview,
     downloadBreakdown,
     breakdownBusy,
     breakdownError,

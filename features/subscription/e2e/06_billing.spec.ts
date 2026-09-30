@@ -1,7 +1,8 @@
 // The billing area (Figma section 08) in a browser, over a STUBBED API: the portal's landing
 // (08-A) - one billing account, picked by clicking its card, and its name ("Change billing
 // account") moving a company between accounts - one account's page with its cards and invoices,
-// each downloading as its PDF and its breakdown's CSV (08-B),
+// each downloading as its PDF and its breakdown's CSV, and its Inv# previewing that PDF - drawn
+// by pdf.js, nothing downloaded (08-B),
 // the "Update card" menu and what it does - switch the card the account charges (08-W), refuse
 // to remove that card (08-R), remove another one - the empty and expired states (08-H, 08-I),
 // the card that just arrived (08-N → 08-S), the account's name and email (08-C), and the
@@ -424,6 +425,49 @@ test.describe("billing", () => {
       "Aetheria Capital Limited,Payment Request,280,26-Jul-26,25-Aug-26,280.00",
       "Company E Limited,Petty Cash,280,26-Jul-26,5-Aug-26,90.32",
     ]);
+  });
+
+  test("08-B: the Inv# previews the invoice - pdf.js draws it, and nothing is downloaded", async ({
+    page,
+  }) => {
+    await stubBilling(page, WALLET_TWO);
+    await handoff(page, creds(), "/subscription/billing", { entity_id: "" });
+    const downloads: string[] = [];
+    page.on("download", (d) => downloads.push(d.suggestedFilename()));
+
+    const invoices = body(page).getByRole("region", { name: "Invoice History" });
+    const inv = invoices.getByRole("button", { name: "Preview invoice #11241234113" });
+    await inv.click();
+    const dialog = page.getByRole("dialog", { name: "Invoice #11241234113" });
+    await expect(dialog.getByRole("button", { name: "Close" })).toBeFocused();
+
+    // A real canvas, drawn by pdf.js from the stubbed PDF with the worker this app serves
+    // (/pdfjs/pdf.worker.min.mjs, which next.config.ts copies in).
+    const sheet = dialog.getByRole("img", { name: "Invoice #11241234113 — page 1 of 1" });
+    await expect(sheet).toBeVisible();
+    expect(await dialog.locator("canvas").count()).toBeGreaterThanOrEqual(1);
+    const drawn = await sheet.evaluate((canvas: HTMLCanvasElement) => {
+      const { width, height } = canvas;
+      return {
+        width,
+        shown: canvas.getBoundingClientRect().width,
+        room: canvas.parentElement!.getBoundingClientRect().width,
+        // pdf.js paints the page white before anything else: an untouched canvas is transparent.
+        alpha: canvas.getContext("2d")!.getImageData(width >> 1, height >> 1, 1, 1).data[3],
+      };
+    });
+    expect(drawn.width).toBeGreaterThan(0);
+    expect(drawn.alpha).toBe(255);
+    // An A4 page at its true size - 595pt at 96 dpi - or the room the card has, if less.
+    expect(drawn.shown).toBeCloseTo(Math.min(595 * (96 / 72), drawn.room), 0);
+
+    // View-only: the X is its one control - no Download - and nothing was saved.
+    await expect(dialog.getByRole("button")).toHaveCount(1);
+    await expect(dialog.getByRole("button", { name: /download/i })).toHaveCount(0);
+    await dialog.getByRole("button", { name: "Close" }).click();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await expect(inv).toBeFocused();
+    expect(downloads).toEqual([]);
   });
 
   test("08-K: the card to fix and the declined invoice are red, and Retry payment settles it", async ({

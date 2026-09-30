@@ -8,10 +8,10 @@
  * "Update card" menu (08-W/08-X) - red on the card to fix: expired, or the one charged when a
  * payment failed - "Show more (6)" for the rest (08-J), "No card saved" when there are none
  * (08-H) and the red line when the card being charged has expired (08-I); and its invoices,
- * each downloading as our own PDF and giving its billing breakdown - company by company - as a
- * CSV, 10 / 50 / 100 to a page; a declined one red, "Failed 26 Jul" where it would have been
- * paid, with *Retry payment* on the one a retry would charge (08-K). Everything shown is the
- * hook's (`useBillingPage`).
+ * each previewed from its Inv# (view-only), downloading as our own PDF and giving its billing
+ * breakdown - company by company - as a CSV, 10 / 50 / 100 to a page; a declined one red,
+ * "Failed 26 Jul" where it would have been paid, with *Retry payment* on the one a retry would
+ * charge (08-K). Everything shown is the hook's (`useBillingPage`).
  */
 
 import Image from "next/image";
@@ -542,7 +542,8 @@ export function PaymentMethodsPanel({
  * saves the invoice as our own document (Figma 09-A) - a button, since the file is fetched with
  * the bearer and saved, not linked - with "—" where it has none (never sent, or void); "Billing
  * Breakdown · Download csv" saves it company by company. A refusal is the API's sentence under
- * the table.
+ * the table. The Inv# PREVIEWS that same PDF (`onPreview`, `InvoicePreviewDialog`) - to look at,
+ * never a download - where there is one, and is plain text where there is not.
  */
 export function InvoiceHistoryTable({
   invoices,
@@ -553,6 +554,7 @@ export function InvoiceHistoryTable({
   onPdf,
   pdfBusy,
   pdfError,
+  onPreview,
   onBreakdown,
   breakdownBusy,
   breakdownError,
@@ -576,6 +578,8 @@ export function InvoiceHistoryTable({
   /** The invoice whose PDF is being prepared, while it is. */
   pdfBusy: string | null;
   pdfError: string | null;
+  /** The Inv#: the invoice's PDF in a preview - to look at, never saved. */
+  onPreview: (invoiceId: string) => void;
   /** "Download csv": one invoice, company by company. */
   onBreakdown: (invoiceId: string) => void;
   /** The invoice whose breakdown is being prepared, while it is. */
@@ -636,7 +640,23 @@ export function InvoiceHistoryTable({
                 data-failed={inv.failed || undefined}
                 className={`border-b border-[#eef1f4] ${inv.failed ? "text-[#dc5a5a]" : ""}`}
               >
-                <td className="py-3">{inv.reference}</td>
+                <td className="py-3">
+                  {/* The Inv# opens the preview where there is a PDF to show. It keeps the row's
+                      colour (a button inherits it), so a declined invoice's stays red. */}
+                  {inv.hasPdf ? (
+                    <button
+                      type="button"
+                      onClick={() => onPreview(inv.id)}
+                      aria-haspopup="dialog"
+                      aria-label={`Preview invoice ${inv.reference}`}
+                      className="cursor-pointer underline-offset-2 hover:underline focus-visible:underline"
+                    >
+                      {inv.reference}
+                    </button>
+                  ) : (
+                    inv.reference
+                  )}
+                </td>
                 <td className="py-3 tabular-nums">{inv.amount}</td>
                 <td className="py-3">{inv.paid ?? "—"}</td>
                 <td className="py-3 text-center">

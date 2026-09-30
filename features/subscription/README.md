@@ -48,6 +48,10 @@ and text, never by class).
    `app/profile/page.tsx`.
 2. In the new repo, point `@/lib/*` and `@/components/ui/*` at `@minty/shared` (they are its
    seed) or copy `lib/` + `components/ui/` across — nothing in this folder imports anything else.
+   The one thing the folder expects from its HOST app: pdf.js's worker at
+   `/pdfjs/pdf.worker.min.mjs` (the Inv# preview, `components/PdfPages`) - take `pdfjs-dist`
+   (pinned) and `copyPdfjsWorker` from this app's `next.config.ts`, with the `public/pdfjs/`
+   lines in `.gitignore` and `eslint.config.mjs`.
 3. Change `SUBSCRIPTION_BASE_PATH` in `lib/paths.ts` if the new app mounts it elsewhere.
 4. Move `features/subscription/e2e/*.spec.ts` under the new repo's Playwright config; the
    helpers they use are `e2e/helpers.ts` (the JWT mint), which travels with `@minty/shared`'s
@@ -116,4 +120,7 @@ page's own invoice list already lists every invoice, paged, with its PDF and the
 billing-breakdown CSV, so a second page listing the same rows would be pure duplication - see
 `lib/paths.ts::PORTAL`. 2026-09-29: that PDF is our own document (Figma 09-A), downloaded -
 `api/payerPortal.fetchInvoicePdf` over `@/lib/apiClient.apiFetchBlob`, saved by
-`lib/download.saveBlob` - where it had linked Stripe's hosted invoice page (§15).
+`lib/download.saveBlob` - where it had linked Stripe's hosted invoice page (§15). 2026-09-30: the
+row's Inv# opens a VIEW-ONLY preview of it (`components/InvoicePreviewDialog` over
+`components/PdfPages` - pdf.js, the `pdfjs-dist` package, its worker served at `/pdfjs` by the
+app's `next.config.ts`); nothing is saved from it, the Invoice PDF column is still the download.

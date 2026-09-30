@@ -77,6 +77,11 @@ copy .env.example .env.local
 npm run dev                       # http://localhost:3002 → /entities
 ```
 
+`next.config.ts` copies pdf.js's worker (the invoice preview's) from `node_modules/pdfjs-dist`
+to `public/pdfjs/` whenever `next dev` or `next build` starts - gitignored, never committed. When
+it cannot (no `npm ci` yet), it says so with a `console.error` and the server starts anyway; the
+preview then cannot draw.
+
 The four variables are `NEXT_PUBLIC_BILLING_API_URL` (8004), `NEXT_PUBLIC_MINTY_URL` (5001),
 `NEXT_PUBLIC_PAYMENTS_WEB_URL` (3000) and `NEXT_PUBLIC_SUBSCRIPTION_ENABLED`. In the docker stack
 (`Minty/docker/stack`) this is the `minty-web` service on host port 3002.

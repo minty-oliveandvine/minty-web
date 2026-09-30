@@ -3,7 +3,7 @@
  * draws (08-B two cards, 08-H none, 08-I the default expired, 08-J eight of them), the billing
  * accounts they sit on (`/api/me/billing/accounts`), an account being opened in the sheet (the
  * confirm's answer, and the accounts after it), and the invoices already paid (08-B's table, and
- * the PDF each one downloads).
+ * the PDF each one downloads and its Inv# previews).
  * Shared by the Vitest suites, the Playwright specs and the dev-only `?fixture=` switches. The
  * money is pre-formatted, as `/api/me/invoices` answers.
  */
@@ -242,8 +242,9 @@ export const RETRY_DECLINED = {
 
 /**
  * An invoice's PDF, whole and tiny - one blank A4 page, its offsets exact - so a viewer opens
- * it. What a fixture-mode *Invoice PDF* saves and the specs' stubbed
- * `GET /api/me/invoices/{id}/pdf` answers, for every invoice.
+ * it. What a fixture-mode *Invoice PDF* saves and the Inv# preview draws (pdf.js renders it: a
+ * white A4 page), and what the specs' stubbed `GET /api/me/invoices/{id}/pdf` answers, for every
+ * invoice.
  */
 export const INVOICE_PDF = [
   "%PDF-1.4",

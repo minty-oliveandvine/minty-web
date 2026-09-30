@@ -260,6 +260,10 @@ export const RETRY_PAYMENT = "Retry payment";
 export const RETRYING = "Retrying…";
 export const RETRY_FAILED = "That retry didn't go through. Mind trying again?";
 export const INVOICE_PDF_FAILED = "I couldn't prepare that invoice's PDF. Mind trying again?";
+/** The Inv# preview, until its first page is on screen. */
+export const PREPARING_INVOICE = "Preparing the invoice…";
+/** The PDF arrived but pdf.js could not draw it. */
+export const INVOICE_PREVIEW_FAILED = "I couldn't show that invoice here. Mind trying again?";
 
 /** The invoice table's rows (08-B). The API formats the money and the date; this only picks. */
 export type InvoiceLine = {
@@ -273,8 +277,9 @@ export type InvoiceLine = {
   /** *Retry payment* would charge THIS invoice now - the API's own rule, one per card. */
   retryable: boolean;
   /**
-   * *Invoice PDF* has a file to save - our own document (the API's `has_pdf`). An API older
-   * than the field says nothing, which reads as none: "—", never a button that can only fail.
+   * *Invoice PDF* has a file to save - our own document (the API's `has_pdf`) - and the Inv#
+   * previews it. An API older than the field says nothing, which reads as none: "—" and a plain
+   * Inv#, never a button that can only fail.
    */
   hasPdf: boolean;
 };

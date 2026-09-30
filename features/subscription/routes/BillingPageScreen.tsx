@@ -6,8 +6,10 @@
  * the way to 08-C), the expired-card line when there is one (08-I), its cards with their menus
  * (08-W/08-X, 08-H when there are none, 08-J expanded), its invoices - a declined one red, with
  * *Retry payment* and, when the card declines again, 06·B's "Payment could not be processed"
- * (08-K) - and the two things a card can ask - it has just been added (08-N/08-S) or it is
- * being removed (08-R). Both top cards - Next billing and Payment Methods - open 08-A's own
+ * (08-K); each Inv# opening a view-only preview of the invoice's PDF (`InvoicePreviewDialog`),
+ * which hands the keyboard back to it on closing - and the two things a card can ask - it has
+ * just been added (08-N/08-S) or it is being removed (08-R). Both top cards - Next billing and
+ * Payment Methods - open 08-A's own
  * billing-account picker (`AccountPickerDialog`) on a click, the same way 08-A's card does;
  * picking another account lands this same page on IT (`confirmPick`), rather than only
  * rewriting the URL as 08-A does. A payer with no
@@ -34,6 +36,7 @@ import {
   shortCardName,
 } from "@/features/subscription/components/CardDialogs";
 import { PaymentFailedDialog } from "@/features/subscription/components/InterruptedDialogs";
+import { InvoicePreviewDialog } from "@/features/subscription/components/InvoicePreviewDialog";
 import {
   useBillingPage,
   type UseBillingPageArgs,
@@ -97,6 +100,7 @@ export function BillingPageScreen(args: UseBillingPageArgs) {
             onPdf={(invoiceId) => void b.downloadInvoicePdf(invoiceId)}
             pdfBusy={b.pdfBusy}
             pdfError={b.pdfError}
+            onPreview={(invoiceId) => void b.previewInvoice(invoiceId)}
             onBreakdown={(invoiceId) => void b.downloadBreakdown(invoiceId)}
             breakdownBusy={b.breakdownBusy}
             breakdownError={b.breakdownError}
@@ -122,6 +126,15 @@ export function BillingPageScreen(args: UseBillingPageArgs) {
           error={b.actionError}
           onConfirm={b.confirmRemove}
           onBack={b.dismissPrompt}
+        />
+      )}
+      {b.preview && (
+        // One dialog per invoice, so another's preview starts clean. It gives the keyboard back
+        // to what had it when it opened - the Inv# that opened it.
+        <InvoicePreviewDialog
+          key={b.preview.invoiceId}
+          preview={b.preview}
+          onClose={b.closePreview}
         />
       )}
       {b.declined && (

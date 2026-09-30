@@ -1,6 +1,6 @@
 // Section 08's screens, rendered from the fixtures: the billing page in each state the design
-// draws (08-B two cards and an invoice's two downloads - its PDF and its breakdown, 08-H none,
-// 08-I expired, 08-J all of them, 08-K a payment failed), the
+// draws (08-B two cards, an invoice's two downloads - its PDF and its breakdown - and its Inv#'s
+// view-only preview, 08-H none, 08-I expired, 08-J all of them, 08-K a payment failed), the
 // "Update card" menu and what it opens (08-W/08-X, 08-R), the card that just arrived (08-N /
 // 08-S), the edit screen (08-D), the add screen around Stripe's form (08-Y), the portal's
 // landing (08-A), and the billing-account sheet - onboarding's list → form → 01-J, in place.
@@ -44,6 +44,16 @@ vi.mock("@/features/subscription/lib/download", () => ({
 }));
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push, replace, back: vi.fn() }),
+}));
+
+// pdf.js draws on canvases from a worker, and jsdom has neither. The stand-in records the bytes it
+// is handed and names the document; Chromium draws the real pages (06_billing.spec.ts).
+const drawn = vi.hoisted(() => [] as Uint8Array[]);
+vi.mock("@/features/subscription/components/PdfPages", () => ({
+  PdfPages: ({ bytes, label }: { bytes: Uint8Array; label: string }) => {
+    drawn.push(bytes);
+    return <div data-testid="pdf-pages">{label}</div>;
+  },
 }));
 
 // 08-C's address is Stripe's own AddressElement - an iframe jsdom cannot mount. The stand-in
@@ -283,6 +293,104 @@ describe("the billing page", () => {
     expect(await within(invoices).findByRole("alert")).toHaveTextContent(
       "There's no PDF for that invoice.",
     );
+    expect(saved).toHaveLength(1);
+  });
+
+  it("08-B: the Inv# previews our own document, view-only", async () => {
+    const user = userEvent.setup();
+    saved.length = 0;
+    drawn.length = 0;
+    let release = () => {};
+    const held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    let refusal: { status: number; error: string } | null = null;
+    // A draft was never sent, so it has no PDF - and nothing to preview.
+    const draft = { ...INVOICES[2], id: "in_draft", reference: "#11249900000", has_pdf: false };
+    fetchMock.mockImplementation(async (input) => {
+      const url = new URL(String(input));
+      if (url.pathname === "/api/me/billing/accounts") return reply(200, accountsFor(WALLET_TWO));
+      if (url.pathname === "/api/me/invoices") return reply(200, invoicePage([...INVOICES, draft]));
+      if (url.pathname.endsWith("/pdf")) {
+        await held;
+        return refusal
+          ? reply(refusal.status, { error: refusal.error })
+          : new Response(INVOICE_PDF, {
+              status: 200,
+              headers: { "Content-Type": "application/pdf" },
+            });
+      }
+      return reply(404, { error: "not_found" });
+    });
+    render(<BillingPageScreen accountId="acc-company-a" />);
+    const invoices = await screen.findByRole("region", { name: "Invoice History" });
+
+    // Plain text where there is no PDF: never a button that could only fail.
+    const draftRef = await within(invoices).findByText("#11249900000");
+    expect(draftRef.tagName).toBe("TD");
+    expect(
+      within(invoices).queryByRole("button", { name: "Preview invoice #11249900000" }),
+    ).toBeNull();
+
+    // The Inv# itself is the way in: its reference, as a button that opens a dialog.
+    const inv = within(invoices).getByRole("button", { name: "Preview invoice #11241234113" });
+    expect(inv).toHaveTextContent("#11241234113");
+    expect(inv).toHaveAttribute("aria-haspopup", "dialog");
+    await user.click(inv);
+    const dialog = await screen.findByRole("dialog", { name: "Invoice #11241234113" });
+    // Open at once, saying so while the PDF is on its way; the keyboard is on its X.
+    expect(within(dialog).getByRole("status")).toHaveTextContent("Preparing the invoice…");
+    expect(within(dialog).getByRole("button", { name: "Close" })).toHaveFocus();
+    expect(drawn).toEqual([]);
+
+    // The viewer is handed the document itself - the bytes the API sent.
+    release();
+    expect(await within(dialog).findByTestId("pdf-pages")).toHaveTextContent(
+      "Invoice #11241234113",
+    );
+    expect(new TextDecoder().decode(drawn.at(-1))).toBe(INVOICE_PDF);
+    expect(within(dialog).queryByRole("status")).toBeNull();
+    // VIEW-ONLY: the X is its one control - nothing to download, print or open - and nothing
+    // was saved.
+    expect(
+      within(dialog)
+        .getAllByRole("button")
+        .map((b) => b.getAttribute("aria-label")),
+    ).toEqual(["Close"]);
+    expect(within(dialog).queryByRole("button", { name: /download/i })).toBeNull();
+    expect(within(dialog).queryByRole("link")).toBeNull();
+    expect(saved).toEqual([]);
+
+    // Escape closes it, and the keyboard is back on the Inv# that opened it.
+    await user.keyboard("{Escape}");
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(inv).toHaveFocus();
+
+    // So does the X.
+    await user.click(inv);
+    const again = await screen.findByRole("dialog", { name: "Invoice #11241234113" });
+    await within(again).findByTestId("pdf-pages");
+    await user.click(within(again).getByRole("button", { name: "Close" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(inv).toHaveFocus();
+
+    // A refusal is the API's sentence - inside the dialog, not under the table.
+    refusal = { status: 409, error: "There's no PDF for that invoice." };
+    await user.click(within(invoices).getByRole("button", { name: "Preview invoice #1134125533" }));
+    const refused = await screen.findByRole("dialog", { name: "Invoice #1134125533" });
+    expect(await within(refused).findByRole("alert")).toHaveTextContent(
+      "There's no PDF for that invoice.",
+    );
+    expect(within(refused).queryByTestId("pdf-pages")).toBeNull();
+    expect(within(invoices).queryByRole("alert")).toBeNull();
+    await user.keyboard("{Escape}");
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+
+    // The column is still the download, as it was.
+    refusal = null;
+    await user.click(within(invoices).getByRole("button", { name: "Invoice #11241234113 (PDF)" }));
+    await waitFor(() => expect(saved.at(-1)?.filename).toBe("Inv-11241234113.pdf"));
+    expect(await saved.at(-1)?.blob?.text()).toBe(INVOICE_PDF);
     expect(saved).toHaveLength(1);
   });
 

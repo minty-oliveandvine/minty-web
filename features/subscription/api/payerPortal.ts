@@ -664,8 +664,9 @@ export type InvoiceRow = {
    */
   hosted_invoice_url: string | null;
   /**
-   * There is a PDF of it to download (`fetchInvoicePdf`): it reached the processor and is paid,
-   * open or uncollectible - never a draft or a void one. Absent on an API older than the PDF.
+   * There is a PDF of it to download - and for its Inv# to preview (`fetchInvoicePdf`): it
+   * reached the processor and is paid, open or uncollectible - never a draft or a void one.
+   * Absent on an API older than the PDF.
    */
   has_pdf?: boolean;
   entities: string[];
@@ -737,8 +738,9 @@ export async function fetchInvoiceBreakdown(invoiceId: string): Promise<InvoiceB
 
 /**
  * 08-B's *Invoice PDF*: the invoice as our own document (Figma 09-A), the file itself for the
- * page to save. Someone else's invoice is a 404, one with no PDF a 409, and the processor out of
- * reach for the billing address a 502 - each in the API's words.
+ * page to save - or for its Inv# preview to draw. Someone else's invoice is a 404, one with no
+ * PDF a 409, and the processor out of reach for the billing address a 502 - each in the API's
+ * words.
  */
 export async function fetchInvoicePdf(invoiceId: string): Promise<Blob> {
   const pdf = await apiFetchBlob(`/api/me/invoices/${encodeURIComponent(invoiceId)}/pdf`);
