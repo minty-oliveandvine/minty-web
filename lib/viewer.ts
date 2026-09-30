@@ -1,3 +1,6 @@
+// COPIED on 2026-09-30 into billing-frontend (same path, behind its components/ui/sidebarHost.ts)
+// and ported to Flask (Minty docs/features/sidebar.md) - change all three until @minty/shared.
+
 /**
  * Who is looking: the name and initials the header's badge and the side menu's profile block
  * show, on every page.

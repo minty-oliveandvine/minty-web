@@ -3,8 +3,10 @@
 My Profile (Figma 10-A / 10-B, `43YI3MYtTfX5Xzz6dRoRuT` 1410:3314 / 1410:3364), moved from
 billing-frontend on 2026-09-29 with the new design and built, at the user's word, "the same way
 as subscription is extractable". Drawn twice from one body: the sidebar's My Profile view on
-every page of this app (`ProfilePanel`), and the `/profile` page for the other apps' links
-(`ProfilePage`) - `docs/features/profile.md`.
+every page of this app (`ProfilePanel`), and the `/profile` page for Minty's `/profile` router
+(`ProfilePage`) - `docs/features/profile.md`. billing-frontend carries a COPY of this folder
+(without the page) since 2026-09-30, and Flask a Jinja port: change all three until
+`@minty/shared` takes it (the same doc says how).
 
 ## Layout
 

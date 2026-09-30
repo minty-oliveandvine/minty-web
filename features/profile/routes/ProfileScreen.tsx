@@ -2,9 +2,9 @@
 
 /**
  * `/profile` - My Profile as a page (Figma 10-A / 10-B, 1410:3314 / 1410:3364). Inside this app
- * the profile opens in the sidebar instead (`ProfilePanel`); the page stays for the other apps -
- * the payments app's avatar and Flask's `/profile` router land here until they carry the
- * sidebar themselves (the user's call, 2026-09-29). One column, the design's own 375 px on a
+ * the profile opens in the sidebar instead (`ProfilePanel`); the page stays for Minty's `/profile`
+ * router and the links that still use it (the payments app's portal crumbs, a header without
+ * scripts) - both other apps open a copy of the sidebar's My Profile in place since 2026-09-30. One column, the design's own 375 px on a
  * phone, centred at up to 560 px wider than that (the design has no desktop frame: "only the
  * profile exists at 375").
  *

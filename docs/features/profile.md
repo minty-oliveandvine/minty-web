@@ -10,9 +10,19 @@ body (`components/ProfileBody.tsx`), so the two cannot drift:
   word so an ordinary email shows whole), the whole screen on a phone. It never scrolls
   sideways: beside the caped cat, the company name keeps 74 px clear on both sides and wraps
   (the cat once hung past the edge under a long name);
-- **the `/profile` page** (`routes/ProfilePage.tsx`) - for the other apps, until they carry the
-  sidebar themselves (the payments app through `@minty/shared` at Part 3 step 4, then Flask's
-  pages). A phone gets it as drawn, a wider screen the same column centred at up to 560 px.
+- **the `/profile` page** (`routes/ProfilePage.tsx`) - for Minty's `/profile` router and the links
+  that still use it. A phone gets it as drawn, a wider screen the same column centred at up to
+  560 px.
+
+**The other apps carry the sidebar since 2026-09-30** (the user's "build it now and transfer
+later to shared"): billing-frontend holds COPIES of `components/ui/{Sidebar,SideMenu,ViewerBadge,NavMenu}.tsx`,
+`lib/viewer.ts`, this feature (without the page) and the Subscriptions Overview, at the same
+paths, with everything app-specific in its `components/ui/sidebarHost.ts` - they are lifted into
+`@minty/shared` at Part 3 step 4. Flask's pages carry a Jinja port (Minty
+`docs/features/sidebar.md`), retired with them in Part 3. Until then a change here is a change
+in all three. One difference by design: in those two apps the menu's **Settings** opens that
+app's own settings (Flask's Petty Cash Settings, or the payments app's Payment Settings - the
+user's call, 2026-09-30); here it stays the module settings page.
 
 ## How a person gets here
 

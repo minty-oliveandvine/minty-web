@@ -1,5 +1,8 @@
 "use client";
 
+// COPIED on 2026-09-30 into billing-frontend (same path, behind its components/ui/sidebarHost.ts)
+// and ported to Flask (Minty docs/features/sidebar.md) - change all three until @minty/shared.
+
 /**
  * The person's initials in the header - their name on hover, and My Profile on a click: the
  * sidebar opens over the page on the profile (the user's call, 2026-09-29, reversing the

@@ -1,5 +1,8 @@
 "use client";
 
+// COPIED on 2026-09-30 into billing-frontend (same path, behind its components/ui/sidebarHost.ts)
+// and ported to Flask (Minty docs/features/sidebar.md) - change all three until @minty/shared.
+
 /**
  * The sidebar - ONE drawer on the right with two views (the user's call, 2026-09-29):
  *
@@ -19,8 +22,9 @@
  *
  * Without a provider (a screen rendered on its own, as the screen tests do) the ≡ keeps a
  * drawer of its own with the menu only, and the initials and the menu's name are links to the
- * `/profile` page - a page can never lose its menu. The `/profile` page stays for the other
- * apps: the payments app and Flask link there until they carry this sidebar themselves.
+ * `/profile` page - a page can never lose its menu. The other apps carry this sidebar too since
+ * 2026-09-30 (see the note above); the `/profile` page stays for Minty's `/profile` router and
+ * the links that still use it.
  */
 
 import { usePathname } from "next/navigation";

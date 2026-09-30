@@ -1,5 +1,8 @@
 "use client";
 
+// COPIED on 2026-09-30 into billing-frontend (same path, behind its components/ui/sidebarHost.ts)
+// and ported to Flask (Minty docs/features/sidebar.md) - change all three until @minty/shared.
+
 /**
  * My Profile's "Subscriptions Overview" (Figma 10-A / 10-B): how many companies the person pays
  * for, how many have a trial ending, and *Manage Subscription* into the portal (08-A) - or, paying

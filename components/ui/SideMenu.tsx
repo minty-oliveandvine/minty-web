@@ -1,5 +1,8 @@
 "use client";
 
+// COPIED on 2026-09-30 into billing-frontend (same path, behind its components/ui/sidebarHost.ts)
+// and ported to Flask (Minty docs/features/sidebar.md) - change all three until @minty/shared.
+
 /**
  * The side menu's contents - Figma 02 / 10-C (`43YI3MYtTfX5Xzz6dRoRuT`, frames 1410:2899,
  * 1867:3304, 1871:3057) - drawn in the sidebar's menu view (`components/ui/Sidebar.tsx`).
