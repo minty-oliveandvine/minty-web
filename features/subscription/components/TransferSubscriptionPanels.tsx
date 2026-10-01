@@ -22,6 +22,7 @@ import {
   WITHDRAW_REQUEST,
   pendingSentence,
 } from "@/features/subscription/lib/transfer";
+import { EMAIL_ASCII_HINT, useEmailInput } from "@/lib/emailInput";
 
 /** "Send request to take over … paid up until <date> …", the company teal and the date bold. */
 export function ResponsibilityNote({ note, entityName }: { note: string; entityName: string }) {
@@ -124,6 +125,7 @@ export function SubscriberPicker({
   loading: boolean;
   on: PickerHandlers;
 }) {
+  const inviteEmail = useEmailInput(on.onInviteChange);
   return (
     <section
       aria-label="Select new subscriber"
@@ -177,10 +179,10 @@ export function SubscriberPicker({
         <div className="flex items-center gap-2 rounded-lg border border-[#e5e7eb] bg-white pr-2 focus-within:border-secondary focus-within:ring-2 focus-within:ring-secondary/20">
           <input
             id="inviteEmail"
-            type="email"
+            {...inviteEmail.props}
             value={invite}
-            onChange={(e) => on.onInviteChange(e.target.value)}
             placeholder={INVITE_PLACEHOLDER}
+            aria-describedby={inviteEmail.rejected ? "inviteEmail-hint" : undefined}
             className="min-w-0 flex-1 bg-transparent px-4 py-3 text-[15px] text-[#16202e] placeholder:text-[#9ca3af] focus:outline-none"
           />
           <button
@@ -192,6 +194,11 @@ export function SubscriberPicker({
             {inviting ? "Sending…" : "Send invite"}
           </button>
         </div>
+        {inviteEmail.rejected && (
+          <p id="inviteEmail-hint" className="text-sm text-[#b42318]" role="status">
+            {EMAIL_ASCII_HINT}
+          </p>
+        )}
         {inviteError && (
           <p className="text-sm text-[#b42318]" role="alert">
             {inviteError}

@@ -20,6 +20,15 @@ Running it: `npm run dev` on 3002 with `.env.local` (the three `NEXT_PUBLIC_*` i
 stack up — `e2e/README.md`). Skeletal by decision: a new design replaces `components/` later
 without touching `api/`, `hooks/` or the tests.
 
+Email fields take English only (2026-10-01): every editable email input (the transfer invite,
+the billing-account email in 01-D and 08-C, My Profile) spreads `useEmailInput` from
+`lib/emailInput.ts`. It is `type="text" inputMode="email"`, not `type="email"`: the browser's
+email input let Hangul through after the "@" and reported it as punycode. Anything outside
+printable ASCII is dropped (after an IME composition ends, never during), the field says
+"Email can only contain English letters, numbers and symbols.", and `isEmail` refuses it too.
+The APIs refuse it again. Copies of the file live in billing-frontend, onboarding and the landing
+page, and Flask's twin is `static/js/email_input.js`: change them together.
+
 Keep these current: when a route, a rule or a test named here changes, change the line that
 names it in the same commit. `subscriptions.md` §8 says which step fills which part; move a row
 out of it when the step lands.

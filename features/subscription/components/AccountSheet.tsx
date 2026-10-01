@@ -68,6 +68,7 @@ import {
   accountCardLine,
   companyCount,
 } from "@/features/subscription/lib/billingAccounts";
+import { EMAIL_ASCII_HINT, useEmailInput } from "@/lib/emailInput";
 
 // --- The frame ----------------------------------------------------------------------
 
@@ -346,17 +347,23 @@ function IdentityField({
   id,
   label,
   error,
+  email = false,
   onChange,
   ...input
 }: {
   id: string;
   label: string;
   error?: string;
+  /** English only, as every email field (`useEmailInput`). */
+  email?: boolean;
   onChange: (value: string) => void;
 } & Pick<
   InputHTMLAttributes<HTMLInputElement>,
   "type" | "autoComplete" | "placeholder" | "value" | "disabled"
 >) {
+  const emailInput = useEmailInput(onChange);
+  const hint = email && emailInput.rejected;
+  const describedBy = error ? `${id}-error` : hint ? `${id}-hint` : undefined;
   return (
     <div className={SHEET_FIELD}>
       <label className={SHEET_LABEL} htmlFor={id}>
@@ -368,14 +375,21 @@ function IdentityField({
         {...input}
         className={`${SHEET_INPUT} ${error ? SHEET_INPUT_BAD : SHEET_INPUT_OK}`}
         aria-invalid={error ? true : undefined}
-        aria-describedby={error ? `${id}-error` : undefined}
+        aria-describedby={describedBy}
         // The message clears as they start fixing it (`setField`), not at the next submit.
         onChange={(e) => onChange(e.target.value)}
+        {...(email ? emailInput.props : {})}
       />
-      {error && (
+      {error ? (
         <p id={`${id}-error`} className={SHEET_FIELD_ERROR}>
           {error}
         </p>
+      ) : (
+        hint && (
+          <p id={`${id}-hint`} className={SHEET_FIELD_ERROR} role="status">
+            {EMAIL_ASCII_HINT}
+          </p>
+        )
       )}
     </div>
   );
@@ -419,8 +433,7 @@ function NewAccountForm({
               <IdentityField
                 id={emailId}
                 label={EMAIL_LABEL}
-                type="email"
-                autoComplete="email"
+                email
                 placeholder={EMAIL_PLACEHOLDER}
                 value={open.identity.email}
                 error={open.errors.email}

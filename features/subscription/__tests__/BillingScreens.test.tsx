@@ -988,7 +988,8 @@ describe("08-A, the portal's landing", () => {
     expect(sheet).toHaveAccessibleName("New billing account");
     expect(within(sheet).getByRole("heading", { name: "New billing account" })).toBeVisible();
     expect(sheet).toHaveTextContent("never stored by Minty");
-    expect(within(sheet).getByLabelText("Billing Email")).toHaveAttribute("type", "email");
+    // English only: a text field with the email keyboard (lib/emailInput.ts), not type=email.
+    expect(within(sheet).getByLabelText("Billing Email")).toHaveAttribute("inputmode", "email");
     expect(within(sheet).getByLabelText("Billing company")).toBeRequired();
     expect(push).not.toHaveBeenCalled();
 

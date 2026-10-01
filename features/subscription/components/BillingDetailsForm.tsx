@@ -40,6 +40,7 @@ import {
   type ReadAddress,
 } from "@/features/subscription/lib/billingAccounts";
 import { stripeFor } from "@/features/subscription/lib/stripe";
+import { EMAIL_ASCII_HINT, useEmailInput } from "@/lib/emailInput";
 
 const LABEL = "text-[13px] font-semibold text-[#464e5a]";
 const INPUT =
@@ -199,6 +200,8 @@ export function BillingDetailsForm({
     [publishableKey],
   );
   const addressRef = useRef<AddressHandle>(null);
+  const emailInput = useEmailInput((value) => onChange("email", value));
+  const emailError = errors.email ?? (emailInput.rejected ? EMAIL_ASCII_HINT : undefined);
   const drawn = !addressLocked && !addressUnavailable && stripe && addressDefaults;
 
   const input = (field: keyof DetailsFields, placeholder: string) => ({
@@ -225,11 +228,11 @@ export function BillingDetailsForm({
       <Field id="billing-company" label="Billing Company" error={errors.company}>
         <input {...input("company", "(e.g. Vine Consulting Limited)")} autoComplete="organization" />
       </Field>
-      <Field id="billing-email" label="Billing email" error={errors.email}>
+      <Field id="billing-email" label="Billing email" error={emailError}>
         <input
           {...input("email", "(e.g. billing@company.com)")}
-          type="email"
-          autoComplete="email"
+          {...emailInput.props}
+          aria-describedby={emailError ? "billing-email-error" : undefined}
         />
       </Field>
 

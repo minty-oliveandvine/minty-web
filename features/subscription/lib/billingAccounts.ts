@@ -30,6 +30,7 @@ import type {
 } from "@/features/subscription/api/payerPortal";
 import { cardTitle, type NextBilling } from "@/features/subscription/lib/billing";
 import { formatMinor } from "@/features/subscription/lib/transfer";
+import { EMAIL_RE, isEmail } from "@/lib/emailInput";
 
 // --- Copy ---------------------------------------------------------------------------
 
@@ -86,12 +87,8 @@ function tooLong(value: string): boolean {
   return [...value.trim()].length > FIELD_MAX;
 }
 
-/** One "@", something either side, a dot in the domain - onboarding's `EMAIL_RE`, and the API's. */
-export const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-export function isEmail(value: unknown): boolean {
-  return EMAIL_RE.test(String(value ?? "").trim());
-}
+/** One "@", something either side, a dot in the domain, English only - onboarding's, and the API's. */
+export { EMAIL_RE, isEmail };
 
 // --- Which account ------------------------------------------------------------------
 

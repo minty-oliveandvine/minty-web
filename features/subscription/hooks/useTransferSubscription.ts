@@ -22,6 +22,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 import { ApiError } from "@/lib/apiClient";
+import { isEmail } from "@/lib/emailInput";
 
 import {
   cancelTransfer,
@@ -44,6 +45,7 @@ export type TransferStatus = "loading" | "ready" | "error";
 export const TRANSFER_LOAD_FAILED = "That didn’t come through. Mind trying again?";
 export const TRANSFER_SEND_FAILED = "That request didn’t send. Mind trying again?";
 export const INVITE_FAILED = "That invitation didn’t send. Mind trying again?";
+export const INVITE_INVALID = "That email address doesn’t look right.";
 
 export type UseTransferSubscriptionArgs = {
   entityId: string | null;
@@ -165,9 +167,13 @@ export function useTransferSubscription({
 
   const sendInvite = useCallback(async () => {
     if (!entityId || !invite.trim() || inviting) return;
+    setInvited(null);
+    if (!isEmail(invite)) {
+      setInviteError(INVITE_INVALID);
+      return;
+    }
     setInviting(true);
     setInviteError(null);
-    setInvited(null);
     try {
       setInvited(await inviteAdminToEntity(entityId, invite.trim()));
       // Cleared only on success, so a rejected address stays in the box to be corrected.
