@@ -9,6 +9,8 @@
  * corner is the same modal rather than a second copy of the backdrop and the keyboard handling.
  * `className` dresses the card. (The billing-account dialogs are not on it: they are
  * onboarding's sheet - `AccountSheet` - whose scrim scrolls with a tall card form.)
+ *
+ * Copied to billing-frontend at the same path and ported to Flask (Minty `static/js/minty_dialog.js` + `static/css/minty_dialog.css`) - change all three.
  */
 
 import { useEffect, type ReactNode } from "react";

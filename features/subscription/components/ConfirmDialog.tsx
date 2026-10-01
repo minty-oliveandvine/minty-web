@@ -9,6 +9,8 @@
  * confirming button in the tone the change calls for (teal to add, orange to change, red to
  * cancel). Escape and the backdrop take the secondary way out - or `onDismiss` where that is
  * not the safe one; while the change is being applied nothing closes it.
+ *
+ * Copied to billing-frontend at the same path and ported to Flask (Minty `static/js/minty_dialog.js` + `static/css/minty_dialog.css`) - change all three.
  */
 
 import Image from "next/image";

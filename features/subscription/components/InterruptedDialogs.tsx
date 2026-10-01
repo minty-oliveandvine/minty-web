@@ -13,6 +13,8 @@
  *
  * A transfer declined or expired (A-07 / A-08) belongs to the Subscription & Billing dashboard,
  * section 07's page; they are built with it.
+ *
+ * Copied to billing-frontend at the same path and ported to Flask (Minty `static/js/minty_dialog.js` + `static/css/minty_dialog.css`) - change all three.
  */
 
 import { ConfirmDialog } from "@/features/subscription/components/ConfirmDialog";

@@ -314,7 +314,9 @@ redrawn to the Figma design (section "03 · Settings › Module", six frames). W
   should be similar to the current billing frontend - the only difference is the module
   contents"). `components/ui/AppHeader` and `components/ui/NavMenu` are ports of its
   `components/layout/{Header,NavMenu}` (Inter through `next/font`, the `material-symbols`
-  glyphs, the same classes): the way back (`‹ Payments` when `?from=bills`, else `‹ Reports`
+  glyphs, the same classes - but for one fix of 2026-10-01: the company name's cap is a plain
+  `max-w-[6.5rem]`, since `min(100%,6.5rem)` counts as no cap while the `shrink-0` block is sized
+  and a long name covered the way back on a phone): the way back (`‹ Payments` when `?from=bills`, else `‹ Reports`
   to Minty's `/entity/{id}`), "Settings", `corporate_fare` + the company, the viewer's initials
   (`viewer` on the page model) and the side menu - since 2026-09-29 the Figma 02 design on every
   page (`entities.md`): the person (the way to My Profile), _Select Entity_, _Manage
@@ -708,6 +710,8 @@ now shared with `StartTrialDialog` - the design's B-02) and `components/ChangeDi
 them; `useSubscriptionsList` holds the prompt (`changePrompt`, `dismissChangePrompt`,
 `applyChangePrompt`) between the button and `applyChange` for a change that cancels, and
 `accountStep` / `confirmed` for one that bills (below).
+
+The dialog family (`ModalFrame`, `ConfirmDialog`, `LeaveDialog`) is copied to billing-frontend at the same paths (its Payment Settings' "Leave without saving?", 2026-10-01) and ported to Flask (Minty `static/js/minty_dialog.js` + `static/css/minty_dialog.css`) - change all three.
 
 - **Which modal**: a removal beside an addition → **Subscription Changes** (C-01: "<Removed>
   will be **removed**. You'll continue to have access for another 30 days. <Added> will be
