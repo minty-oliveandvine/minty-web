@@ -101,9 +101,14 @@ async function show(
   );
 }
 
+// The 1.2s "Calculating…" beat goes on top of the usual 2.5s find budget, not inside it: a
+// bare 2500 left a loaded CI runner ~1.3s to render and flaked two different tests. Every find
+// that waits out a beat uses this; the suite's per-test timeout leaves room for two beats.
+const AFTER_BEAT = { timeout: CALCULATING_MS + 2500 };
+
 const rowOf = (name: string) => within(screen.getByText(name).closest("li") as HTMLElement);
 
-describe("ManageSubscriptionsScreen", () => {
+describe("ManageSubscriptionsScreen", { timeout: 15_000 }, () => {
   beforeEach(() => {
     vi.stubGlobal("fetch", fetchMock);
     setAuth("h.eyJ1c2VyX2lkIjoidTEifQ.s", "", "");
@@ -191,7 +196,7 @@ describe("ManageSubscriptionsScreen", () => {
         // Cancel subscription ticked every active module, which arms the 1.2s "Calculating…"
         // beat - half the 2.5s default budget before the row can settle at all. The beat goes
         // on top of the usual budget, not inside it (as useEntitySummary.test.tsx does).
-        { timeout: CALCULATING_MS + 2500 },
+        AFTER_BEAT,
       )
     ).closest("li")!;
     expect(opened).toHaveAttribute("data-entity", "e-solera-group-limited");
@@ -371,7 +376,7 @@ describe("ManageSubscriptionsScreen", () => {
       await within(item).findByRole(
         "button",
         { name: "Confirm Subscription Change" },
-        { timeout: 2500 },
+        AFTER_BEAT,
       ),
     );
     const dialog = await screen.findByRole("dialog");
@@ -526,7 +531,7 @@ describe("ManageSubscriptionsScreen", () => {
       await within(item).findByRole(
         "button",
         { name: "Confirm Subscription Change" },
-        { timeout: 2500 },
+        AFTER_BEAT,
       ),
     );
 
@@ -579,7 +584,7 @@ describe("ManageSubscriptionsScreen", () => {
     // view, so nobody has to scroll to find it.
     vi.mocked(Element.prototype.scrollIntoView).mockClear();
     pay();
-    const landed = await screen.findByText("Congratulations!", {}, { timeout: 2500 });
+    const landed = await screen.findByText("Congratulations!", {}, AFTER_BEAT);
     expect(screen.queryByRole("dialog")).toBeNull();
     const resultRow = landed.closest("li[data-result]")!;
     expect(
@@ -594,7 +599,7 @@ describe("ManageSubscriptionsScreen", () => {
     const page = await screen.findByRole(
       "region",
       { name: "Cancellation Scheduled" },
-      { timeout: 2500 },
+      AFTER_BEAT,
     );
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Cancellation Scheduled");
     expect(within(page).getByRole("heading", { level: 2 })).toHaveTextContent(
