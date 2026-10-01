@@ -120,8 +120,6 @@ export const SEARCH_DEBOUNCE_MS = 300;
 
 export const LIST_NOT_WIRED_YET =
   "Your subscriptions aren't served by the subscription service yet - the API lands in Part 2 step 3.";
-export const LIST_SERVICE_DARK =
-  "The subscription service is switched off (SUBSCRIPTION_ENABLED=0 on minty-billing-api), so nothing is served.";
 export const LIST_LOAD_FAILED = "We couldn’t load your subscriptions.";
 
 export type ListStatus = "loading" | "ready" | "error";
@@ -270,7 +268,6 @@ export type UseSubscriptionsListResult = {
 function sentence(err: unknown): string {
   if (err instanceof ApiError) {
     if (err.status === 501) return LIST_NOT_WIRED_YET;
-    if (err.status === 404 && err.message === "not_found") return LIST_SERVICE_DARK;
     return err.message;
   }
   return LIST_LOAD_FAILED;

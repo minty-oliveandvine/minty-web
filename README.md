@@ -8,12 +8,13 @@ Profile** (from billing-frontend, redrawn to Figma 10-A/10-B), over Flask's bear
 Part 3 step 4, pulled forward; login, the dashboard and settings follow in Part 3. Each feature
 is a bounded folder that can be lifted into its own app (`features/*/README.md`).
 
-**Status: the shell (Part 2 step 1).** Landing, the two gates, the plumbing, the UI seed, the
+**Status: the shell (Part 2 step 1).** Landing, the cookie gate, the plumbing, the UI seed, the
 bounded feature folder with its three typed API clients and a skeletal index. Step 4 ports the
 portal screens and builds the module settings page. Verified 2026-09-21 on this workstation (Node
 22.21): `npm run typecheck`, `lint` (a planted feature→app import and an outside→deep import both
 fail the boundary rules), `test` (29 passed, 00:34), `build` (00:09) green; `test:e2e` against
-`next dev` — 5 passed live (00:07) and 3 passed dark (00:06), the rest skipped by mode.
+`next dev` — 5 passed live (00:07) and 3 passed dark (00:06), the rest skipped by mode (the
+dark mode was removed on 2026-10-01 - see below).
 
 **Skeletal by decision** (2026-09-21): functional screens, minimal styling; a new frontend design
 is created later. Data (`api/`, `hooks/`) and presentation (`components/`) are kept apart so the
@@ -29,19 +30,18 @@ the browser to Flask's login-gated `GET /handoff/minty-web?next=<page>` (Minty, 
 which mints a fresh token and comes back. A 401 from the API does the same (`lib/apiClient.ts`).
 This app never mints or refreshes a token (cross-cutting rule 1). `docs/features/authentication.md`.
 
-## The switch
+## No switch
 
-`NEXT_PUBLIC_SUBSCRIPTION_ENABLED` — **on unless `0`** (the opposite default to the backends, so
-`next dev` with no env file works). Off, `proxy.ts` sends `/subscription/*` to the static
-`/not-available` page; the entity list (`/`, `/entities`) and My Profile stay, and the side menu
-and the profile leave out their ways into subscriptions. The backends are the real guard (404 while dark); this only keeps
-the doors out of sight. The deployed app is switched off at the cutover with minty-billing-api
-and switched on at launch **after** the API (Part 2 step 7, 8b).
+Subscriptions are simply on. The dark switch (`NEXT_PUBLIC_SUBSCRIPTION_ENABLED`, its
+`/not-available` page and the "service is switched off" sentences) was removed on 2026-10-01:
+the app is deployed on a test site, so there is no dark phase left to hide. The side menu always
+offers _Manage subscriptions_, My Profile always carries the overview card, and a 404 from the
+API is an ordinary error on every screen.
 
 ## Layout
 
 ```
-app/                    shell routes only: layout · globals.css · page (→ /entities) · landing · maintenance · not-available
+app/                    shell routes only: layout · globals.css · page (→ /entities) · landing · maintenance
 app/subscription/       one-line re-exports from "@/features/subscription"
 app/entities/           one-line re-export from "@/features/entities"
 app/profile/            a composition: the My Profile page with the subscription feature's overview card in its slot
@@ -56,7 +56,7 @@ lib/                    env · auth (the cookie) · apiClient (apiFetch / apiFet
 components/ui/          AppHeader · Sidebar (one drawer, two views: the menu and My Profile) · SideMenu (the Figma 02 menu)
                         · NavMenu (the ≡) · ViewerBadge (the initials: My Profile) · TermsGate + TermsModal (Flask's Terms panel)
                         · Toast · Icon · MintySelect · Pagination — Part 3's @minty/shared seed
-proxy.ts                cookie gate + dark redirect (Next 16's name for middleware.ts)
+proxy.ts                the cookie gate (Next 16's name for middleware.ts)
 e2e/                    the shell's Playwright specs + helpers (JWT mint); features/*/e2e is picked up by the same config
 eslint.config.mjs       next + typescript + the BOUNDARY RULES (eslint-plugin-boundaries)
 ```
@@ -82,8 +82,8 @@ to `public/pdfjs/` whenever `next dev` or `next build` starts - gitignored, neve
 it cannot (no `npm ci` yet), it says so with a `console.error` and the server starts anyway; the
 preview then cannot draw.
 
-The four variables are `NEXT_PUBLIC_BILLING_API_URL` (8004), `NEXT_PUBLIC_MINTY_URL` (5001),
-`NEXT_PUBLIC_PAYMENTS_WEB_URL` (3000) and `NEXT_PUBLIC_SUBSCRIPTION_ENABLED`. In the docker stack
+The three variables are `NEXT_PUBLIC_BILLING_API_URL` (8004), `NEXT_PUBLIC_MINTY_URL` (5001)
+and `NEXT_PUBLIC_PAYMENTS_WEB_URL` (3000). In the docker stack
 (`Minty/docker/stack`) this is the `minty-web` service on host port 3002.
 
 ## Test it
@@ -101,8 +101,7 @@ Report the run time (mm:ss) of every suite with its result.
 
 `npm ci`; `npm run typecheck`, `npm run lint` (a deliberate `import "@/app/page"` inside
 `features/subscription` must fail), `npm test`, `npm run build` green; `npm run dev` on 3002 →
-`/` redirects to `/subscription`, `/landing?token=…` sets the cookie; with
-`NEXT_PUBLIC_SUBSCRIPTION_ENABLED=0` `/subscription` shows the not-available page;
+`/` redirects to `/entities`, `/landing?token=…` sets the cookie;
 `npm run test:e2e` (01_landing) green against it. Two Windows notes: open the dev server as
 `localhost` in a browser (`allowedDevOrigins` in `next.config.ts` also admits `127.0.0.1`, which a
 Node test runner prefers because `localhost` resolves to `::1` first and stalls); and the lockfile

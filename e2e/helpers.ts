@@ -105,16 +105,6 @@ export async function requireStack(): Promise<void> {
 }
 
 /**
- * The mode the stack under test runs in. ``E2E_SUBSCRIPTIONS=0`` says the app was built with
- * NEXT_PUBLIC_SUBSCRIPTION_ENABLED=0 and the backends run with SUBSCRIPTION_ENABLED=0 (dark,
- * the cutover state); unset or ``1`` means live.
- */
-export function subscriptionsDark(): boolean {
-  const raw = (process.env.E2E_SUBSCRIPTIONS ?? "1").trim().toLowerCase();
-  return raw === "0" || raw === "false" || raw === "off";
-}
-
-/**
  * Answer Flask's Terms check (`GET /api/me/terms`, the gate over every page - components/ui/
  * TermsGate.tsx) ourselves. `handoff` answers "nothing owed" unless a spec says otherwise: the
  * gate is 09_terms.spec.ts's subject, every other spec is about its own page, and the shared

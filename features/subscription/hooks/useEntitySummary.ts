@@ -76,7 +76,7 @@ export const SUMMARY_LOAD_FAILED = "We couldn’t load this subscription.";
 const NO_TICKS: PendingTicks = {};
 
 function sentence(err: unknown): string {
-  if (err instanceof ApiError && err.status !== 404 && err.status !== 501) return err.message;
+  if (err instanceof ApiError && err.status !== 501) return err.message;
   return SUMMARY_LOAD_FAILED;
 }
 

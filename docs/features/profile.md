@@ -62,15 +62,17 @@ only when it WAS the email. After a save the header and the side menu show the n
 
 **Decided by the user, 2026-09-29:** PASSWORD · _Change_ opens the Xero account page, as the old
 profile did (most people sign in with an email code or with Xero, and Minty holds no password
-for them). "Sign out of Minty for good" is NOT on this page — but its APIs stay (Flask
-`DELETE /minty/api/users/me`, billing-backend `DELETE /api/v1/profile/me`).
+for them). "Sign out of Minty for good" is NOT on this page — Flask's API stays
+(`DELETE /minty/api/users/me`); billing-backend's `PUT|DELETE /api/v1/profile/me` and
+`GET /api/v1/auth/me` were removed on 2026-10-01 with that app's profile page (the user's call,
+reversing the "its APIs stay" of 09-29 for billing-backend only).
 
 ## The slot, and why it is a slot
 
 "Subscriptions Overview" is the subscription feature's `SubscriptionsOverviewCard` — 08-A's own
 figures over the same read (`lib/billing.ts::overview`), so the profile and the portal never
 disagree; _Manage Subscription_ goes to 08-A; paying for no company it is 10-B's quiet card;
-switched off (or the API dark) it is not there at all. The profile cannot import it (the
+a read that fails (a 404 included) says so in the card, with _Try again_. The profile cannot import it (the
 boundary rules), so the shell composes the two - in `app/profile/page.tsx` for the page and in
 `app/layout.tsx` for the sidebar - the only two files where features meet (both pinned by
 `__tests__/reexports.test.ts`).

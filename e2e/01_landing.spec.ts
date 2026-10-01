@@ -1,9 +1,6 @@
-// The shell's contract: how a person gets in, and what they see while the feature is dark.
-//
-//   live  the handoff stores the cookie and lands on `next`; no token -> Flask's re-handoff;
-//         no cookie on a page -> Flask's re-handoff for THAT page; `/` -> /entities (the list)
-//   dark  /subscription -> the not-available page; `/` is still the entity list (the list is
-//         not the subscription feature's); the landing still stores the cookie
+// The shell's contract: how a person gets in. The handoff stores the cookie and lands on
+// `next`; no token -> Flask's re-handoff; no cookie on a page -> Flask's re-handoff for THAT
+// page; `/` -> /entities (the list).
 //
 // Skeletal screens are located by role and text, never by class: the design pass may change
 // every class name and these must still pass.
@@ -18,7 +15,6 @@ import {
   requireCredentials,
   stubBillingApi,
   stubFlaskHandoff,
-  subscriptionsDark,
 } from "./helpers";
 
 /** The entity list reads Flask; answer it, with nobody's companies - these specs are about where
@@ -50,7 +46,6 @@ test.describe("landing and the gates", () => {
   test("no cookie: a subscription page goes to Flask's re-handoff for that page", async ({
     page,
   }) => {
-    test.skip(subscriptionsDark(), "dark: the page goes to not-available instead (see below)");
     // The gate is a server-side 307 from proxy.ts. Read it directly rather than following it: a
     // browser follows the redirect at network level, where page.route cannot stub Flask.
     const res = await page.request.get("/subscription/billing?page=2", { maxRedirects: 0 });
@@ -61,7 +56,6 @@ test.describe("landing and the gates", () => {
   });
 
   test("the handoff stores the token and lands on next", async ({ page, context }) => {
-    test.skip(subscriptionsDark(), "dark: /subscription is not reachable (see below)");
     const creds = requireCredentials();
     await stubBillingApi(page);
     await handoff(page, creds, "/subscription");
@@ -101,41 +95,5 @@ test.describe("landing and the gates", () => {
     await handoff(page, unscoped(creds), "/");
     expect(new URL(page.url()).pathname).toBe("/entities");
     await expect(page.getByRole("heading", { level: 1, name: "Select Company" })).toBeVisible();
-  });
-});
-
-test.describe("dark", () => {
-  test.beforeEach(async () => {
-    await requireApp();
-    test.skip(!subscriptionsDark(), "the app runs live (E2E_SUBSCRIPTIONS != 0)");
-  });
-
-  test("/subscription shows the not-available page, cookie or not", async ({ page }) => {
-    for (const path of ["/subscription", "/subscription/billing"]) {
-      await page.goto(path);
-      await page.waitForURL((u) => u.pathname === "/not-available", { timeout: 15_000 });
-      await expect(page.getByRole("heading", { name: /aren't available yet/ })).toBeVisible();
-      await expect(page.getByRole("link", { name: "Back to your entities" })).toHaveAttribute(
-        "href",
-        "/entities",
-      );
-    }
-  });
-
-  test("dark, / is still the entity list", async ({ page }) => {
-    const creds = requireCredentials();
-    await stubEntityList(page);
-    await handoff(page, unscoped(creds), "/");
-    expect(new URL(page.url()).pathname).toBe("/entities");
-  });
-
-  test("the landing still stores the token and then lands on not-available", async ({
-    page,
-    context,
-  }) => {
-    const creds = requireCredentials();
-    await handoff(page, creds, "/subscription");
-    expect(new URL(page.url()).pathname).toBe("/not-available");
-    expect((await context.cookies()).some((c) => c.name === "minty_token")).toBe(true);
   });
 });

@@ -19,7 +19,6 @@ import {
   credentials,
   handoff,
   requireApp,
-  subscriptionsDark,
 } from "../../../e2e/helpers";
 import {
   ADDED_CARD,
@@ -175,7 +174,6 @@ async function stubBilling(page: Page, wallet: PayerPaymentMethods) {
 test.describe("billing", () => {
   test.beforeEach(async () => {
     await requireApp();
-    test.skip(subscriptionsDark(), "dark: the portal goes to not-available");
   });
 
   test("08-A: one billing account at a glance, and Manage Subscription is the list", async ({

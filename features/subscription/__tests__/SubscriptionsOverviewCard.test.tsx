@@ -1,6 +1,6 @@
 // My Profile's "Subscriptions Overview" (Figma 10-A / 10-B), which this feature owns: 08-A's own
-// figures over the same read, the way into the portal, the quiet empty card - and nothing at
-// all while subscriptions are dark.
+// figures over the same read, the way into the portal, the quiet empty card, and a failed read
+// (a 404 included) said in the card.
 
 import { render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -31,7 +31,6 @@ describe("SubscriptionsOverviewCard", () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
-    vi.unstubAllEnvs();
   });
 
   it("10-A: 08-A's own figures, and Manage Subscription into the portal", async () => {
@@ -67,21 +66,12 @@ describe("SubscriptionsOverviewCard", () => {
     );
   });
 
-  it("a dark API (404) leaves no heading and no card", async () => {
+  it("a 404 is an ordinary failed read: the heading stays and the card says so", async () => {
     serve({ error: "not_found" }, 404);
-    const { container } = render(<SubscriptionsOverviewCard today={TODAY} />);
-    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalled());
-    await vi.waitFor(() => expect(container).toBeEmptyDOMElement());
-  });
-
-  it("switched off, it is not there and reads nothing", async () => {
-    vi.stubEnv("NEXT_PUBLIC_SUBSCRIPTION_ENABLED", "0");
-    vi.resetModules();
-    const { SubscriptionsOverviewCard: Dark } = await import(
-      "@/features/subscription/routes/SubscriptionsOverviewCard"
+    render(<SubscriptionsOverviewCard today={TODAY} />);
+    expect(await card().findByRole("alert")).toHaveTextContent(
+      "Your subscriptions didn't load. Mind trying again?",
     );
-    const { container } = render(<Dark today={TODAY} />);
-    expect(container).toBeEmptyDOMElement();
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(card().getByRole("button", { name: "Try again" })).toBeInTheDocument();
   });
 });

@@ -233,7 +233,7 @@ describe("TermsGate", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
-  it.each(["/landing", "/maintenance", "/not-available"])("asks nothing on %s", async (path) => {
+  it.each(["/landing", "/maintenance"])("asks nothing on %s", async (path) => {
     nav.pathname = path;
     render(page());
     await new Promise((r) => setTimeout(r, 20));

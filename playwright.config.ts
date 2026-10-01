@@ -3,7 +3,7 @@
 // onboarding and billing-frontend suites give: the stack has five moving parts, and a config
 // that starts one of them starts the wrong one. See e2e/README.md.
 //
-// Two folders, one runner: e2e/ holds the shell's specs (landing, dark); the feature's own live
+// Two folders, one runner: e2e/ holds the shell's specs (landing, terms); the feature's own live
 // journeys live inside its bounded folder (features/subscription/e2e/) and are picked up here,
 // so lifting the feature out takes its specs with it.
 import { defineConfig, devices } from "@playwright/test";

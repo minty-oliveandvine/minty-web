@@ -46,7 +46,7 @@ api/            payerPortal.ts (the /api/me routes - Flask's 15 plus transfer/se
                 (getModulePage, postModuleAction over the 19 actions, startTrial, completeCheckout, and the six
                 a confirmed change posts: cancelModule, renewModule, retryPayment, restartBilling, authorizeBilling,
                 openPaymentMethodCapture; the card and page-model types) · moduleChanges.ts (applyChange: the
-                open row's ticks → those actions, in an order that keeps a change whole) · notice.ts
+                open row's ticks → those actions, in an order that keeps a change whole)
 hooks/          useModulePage (the module page's state and its CTAs) · useSubscriptionsList (the list's, the
                 open row, a change applied and its result) · useEntitySummary (the open company's page model
                 and card, the ticks pending on them) · useTransferSubscription (the payer's side of a handover:
@@ -147,13 +147,14 @@ had: `markTransferSeen`, and the billing accounts (`fetchBillingAccounts`, `setA
 invoice's own routes (`fetchInvoiceBreakdown`, `retryInvoice`, `fetchInvoicePdf`). `api/moduleSettings.ts`
 exports the nineteen `MODULE_ACTIONS` the API pins in its `test_contract.py`.
 
-## 4. The switch
+## 4. No switch
 
-`NEXT_PUBLIC_SUBSCRIPTION_ENABLED` — **on unless `0`** (the backends default to off; a dev
-server with no env file must still reach the feature). Off, `proxy.ts` sends `/subscription/*`
-and `/` to the static `/not-available` page, and the landing still stores the cookie. The
-backends are the real guard (404 while dark); this keeps the doors out of sight. Deployed off at
-the cutover with `minty-billing-api`, switched on at launch **after** the API (plan step 7 / 8b).
+Subscriptions are simply on. The dark switch - `NEXT_PUBLIC_SUBSCRIPTION_ENABLED`, `proxy.ts`
+sending `/subscription/*` to a static `/not-available` page, the side menu and the profile
+leaving out their ways in, and the hooks' "the subscription service is switched off" sentence
+for the API's dark 404 - was removed on 2026-10-01, at the user's word: the app is deployed on a
+test site, so there is no dark phase left to hide. A 404 from the API is now an ordinary error
+on every screen (the API's own sentence, or the screen's house sentence where it has one).
 
 ## 5. Card capture
 
@@ -166,8 +167,8 @@ Playwright (as in the sibling apps); the capture flow is unit-tested with Stripe
 
 `lib/env.ts` — `NEXT_PUBLIC_BILLING_API_URL` (8004), `NEXT_PUBLIC_MINTY_URL` (5001, the
 re-handoff, the entity list's and the profile's reads, Petty Cash), `NEXT_PUBLIC_PAYMENTS_WEB_URL`
-(3000, the payments app - the side menu's _Bills_, the profile's way back),
-`NEXT_PUBLIC_SUBSCRIPTION_ENABLED`. All inlined at build time. In the docker stack this is the
+and `NEXT_PUBLIC_PAYMENTS_WEB_URL` (3000, the payments app - the side menu's _Bills_, the
+profile's way back). All inlined at build time. In the docker stack this is the
 `minty-web` service on 3002.
 
 ## 7. Where it is tested
@@ -261,7 +262,7 @@ the cancellation page, Stripe's card form when there is no card, the bank declin
 again, tried again, or left pending), an action refused, Go back posting nothing - land Start
 Trial on its result, take the ⋮'s Cancel subscription (from a closed row) and Reactivate (from
 the open one) through the same modal, and ask before leaving the open row with ticks pending.
-`e2e/01_landing.spec.ts` (the handoff, the gates, dark → not-available; Flask's re-handoff
+`e2e/01_landing.spec.ts` (the handoff, the cookie gate; Flask's re-handoff
 stubbed - the route exists in Minty now, the spec only asserts where the browser is sent); `features/subscription/e2e/02_module_settings.spec.ts`
 and `03_manage_subscriptions.spec.ts` (each page in the real app, the API served from the
 fixtures by `page.route` - every Figma state, the seams, what a CTA sends, a tick pending on the
@@ -301,7 +302,7 @@ from the browser's clock, so a pinned day drifted by one every midnight.
 | 4b     | **the Manage Subscriptions list, done 2026-09-21** (§10) — the design's target of the module page's _Manage Subscription_                                                                                                                                                                                                                                                                                   |
 | 4c     | **live-API journeys done 2026-09-22** (`04_live_api.spec.ts`); **the open row done 2026-09-22** (§11, Figma 05·A and 05·B - the ticks pend on the row until _Confirm Subscription Change_); **the change applied and its result screens done 2026-09-22** (§12, Figma 05·C); **the confirmation modals done 2026-09-22** (§13, Figma section 06 - the confirm button asks first); **the "Calculating…" beat and the ⋮'s items done 2026-09-22** (§11, Figma 05·B-C; §13, Figma 05·D); **the declined-payment and leave-without-saving modals done 2026-09-22** (§13, Figma 06·B); **both sides of a handover done 2026-09-22** (§14, Figma section 07 - _Request transfer_ and the incoming requests, over the live routes; the outcome modals wait for an outgoing-transfer read). **the billing area done 2026-09-23** (§15, Figma section 08 - the portal's landing, the billing page and its states, the card screens; `/subscription` is the landing now and the list is `/subscription/subscriptions`). **Billing accounts done 2026-09-25** (§15 - 08-A shows ONE account, picked by clicking its card; _Change billing account_ moves a company; 08-B is one account's profile; 08-C and the new-account form built; the landing's Next Billing Date no longer prints the anchor). **Same day, at the user's word:** _New billing account_ became onboarding's `BillingSheet` in place (the page went), the account's name took over _Change billing account_ (its button went, and the move's "Nothing is charged now…" note), "Trial ending" counts the trials ending within 30 days and the update lines list them with _Show more_, and 08-B gained the next bill's estimated amount (`next_bill`, priced by the API's renewal runner) and 10 / 50 / 100 invoice paging; one real Stripe test-mode account opened through the sheet on the dev database. **A standalone invoices page (09) was decided AGAINST, 2026-09-28** - the billing page's own invoice list already covers it (paging, each invoice's PDF, the billing-breakdown CSV), so `PORTAL.invoices`, the tab and the route's NotBuiltYet entry were all removed rather than left waiting to be built. **The Invoice PDF became our own document, 2026-09-29** (§15, Figma 09-A - downloaded from `GET /api/me/invoices/{id}/pdf`, where it had linked Stripe's hosted invoice page); **its Inv# previews it, 2026-09-30** (§15 - view-only at the user's word, drawn by pdf.js; the column is still the download) |
 | 5      | Minty's `/handoff/minty-web` route exists — the e2e stub goes. (billing-frontend's profile links go through Minty's `/profile` since 2026-09-29, which picks minty-web's profile when `MINTY_WEB_HUB` is on; its old profile page is deleted here with the portal copies) |
-| 7      | deployed dark at the cutover; 8b switches it on after the API                                                                                                                                                                                                                                                                                                                                               |
+| 7      | deployed to a test site with subscriptions on - no dark phase (the switch was removed 2026-10-01, §4)                                                                                                                                                                                                                                                                                                       |
 | Part 3 | the entity list and My Profile **joined the hub 2026-09-29** (`entities.md`, `profile.md`); login, dashboard and settings follow; `@/lib` and `@/components/ui` become `@minty/shared`; each feature folder is liftable per its README |
 
 ## 9. The module settings page
@@ -415,12 +416,12 @@ redrawn to the Figma design (section "03 · Settings › Module", six frames). W
 - **Not on this page any more** (moved to the Manage Subscription flow by the design): the "Your
   subscription" panel, the next-payment-date card, the decision dialog and the lapsed-trial
   restart takeover Flask forced on every load.
-- **From Flask.** Live, Minty's `/entity/settings/module/<id>` redirects here through
-  `/landing` with the company's token (`MINTY_WEB_MODULE_PAGE`, on by default there), and a
-  lapsed token goes back through Minty's `/handoff/minty-web` - both landed 2026-09-21. Until
-  step 3 fills the API the page answers its 501 with "not served by the subscription service
-  yet", and the API's dark 404 (`not_found`) with "the subscription service is switched off" -
-  each with _Try again_.
+- **From Flask.** Minty's `/entity/settings/module/<id>` is always a hand-over to this page
+  (Flask's Jinja version was deleted on 2026-10-01): it redirects here through `/landing` with
+  the company's token, and a lapsed token goes back through Minty's `/handoff/minty-web` - both
+  landed 2026-09-21. The page answers the API's 501 stub with "not served by the subscription
+  service yet" and any other failure (a 404 included) with the API's own sentence - each with
+  _Try again_.
 - **Seeing it without the API.** `?fixture=A` … `F` serves the page model from
   `features/subscription/__fixtures__/modulePage.ts` in a dev build (`NODE_ENV !== "production"`,
   dynamic import — nothing of it ships). Playwright does not use it; it stubs with `page.route`
@@ -485,7 +486,7 @@ re-homed and redrawn to Figma section "04 · Manage Subscriptions — the payer 
   list, `/entities`); a search that matched nothing (the puzzled cat); skeleton rows while loading —
   "not a spinner, the table keeps its shape"; could not load with _Try again_ — "an empty table
   here would read as 'you pay for nothing', which is a worse lie than an error you can retry
-  from". The API's 501 stub and its dark 404 read as sentences here too.
+  from". The API's 501 stub reads as a sentence here too; any other failure shows the API's own.
 - **Chrome**: billing-frontend's header (`routes/PortalChrome.tsx` over `components/ui/AppHeader`)
   over the design's 1298px column. **The header's left is the page's own back line** (2026-09-29,
   the user: no more chevron header): "‹ Entity List" and the "Subscriptions" title are gone, and

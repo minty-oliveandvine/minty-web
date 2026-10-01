@@ -5,14 +5,7 @@
 // covers Flask's side). Located by role and text.
 import { expect, test, type Page } from "@playwright/test";
 
-import {
-  BILLING_API_URL,
-  credentials,
-  FLASK_URL,
-  handoff,
-  requireApp,
-  subscriptionsDark,
-} from "../../../e2e/helpers";
+import { BILLING_API_URL, credentials, FLASK_URL, handoff, requireApp } from "../../../e2e/helpers";
 import { SCOPED, SUPERMINTY, UNSCOPED } from "../__fixtures__/profile";
 import type { Profile } from "../api/profile";
 
@@ -123,15 +116,11 @@ test.describe("My Profile", () => {
       "https://identity.xero.com/account",
     );
 
-    if (subscriptionsDark()) {
-      await expect(main.getByText("Subscriptions Overview")).toHaveCount(0);
-    } else {
-      const overview = main.getByRole("region", { name: "Subscriptions Overview" });
-      await expect(overview.getByRole("link", { name: "Manage Subscription" })).toHaveAttribute(
-        "href",
-        "/subscription",
-      );
-    }
+    const overview = main.getByRole("region", { name: "Subscriptions Overview" });
+    await expect(overview.getByRole("link", { name: "Manage Subscription" })).toHaveAttribute(
+      "href",
+      "/subscription",
+    );
   });
 
   test("an edit is saved in place and the menu names the person anew", async ({ page }) => {

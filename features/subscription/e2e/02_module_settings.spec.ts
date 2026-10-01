@@ -19,7 +19,6 @@ import {
   requireApp,
   storedScope,
   stubBillingApi,
-  subscriptionsDark,
 } from "../../../e2e/helpers";
 import { FIXTURES, NON_MANAGER, WALLET, type FixtureFrame } from "../__fixtures__/modulePage";
 import { ENTITIES, subscriptionsPage } from "../__fixtures__/subscriptions";
@@ -102,7 +101,6 @@ const body = (page: Page) => page.getByRole("main");
 test.describe("module settings page", () => {
   test.beforeEach(async () => {
     await requireApp();
-    test.skip(subscriptionsDark(), "dark: the page goes to not-available (see below)");
   });
 
   test("03-A: the chrome, both cards and their CTAs", async ({ page }) => {
@@ -298,18 +296,5 @@ test.describe("module settings page", () => {
     await expect(body(page).getByRole("article", { name: "Petty Cash" })).toBeVisible();
     await expect(body(page).getByRole("button")).toHaveCount(0);
     await expect(body(page).getByText(/managed by Priya Chan/)).toBeVisible();
-  });
-});
-
-test.describe("dark", () => {
-  test.beforeEach(async () => {
-    await requireApp();
-    test.skip(!subscriptionsDark(), "the app runs live (E2E_SUBSCRIPTIONS != 0)");
-  });
-
-  test("the module page goes to not-available", async ({ page }) => {
-    const c = creds();
-    await handoff(page, c, MODULES(c.entityId));
-    expect(new URL(page.url()).pathname).toBe("/not-available");
   });
 });

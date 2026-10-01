@@ -26,7 +26,6 @@ import { ACCOUNTS, ACCOUNTS_OPENED } from "@/features/subscription/__fixtures__/
 import type { BillingAccounts } from "@/features/subscription/api/payerPortal";
 import {
   LIST_NOT_WIRED_YET,
-  LIST_SERVICE_DARK,
   SEARCH_DEBOUNCE_MS,
   useSubscriptionsList,
   type UseSubscriptionsListResult,
@@ -128,15 +127,15 @@ describe("useSubscriptionsList", () => {
     expect(result.current.active.length).toBeGreaterThan(0);
   });
 
-  it("the API's 501 stub and its dark 404 read as sentences; reload tries again", async () => {
+  it("the API's 501 stub reads as a sentence, a 404 as its own; reload tries again", async () => {
     fetchMock.mockResolvedValueOnce(reply(501, { error: "not_implemented" }));
     const { result } = renderHook(() => useSubscriptionsList({ today: TODAY }), { wrapper });
     await waitFor(() => expect(result.current.status).toBe("error"));
     expect(result.current.error).toBe(LIST_NOT_WIRED_YET);
 
-    fetchMock.mockResolvedValueOnce(reply(404, { error: "not_found" }));
+    fetchMock.mockResolvedValueOnce(reply(404, { error: "That company isn't on your account." }));
     act(() => result.current.reload());
-    await waitFor(() => expect(result.current.error).toBe(LIST_SERVICE_DARK));
+    await waitFor(() => expect(result.current.error).toBe("That company isn't on your account."));
   });
 
   it("search filters the loaded list after a beat; sort re-orders it", async () => {

@@ -17,11 +17,11 @@ export const HUB_PATHS = {
 export const HUB_HOME = HUB_PATHS.entities;
 
 /**
- * The pages that stand without a person: the landing (where a token arrives), the maintenance
- * page and the not-available page. proxy.ts lets them through without the cookie, and the Terms
- * gate (`components/ui/TermsGate.tsx`) asks nothing on them - there is nobody to ask yet.
+ * The pages that stand without a person: the landing (where a token arrives) and the
+ * maintenance page. proxy.ts lets them through without the cookie, and the Terms gate
+ * (`components/ui/TermsGate.tsx`) asks nothing on them - there is nobody to ask yet.
  */
-export const OPEN_PATHS = ["/landing", "/maintenance", "/not-available"] as const;
+export const OPEN_PATHS = ["/landing", "/maintenance"] as const;
 
 export function isOpenPath(pathname: string): boolean {
   return OPEN_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));

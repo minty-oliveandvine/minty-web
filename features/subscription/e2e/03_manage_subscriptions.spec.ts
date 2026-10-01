@@ -14,7 +14,6 @@ import {
   credentials,
   handoff,
   requireApp,
-  subscriptionsDark,
 } from "../../../e2e/helpers";
 import { ACCOUNTS } from "../__fixtures__/billing";
 import { RESULT_FIXTURES, SUMMARY_FIXTURES, WALLET } from "../__fixtures__/modulePage";
@@ -96,7 +95,6 @@ async function stubApi(
 test.describe("manage subscriptions", () => {
   test.beforeEach(async () => {
     await requireApp();
-    test.skip(subscriptionsDark(), "dark: the portal goes to not-available");
   });
 
   test("04-A: the landing lands on the list with its rows, the transfer card and the sections", async ({

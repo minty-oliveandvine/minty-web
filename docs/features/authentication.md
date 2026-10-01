@@ -24,17 +24,16 @@ says the stored token names a company, and `lib/handoff.ts::redirectToHandoff(ne
 same re-handoff a lapsed token takes, asked with no `entity_id` - clears the cookies and has
 Flask mint the payer's token, back through `/landing`. This app still mints nothing.
 
-## The two gates (`proxy.ts`)
+## The gate (`proxy.ts`)
 
-1. **The cookie.** Every page but `/landing`, `/maintenance` and `/not-available` needs
-   `minty_token`. Without it: `302` to `NEXT_PUBLIC_MINTY_URL/handoff/minty-web?next=<page>` —
-   Flask's login-gated route (Minty's `/handoff/minty-web`, landed 2026-09-21) that mints the same token and comes back to
-   `/landing`. Silent while the Flask session (24 h) is alive; a login when it is not. This app
-   has no login form of its own.
-2. **The switch.** `NEXT_PUBLIC_SUBSCRIPTION_ENABLED` off → `/subscription/*` goes to the
-   static `/not-available` page (`lib/env.ts`). The backends 404 in that state anyway; this keeps
-   the doors out of sight. The entity list and My Profile are not the subscription feature's and
-   answer either way (`/` is the list).
+**The cookie.** Every page but `/landing` and `/maintenance` (`OPEN_PATHS`, `lib/hubPaths.ts`)
+needs `minty_token`. Without it: `307` to `NEXT_PUBLIC_MINTY_URL/handoff/minty-web?next=<page>` —
+Flask's login-gated route (Minty's `/handoff/minty-web`, landed 2026-09-21) that mints the same token and comes back to
+`/landing`. Silent while the Flask session (24 h) is alive; a login when it is not. This app
+has no login form of its own.
+
+There is no second gate. The subscription feature's dark switch (`NEXT_PUBLIC_SUBSCRIPTION_ENABLED`
+and its `/not-available` page) was removed on 2026-10-01: subscriptions are simply on.
 
 ## Talking to Flask (`lib/apiClient.ts::mintyFetch`)
 
@@ -98,7 +97,7 @@ for the current page, once (several requests fail together; one navigation). Not
 ## Configuration
 
 `NEXT_PUBLIC_MINTY_URL` (the re-handoff and "Back to Minty"), `NEXT_PUBLIC_BILLING_API_URL`,
-`NEXT_PUBLIC_SUBSCRIPTION_ENABLED` — all inlined at build time (`lib/env.ts`).
+`NEXT_PUBLIC_PAYMENTS_WEB_URL` — all inlined at build time (`lib/env.ts`).
 
 ## Tests
 
@@ -106,7 +105,6 @@ for the current page, once (several requests fail together; one navigation). Not
 redirect, the error sentence with its status), `components/ui/__tests__/TermsGate.test.tsx` (the
 panel, the lock, accept, 409, refusals, Cancel, once per token, the open pages, failing open); in
 the browser `e2e/01_landing.spec.ts` (no token → re-handoff; no cookie → re-handoff for that page;
-the handoff stores a cookie that lives as long as the token; an unsafe `next` is ignored; dark →
-not-available) and `e2e/09_terms.spec.ts` (the gate over the list in a real layout). Every other
+the handoff stores a cookie that lives as long as the token; an unsafe `next` is ignored) and `e2e/09_terms.spec.ts` (the gate over the list in a real layout). Every other
 spec arrives with the Terms answered "nothing owed" (`e2e/helpers.ts::handoff`). Flask's side:
 Minty's `tests/test_hub_terms.py`.

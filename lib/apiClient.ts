@@ -15,8 +15,6 @@
  *   sentence - the API answers `{"error": "<sentence>"}` with Flask's status codes (a declined
  *   card is 402, missing consent 403, a company not on your account 404, a double buy 409), and
  *   screens branch on the status and show the sentence.
- * - A 404 while the feature is dark is the same shape (`{"error": "not_found"}`); the
- *   proxy.ts keeps the pages out of sight in that state, so screens rarely see it.
  */
 
 import { getAuth } from "@/lib/auth";

@@ -13,15 +13,14 @@
  * about them. The shell composes it into the profile's slot (`app/profile/page.tsx`); nothing
  * of the profile's is known here.
  *
- * Switched off, it is not there at all - no heading, no card, no door into a dark portal; a
- * 404 from a dark API reads the same. A read that fails says so in the card, with Try again.
+ * A read that fails (whatever the status but 401, which re-authenticates) says so in the card,
+ * with Try again.
  */
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { ApiError } from "@/lib/apiClient";
-import { env } from "@/lib/env";
 
 import { fetchAllPayerSubscriptions } from "@/features/subscription/api/payerPortal";
 import {
@@ -38,7 +37,7 @@ export const PROFILE_OVERVIEW_TITLE = "Subscriptions Overview";
 export const NO_SUBSCRIPTIONS = "It looks a little quiet here. No entity subscriptions yet.";
 export const OVERVIEW_LOAD_FAILED = "Your subscriptions didn't load. Mind trying again?";
 
-type Loaded = { attempt: number; list: PayerAccount | null; error: string | null; dark: boolean };
+type Loaded = { attempt: number; list: PayerAccount | null; error: string | null };
 
 function Figure({ label, value, tone }: { label: string; value: number; tone: string }) {
   return (
@@ -50,7 +49,8 @@ function Figure({ label, value, tone }: { label: string; value: number; tone: st
   );
 }
 
-function OverviewCard({ today }: { today?: Date }) {
+/** Rendered by the shell into My Profile's `subscriptions` slot. `today`: tests only. */
+export function SubscriptionsOverviewCard({ today }: { today?: Date } = {}) {
   const [attempt, setAttempt] = useState(0);
   const [loaded, setLoaded] = useState<Loaded | null>(null);
 
@@ -58,13 +58,12 @@ function OverviewCard({ today }: { today?: Date }) {
     const controller = new AbortController();
     fetchAllPayerSubscriptions(controller.signal)
       .then((list) => {
-        if (!controller.signal.aborted) setLoaded({ attempt, list, error: null, dark: false });
+        if (!controller.signal.aborted) setLoaded({ attempt, list, error: null });
       })
       .catch((err: unknown) => {
         if (controller.signal.aborted) return;
         if (err instanceof ApiError && err.status === 401) return; // re-authenticating
-        const dark = err instanceof ApiError && err.status === 404;
-        setLoaded({ attempt, list: null, error: OVERVIEW_LOAD_FAILED, dark });
+        setLoaded({ attempt, list: null, error: OVERVIEW_LOAD_FAILED });
       });
     return () => controller.abort();
   }, [attempt]);
@@ -74,8 +73,6 @@ function OverviewCard({ today }: { today?: Date }) {
   const list = status === "ready" ? (loaded?.list ?? null) : null;
   const figures = useMemo(() => (list ? overview(list, today ?? new Date()) : null), [list, today]);
   const retry = useCallback(() => setAttempt((n) => n + 1), []);
-
-  if (loaded?.dark) return null;
 
   return (
     <section className="mt-[27px] flex flex-col" aria-labelledby="profile-subscriptions-overview">
@@ -118,10 +115,4 @@ function OverviewCard({ today }: { today?: Date }) {
       </div>
     </section>
   );
-}
-
-/** Rendered by the shell into My Profile's `subscriptions` slot. `today`: tests only. */
-export function SubscriptionsOverviewCard({ today }: { today?: Date } = {}) {
-  if (!env.SUBSCRIPTION_ENABLED) return null;
-  return <OverviewCard today={today} />;
 }

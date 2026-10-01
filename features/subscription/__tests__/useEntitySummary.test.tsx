@@ -171,10 +171,19 @@ describe("useEntitySummary", () => {
     expect(result.current.view?.pendingChange?.codes).toEqual(["PETTY_CASH"]);
   });
 
-  it("uses the house sentence for a dark or unwired API", async () => {
-    fetchMock.mockImplementation(async () => reply(404, { error: "not_found" }));
+  it("uses the house sentence for an unwired API (501)", async () => {
+    fetchMock.mockImplementation(async () => reply(501, { error: "not_implemented" }));
     const { result } = renderHook(() => useEntitySummary(entity, { today: TODAY }));
     await waitFor(() => expect(result.current.status).toBe("error"));
     expect(result.current.error).toBe(SUMMARY_LOAD_FAILED);
+  });
+
+  it("shows a 404's own sentence like any other failure", async () => {
+    fetchMock.mockImplementation(async () =>
+      reply(404, { error: "That company isn't on your account." }),
+    );
+    const { result } = renderHook(() => useEntitySummary(entity, { today: TODAY }));
+    await waitFor(() => expect(result.current.status).toBe("error"));
+    expect(result.current.error).toBe("That company isn't on your account.");
   });
 });

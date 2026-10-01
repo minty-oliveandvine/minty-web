@@ -14,7 +14,7 @@ is the whole screen (the layout, below).
   this app's Terms gate takes it (`authentication.md`). Off (the default, and production until
   minty-web is deployed there), Flask keeps its own list and its own Terms modal.
 - **From this app.** The side menu's _Select Entity_, the portal overview's _Back to the entity
-  dashboard_ when no company is in the cookie, the empty Manage Subscriptions list, `mintyEntryUrl`'s fallback and the not-available page all
+  dashboard_ when no company is in the cookie, the empty Manage Subscriptions list and `mintyEntryUrl`'s fallback all
   lead here (`HUB_PATHS.entities`).
 - **A token minted inside a company** (the menu's Select Entity from a company page) is traded
   first for an unscoped one through Flask's re-handoff: a person choosing a company is in none,

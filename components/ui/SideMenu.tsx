@@ -8,8 +8,8 @@
  * 1867:3304, 1871:3057) - drawn in the sidebar's menu view (`components/ui/Sidebar.tsx`).
  *
  * Top to bottom: the Minty mark; THE PERSON (avatar + name), which switches the sidebar to My
- * Profile (the header's initials open it there directly); Select Entity; Manage subscriptions
- * (only while subscriptions are switched on); then, INSIDE A COMPANY only (02-D), its Petty
+ * Profile (the header's initials open it there directly); Select Entity; Manage subscriptions;
+ * then, INSIDE A COMPANY only (02-D), its Petty
  * Cash and Payment Request sections; the cat, above the last group (the user's rule); and
  * Settings (inside a company only - never on the entity list) and Logout.
  *
@@ -254,17 +254,15 @@ export function SideMenu({ modules, viewer, onClose, onProfile }: SideMenuProps)
           </span>
           Select Entity
         </MenuLink>
-        {env.SUBSCRIPTION_ENABLED ? (
-          <MenuLink
-            href={HUB_PATHS.subscription}
-            current={current === "subscriptions"}
-            onNavigate={onClose}
-            className="min-h-[66px] gap-[21px] pl-[32px]"
-          >
-            <SubscriptionsIcon />
-            <span className="max-w-[130px]">Manage subscriptions</span>
-          </MenuLink>
-        ) : null}
+        <MenuLink
+          href={HUB_PATHS.subscription}
+          current={current === "subscriptions"}
+          onNavigate={onClose}
+          className="min-h-[66px] gap-[21px] pl-[32px]"
+        >
+          <SubscriptionsIcon />
+          <span className="max-w-[130px]">Manage subscriptions</span>
+        </MenuLink>
       </div>
       <div className="mt-[16px]">
         <Separator />

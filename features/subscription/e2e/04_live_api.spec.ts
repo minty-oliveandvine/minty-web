@@ -20,7 +20,6 @@ import {
   requireCredentials,
   requireStack,
   storedScope,
-  subscriptionsDark,
   type Credentials,
 } from "../../../e2e/helpers";
 
@@ -56,7 +55,6 @@ async function pageModel(creds: Credentials) {
 test.describe("over the live API", () => {
   test.beforeEach(async () => {
     await requireStack();
-    test.skip(subscriptionsDark(), "dark: the API answers 404 and the pages are out of sight");
   });
 
   test("the module settings page renders the company's real cards", async ({ page }) => {

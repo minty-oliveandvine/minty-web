@@ -103,14 +103,9 @@ function stripParams(names: string[]): void {
 export const NOT_WIRED_YET =
   "This page's data isn't served by the subscription service yet - the API lands in Part 2 step 3.";
 
-/** The API's dark answer (`SubscriptionsDarkMiddleware`): 404 with this one word. */
-export const SERVICE_DARK =
-  "The subscription service is switched off (SUBSCRIPTION_ENABLED=0 on minty-billing-api), so nothing is served.";
-
 function sentence(err: unknown): string {
   if (err instanceof ApiError) {
     if (err.status === 501) return NOT_WIRED_YET;
-    if (err.status === 404 && err.message === "not_found") return SERVICE_DARK;
     return err.message;
   }
   return "Something went wrong on my end. Mind trying again?";

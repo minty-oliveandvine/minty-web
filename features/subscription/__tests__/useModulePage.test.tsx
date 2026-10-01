@@ -10,11 +10,7 @@ import { setAuth } from "@/lib/auth";
 import { env } from "@/lib/env";
 
 import { FIXTURES, TODAY } from "@/features/subscription/__fixtures__/modulePage";
-import {
-  NOT_WIRED_YET,
-  SERVICE_DARK,
-  useModulePage,
-} from "@/features/subscription/hooks/useModulePage";
+import { NOT_WIRED_YET, useModulePage } from "@/features/subscription/hooks/useModulePage";
 
 const push = vi.fn();
 vi.mock("next/navigation", () => ({
@@ -96,11 +92,6 @@ describe("useModulePage", () => {
     });
     await waitFor(() => expect(result.current.status).toBe("error"));
     expect(result.current.error).toBe(NOT_WIRED_YET);
-
-    fetchMock.mockResolvedValueOnce(reply(404, { error: "not_found" }));
-    const dark = renderHook(() => useModulePage({ entityId: "e1", today: TODAY }), { wrapper });
-    await waitFor(() => expect(dark.result.current.status).toBe("error"));
-    expect(dark.result.current.error).toBe(SERVICE_DARK);
   });
 
   it("a trial is asked about first, then posted, then the list is where it lands", async () => {

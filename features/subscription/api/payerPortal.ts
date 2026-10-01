@@ -760,7 +760,8 @@ export async function fetchInvoicePdf(invoiceId: string): Promise<Blob> {
 /**
  * What *Retry payment* answered, in the words the module page's retry uses: `paid`, `failed` (the
  * processor's reason in `message`), `no_card`, `gave_up`, `nothing_owed`, `older_debt_only`,
- * `not_this_invoice`. `ok` is true when nothing is owed any more.
+ * `not_this_invoice`, `not_collectable`, `unavailable` (the payment processor itself failed -
+ * nothing was charged, and it is not a decline). `ok` is true when nothing is owed any more.
  */
 export type RetryOutcome = { ok: boolean; status: string; message: string };
 

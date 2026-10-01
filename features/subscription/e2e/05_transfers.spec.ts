@@ -12,7 +12,6 @@ import {
   credentials,
   handoff,
   requireApp,
-  subscriptionsDark,
 } from "../../../e2e/helpers";
 import { SUMMARY_FIXTURES, WALLET } from "../__fixtures__/modulePage";
 import { ENTITIES, subscriptionsPage } from "../__fixtures__/subscriptions";
@@ -41,7 +40,6 @@ const json = (data: unknown, status = 200) => ({
 test.describe("transfers", () => {
   test.beforeEach(async () => {
     await requireApp();
-    test.skip(subscriptionsDark(), "dark: the portal goes to not-available");
   });
 
   test("07-A → 07-B: the payer picks the new subscriber and sends the request", async ({

@@ -53,8 +53,9 @@ async function stubFlask(page: Page, list: EntityListAnswer = LIST): Promise<str
     route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(VIEWER) }),
   );
   // The sidebar's My Profile carries the subscription feature's overview card, which reads the
-  // billing API: answered as a dark API answers (the card is left out), so a live billing API
-  // never sees the stub token - its 401 would send the browser through Flask's re-handoff.
+  // billing API: answered here with a 404 (the card shows its failed-read state, which no test
+  // here looks at), so a live billing API never sees the stub token - its 401 would send the
+  // browser through Flask's re-handoff.
   await page.route(`${BILLING_API_URL}/api/me/subscriptions**`, (route) =>
     route.fulfill({
       status: 404,
