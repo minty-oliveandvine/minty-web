@@ -4,9 +4,10 @@
  * Toasts: `const { showToast } = useToast(); showToast("Saved", "success")`.
  *
  * The API is billing-frontend's `components/Toast.tsx` (ToastProvider + useToast + the four
- * types), so ported screens keep their calls; the look is not - skeletal by decision, the
- * design pass restyles this file and nothing else changes. Auto-dismisses after 4 s; announced
- * to screen readers through the live region.
+ * types), so ported screens keep their calls. This look is the house toast: billing-frontend,
+ * onboarding and Flask's `flash_messages.html` copy it value for value (the rule and the values:
+ * Minty/docs/features/toasts.md) - change all four together. Auto-dismisses after 4 s;
+ * announced to screen readers through the live region.
  */
 
 import {

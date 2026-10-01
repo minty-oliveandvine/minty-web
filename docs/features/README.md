@@ -14,6 +14,7 @@ the sibling repos' `docs/features/` folders are linked, not repeated.
 | The subscription feature: the pages, the bounded folder and its three rules, the API clients, no switch, card capture, tests, and which step fills what  | [subscriptions.md](subscriptions.md) — `features/subscription/README.md` holds the extraction recipe; `minty-billing-api/docs/features/subscriptions-api.md` the contract |
 | The entity list ("Select Company"): where it comes from, the cards, what Flask flashed on the way, the header and the side menu on every page | [entities.md](entities.md) — `features/entities/README.md` holds the extraction recipe |
 | My Profile: the Figma 10-A/10-B page, editing in place, the subscription feature's card in its slot | [profile.md](profile.md) — `features/profile/README.md` holds the extraction recipe |
+| Toasts - `components/ui/Toast.tsx` is the reference every app copies | `Minty/docs/features/toasts.md` - the system-wide rule and the other three apps' copies |
 
 Running it: `npm run dev` on 3002 with `.env.local` (the three `NEXT_PUBLIC_*` in
 `.env.example`); tests `npm test` (Vitest, 29 on 2026-09-21) and `npm run test:e2e` (Playwright,
