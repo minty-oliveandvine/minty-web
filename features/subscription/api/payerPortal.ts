@@ -278,15 +278,25 @@ export async function initiateTransfer(entityId: string, toUserId: string): Prom
  * `codes` is the modules being taken on (07-D "Choose Modules"). Anything the company has and
  * the list does not name is CANCELLED as part of accepting, ending where the outgoing payer's
  * money runs out. Omitted means the whole company.
+ *
+ * `billingGroupId` (07-E): the incoming payer's BILLING ACCOUNT the company is billed to once
+ * accepted - its charged card pays. Required by the API on an accept unless the company already
+ * has a card nominated ("Choose a billing account before taking over the billing."); the payer's
+ * Stripe default is never used in its place any more.
  */
 export async function respondToTransfer(
   transferId: string,
   accept: boolean,
-  codes?: string[],
+  { codes, billingGroupId }: { codes?: string[]; billingGroupId?: string | null } = {},
 ): Promise<string> {
   const data = await apiFetch<{ message?: string }>("/api/me/subscriptions/transfer/respond", {
     method: "POST",
-    json: { transfer: transferId, accept, ...(codes ? { codes } : {}) },
+    json: {
+      transfer: transferId,
+      accept,
+      ...(codes ? { codes } : {}),
+      ...(accept && billingGroupId ? { billing_group_id: billingGroupId } : {}),
+    },
   });
   return data?.message || (accept ? "You're now the subscriber." : "Request declined.");
 }
@@ -408,16 +418,34 @@ export type ConfirmedCard = PayerPaymentMethods & {
   };
 };
 
+/** The API's own refusal of a card confirmed with no billing account to go on. */
+export const NO_ACCOUNT_FOR_CARD = "Choose a billing account for this card.";
+
 /**
- * Tell the API about the card the browser just confirmed. `account` is optional: the id puts
- * the card on an account the payer holds; a company and an email OPEN one. The body is
- * onboarding's `confirmCardSetup` exactly (onboarding/lib/billing.ts), the same act in two apps.
+ * Whether a confirm would put the card on an ACCOUNT: an account's id, or a company AND an email
+ * to open one with. Anything less is a card saved to nothing, which the API refuses (422) - and
+ * which the card form refuses before Stripe is touched, since `confirmSetup` cannot be undone.
+ */
+export function namesAnAccount(
+  account: BillingAccountChoice | null | undefined,
+): account is BillingAccountChoice {
+  return Boolean(account?.billingGroupId || (account?.company && account?.email));
+}
+
+/**
+ * Tell the API about the card the browser just confirmed. `account` is REQUIRED (the user,
+ * 2026-10-01: a payment method only ever goes through a billing account): the id puts the card
+ * on an account the payer holds; a company and an email OPEN one. The body is onboarding's
+ * `confirmCardSetup` exactly (onboarding/lib/billing.ts), the same act in two apps.
  */
 export function confirmCardSetup(
   setupIntent: string,
-  makeDefault = false,
-  account?: BillingAccountChoice | null,
+  makeDefault: boolean,
+  account: BillingAccountChoice,
 ): Promise<ConfirmedCard> {
+  if (!namesAnAccount(account)) {
+    return Promise.reject(new ApiError(422, NO_ACCOUNT_FOR_CARD));
+  }
   return apiFetch<ConfirmedCard>("/api/me/billing/payment-methods/confirm", {
     method: "POST",
     json: {
@@ -427,13 +455,6 @@ export function confirmCardSetup(
       ...(account?.email != null ? { billing_email: account.email } : {}),
       ...(account?.company != null ? { billing_company: account.company } : {}),
     },
-  });
-}
-
-export function setDefaultPaymentMethod(paymentMethod: string): Promise<PayerPaymentMethods> {
-  return apiFetch<PayerPaymentMethods>("/api/me/billing/payment-methods/default", {
-    method: "POST",
-    json: { payment_method: paymentMethod },
   });
 }
 
@@ -447,16 +468,6 @@ export async function fetchEntityPaymentMethod(
   });
   if (!data || !Array.isArray(data.methods)) throw new ApiError(502, UNEXPECTED_SHAPE);
   return data;
-}
-
-export function setEntityPaymentMethod(
-  entityId: string,
-  paymentMethod: string,
-): Promise<EntityPaymentMethod> {
-  return apiFetch<EntityPaymentMethod>("/api/me/billing/entity-payment-method", {
-    method: "POST",
-    json: { entity: entityId, payment_method: paymentMethod },
-  });
 }
 
 export function updatePaymentMethod(

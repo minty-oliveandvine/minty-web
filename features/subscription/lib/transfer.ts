@@ -42,13 +42,22 @@ export const NO_REQUESTS_BODY =
   "When someone asks you to take over billing for their company, it’ll appear here for you to accept or decline.";
 export const CONFIRM_TRANSFER = "Confirm Subscription Transfer";
 export const TRANSFER_CHARGE_NOTE =
-  "Subscription will be charged to your selected payment method from the date that transfer is completed.";
+  "Subscription will be charged to your selected billing account from the date that transfer is completed.";
+/** 07-D's column over the account the company will be billed to (was "Payment method"). */
+export const BILLING_ACCOUNT_LABEL = "Billing account";
+/** 07-D's card cell before an account is chosen - a card only ever comes with one. */
+export const NO_BILLING_ACCOUNT_YET = "No billing account yet";
 /**
- * 07-D when the person has no saved card. Not a refusal: a company may be offered to any admin,
- * and the card is only needed at the moment of accepting, which is what this says.
+ * 07-D when the person has no billing account that can pay. Not a refusal: a company may be
+ * offered to any admin, and the account is only needed at the moment of accepting, which is
+ * what this says. A card only ever comes with a billing account (the user, 2026-10-01).
  */
-export const NEEDS_CARD =
-  "Add a payment method to take this over. Nothing is charged until you confirm.";
+export const NEEDS_ACCOUNT =
+  "Choose or open a billing account to take this over. Nothing is charged until you confirm.";
+/** 07-E: the panel's title and the line under it. */
+export const TRANSFER_ACCOUNTS_LEAD = "Choose the billing account that pays for this company.";
+/** 07-D's link beside the card when there is no account to bill yet. */
+export const ADD_BILLING_ACCOUNT = "Add a billing account";
 
 /** Minor units → "HK$88.00" / "HKD 88.00" (the currency code when no symbol is known). */
 export function formatMinor(

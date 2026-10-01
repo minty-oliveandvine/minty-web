@@ -75,14 +75,12 @@ export type SetupIntentState = {
 /**
  * Step 1 on its own — opening a SetupIntent and asking whether this is the account's first card.
  *
- * Shared, because the card form is no longer only the billing page's: the handover's accept
- * screen mounts it too (07-E), so that someone offered a company they cannot yet be charged for
- * can save a card without leaving the offer. What differs between the two is only where the
- * screen goes afterwards, which is the caller's.
+ * Shared by the two ways a card is added, both onto a BILLING ACCOUNT: 08-Y (`useAddCard`, onto
+ * the account whose page asked) and the billing-account sheet (`useNewAccount`, a card that
+ * opens one). What differs is only where the screen goes afterwards, which is the caller's.
  *
- * `enabled` exists for that second caller: the accept screen mounts this hook long before the
- * person asks to add a card, and opening a SetupIntent for everyone who merely READ an offer
- * would leave a trail of abandoned intents on the account.
+ * `enabled`: false opens nothing - `useAddCard` reached with no account to put the card on
+ * leaves for the billing page instead, and must not leave an abandoned intent behind.
  */
 export function useSetupIntent({
   enabled = true,
@@ -149,13 +147,23 @@ export type UseAddCardResult = SetupIntentState & {
   cancel: () => void;
 };
 
+/**
+ * 08-Y. A card is added to ONE billing account (`?account=`) or not at all (the user,
+ * 2026-10-01: "must be only attached to the billing account"). Reached without one - an old link,
+ * a hand-typed URL - it opens no SetupIntent and goes to the billing page, where a card is added
+ * from an account's own page or opens a new account in the sheet.
+ */
 export function useAddCard({
   fixture,
   accountId = null,
 }: { fixture?: string | null; accountId?: string | null } = {}): UseAddCardResult {
   const router = useRouter();
-  const opened = useSetupIntent({ fixture });
+  const opened = useSetupIntent({ fixture, enabled: Boolean(accountId) });
   const account = useMemo(() => (accountId ? { billingGroupId: accountId } : null), [accountId]);
+
+  useEffect(() => {
+    if (!accountId) router.replace(BILLING.account({}));
+  }, [accountId, router]);
 
   const saved = useCallback(
     (methods: PayerPaymentMethods, paymentMethodId: string | null) => {

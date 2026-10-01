@@ -1,12 +1,15 @@
 /**
- * The module settings page of one company: one page model and nineteen actions.
+ * The module settings page of one company: one page model and ten actions.
  *
  * `GET  /api/entities/{id}/modules`            the page model
  * `POST /api/entities/{id}/modules/{action}`    one of ModuleAction, JSON body per action
  *
  * Company-scoped: every call sends `X-Entity-Id` (the token may be unscoped when the page is
- * reached from the portal). The nineteen action names are Flask's (`entity/routes/settings.py`
- * 1419-2431); minty-billing-api's `billing/tests/test_contract.py` pins the same list.
+ * reached from the portal). minty-billing-api's `billing/tests/test_contract.py` pins the same
+ * ten names. NONE of them hands the browser to Stripe (the user, 2026-10-01): the actions that
+ * did - `checkout`, `payment-method`, `manage-billing`, `checkout-complete`, `confirm-billing`
+ * and the company-scoped `payment-methods*` - are gone. A card is only ever added through a
+ * billing account, in the app (`AccountSheet`), and a company is billed to its account's card.
  *
  * The card is Flask's card dict verbatim (`blueprints/subscription/services/cards.py`, the
  * step-3 API emits the same keys); the page model adds `viewer` (the person looking, for the
@@ -18,25 +21,16 @@
 import { apiFetch } from "@/lib/apiClient";
 
 export const MODULE_ACTIONS = [
-  "checkout",
   "authorize-billing",
-  "payment-methods",
-  "payment-methods/setup-intent",
-  "payment-methods/confirm",
-  "payment-methods/default",
   "restart-quote",
   "restart-billing",
-  "confirm-billing",
-  "checkout-complete",
   "start-trial",
   "resume-preview",
   "subscribe-preview",
   "cancel-preview",
   "retry-payment",
   "cancel",
-  "payment-method",
   "renew",
-  "manage-billing",
 ] as const;
 
 export type ModuleAction = (typeof MODULE_ACTIONS)[number];
@@ -152,22 +146,6 @@ export function startTrial(
   return postModuleAction(entityId, "start-trial", { codes: [code] });
 }
 
-/**
- * `checkout-complete`: the return from Stripe Checkout (`?session_id=` on the page URL). Flask
- * answered with a redirect; the API answers JSON and the page refetches. `purpose` is
- * `payment_method` when the session only saved a card.
- */
-export function completeCheckout(
-  entityId: string,
-  sessionId: string,
-  purpose?: string,
-): Promise<{ ok: true }> {
-  return postModuleAction(entityId, "checkout-complete", {
-    session_id: sessionId,
-    ...(purpose ? { purpose } : {}),
-  });
-}
-
 // ---- the changes the open row confirms (Figma 05·B → 05·C) ---------------------------------
 
 /** `cancel`: one module stops at its access end (a paid one under the prorated rule, a trial at once). */
@@ -191,13 +169,14 @@ export function retryPayment(
 }
 
 /**
- * `restart-billing`: buy back lapsed trials - THIS CHARGES the company's card. `url` when the
- * saved card could not be used and Stripe collects a new one; a 402 when no card is nominated.
+ * `restart-billing`: buy back lapsed trials - THIS CHARGES the card of the company's billing
+ * account. A 402 "Choose a card before restarting billing." when the company has no card
+ * nominated; any other 402 is the bank's decline.
  */
 export function restartBilling(
   entityId: string,
   codes: ModuleCode[],
-): Promise<{ ok?: true; restarted?: ModuleCode[]; url?: string }> {
+): Promise<{ ok?: true; restarted?: ModuleCode[] }> {
   return postModuleAction(entityId, "restart-billing", { codes });
 }
 
@@ -207,9 +186,4 @@ export function restartBilling(
  */
 export function authorizeBilling(entityId: string): Promise<{ ok: true }> {
   return postModuleAction(entityId, "authorize-billing");
-}
-
-/** `payment-method`: where Stripe collects or updates the payer's card (the browser goes there). */
-export function openPaymentMethodCapture(entityId: string): Promise<{ url: string }> {
-  return postModuleAction(entityId, "payment-method");
 }

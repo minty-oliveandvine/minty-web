@@ -18,12 +18,12 @@ or a company's _Modules_ settings (a scoped token, for that company's page). Nev
 | Index             | `/subscription`                                   | **built** (§15): "Subscription & Billing" — ONE billing account at a glance (its name as "Bill to", the payer's next billing date; clicking the card opens the billing-account sheet - which account, `?account=`, and _New billing account_ in place), the account's NAME moving a company between accounts (_Change billing account_), how many companies pay, how many trials end within 30 days, what needs attention (five lines, _Show more_ for the rest), and _Manage Subscription_ leading to the list. Where Minty's own link lands | —                                                                                                                                             |
 | Subscriptions     | `/subscription/subscriptions`                     | **built** (§10): every company the payer pays for in one scrolling list, a cell per module, search, the column sorts, the ⋮ menu, Start Trial from the list, the transfer-request cards, the payment-failed line — over a stubbed API | —                                                                                                                                             |
 | Change subscriber | `/subscription/subscriptions/subscriber?entity=…` | **built** (§14): the admins the bill could move to, each with its own quote, the current payer tagged, an invitation for someone new, _Request transfer_ → "Transfer requested"; the request already waiting and its _Withdraw request_ — over the live routes | the outcome modals (accepted / declined / expired) once the API reports how an outgoing request ended                                        |
-| Incoming          | `/subscription/subscriptions/incoming`            | **built** (§14): the requests offered to me — the company's modules as they are, no money line (a handover takes nothing at accept), the card the bill will go to (changeable among my saved cards, or added in place), _Confirm Subscription Transfer_ landing on the list's row, _Decline_; "No requests waiting" — over the live routes | —                                                                                                                                             |
+| Incoming          | `/subscription/subscriptions/incoming`            | **built** (§14): the requests offered to me — the company's modules as they are, no money line (a handover takes nothing at accept), the BILLING ACCOUNT the bill will go to and the card it charges (changeable among my accounts, or a new one opened in place in the billing-account sheet), _Confirm Subscription Transfer_ (sending that account) landing on the list's row, _Decline_; "No requests waiting" — over the live routes | —                                                                                                                                             |
 | Billing           | `/subscription/billing?account=`                  | **built** (§15): ONE billing account's profile — who it bills (name, address, email) and _Change billing details_, its next bill (the date, and the amount it will charge - estimated, "HKD 1,500"), its cards with the one it charges pinned first (two, then _Show more_) and its _Update card_ menu (charge this card / edit / remove), _+ Add payment method_ onto it, its invoices 10 / 50 / 100 to a page, each previewed from its Inv# (view-only, drawn by pdf.js), downloading as our own PDF (Figma 09-A) and its billing breakdown as a CSV — over the live routes | — |
 | Add / edit a card | `/subscription/billing/add?account=`, `…/billing/edit?card=&account=` | **built** (§15): Stripe's own card fields on a SetupIntent (08-Y) - the card goes ON the account - and the name and expiry of a saved card (08-D) | —                                                                                                                                             |
 | Billing details   | `/subscription/billing/details?account=`          | **built** (§15): 08-C — the account's billing company and email, and the address in Stripe's own form (the billing address and name of the card it charges) | —                                                                                                                                             |
 | New billing account | — (a sheet, not a page)                           | **built** (§15): onboarding's `BillingSheet` over 08-A and 08-B - the list, then the form in place (a billing email and company, then the card - which OPENS the account), then "New Card added Successfully"; from the move's step 2 the company then moves onto it | —                                                                                                                                             |
-| Module settings   | `/subscription/entities/{id}/modules`             | **built** (§9): the settings chrome, the two module cards in their six states, the payment-failed banner, _Start Free Trial_, the `?session_id=` return, the `?from=bills` way back — over a stubbed API until step 3                 | the pages the other CTAs lead to (Manage / Activate / Resume / Reactivate / payment method), each from its own Figma frame; the live API      |
+| Module settings   | `/subscription/entities/{id}/modules`             | **built** (§9): the settings chrome, the two module cards in their six states, the payment-failed banner, _Start Free Trial_, the `?from=bills` way back (no Stripe return: nothing leaves for Stripe) — over a stubbed API until step 3 | the pages the other CTAs lead to (Manage / Activate / Resume / Reactivate / payment method), each from its own Figma frame; the live API      |
 
 **Skeletal by decision** (2026-09-21) for the portal screens: functional, minimal styling, a
 design later. The module settings page is the exception — its design exists (Figma
@@ -43,15 +43,16 @@ index.ts        THE public surface: SubscriptionOverview, ManageSubscriptions, M
                 SUBSCRIPTION_BASE_PATH
 api/            payerPortal.ts (the /api/me routes - Flask's 15 plus transfer/seen and the four billing-account
                 routes; billing-frontend's function names) · moduleSettings.ts
-                (getModulePage, postModuleAction over the 19 actions, startTrial, completeCheckout, and the six
-                a confirmed change posts: cancelModule, renewModule, retryPayment, restartBilling, authorizeBilling,
-                openPaymentMethodCapture; the card and page-model types) · moduleChanges.ts (applyChange: the
-                open row's ticks → those actions, in an order that keeps a change whole)
+                (getModulePage, postModuleAction over the 10 actions, startTrial, and the five a confirmed
+                change posts: cancelModule, renewModule, retryPayment, restartBilling, authorizeBilling; the card
+                and page-model types) · moduleChanges.ts (applyChange: the open row's ticks → those actions, in
+                an order that keeps a change whole; `needsCard` when there is no card to charge)
 hooks/          useModulePage (the module page's state and its CTAs) · useSubscriptionsList (the list's, the
                 open row, a change applied and its result) · useEntitySummary (the open company's page model
                 and card, the ticks pending on them) · useTransferSubscription (the payer's side of a handover:
                 the pick, the request, the one waiting withdrawn) · useSubscriptionRequests (the recipient's:
-                the requests offered, one under review with its cards and charge, the card picked, accept / decline)
+                the requests offered, one under review with its cards, the billing account picked or opened in
+                place, accept / decline)
                 · useBillingPage (ONE billing account's page: who it bills, its cards, its invoices, every card action)
                 · useBillingOverview (the landing: its figures and the updates' Show more, the account shown and
                 the sheet, a company moved, an account opened) · useCardForm (useAddCard onto an account /
@@ -78,7 +79,7 @@ components/     the module page's pieces: SettingsTabs (billing-frontend's pills
                 LeaveDialog - when it fails or gets interrupted), ChangeResultView (ChangeResultRow /
                 ChangeResultPage - the result screens); the handover's: TransferSubscriptionPanels (SubscriberPicker /
                 PendingRequestPanel / TransferRequested), SubscriptionRequestsPanels (NoRequests / RequestList /
-                IncomingRequestReview / PaymentMethodPicker), TransferOutcomeDialog (how a handover ended);
+                IncomingRequestReview / TransferAccountPicker), TransferOutcomeDialog (how a handover ended);
                 the billing area's: BillingPanels (NextBillingCard / ExpiredCardNotice / PaymentMethodsPanel with
                 the card menu / NoCardPanel / NoAccountPanel / InvoiceHistoryTable), InvoicePreviewDialog (the Inv#'s
                 view-only preview) over PdfPages (pdf.js drawing a PDF onto canvases), CardDialogs (CardAddedDialog /
@@ -86,9 +87,9 @@ components/     the module page's pieces: SettingsTabs (billing-frontend's pills
                 onboarding's 01-D - with the fields and the account a screen adds), BillingOverviewPanels
                 (BillingAccountCard / SubscriptionOverviewCard), AccountSheet + sheetClasses (onboarding's
                 BillingSheet: the frame, the radio rows, the 01-D form, 01-J), BillingAccountDialogs
-                (AccountPickerDialog / MoveCompanyDialog / NewAccountDialog), BillingDetailsForm (08-C); shared:
-                ModalFrame (every other modal's backdrop, Escape and card - ConfirmDialog is built on it) and
-                RadioCard (07-E's card picker row)
+                (AccountTargetList - the account rows, each shut with its reason, shared with 07-E /
+                AccountPickerDialog / MoveCompanyDialog / NewAccountDialog), BillingDetailsForm (08-C); shared:
+                ModalFrame (every other modal's backdrop, Escape and card - ConfirmDialog is built on it)
 routes/         SubscriptionLayout (PortalChrome = billing-frontend's header; no tab row), ManageSubscriptions (+ Screen),
                 ModuleSettingsPage (+ Screen), TransferSubscription (+ Screen), SubscriptionRequests (+ Screen),
                 SubscriptionOverview (+ Screen), BillingPage (+ Screen), CardPages (AddCard / EditCard) +
@@ -96,7 +97,8 @@ routes/         SubscriptionLayout (PortalChrome = billing-frontend's header; no
 __fixtures__/   modulePage.ts — the page model in each Figma state (03's A–F, 05·A's M11 … N21a, 05·C's RU22 … RNX21a
                 as before/asked/after), the nominated card; subscriptions.ts — frame 04-A's 21 companies, the
                 transfer request, and the list's A/B/F frames; transfers.ts — 07's subscriber options (A, C with an
-                offer waiting, BLOCKED), the requests offered (D, TRIAL, F) and the recipient's cards; billing.ts —
+                offer waiting, BLOCKED), the requests offered (D, TRIAL, F) and the recipient's billing accounts
+                (`RECIPIENT_ACCOUNTS`, `RECIPIENT_NO_ACCOUNTS`); billing.ts —
                 08's wallets (B two cards, H none, I expired, J eight, N one just added), the billing accounts
                 (Company A, Vine Consulting, one never named - each with its estimated next bill) and
                 `accountsFor(wallet)`, an account opened in the sheet (`OPENED_ACCOUNT`, `ACCOUNTS_OPENED`), and
@@ -138,14 +140,26 @@ with `apiFetchBlob` - the same bearer, 401 and `ApiError`, since its failures ar
 `api/payerPortal.ts` keeps billing-frontend's function names (`fetchPayerSubscriptions`,
 `fetchSubscriberOptions`, `inviteAdminToEntity`, `initiateTransfer`, `respondToTransfer`,
 `cancelTransfer`, `listIncomingTransfers`, `fetchPaymentMethods`, `startCardSetup`,
-`confirmCardSetup`, `setDefaultPaymentMethod`, `fetchEntityPaymentMethod`,
-`setEntityPaymentMethod`, `updatePaymentMethod`, `removePaymentMethod`, `fetchPayerInvoices`)
-and its response types, so the portal screens port mechanically - plus what billing-frontend never
-had: `markTransferSeen`, and the billing accounts (`fetchBillingAccounts`, `setAccountDefaultCard`,
-`updateBillingAccount`, `moveCompanyToAccount`; `confirmCardSetup` takes onboarding's
-`BillingAccountChoice`, `removePaymentMethod` and `fetchPayerInvoices` an account), and one
-invoice's own routes (`fetchInvoiceBreakdown`, `retryInvoice`, `fetchInvoicePdf`). `api/moduleSettings.ts`
-exports the nineteen `MODULE_ACTIONS` the API pins in its `test_contract.py`.
+`confirmCardSetup`, `fetchEntityPaymentMethod`, `updatePaymentMethod`, `removePaymentMethod`,
+`fetchPayerInvoices`) and its response types, so the portal screens port mechanically - plus what
+billing-frontend never had: `markTransferSeen`, and the billing accounts (`fetchBillingAccounts`,
+`setAccountDefaultCard`, `updateBillingAccount`, `moveCompanyToAccount`; `confirmCardSetup` REQUIRES
+onboarding's `BillingAccountChoice` - an account id, or a company AND an email to open one - and
+refuses without one (`namesAnAccount`, 422 "Choose a billing account for this card.", the API's own
+words) before anything is sent; `respondToTransfer` takes `{codes, billingGroupId}`;
+`removePaymentMethod` and `fetchPayerInvoices` an account), and one invoice's own routes
+(`fetchInvoiceBreakdown`, `retryInvoice`, `fetchInvoicePdf`). `setDefaultPaymentMethod` and
+`setEntityPaymentMethod` are gone (2026-10-01): no card is promoted to a payer-wide default or
+nominated for a company on its own any more - a company is billed to its billing account's card.
+`api/moduleSettings.ts` exports the ten `MODULE_ACTIONS` the API pins in its `test_contract.py`.
+
+**No Stripe-hosted page, anywhere (the user, 2026-10-01).** A payment method is only ever added
+through a BILLING ACCOUNT, in the app: the billing-account sheet (`AccountSheet`, onboarding's
+01-D - a card and the company and email it bills under), or 08-Y onto one account
+(`?account=` - reached without one, it opens no SetupIntent and goes to the billing page). The
+module actions that handed the browser to Stripe (`checkout`, `payment-method`, `manage-billing`,
+`checkout-complete`, `confirm-billing`, `payment-methods*`) are gone from the API, and with them
+the module page's `?session_id=` / `?checkout_error=` return.
 
 ## 4. No switch
 
@@ -178,7 +192,7 @@ profile's way back). All inlined at build time. In the docker stack this is the
 that is not a PDF refused), `paths.test.ts`, `reexports.test.ts` (rules 2 and 3
 from the source), `moduleState.test.ts` (every card state, the precedence, the day arithmetic),
 `flaskLinks.test.ts`, `useModulePage.test.tsx` (load, error, a trial asked about then posted and
-the way back out, the Checkout return, the seams, the fixture switch), `ModuleSettingsScreen.test.tsx` (each Figma frame rendered),
+the way back out, the seams, the fixture switch), `ModuleSettingsScreen.test.tsx` (each Figma frame rendered),
 `portalRows.test.ts` (the list's cells, sections, the three ⋮ shapes, the orders, the search),
 `useSubscriptionsList.test.tsx` (the pages walked, the transfers alongside, search/sort, Start
 Trial asks then posts with `X-Entity-Id`, the seams, the fixture switch, a row open in place),
@@ -204,10 +218,14 @@ payer's, a pick and its quote, the current payer unpickable, blockers disabling 
 _Request transfer_ posting and landing on 07-B, an invitation sent and refused, the offer
 waiting withdrawn — 07-K then read again — Cancel / Back to the row, the fixture switch),
 `useSubscriptionRequests.test.tsx` (nothing waiting, one request reviewed at once with the
-company's cards and the person's wallet, several to pick from and `?transfer=`, another card
-picked and made the default, accept landing on the list's row transferred, a refused or
-blocked accept, decline reading again, the fixture switch) and `TransferScreens.test.tsx`
-(07-A/B/C/D/E/F and 07-K rendered from the fixtures), `billing.test.ts` (section 08's rules: a
+company's cards and the person's billing accounts - the oldest that can pay preselected, the
+rest shut with why - several to pick from and `?transfer=`, another account picked with
+nothing posted and sent as `billing_group_id` with the accept, a shut account never chosen,
+_New billing account_ opening the sheet in place and the account it opens coming back picked,
+Cancel back to the list, accept landing on the list's row transferred, a refused or blocked
+accept, decline reading again, the fixture switch) and `TransferScreens.test.tsx`
+(07-A/B/C/D/E/F and 07-K rendered from the fixtures; 07-E's account rows and the sheet over the
+offer for someone with no account), `billing.test.ts` (section 08's rules: a
 card's name and month, the default pinned first whatever order the API sent, the chips, the
 menu, Show more, the expired line only for the card being charged, the payer-level fallback
 printing the NEXT billing date and never the anchor, the invoice header and its 10 / 50 / 100
@@ -231,7 +249,8 @@ for the dialog and nothing saved, a refusal in the API's words, a late answer dr
 another row's preview opened or it was closed - the fixture switch, its PDF and preview
 included), `useCardForm.test.tsx` (one SetupIntent
 per visit, an unreadable wallet not claiming a first card, a refused intent and its retry, where
-a saved card lands and the account it goes on; `useNewAccount`: nothing reaches Stripe without
+a saved card lands and the account it goes on, no account to put it on opening nothing and
+leaving for the billing page; `useNewAccount`: nothing reaches Stripe without
 a company and an email, what it reports to the sheet - the accounts read again or the move's
 answer, the company moved or refused, the card 01-J names; the edit
 screen's starting fields, the four-digit year it sends, the bad month it does not, a refused
@@ -240,7 +259,8 @@ the account named and nothing else, only what changed sent - the address whole a
 Stripe has checked it, a new cardholder as the cardholder, the name alone without asking
 Stripe - a blanked or 255-plus name stopped, the API's refusal kept, a card-less account's
 address locked, no Stripe here and Stripe.js blocked), `payerPortalAccounts.test.ts` (what the account calls SEND:
-the confirm's account fields as onboarding sends them, a removal's account, the invoices'
+the confirm's account fields as onboarding sends them - and a confirm with no account refused
+before it is sent - a removal's account, the invoices'
 account, the country list only when asked) and `BillingScreens.test.tsx` (08-B/H/I/J rendered,
 the menu's two shapes, 08-R, 08-N → 08-S, 08-B's estimated amount and paging, its two downloads -
 the PDF button busy and both downloads disabled meanwhile, "—" for a draft, a refusal's
@@ -256,9 +276,12 @@ form - onboarding's two errors, Cancel back to the list, 01-J and Done landing o
 opening straight on the form, a company moved in two steps and a refused move, the accounts
 failing to load), and `CardCaptureForm.test.tsx` (Stripe mocked at its packages: the gate before
 Stripe, the order - ours, Stripe's, confirmSetup, Minty, the caller - the confirm's body, the
-intent remembered after our half failed, the busy signal, the two looks). The list hook's tests also take a change
+intent remembered after our half failed, the busy signal, the two looks, no account refusing
+Save before Stripe). The list hook's tests also take a change
 through its modal and apply it over the stubbed API - one action per module, the result row,
-the cancellation page, Stripe's card form when there is no card, the bank declining (asked
+the cancellation page, "Billing Accounts" asked AGAIN when there is no card to charge (a
+cardless trial, `retry-payment`'s `no_card`, `restart-billing`'s 402 "Choose a card") with
+nothing navigating and the ticks still pending, the bank declining (asked
 again, tried again, or left pending), an action refused, Go back posting nothing - land Start
 Trial on its result, take the ⋮'s Cancel subscription (from a closed row) and Reactivate (from
 the open one) through the same modal, and ask before leaving the open row with ticks pending.
@@ -281,8 +304,9 @@ form in place, Cancel back, the X closing, 481 and no cat below 900px, the move'
 opening it);
 `05_transfers.spec.ts` (both sides of a handover over the stubbed routes: the payer picks and
 sends - 07-A → 07-B - and withdraws the one waiting - 07-C → 07-K → 07-A; the recipient sees
-nothing waiting - 07-F - and reviews, changes the card, accepts and lands on the list's
-"Subscription Transfer Completed" row - 07-D → 07-E → 07-M; every POST's body checked);
+nothing waiting - 07-F - and reviews, changes the billing account, accepts and lands on the
+list's "Subscription Transfer Completed" row - 07-D → 07-E → 07-M; every POST's body checked,
+and no `payment-methods/*` call made);
 `04_live_api.spec.ts` (step 3's API for real, no stubs: the module page's real cards, a
 card-free trial started from the page and read back as `trialing` with Flask's gate open, the
 landing and the billing page over the person's real billing accounts (read-only), the
@@ -386,8 +410,9 @@ redrawn to the Figma design (section "03 · Settings › Module", six frames). W
 - **Who may act.** `can_manage_modules` (admin AND the payer, or no payer yet) shows the CTAs;
   otherwise the cards render without them and a line names the payer, or says only admins can
   change modules.
-- **Re-entry.** `?session_id=` (back from Stripe Checkout) posts `checkout-complete` once and is
-  dropped from the URL before the page loads; `?checkout_error=` is shown and dropped.
+- **No re-entry from Stripe** (2026-10-01). The page used to settle `?session_id=` (back from
+  Stripe Checkout, posting `checkout-complete`) and `?checkout_error=`; nothing hands the browser
+  to a Stripe-hosted page any more, so neither is read and the action is gone from the API.
 - **Activate / Resume / Reactivate are not pages** (2026-09-23). Each is ONE module's pending
   change, which the open row already says, so the CTA lands on the list with that company's row
   open and that module **ticked**: `moduleRoutes(id).activate|resume|reactivate(code)` all build
@@ -637,17 +662,28 @@ button in 05·B lands". Built 2026-09-22.
 - **Applying the change** (`api/moduleChanges.ts` `applyChange` - for a change that only
   cancels, once its modal of §13 is confirmed; for one that bills, once the company is on the
   billing account picked in "Billing Accounts" (§13), so every charge and consent below is that
-  account's card; a trial is then confirmed on it rather than sent to Stripe for "no card at
-  all", unless the account picked has no card it can charge (`cardChosen`)): one API action per module
+  account's card; a trial is then confirmed on it, unless the account picked has no card it can
+  charge (`cardChosen`)): one API action per module
   changed, from the card's state — an active module (or a confirmed trial) unticked → `cancel`;
   a cancellation pending, ticked → `renew`; a running trial, ticked → `authorize-billing` (this
   company's consent; consent is per company, so every trial it runs converts); a suspended
   module, ticked → `retry-payment` (the outstanding invoice, now); an expired trial, ticked →
-  `restart-billing` (**this charges** the nominated card). The calls that can never leave the app
-  go first (cancel, renew, consent), the ones that may hand the browser to Stripe last: a trial
-  confirmed with no card at all, or a 402 from `restart-billing`, opens Stripe's card form
-  (`payment-method` → `lib/handoff.ts` `leaveTo`), and the browser comes back to the module page
-  as it does from there. The bank declining (`retry-payment` `status: "failed"`, or a 402 from
+  `restart-billing` (**this charges** the nominated card). The calls that cannot need a card go
+  first (cancel, renew, consent), the ones that may find none, or a charge refused, last.
+  **Nothing hands the browser to Stripe** (the user, 2026-10-01: "payment method should only go
+  through billing account first. must be only attached to the billing account"): a trial
+  confirmed with no card at all (`NO_CARD_FOR_TRIAL`), `retry-payment`'s `status: "no_card"`
+  (its `message`), a 402 "Choose a card …" from `restart-billing`, or a 402 "Choose a billing
+  account for this company." from `authorize-billing` (the API no longer falls back to the
+  payer's Stripe default card for a company on no account; its sentence) answers
+  `needsCard`, and `useSubscriptionsList` asks **"Billing Accounts" AGAIN** for the same change:
+  the accounts read fresh, the sentence as the sheet's error, every account with no card shut
+  ("No card" - even the one the company is on, which is otherwise always pickable;
+  `nominationChoice(…, {needCard: true})`), the first that can pay preselected, and _New billing
+  account_ the way to add a card - the account it opens is picked and the change carries on.
+  Whatever asked (the sheet, 06·B's Try again) stays up, busy, until the sheet takes its place,
+  and the summary is not read again in between, so the ticks stay pending. If the accounts
+  cannot be read, a toast says both sentences. The bank declining (`retry-payment` `status: "failed"`, or a 402 from
   `restart-billing` / `renew` that is not "Choose a card …") asks with 06·B's "Payment could not
   be processed" (§13); any other refusal is a toast and the row is read again.
 - **Which screen** depends on what the change did, read off the company's page model before and
@@ -871,24 +907,40 @@ payer's money does not cover, and the subscription moves.
 - **07-D "Transfer Subscription - Choose Modules"**, the request under review
   (`/api/me/subscriptions/transfers`): who asks and for which company, the company's two module
   cards drawn as the module page draws them (the page model read with that company's
-  `X-Entity-Id`, the card the person's own default), the Subscription Summary panel with the
-  plan and price (§11's builder), the card the charge goes to (its network mark over "Visa
-  4121", _Change_ — "Add a card" when there is none), **no money line at all** (accepting
+  `X-Entity-Id`; the card shown is the billing account's chosen on 07-E), the Subscription Summary
+  panel with the plan and price (§11's builder), the **Billing account** column (renamed from
+  "Payment method" 2026-10-01, the user: "rename in the app to use billing account"; the Figma
+  frame still says Payment method) - the chosen account's name over its charged card (the
+  network mark, the name, "Visa 4121"; "No billing account yet" before one is chosen), _Change_ —
+  "Add a billing account" when there is no account that can pay, **no money line at all** (accepting
   takes nothing), the trials that carry over when there are any (the
   trials that carry over are listed: "Petty Cash free trial carries over until <date>;
   HK$280 a month after that."), the API's blockers, "Subscription will be charged to your
-  selected payment method from the date that transfer is completed.", _Confirm Subscription
-  Transfer_ (`POST /transfer/respond {transfer, accept: true}`) and _Decline_ (`accept: false`,
-  then the screen is read again). Accepting lands on the list with `?entity=<id>&transferred=1`.
-- **07-E "Payment Methods"** (_Change_): the person's saved cards
-  (`/api/me/billing/payment-methods`) as radios — "Visa ending in 4121 · Expire on 04/29", each
-  with its network mark (`components/CardBrand.tsx`) — _Add New Card_ and _Confirm_, which makes
-  the pick the default (`POST /payment-methods/default`) and returns to 07-D naming it.
-  _Add New Card_ replaces the list with Stripe's own fields **in place** (the hook's `add-card`
-  step, `CardCapturePanel` on a SetupIntent); saving picks the new card and returns to the list,
-  Cancel returns to it unchanged. Nothing navigates, because the offer being reviewed would be
-  lost — and the person most likely to press it is someone with no card at all, who the API now
-  lets be offered a company precisely so they can say yes and add one.
+  selected billing account from the date that transfer is completed.", _Confirm Subscription
+  Transfer_ (`POST /transfer/respond {transfer, accept: true, billing_group_id, codes?}`) and
+  _Decline_ (`accept: false`, then the screen is read again). Accepting lands on the list with
+  `?entity=<id>&transferred=1`.
+- **07-E "Billing Accounts"** (_Change_; rebuilt 2026-10-01 - the user: "payment method should
+  only go through billing account first. must be only attached to the billing account"): the
+  person's BILLING ACCOUNTS (`GET /api/me/billing/accounts`), drawn with the very rows Manage
+  Subscriptions' "Billing Accounts" sheet uses (`AccountTargetList` - the card's mark, the
+  account's name, "Visa ending in 4121", its companies) in 07-E's panel beside Minty with the
+  lemon (the existing layout kept). An account whose collection is failing, or with no card it
+  can charge, is shown and shut with the reason ("Payment failed", "No card" -
+  `transferChoice`); the OLDEST that can pay is preselected. Picking posts nothing; _Confirm_
+  returns to 07-D naming that account's card, and the account is sent with _Confirm Subscription
+  Transfer_ as `billing_group_id` - the API bills the company to that account's charged card.
+  Without one (and no prior nomination) the API refuses "Choose a billing account before taking
+  over the billing.". Nothing is promoted to a payer-wide Stripe default any more
+  (`setDefaultPaymentMethod` is deleted), and no card is saved loose: _New billing account_
+  opens the billing-account sheet (`NewAccountDialog` - onboarding's 01-D, a card AND the company
+  and email it bills under, then 01-J) **over the offer**; Done brings the account back to the
+  list, picked; Cancel closes the sheet. Nothing navigates, because the offer being reviewed
+  would be lost — and the person most likely to press it is someone with no account at all, who
+  the API lets be offered a company precisely so they can say yes and open one.
+  **Figma note:** 07-E draws a "Payment Methods" card list; the frame was not redrawn for
+  accounts, so the panel keeps 07-E's frame and spacing and swaps its rows for the sheet's
+  account rows - a design pass may want to redraw it.
 - **07-M "Subscription Transfer Completed"**: the list's row for the company, in the result
   row's celebrate layout (§12): the headline, "You are now the owner of the <company>
   subscription and have full control of this Minty." with the company in teal, and how billing
@@ -954,17 +1006,19 @@ payer's money does not cover, and the subscription moves.
     the daily `collect-transfers` job takes it on that day. The "You'll be charged … today" line
     is GONE, with `acceptCharge` and `NOTHING_TO_PAY_TODAY`; a version naming the collection date
     instead was built and then dropped by the user. What the panel still carries is the note
-    under it — "charged to your selected payment method from the date that transfer is
+    under it — "charged to your selected billing account from the date that transfer is
     completed" — and the inherited-trial lines, which are a different disclosure: they commit the
     recipient to a charge at a date of their own. `quote` is still on the API's rows, unread.
-  - **A person with no card can be offered a company.** Being asked is not being charged, so
-    the API's offer-time card refusal is gone (2026-09-24); the requirement lives at the accept,
-    where the money is. 07-D says so rather than leaving it to a refused POST — "Add a payment
-    method to take this over. Nothing is charged until you confirm." — and _Confirm Subscription
-    Transfer_ is held until there is one. Only claimed once the wallet has actually been read.
-  - **Add New Card stays on this screen.** It used to leave for the billing page (§15); it now
-    mounts the same form here, because answering "I have no card" by discarding the offer is not
-    an answer.
+  - **A person with no billing account can be offered a company.** Being asked is not being
+    charged, so the API's offer-time card refusal is gone (2026-09-24); the requirement lives at
+    the accept, where the money is. 07-D says so rather than leaving it to a refused POST —
+    "Choose or open a billing account to take this over. Nothing is charged until you confirm."
+    (`NEEDS_ACCOUNT`) — and _Confirm Subscription Transfer_ is held until there is one. Only
+    claimed once the accounts have actually been read.
+  - **New billing account stays on this screen.** It used to leave for the billing page (§15),
+    then (until 2026-10-01) mounted a bare card form here that saved a card to no account; it now
+    opens the billing-account sheet over the offer, because answering "I have no account" by
+    discarding the offer is not an answer, and a card only ever comes with an account.
   - **07-B's hero** reads "Subscription & Billing" in the frame; the page keeps "Transfer
     Subscription" — it is the same page a moment later.
   - **All four outcome modals now have a trigger** (2026-09-24). `withdrawn` always had one;
@@ -1262,8 +1316,10 @@ schema change), which 08-C writes.
     the rate its days add up to). A line issued before then is read back by the API from how
     that kind of line is priced - and an extension of that age shows a blank end once a resume
     has cleared its module's access end.
-  - **08-F / 08-G (A-12 / A-13, the payment-method picker)** are the picker already built for
-    07-E — the same component, reached from the transfer review; nothing new was built for them.
+  - **08-F / 08-G (A-12 / A-13, the payment-method picker)** have no screen of their own. The
+    loose card picker they matched was 07-E's until 2026-10-01, when 07-E became a billing-account
+    picker (§14) and `PaymentMethodPicker` was deleted; choosing which card an account charges is
+    08-B's _Update card_ menu ("charge this card").
   - **08-E is 08-Y as a modal**: the same Stripe form, built once as the page. Its "New billing
     account" heading is the sheet's form's (onboarding's 01-D); adding a card to an account reads
     "Add a payment method".

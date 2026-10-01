@@ -42,8 +42,8 @@ describe("subscription paths", () => {
     expect(BILLING.account()).toBe("/subscription/billing");
     expect(BILLING.account({ id: "acc-1" })).toBe("/subscription/billing?account=acc-1");
     expect(BILLING.account({ entity: "e-1" })).toBe("/subscription/billing?entity=e-1");
+    // A card is added ON an account: there is no account-less 08-Y to link to.
     expect(BILLING.add("acc-1")).toBe("/subscription/billing/add?account=acc-1");
-    expect(BILLING.add()).toBe("/subscription/billing/add");
     expect(BILLING.edit("pm_1", "acc-1")).toBe(
       "/subscription/billing/edit?card=pm_1&account=acc-1",
     );

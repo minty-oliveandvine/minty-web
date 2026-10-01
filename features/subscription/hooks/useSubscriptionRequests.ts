@@ -2,14 +2,23 @@
 
 /**
  * The recipient's side of a handover (Figma 07-D/E/F/M): the requests offered to the signed-in
- * person, one of them under review - the company's modules as they are, the card the bill will
- * go to - and the accept or decline. The screen calls this and renders what it returns.
+ * person, one of them under review - the company's modules as they are, the BILLING ACCOUNT the
+ * bill will go to - and the accept or decline. The screen calls this and renders what it returns.
  *
- * A PERSON WITH NO CARD BELONGS HERE. The API allows a company to be offered to any admin,
- * card or not, because being asked is not being charged; the card is required at the accept,
- * which is the moment money actually moves. So the picker's "Add New Card" mounts Stripe's form
- * in place (the `add-card` step) rather than navigating to the billing page and losing the
- * offer.
+ * A COMPANY HANDED OVER IS BILLED TO ONE OF THE RECIPIENT'S BILLING ACCOUNTS (the user,
+ * 2026-10-01: "payment method should only go through billing account first. must be only attached
+ * to the billing account"). 07-E lists their accounts - the same rows Manage Subscriptions'
+ * "Billing Accounts" draws, the ones that cannot pay (collection failing, no card) shut with the
+ * reason - the oldest that can pay preselected; Confirm Subscription Transfer sends it
+ * (`billing_group_id`) and the company is billed to that account's charged card. No card is
+ * promoted to a Stripe default, and none is saved loose.
+ *
+ * A PERSON WITH NO ACCOUNT BELONGS HERE. The API allows a company to be offered to any admin,
+ * card or not, because being asked is not being charged; the account is required at the accept,
+ * which is the moment the billing actually moves. So 07-E's "New billing account" opens the
+ * billing-account sheet in place (`NewAccountDialog` - a card AND the company and email it bills
+ * under, which is what opens an account) rather than navigating away and losing the offer; the
+ * account it opens comes back selected.
  *
  * The only screen in the portal about companies the viewer does NOT pay for, and the one a
  * person can arrive at with no subscriptions at all - so it has to make sense cold (07-F). The
@@ -17,13 +26,12 @@
  * the cards are drawn, not ticked. ACCEPTING TAKES NO PAYMENT - the API charges nothing for days
  * that have not started and parks the charge until they do - so the screen names no figure and no
  * date. What it still discloses is the TRIALS being inherited, which commit the recipient to a
- * charge at a date of their own. The card the bill will go to is the person's default; 07-E lets
- * them pick another of their saved cards (made the default), or add one, before confirming.
+ * charge at a date of their own.
  *
  * Landings: accept → the list with the company's row landing on 07-M ("Subscription Transfer
  * Completed"); decline → the screen read again (07-F when nothing else waits). `fixture`:
  * dev-only, `?fixture=D|TRIAL|F` (the requests) with the company's cards from the 05·A frame
- * M24.
+ * M24 and the recipient's accounts from `RECIPIENT_ACCOUNTS`.
  */
 
 import { useRouter } from "next/navigation";
@@ -33,15 +41,21 @@ import { ApiError } from "@/lib/apiClient";
 
 import { getModulePage, type ModulePage } from "@/features/subscription/api/moduleSettings";
 import {
-  fetchPaymentMethods,
+  fetchBillingAccounts,
   listIncomingTransfers,
   respondToTransfer,
-  setDefaultPaymentMethod,
+  type BillingAccount,
+  type BillingAccounts,
+  type EntityPaymentMethod,
   type IncomingTransfer,
-  type PayerPaymentMethods,
   type SavedPaymentMethod,
 } from "@/features/subscription/api/payerPortal";
-import { useSetupIntent, type SetupIntentState } from "@/features/subscription/hooks/useCardForm";
+import type { OpenedAccount } from "@/features/subscription/hooks/useCardForm";
+import {
+  ACCOUNTS_LOAD_FAILED,
+  transferChoice,
+  type MoveTarget,
+} from "@/features/subscription/lib/billingAccounts";
 import { PORTAL } from "@/features/subscription/lib/paths";
 import {
   buildSummaryView,
@@ -65,9 +79,11 @@ export type ReviewedRequest = {
   /** The company's cards and summary, as the open row draws them; null until read. */
   view: SummaryView | null;
   viewStatus: "loading" | "ready" | "error";
-  /** The person's saved cards, and the one the bill will go to. */
-  cards: SavedPaymentMethod[];
-  cardId: string | null;
+  /** The person's billing accounts, each with the reason it cannot pay when it cannot. */
+  targets: MoveTarget[];
+  /** The account the company will be billed to, and the card it charges. */
+  accountId: string | null;
+  account: BillingAccount | null;
   card: SavedPaymentMethod | null;
   /** 07-D: the modules this handover is offering, and which of them are being taken on. */
   offered: string[];
@@ -81,19 +97,19 @@ export type UseSubscriptionRequestsResult = {
   /** The request under review, when one is. */
   reviewed: ReviewedRequest | null;
   review: (transfer: IncomingTransfer) => void;
-  /** 07-E: choosing the card the charge goes to, and adding one without leaving it. */
-  step: "review" | "payment" | "add-card";
+  /** 07-E: choosing the billing account the company goes on. */
+  step: "review" | "payment";
   /** 07-D "Choose Modules": tick or untick one. Unticked = cancelled for the company. */
   toggleModule: (code: string) => void;
-  changeCard: () => void;
-  pickCard: (id: string) => void;
-  confirmCard: () => Promise<void>;
-  addCard: () => void;
-  /** The SetupIntent behind the "add-card" step; only opened once that step is reached. */
-  setup: SetupIntentState;
-  /** What the card form calls once Stripe has the card: keep it, pick it, go back to 07-E. */
-  cardSaved: (methods: PayerPaymentMethods, paymentMethodId: string | null) => void;
-  cancelAddCard: () => void;
+  chooseAccount: () => void;
+  pickAccount: (id: string) => void;
+  confirmAccount: () => void;
+  /** "New billing account": the sheet, over 07-E, while it is open. */
+  addingAccount: boolean;
+  addAccount: () => void;
+  /** The sheet opened one and the person said Done: it joins the list, selected. */
+  accountOpened: (opened: OpenedAccount) => void;
+  cancelAddAccount: () => void;
   busy: boolean;
   actionError: string | null;
   accept: () => Promise<void>;
@@ -123,16 +139,28 @@ async function loadRequests(
 async function loadCompany(
   entityId: string,
   fixture: string | null | undefined,
-): Promise<{ page: ModulePage; wallet: PayerPaymentMethods }> {
+): Promise<{ page: ModulePage; accounts: BillingAccounts }> {
   if (process.env.NODE_ENV !== "production" && fixture) {
     const t = await import("@/features/subscription/__fixtures__/transfers");
     if (t.isRequestsFixture(fixture)) {
       const m = await import("@/features/subscription/__fixtures__/modulePage");
-      return { page: m.SUMMARY_FIXTURES.M24, wallet: t.RECIPIENT_CARDS };
+      return { page: m.SUMMARY_FIXTURES.M24, accounts: t.RECIPIENT_ACCOUNTS };
     }
   }
-  const [page, wallet] = await Promise.all([getModulePage(entityId), fetchPaymentMethods()]);
-  return { page, wallet };
+  const [page, accounts] = await Promise.all([getModulePage(entityId), fetchBillingAccounts()]);
+  return { page, accounts };
+}
+
+/** The account's charged card as the summary's wallet - "the card this company is billed to". */
+function walletOf(account: BillingAccount | null, entityId: string): EntityPaymentMethod {
+  return {
+    has_account: account !== null,
+    default_id: account?.default_id ?? null,
+    methods: account?.cards ?? [],
+    total: account?.cards.length ?? 0,
+    entity_id: entityId,
+    nominated_id: account?.card?.id ?? null,
+  };
 }
 
 export function useSubscriptionRequests({
@@ -151,9 +179,10 @@ export function useSubscriptionRequests({
     forId: string;
     status: "loading" | "ready" | "error";
     page: ModulePage | null;
-    wallet: PayerPaymentMethods | null;
+    accounts: BillingAccounts | null;
   } | null>(null);
-  const [step, setStep] = useState<"review" | "payment" | "add-card">("review");
+  const [step, setStep] = useState<"review" | "payment">("review");
+  const [addingAccount, setAddingAccount] = useState(false);
   // 07-D's choice, as the modules the person is DECLINING - empty means the whole company,
   // which is what arriving on the screen means. Keyed by the request it belongs to rather
   // than cleared in an effect: reviewing another request must not inherit this one's
@@ -162,7 +191,7 @@ export function useSubscriptionRequests({
     forId: "",
     codes: [],
   });
-  const [cardId, setCardId] = useState<string | null>(null);
+  const [accountId, setAccountId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -192,7 +221,7 @@ export function useSubscriptionRequests({
     return requests.length === 1 ? requests[0] : null;
   }, [requests, reviewId]);
 
-  // Its company: the cards as the open row draws them, and the person's own wallet.
+  // Its company: the cards as the open row draws them, and the person's own billing accounts.
   const rowId = row?.id ?? null;
   const rowEntityId = row?.entity_id ?? null;
   useEffect(() => {
@@ -203,11 +232,17 @@ export function useSubscriptionRequests({
       try {
         const loaded = await loadCompany(rowEntityId, fixture);
         if (!live) return;
-        setCompany({ forId: rowId, status: "ready", page: loaded.page, wallet: loaded.wallet });
-        setCardId(loaded.wallet.default_id);
+        setCompany({
+          forId: rowId,
+          status: "ready",
+          page: loaded.page,
+          accounts: loaded.accounts,
+        });
+        // The oldest account that can pay - or none, and 07-E asks for one.
+        setAccountId(transferChoice(loaded.accounts).picked);
       } catch {
         if (!live) return;
-        setCompany({ forId: rowId, status: "error", page: null, wallet: null });
+        setCompany({ forId: rowId, status: "error", page: null, accounts: null });
       }
     })();
     return () => {
@@ -219,6 +254,11 @@ export function useSubscriptionRequests({
     if (!row) return null;
     const day = fixtureToday ?? today ?? new Date();
     const c = company && company.forId === row.id ? company : null;
+    const { targets } = transferChoice(c?.accounts ?? null);
+    // Only an account that can take the company counts as chosen: a stale id (an account
+    // that has since gone into dunning, or lost its card) is no choice at all.
+    const account =
+      targets.find((t) => t.account.id === accountId && t.block === null)?.account ?? null;
     // THE PANEL FOLLOWS THE TICKS. A module unticked here is one the recipient is not
     // taking on, so the plan and the price have to be the ones they will actually be
     // billed - fed in as a pending change, which is the same machinery the open row uses
@@ -227,16 +267,9 @@ export function useSubscriptionRequests({
     const out = declined.forId === row.id ? declined.codes : [];
     const pending = Object.fromEntries(out.map((code) => [code, false]));
     const view =
-      c?.page && c.wallet
-        ? buildSummaryView(
-            c.page,
-            null,
-            { ...c.wallet, entity_id: row.entity_id, nominated_id: cardId },
-            day,
-            pending,
-          )
+      c?.page && c.accounts
+        ? buildSummaryView(c.page, null, walletOf(account, row.entity_id), day, pending)
         : null;
-    const cards = c?.wallet?.methods ?? [];
     // EVERY module the company holds, minus the ones unticked here. Built from what the
     // page shows rather than from the ticks: a trial the outgoing payer never confirmed
     // reads as "unticked" and is still part of the company, so sending only the ticked
@@ -247,13 +280,14 @@ export function useSubscriptionRequests({
       row,
       view,
       viewStatus: c?.status ?? "loading",
-      cards,
-      cardId,
-      card: cards.find((m) => m.id === cardId) ?? null,
+      targets,
+      accountId: account?.id ?? null,
+      account,
+      card: account?.card ?? null,
       offered: offered.map((m) => m.code),
       taking,
     };
-  }, [row, company, cardId, fixtureToday, today, declined]);
+  }, [row, company, accountId, fixtureToday, today, declined]);
 
   /**
    * Tick or untick one module on 07-D.
@@ -289,56 +323,49 @@ export function useSubscriptionRequests({
     setStep("review");
     setActionError(null);
   }, []);
-  const changeCard = useCallback(() => setStep("payment"), []);
-  const pickCard = useCallback((id: string) => setCardId(id), []);
-  const confirmCard = useCallback(async () => {
-    const wallet = company?.wallet;
-    if (!cardId || busy) return;
-    if (wallet && wallet.default_id !== cardId) {
-      setBusy(true);
-      setActionError(null);
-      try {
-        const updated = await setDefaultPaymentMethod(cardId);
-        setCompany((c) => (c ? { ...c, wallet: updated } : c));
-      } catch (err) {
-        setActionError(sentence(err, RESPOND_FAILED));
-        setBusy(false);
+  const chooseAccount = useCallback(() => {
+    setActionError(null);
+    setStep("payment");
+  }, []);
+  // Choosing is local: nothing is posted until Confirm Subscription Transfer carries the account.
+  const pickAccount = useCallback((id: string) => setAccountId(id), []);
+  const confirmAccount = useCallback(() => {
+    if (accountId) setStep("review");
+  }, [accountId]);
+  /**
+   * OPENING AN ACCOUNT HAPPENS HERE, not on the billing page: leaving would answer the request
+   * by abandoning it - the offer under review, the company's cards and the ticks all gone.
+   */
+  const addAccount = useCallback(() => {
+    setActionError(null);
+    setAddingAccount(true);
+  }, []);
+  const cancelAddAccount = useCallback(() => setAddingAccount(false), []);
+  const accountOpened = useCallback(
+    (opened: OpenedAccount) => {
+      setAddingAccount(false);
+      // Selected straight away: they opened it in the middle of choosing which account pays,
+      // so choosing it for them is what they just asked for.
+      if (opened.accountId) setAccountId(opened.accountId);
+      setStep("payment");
+      if (opened.accounts) {
+        const accounts = opened.accounts;
+        setCompany((c) => (c ? { ...c, accounts } : c));
         return;
       }
-      setBusy(false);
-    }
-    setStep("review");
-  }, [company, cardId, busy]);
-  /**
-   * ADDING A CARD HAPPENS HERE, not on the billing page. This used to push to `PORTAL.billing`,
-   * which answered the request by abandoning it: the offer under review, the company's cards
-   * and the quote all went, and coming back meant finding the request again. It also made the
-   * screen unusable for the person who most needs it — someone with no card at all, who the
-   * API now lets be offered a company precisely so they can say yes and add one.
-   */
-  const addCard = useCallback(() => {
-    setActionError(null);
-    setStep("add-card");
-  }, []);
-  const cancelAddCard = useCallback(() => setStep("payment"), []);
-
-  const setup = useSetupIntent({ enabled: step === "add-card", fixture });
-
-  const cardSaved = useCallback(
-    (methods: PayerPaymentMethods, paymentMethodId: string | null) => {
-      // The id Stripe confirmed, else the newest card the server now holds. Selected straight
-      // away: they added it in the middle of choosing which card to be charged on, so choosing
-      // it for them is what they just asked for.
-      const id = paymentMethodId ?? methods.methods.at(-1)?.id ?? null;
-      setCompany((c) => (c ? { ...c, wallet: methods } : c));
-      if (id) setCardId(id);
-      setStep("payment");
+      // The sheet could not read the accounts back: read them here, or say so - a list without
+      // the account just opened would offer nothing to pick.
+      void fetchBillingAccounts().then(
+        (accounts) => setCompany((c) => (c ? { ...c, accounts } : c)),
+        (err) => setActionError(sentence(err, ACCOUNTS_LOAD_FAILED)),
+      );
     },
     [],
   );
 
   const accept = useCallback(async () => {
-    if (!row || busy || row.blockers.length > 0) return;
+    const chosen = reviewed?.account ?? null;
+    if (!row || busy || row.blockers.length > 0 || !chosen) return;
     const taking = reviewed?.taking ?? [];
     const offered = reviewed?.offered ?? [];
     setBusy(true);
@@ -347,7 +374,10 @@ export function useSubscriptionRequests({
       // Sent only when it is a CHOICE. Unchanged, the whole company goes, and omitting the
       // field says exactly that rather than re-listing what the API would read anyway.
       const chose = taking.length < offered.length;
-      await respondToTransfer(row.id, true, chose ? taking : undefined);
+      await respondToTransfer(row.id, true, {
+        codes: chose ? taking : undefined,
+        billingGroupId: chosen.id,
+      });
       router.push(
         `${PORTAL.subscriptions}?entity=${encodeURIComponent(row.entity_id)}&transferred=1`,
       );
@@ -383,14 +413,14 @@ export function useSubscriptionRequests({
     reviewed,
     review,
     step,
-    changeCard,
-    pickCard,
-    confirmCard,
     toggleModule,
-    addCard,
-    setup,
-    cardSaved,
-    cancelAddCard,
+    chooseAccount,
+    pickAccount,
+    confirmAccount,
+    addingAccount,
+    addAccount,
+    accountOpened,
+    cancelAddAccount,
     busy,
     actionError,
     accept,

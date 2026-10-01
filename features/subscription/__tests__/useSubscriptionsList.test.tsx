@@ -24,6 +24,7 @@ import {
 } from "@/features/subscription/__fixtures__/subscriptions";
 import { ACCOUNTS, ACCOUNTS_OPENED } from "@/features/subscription/__fixtures__/billing";
 import type { BillingAccounts } from "@/features/subscription/api/payerPortal";
+import { NO_CARD_FOR_TRIAL } from "@/features/subscription/lib/billingAccounts";
 import {
   LIST_NOT_WIRED_YET,
   SEARCH_DEBOUNCE_MS,
@@ -527,7 +528,7 @@ describe("useSubscriptionsList", () => {
   });
 
   it("a trial with no card at all is put on the account picked and confirmed on its card", async () => {
-    // RU22's trial has no card: it used to leave for Stripe's form. Picked onto an account that
+    // RU22's trial has no card: once that meant Stripe's form. Picked onto an account that
     // has one, it is confirmed on that card - the page read before the modal is out of date.
     const posts = serveChange(fetchMock, "RU22");
     const left: string[] = [];
@@ -547,9 +548,32 @@ describe("useSubscriptionsList", () => {
     _resetHandoffForTests();
   });
 
-  it("an account with no card it can charge still sends the trial to Stripe's card form", async () => {
+  /**
+   * No card to charge: "Billing Accounts" is asked AGAIN for the same change, with the sentence
+   * as its error - never Stripe's hosted page (the user, 2026-10-01). What every case checks.
+   */
+  function expectAskedAgain(
+    result: { current: UseSubscriptionsListResult },
+    left: string[],
+    error: string,
+    codes: string[],
+  ) {
+    expect(result.current.accountStep?.error).toBe(error);
+    expect(left).toEqual([]);
+    expect(push).not.toHaveBeenCalled();
+    expect(result.current.result).toBeNull();
+    expect(result.current.declined).toBeNull();
+    expect(result.current.changePrompt).toBeNull();
+    expect(result.current.changeBusy).toBe(false);
+    // The ticks are still pending: the summary was not read again in between.
+    expect(result.current.summary.view?.pendingChange?.codes).toEqual(codes);
+  }
+
+  it("an account with no card it can charge asks Billing Accounts again - never Stripe's page", async () => {
     // The company's own account is always pickable, card or not; with none, the consent would
-    // sit on nothing, so Stripe's form collects one first, as before.
+    // sit on nothing. It used to send the browser to Stripe's card form (`payment-method`); a
+    // card is only ever added through a billing account now, so the sheet comes back saying so,
+    // the cardless account shut, "New billing account" the way to add one.
     const e = ENTITIES[0];
     const [companyA] = ACCOUNTS.accounts;
     const cardless = {
@@ -562,12 +586,7 @@ describe("useSubscriptionsList", () => {
         },
       ],
     };
-    const posts = serveChange(
-      fetchMock,
-      "RU22",
-      { "payment-method": { status: 200, body: { url: "https://stripe.test/setup" } } },
-      cardless,
-    );
+    const posts = serveChange(fetchMock, "RU22", {}, cardless);
     const left: string[] = [];
     _resetHandoffForTests((url) => left.push(url));
     const { result } = renderHook(
@@ -576,11 +595,91 @@ describe("useSubscriptionsList", () => {
     );
     await waitFor(() => expect(result.current.summary.status).toBe("ready"));
     act(() => result.current.summary.toggleTick("PETTY_CASH"));
+    const accountReads = () =>
+      fetchMock.mock.calls.filter(
+        (c) => new URL(String(c[0])).pathname === "/api/me/billing/accounts",
+      ).length;
     await confirmBilled(result, e);
-    expect(posts.map((p) => p.action)).toEqual([MOVE, "payment-method"]);
-    expect(left).toEqual(["https://stripe.test/setup"]);
-    expect(result.current.result).toBeNull();
-    // Nothing is paid yet: no modal says it is.
+    // Moved onto it, then nothing posted for the trial: there is no card for the consent.
+    expect(posts.map((p) => p.action)).toEqual([MOVE]);
+    expectAskedAgain(result, left, NO_CARD_FOR_TRIAL, ["PETTY_CASH"]);
+    // Read fresh for the second ask, the cardless account now shut and nothing preselected.
+    expect(accountReads()).toBe(2);
+    expect(result.current.accountStep?.targets.map((t) => [t.account.id, t.block])).toEqual([
+      ["acc-company-a", "no_card"],
+    ]);
+    expect(result.current.accountStep?.picked).toBeNull();
+    _resetHandoffForTests();
+  });
+
+  it("authorize-billing's 402 'Choose a billing account' asks Billing Accounts again", async () => {
+    // The API no longer falls back to the payer's default card when the company is on no
+    // account; its refusal must open the picker, not read as a decline or a toast.
+    const said = "Choose a billing account for this company.";
+    const posts = serveChange(fetchMock, "RU22", {
+      "authorize-billing": { status: 402, body: { error: said } },
+    });
+    const left: string[] = [];
+    _resetHandoffForTests((url) => left.push(url));
+    const e = ENTITIES[0];
+    const { result } = renderHook(
+      () => useSubscriptionsList({ today: TODAY, focusEntityId: e.entity_id }),
+      { wrapper },
+    );
+    await waitFor(() => expect(result.current.summary.status).toBe("ready"));
+    act(() => result.current.summary.toggleTick("PETTY_CASH"));
+    await confirmBilled(result, e);
+    expect(posts.map((p) => p.action)).toEqual([MOVE, "authorize-billing"]);
+    expectAskedAgain(result, left, said, ["PETTY_CASH"]);
+    _resetHandoffForTests();
+  });
+
+  it("retry-payment's no_card asks Billing Accounts again with the API's sentence", async () => {
+    const said = "There is no card on this billing account to charge.";
+    const posts = serveChange(fetchMock, "RV61", {
+      "retry-payment": { status: 200, body: { ok: false, status: "no_card", message: said } },
+    });
+    const left: string[] = [];
+    _resetHandoffForTests((url) => left.push(url));
+    const e = ENTITIES[0];
+    const { result } = renderHook(
+      () => useSubscriptionsList({ today: TODAY, focusEntityId: e.entity_id }),
+      { wrapper },
+    );
+    await waitFor(() => expect(result.current.summary.status).toBe("ready"));
+    act(() => result.current.summary.toggleTick("PETTY_CASH"));
+    await confirmBilled(result, e);
+    expect(posts.map((p) => p.action)).toEqual([MOVE, "retry-payment"]);
+    expectAskedAgain(result, left, said, ["PETTY_CASH"]);
+    // An account that can pay is preselected; the one in dunning stays shut.
+    expect(result.current.accountStep?.picked).toBe("acc-company-a");
+    expect(result.current.accountStep?.targets.find((t) => t.account.id === "acc-legacy")?.block).toBe(
+      "in_dunning",
+    );
+    _resetHandoffForTests();
+  });
+
+  it("restart-billing's 402 'Choose a card' asks Billing Accounts again - a decline is still 06·B", async () => {
+    const said = "Choose a card before restarting billing.";
+    const posts = serveChange(fetchMock, "RU23", {
+      "restart-billing": { status: 402, body: { error: said } },
+    });
+    const left: string[] = [];
+    _resetHandoffForTests((url) => left.push(url));
+    const e = ENTITIES[0];
+    const { result } = renderHook(
+      () => useSubscriptionsList({ today: TODAY, focusEntityId: e.entity_id }),
+      { wrapper },
+    );
+    await waitFor(() => expect(result.current.summary.status).toBe("ready"));
+    act(() => result.current.summary.toggleTick("PETTY_CASH"));
+    act(() => result.current.summary.toggleTick("PAYMENT_REQUEST"));
+    await confirmBilled(result, e);
+    expect(posts.map((p) => p.action)).toEqual([MOVE, "authorize-billing", "restart-billing"]);
+    expectAskedAgain(result, left, said, ["PETTY_CASH", "PAYMENT_REQUEST"]);
+    // Asked again, the account picked carries the change on - nothing else to press first.
+    await act(() => result.current.confirmAccount("acc-vine"));
+    expect(posts.map((p) => p.action).slice(3)).toEqual([MOVE, "authorize-billing", "restart-billing"]);
     _resetHandoffForTests();
   });
 

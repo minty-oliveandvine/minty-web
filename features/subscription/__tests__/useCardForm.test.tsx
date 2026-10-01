@@ -24,8 +24,9 @@ import {
 } from "@/features/subscription/hooks/useCardForm";
 
 const push = vi.fn();
+const replace = vi.fn();
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push, replace: vi.fn(), back: vi.fn() }),
+  useRouter: () => ({ push, replace, back: vi.fn() }),
 }));
 
 function reply(status: number, body: unknown): Response {
@@ -64,9 +65,11 @@ describe("useAddCard", () => {
     });
   }
 
+  const ON = { accountId: "acc-company-a" };
+
   it("opens one SetupIntent and says whether this is the first card", async () => {
     serve(WALLET_NONE);
-    const { result } = renderHook(() => useAddCard());
+    const { result } = renderHook(() => useAddCard(ON));
     await waitFor(() => expect(result.current.status).toBe("ready"));
     expect(result.current.handle).toEqual(HANDLE);
     expect(result.current.firstCard).toBe(true);
@@ -80,14 +83,14 @@ describe("useAddCard", () => {
       if (url.pathname.endsWith("/setup-intent")) return reply(200, HANDLE);
       return reply(500, { error: "nope" });
     });
-    const { result } = renderHook(() => useAddCard());
+    const { result } = renderHook(() => useAddCard(ON));
     await waitFor(() => expect(result.current.status).toBe("ready"));
     expect(result.current.firstCard).toBe(false);
   });
 
   it("a refused SetupIntent says why, and Try again asks once more", async () => {
     serve(WALLET_TWO, { status: 503, body: { error: "Stripe is not configured." } });
-    const { result } = renderHook(() => useAddCard());
+    const { result } = renderHook(() => useAddCard(ON));
     await waitFor(() => expect(result.current.status).toBe("error"));
     expect(result.current.error).toBe("Stripe is not configured.");
 
@@ -96,22 +99,28 @@ describe("useAddCard", () => {
     await waitFor(() => expect(result.current.status).toBe("ready"));
 
     fetchMock.mockRejectedValue(new TypeError("offline"));
-    const { result: offline } = renderHook(() => useAddCard());
+    const { result: offline } = renderHook(() => useAddCard(ON));
     await waitFor(() => expect(offline.current.status).toBe("error"));
     expect(offline.current.error).toBe(SETUP_FAILED);
   });
 
-  it("a saved card lands on the billing page, named", async () => {
+  it("with no account to put the card on, opens nothing and leaves for the billing page", async () => {
     serve();
+    replace.mockReset();
     const { result } = renderHook(() => useAddCard());
+    await waitFor(() => expect(replace).toHaveBeenCalledWith("/subscription/billing"));
+    expect(result.current.account).toBeNull();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("Stripe did not hand the card back: the newest card the server now holds is the one named", async () => {
+    serve();
+    const { result } = renderHook(() => useAddCard(ON));
     await waitFor(() => expect(result.current.status).toBe("ready"));
-    act(() => result.current.saved(WALLET_TWO, "pm_master4651"));
-    expect(push).toHaveBeenCalledWith("/subscription/billing?added=pm_master4651");
-    // Stripe did not hand one back: the newest card the server now holds is the one to name.
     act(() => result.current.saved(WALLET_TWO, null));
-    expect(push).toHaveBeenLastCalledWith("/subscription/billing?added=pm_master4651");
-    act(() => result.current.cancel());
-    expect(push).toHaveBeenLastCalledWith("/subscription/billing");
+    expect(push).toHaveBeenLastCalledWith(
+      "/subscription/billing?account=acc-company-a&added=pm_master4651",
+    );
   });
 
   it("a card added from an account's page goes ON that account, and lands back on it", async () => {

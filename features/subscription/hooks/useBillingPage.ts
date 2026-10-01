@@ -530,10 +530,12 @@ export function useBillingPage({
   );
   const dismissPrompt = useCallback(() => setPrompt(null), []);
   const dismissAdded = useCallback(() => setAddedDismissed(true), []);
-  const addCard = useCallback(
-    () => router.push(BILLING.add(account?.id ?? null)),
-    [router, account],
-  );
+  // A card goes ON this account (08-Y). With no account to put it on, the only way to add a card
+  // is to open one - the sheet - never a card saved to nothing.
+  const addCard = useCallback(() => {
+    if (account) router.push(BILLING.add(account.id));
+    else setOpening(true);
+  }, [router, account]);
   const changeDetails = useCallback(() => {
     if (account) router.push(BILLING.details(account.id));
   }, [router, account]);

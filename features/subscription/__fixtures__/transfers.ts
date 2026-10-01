@@ -1,13 +1,15 @@
 /**
  * Section 07's answers, shaped as the API gives them: the payer's subscriber options (07-A
  * to pick from, 07-C with an offer waiting), the requests offered to a recipient (07-D), and
- * the recipient's own cards (07-E). Shared by the Vitest suites, the Playwright specs and the
+ * the recipient's own billing accounts (07-E). Shared by the Vitest suites, the Playwright specs and the
  * dev-only `?fixture=` switches. Money in MINOR units, as the routes answer it.
  */
 
 import type {
+  BillingAccount,
+  BillingAccounts,
   IncomingTransfer,
-  PayerPaymentMethods,
+  SavedPaymentMethod,
   SubscriberOptions,
 } from "@/features/subscription/api/payerPortal";
 
@@ -138,26 +140,72 @@ export const INCOMING_REQUEST_TRIAL: IncomingTransfer = {
   ],
 };
 
-/** The recipient's own cards (07-E): two, the Visa the default. */
-export const RECIPIENT_CARDS: PayerPaymentMethods = {
+const RECIPIENT_VISA: SavedPaymentMethod = { ...WALLET.methods[0], is_default: true };
+const RECIPIENT_MASTER: SavedPaymentMethod = {
+  ...WALLET.methods[0],
+  id: "pm_master8842",
+  brand: "mastercard",
+  brand_label: "Mastercard",
+  last4: "8842",
+  label: "Mastercard •••• 8842",
+  exp_month: 11,
+  exp_year: 2027,
+  expiry: "11/27",
+  is_default: true,
+};
+
+function recipientAccount(
+  id: string,
+  name: string,
+  card: SavedPaymentMethod | null,
+  inDunning = false,
+): BillingAccount {
+  return {
+    id,
+    name,
+    billing_company: name,
+    billing_email: null,
+    bill_to_email: "rebecca@harbourtrading.test",
+    default_id: card?.id ?? "",
+    card,
+    cards: card ? [card] : [],
+    total: card ? 1 : 0,
+    address: null,
+    companies: [],
+    in_dunning: inDunning,
+    past_due: inDunning,
+    next_bill: null,
+  };
+}
+
+/**
+ * The recipient's own BILLING ACCOUNTS (07-E), oldest first: Harbour Trading on the Visa (the one
+ * preselected), Kowloon Supplies on the Mastercard, and one whose collection is failing - shown,
+ * and shut. A company handed over is billed to one of these, never to a bare card.
+ */
+export const RECIPIENT_ACCOUNTS: BillingAccounts = {
   has_account: true,
-  default_id: "pm_visa4121",
-  total: 2,
-  methods: [
-    WALLET.methods[0],
-    {
-      ...WALLET.methods[0],
-      id: "pm_master8842",
-      brand: "mastercard",
-      brand_label: "Mastercard",
-      last4: "8842",
-      label: "Mastercard •••• 8842",
-      exp_month: 11,
-      exp_year: 2027,
-      expiry: "11/27",
-      is_default: false,
-    },
+  payer: { id: "u-rebecca", name: "Rebecca Park", email: "rebecca@harbourtrading.test" },
+  next_billing: null,
+  next_billing_iso: null,
+  accounts: [
+    recipientAccount("acc-harbour", "Harbour Trading Limited", RECIPIENT_VISA),
+    recipientAccount("acc-kowloon", "Kowloon Supplies Limited", RECIPIENT_MASTER),
+    recipientAccount("acc-lapsed", "Lapsed Holdings Limited", null, true),
   ],
+  total: 3,
+  methods: [RECIPIENT_VISA, RECIPIENT_MASTER],
+  default_id: RECIPIENT_VISA.id,
+};
+
+/** A recipient with no billing account yet - 07-E opens one in place. */
+export const RECIPIENT_NO_ACCOUNTS: BillingAccounts = {
+  ...RECIPIENT_ACCOUNTS,
+  has_account: false,
+  accounts: [],
+  total: 0,
+  methods: [],
+  default_id: null,
 };
 
 export type TransferFixture = "A" | "C" | "BLOCKED";

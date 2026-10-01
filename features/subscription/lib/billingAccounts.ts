@@ -55,6 +55,13 @@ export const MOVE_BUSY = "Moving…";
  * the change is paid for - onboarding's `BillingSheet` says the same on its Confirm. */
 export const CONFIRM_BUSY = "Confirming…";
 export const MOVE_FAILED = "That didn't go through. Mind trying again?";
+/**
+ * Manage Subscriptions' "Billing Accounts", asked AGAIN: a trial was being confirmed and the
+ * company still has no card to bill (the account picked has none). A card is only ever added
+ * through a billing account, so the sheet comes back with this rather than Stripe's page.
+ */
+export const NO_CARD_FOR_TRIAL =
+  "That billing account has no card to charge yet. Choose one with a card, or open a new billing account.";
 /** 08-C. */
 export const DETAILS_TITLE = "Update Billing Information";
 export const SAVE_BILLING_ACCOUNT = "Save billing account";
@@ -265,10 +272,16 @@ export type NominationChoice = { targets: MoveTarget[]; picked: string | null };
  *
  * Preselected: the account the company is on, else the first that can take it - a card-free
  * trial is on none, and the API places it on the one picked.
+ *
+ * `needCard`: the sheet is asked AGAIN because the change found no card to charge (the API's
+ * "Choose a card …", a trial with no card, `retry-payment`'s `no_card`). Then an account with no
+ * card cannot be picked even when the company is on it - picking it again would only be refused
+ * again - and the preselection is the first account that can pay, or none.
  */
 export function nominationChoice(
   data: BillingAccounts | null,
   entityId: string,
+  { needCard = false }: { needCard?: boolean } = {},
 ): NominationChoice {
   const accounts = data?.accounts ?? [];
   const current = accounts.find((a) => a.companies.some((c) => c.entity_id === entityId)) ?? null;
@@ -278,7 +291,9 @@ export function nominationChoice(
       account,
       block:
         account.id === current?.id
-          ? null
+          ? needCard && !account.card
+            ? "no_card"
+            : null
           : pastDue
             ? "settle_first"
             : account.in_dunning
@@ -288,8 +303,27 @@ export function nominationChoice(
                 : "no_card",
     }),
   );
-  const picked = current?.id ?? targets.find((t) => t.block === null)?.account.id ?? null;
+  const open = (id: string | undefined) =>
+    targets.some((t) => t.account.id === id && t.block === null) ? id : undefined;
+  const picked =
+    open(current?.id) ?? targets.find((t) => t.block === null)?.account.id ?? null;
   return { targets, picked };
+}
+
+/**
+ * 07-E: the billing account the INCOMING payer will be billed to for a company handed over to
+ * them. The company is on none of their accounts yet, so there is no "current" - an account
+ * whose collection is failing, or with no card it can charge, cannot take it. Preselected: the
+ * OLDEST that can (the API lists them oldest first), or none.
+ */
+export function transferChoice(data: BillingAccounts | null): NominationChoice {
+  const targets = (data?.accounts ?? []).map(
+    (account): MoveTarget => ({
+      account,
+      block: account.in_dunning ? "in_dunning" : account.card ? null : "no_card",
+    }),
+  );
+  return { targets, picked: targets.find((t) => t.block === null)?.account.id ?? null };
 }
 
 /**

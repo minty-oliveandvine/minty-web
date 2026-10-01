@@ -597,10 +597,19 @@ describe("the card screens", () => {
   afterEach(() => vi.unstubAllGlobals());
 
   it("08-Y: the banner, Stripe's note, and the form once the intent is open", async () => {
-    render(<AddCardScreen fixture="B" />);
+    render(<AddCardScreen accountId="acc-company-a" fixture="B" />);
     expect(await screen.findByTestId("card-form")).toHaveTextContent("another card");
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Add Card Details");
     expect(screen.getByText(/never stored by Minty/)).toBeInTheDocument();
+    expect(replace).not.toHaveBeenCalled();
+  });
+
+  it("08-Y with no account to put the card on: no form, no SetupIntent - the billing page instead", async () => {
+    replace.mockReset();
+    render(<AddCardScreen />);
+    await waitFor(() => expect(replace).toHaveBeenCalledWith("/subscription/billing"));
+    expect(screen.queryByTestId("card-form")).toBeNull();
+    expect(fetchMock.mock.calls.some((c) => String(c[0]).includes("setup-intent"))).toBe(false);
   });
 
   it("08-C with no Stripe here: our two fields, and the address says it cannot change", async () => {

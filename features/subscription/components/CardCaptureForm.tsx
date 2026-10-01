@@ -3,7 +3,7 @@
 /**
  * Stripe's own card form, mounted on a SetupIntent - in two looks:
  *
- * - "page" (Figma 08-Y / 08-E, and 07-E's accept screen): the fields in a column, the first-card
+ * - "page" (Figma 08-Y / 08-E, a card added to one billing account): the fields in a column, the first-card
  *   note, the mandate, Cancel and Save at the right. Ported from billing-frontend's
  *   `AddPaymentMethodModal` - the behaviour is that one's, the look is section 08's.
  * - "sheet" (onboarding's 01-D, the New billing account form inside the billing-account sheet):
@@ -42,7 +42,9 @@ import { useMemo, useState, type FormEvent, type ReactNode } from "react";
 import { ApiError } from "@/lib/apiClient";
 
 import {
+  NO_ACCOUNT_FOR_CARD,
   confirmCardSetup,
+  namesAnAccount,
   type BillingAccountChoice,
   type ConfirmedCard,
   type SetupIntentHandle,
@@ -127,7 +129,10 @@ export type CardFormExtras = {
    * rule, the same act in two apps).
    */
   beforeConfirm?: () => boolean;
-  /** Which billing account the confirmed card goes on - or the one it opens. */
+  /**
+   * Which billing account the confirmed card goes on - or the one it opens. Without one, Save is
+   * refused before Stripe is touched: no card is ever saved unattached to an account.
+   */
   account?: BillingAccountChoice | null;
   /** Told when a save starts, and when it stops without the form going away (it failed). */
   onBusy?: (busy: boolean) => void;
@@ -174,6 +179,11 @@ function useCardConfirm({ setupIntent, onSaved, beforeConfirm, account, onBusy }
     event.preventDefault();
     if (!stripe || !elements || busy) return;
     if (beforeConfirm && !beforeConfirm()) return;
+    // A card goes on a billing account or nowhere: refused BEFORE Stripe attaches it, loudly.
+    if (!namesAnAccount(account)) {
+      setError(NO_ACCOUNT_FOR_CARD);
+      return;
+    }
     setBusy(true);
     setError(null);
 
@@ -400,10 +410,11 @@ export function CardCaptureForm({
 
 /**
  * The form with the two states that always surround it: the SetupIntent being opened, and its
- * having failed to open. Here rather than on any one screen because three mount it - the
- * billing page's 08-Y, the handover's 07-E (a card added mid-accept) and the billing-account
- * sheet - and a form that silently renders nothing while an intent is in flight reads as a
- * broken page on all of them.
+ * having failed to open. Here rather than on any one screen because two mount it - the
+ * billing page's 08-Y (a card added to one account) and the billing-account sheet (a card that
+ * opens one, wherever the sheet is asked from - 08-A, Manage Subscriptions, the handover's
+ * 07-E) - and a form that silently renders nothing while an intent is in flight reads as a
+ * broken page on both.
  */
 export function CardCapturePanel({
   setup,

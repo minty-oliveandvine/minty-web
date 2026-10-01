@@ -4,11 +4,9 @@
  * State and orchestration of the module settings page. The screen calls this and renders
  * what it returns; nothing here knows what the page looks like.
  *
- * Load: the page model, then each card through `resolveModuleState`. Before the first load, the
- * two ways the page can be re-entered are settled: `?session_id=` (back from Stripe Checkout -
- * `checkout-complete` is posted, then the parameter is dropped from the URL so a reload does not
- * post it again) and `?checkout_error=` (Flask's way of carrying a failed return; shown, then
- * dropped). Both are read ONCE, at mount, so stripping them does not re-run the effect.
+ * Load: the page model, then each card through `resolveModuleState`. There is no return from
+ * Stripe to settle: nothing in the app hands the browser to a Stripe-hosted page any more (the
+ * user, 2026-10-01 - a card is only ever added through a billing account, in the app).
  *
  * Actions: starting a trial is the one CTA that acts here, and it ASKS FIRST - `askStartTrial`
  * opens Figma 04-G's dialog (`StartTrialDialog`, the same one the list uses), `confirmStartTrial`
@@ -24,13 +22,12 @@
  */
 
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { ApiError } from "@/lib/apiClient";
 import { useToast } from "@/components/ui/Toast";
 
 import {
-  completeCheckout,
   getModulePage,
   startTrial as postStartTrial,
   type ModuleCode,
@@ -47,9 +44,6 @@ import { BILLING, moduleRoutes } from "@/features/subscription/lib/paths";
 
 export type UseModulePageArgs = {
   entityId: string;
-  sessionId?: string | null;
-  purpose?: string | null;
-  checkoutError?: string | null;
   fixture?: string | null;
   /** The day the "N days remaining" counts from; defaults to now. Tests pin it. */
   today?: Date;
@@ -85,20 +79,6 @@ export type UseModulePageResult = {
   updatePaymentMethod: () => void;
 };
 
-/** Drop query parameters from the address bar without a navigation. */
-function stripParams(names: string[]): void {
-  if (typeof window === "undefined") return;
-  const url = new URL(window.location.href);
-  let changed = false;
-  for (const name of names) {
-    if (url.searchParams.has(name)) {
-      url.searchParams.delete(name);
-      changed = true;
-    }
-  }
-  if (changed) window.history.replaceState(window.history.state, "", url.toString());
-}
-
 /** Shown while the API's modules router is still a stub (Part 2 step 3 fills it). */
 export const NOT_WIRED_YET =
   "This page's data isn't served by the subscription service yet - the API lands in Part 2 step 3.";
@@ -126,9 +106,6 @@ async function fetchPageModel(
 
 export function useModulePage({
   entityId,
-  sessionId,
-  purpose,
-  checkoutError,
   fixture,
   today,
 }: UseModulePageArgs): UseModulePageResult {
@@ -143,10 +120,6 @@ export function useModulePage({
   const [fixtureToday, setFixtureToday] = useState<Date | null>(null);
   const [generation, setGeneration] = useState(0);
 
-  // The return parameters are settled once, at mount; a later change (we strip them) must not
-  // start the sequence again.
-  const arrival = useRef({ sessionId, purpose, checkoutError });
-
   const load = useCallback(async () => {
     const { page: model, today: pinned } = await fetchPageModel(entityId, fixture);
     setPage(model);
@@ -157,22 +130,7 @@ export function useModulePage({
 
   useEffect(() => {
     let cancelled = false;
-    const { sessionId: sid, purpose: why, checkoutError: failed } = arrival.current;
-    arrival.current = { sessionId: null, purpose: null, checkoutError: null };
-
     (async () => {
-      if (sid) {
-        try {
-          await completeCheckout(entityId, sid, why ?? undefined);
-        } catch (err) {
-          if (!cancelled) showToast(sentence(err), "error");
-        }
-        stripParams(["session_id", "purpose"]);
-      }
-      if (failed) {
-        showToast(failed, "error");
-        stripParams(["checkout_error"]);
-      }
       try {
         await load();
       } catch (err) {
@@ -185,7 +143,7 @@ export function useModulePage({
     return () => {
       cancelled = true;
     };
-  }, [entityId, load, generation, showToast]);
+  }, [load, generation]);
 
   const reload = useCallback(() => {
     setStatus("loading");

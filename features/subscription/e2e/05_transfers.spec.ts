@@ -1,7 +1,7 @@
 // Handing a subscription over (Figma section 07) in a browser, over a STUBBED API: the payer
 // picks the new subscriber and sends the request (07-A → 07-B), withdraws one already waiting
 // (07-C → 07-K → 07-A); the recipient sees nothing waiting (07-F), reviews a request, changes
-// the card it is charged to (07-D → 07-E → 07-D) and accepts it, landing on the list's row
+// the billing account it is charged to (07-D → 07-E → 07-D) and accepts it, landing on the list's row
 // "Subscription Transfer Completed" (07-M). Stand-in credentials when E2E_* are unset (nothing
 // reaches the API); located inside `main`.
 import { expect, test, type Page } from "@playwright/test";
@@ -17,7 +17,7 @@ import { SUMMARY_FIXTURES, WALLET } from "../__fixtures__/modulePage";
 import { ENTITIES, subscriptionsPage } from "../__fixtures__/subscriptions";
 import {
   INCOMING_REQUEST,
-  RECIPIENT_CARDS,
+  RECIPIENT_ACCOUNTS,
   SUBSCRIBER_OPTIONS,
   SUBSCRIBER_OPTIONS_PENDING,
 } from "../__fixtures__/transfers";
@@ -125,22 +125,21 @@ test.describe("transfers", () => {
     await page.waitForURL((u) => u.pathname === "/subscription/subscriptions");
   });
 
-  test("07-D → 07-E → 07-M: the recipient reviews, changes the card, accepts, and lands on the row", async ({
+  test("07-D → 07-E → 07-M: the recipient reviews, changes the billing account, accepts, and lands on the row", async ({
     page,
   }) => {
     const posts: { url: string; body: unknown }[] = [];
     let transfers = [INCOMING_REQUEST];
-    let cards = RECIPIENT_CARDS;
     await page.route(`${BILLING_API_URL}/api/me/subscriptions/transfers`, (route) =>
       route.fulfill(json({ transfers })),
     );
-    await page.route(`${BILLING_API_URL}/api/me/billing/payment-methods`, (route) =>
-      route.fulfill(json(cards)),
+    await page.route(`${BILLING_API_URL}/api/me/billing/accounts*`, (route) =>
+      route.fulfill(json(RECIPIENT_ACCOUNTS)),
     );
-    await page.route(`${BILLING_API_URL}/api/me/billing/payment-methods/default`, (route) => {
+    // Nothing on 07-E may touch a loose card: no default promoted, no card saved to no account.
+    await page.route(`${BILLING_API_URL}/api/me/billing/payment-methods/**`, (route) => {
       posts.push({ url: route.request().url(), body: route.request().postDataJSON() });
-      cards = { ...cards, default_id: "pm_master8842" };
-      return route.fulfill(json(cards));
+      return route.fulfill(json({ error: "not on this screen" }, 500));
     });
     await page.route(`${BILLING_API_URL}/api/entities/*/modules`, (route) =>
       route.fulfill(json(SUMMARY_FIXTURES.M24)),
@@ -184,10 +183,15 @@ test.describe("transfers", () => {
     await expect(panel).not.toContainText("You’ll be charged");
 
     await panel.getByRole("button", { name: "Change" }).click();
-    const picker = body(page).getByRole("region", { name: "Payment Methods" });
-    // The radio is visually hidden; the card's label is what a person presses.
-    await picker.getByText("Mastercard ending in 8842").click();
-    await expect(picker.getByRole("radio", { name: /Mastercard ending in 8842/ })).toBeChecked();
+    // 07-E: the person's BILLING ACCOUNTS, as Manage Subscriptions' "Billing Accounts" lists
+    // them - the oldest that can pay preselected, the one in dunning shut.
+    const picker = body(page).getByRole("region", { name: "Billing Accounts" });
+    await expect(picker.getByRole("radio", { name: /Harbour Trading/ })).toBeChecked();
+    await expect(picker.getByRole("radio", { name: /Lapsed Holdings/ })).toBeDisabled();
+    await expect(picker.getByRole("button", { name: "New billing account" })).toBeVisible();
+    // The radio is drawn; the account's row is what a person presses.
+    await picker.getByText("Kowloon Supplies Limited").click();
+    await expect(picker.getByRole("radio", { name: /Kowloon Supplies/ })).toBeChecked();
     await picker.getByRole("button", { name: "Confirm" }).click();
     await expect(panel).toContainText("Mastercard 8842");
 
@@ -199,9 +203,14 @@ test.describe("transfers", () => {
         u.searchParams.get("transferred") === "1",
     );
     expect(posts.map((p) => p.body)).toEqual([
-      { payment_method: "pm_master8842" },
-      // Petty Cash was unticked above, so only what is kept is sent.
-      { transfer: "t-1", accept: true, codes: ["PAYMENT_REQUEST"] },
+      // Petty Cash was unticked above, so only what is kept is sent - and the account chosen,
+      // whose charged card the company is billed to.
+      {
+        transfer: "t-1",
+        accept: true,
+        codes: ["PAYMENT_REQUEST"],
+        billing_group_id: "acc-kowloon",
+      },
     ]);
     const landed = body(page).locator("li[data-result='transferred']");
     await expect(landed).toContainText("Subscription Transfer Completed");

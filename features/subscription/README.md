@@ -93,8 +93,8 @@ section 07): the payer's `routes/TransferSubscription` - `hooks/useTransferSubsc
 `components/TransferSubscriptionPanels` (pick the new subscriber, Request transfer, the one
 waiting withdrawn) - and the recipient's `routes/SubscriptionRequests` -
 `hooks/useSubscriptionRequests`, `components/SubscriptionRequestsPanels` (the request under
-review with the company's cards and what accepting charges, the card picked, Confirm
-Subscription Transfer landing on the list's row) - over `lib/transfer` (both sides' rules,
+review with the company's cards, the billing account picked or opened in place - 2026-10-01,
+it was a loose card - Confirm Subscription Transfer landing on the list's row) - over `lib/transfer` (both sides' rules,
 minor-unit money) and `__fixtures__/transfers.ts`; `components/TransferOutcomeDialog` tells how
 a handover ended (§14). Step 4c (2026-09-23): the billing area from Figma section 08 - `routes/SubscriptionOverview`
 (the portal's landing at `/subscription`, so the Manage Subscriptions list is
@@ -114,7 +114,7 @@ the account's NAME is _Change billing account_; "Trial ending" counts the trials
 days and the update lines have _Show more_; 08-B shows the next bill's estimated amount (the API's
 `next_bill`, priced by its renewal runner), pages its invoices 10 / 50 / 100 and downloads each
 one's billing breakdown as the user's sample CSV (`lib/breakdown`, `lib/download`).
-`components/ModalFrame` is shared by the other modals, `RadioCard` by 07-E's picker (§15). A
+`components/ModalFrame` is shared by the other modals (§15). A
 standalone invoices page (billing-frontend's section 09) was deliberately NOT built: the billing
 page's own invoice list already lists every invoice, paged, with its PDF and the
 billing-breakdown CSV, so a second page listing the same rows would be pure duplication - see

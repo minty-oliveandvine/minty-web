@@ -2,29 +2,34 @@
 
 /**
  * The recipient's side of a handover, drawn (Figma 07-D/E/F): a request under review - the
- * company's cards as they are, the summary with the card the bill will go to, Confirm
- * Subscription Transfer (and Decline, the design's other answer); the
- * card picker - the person's saved cards, Add New Card, Confirm; and "No requests waiting".
- * Everything shown is the hook's (`useSubscriptionRequests`).
+ * company's cards as they are, the summary with the card of the billing account the bill will
+ * go to, Confirm Subscription Transfer (and Decline, the design's other answer); 07-E's account
+ * picker - the person's BILLING ACCOUNTS as the "Billing Accounts" sheet lists them, New billing
+ * account, Confirm; and "No requests waiting". Everything shown is the hook's
+ * (`useSubscriptionRequests`).
  */
 
 import Image from "next/image";
 
-import type {
-  IncomingTransfer,
-  PayerPaymentMethods,
-  SavedPaymentMethod,
-} from "@/features/subscription/api/payerPortal";
+import type { IncomingTransfer, SavedPaymentMethod } from "@/features/subscription/api/payerPortal";
+import { AccountTargetList } from "@/features/subscription/components/BillingAccountDialogs";
 import { CardBrand, SUMMARY_MARK } from "@/features/subscription/components/CardBrand";
-import { CardCapturePanel } from "@/features/subscription/components/CardCaptureForm";
-import { RadioCard } from "@/features/subscription/components/RadioCard";
-import type { SetupIntentState } from "@/features/subscription/hooks/useCardForm";
-import { ADD_CARD_HEADING, STRIPE_NOTE } from "@/features/subscription/lib/billing";
-import { PORTAL } from "@/features/subscription/lib/paths";
+import {
+  SHEET_ADD,
+  SHEET_ERROR,
+  SHEET_PRIMARY,
+  SHEET_SINGLE,
+} from "@/features/subscription/components/sheetClasses";
+import type { ReviewedRequest } from "@/features/subscription/hooks/useSubscriptionRequests";
+import { BILLING_ACCOUNTS, NEW_BILLING_ACCOUNT } from "@/features/subscription/lib/billingAccounts";
 import { utcDay, type SummaryView } from "@/features/subscription/lib/subscriptionSummary";
 import {
+  ADD_BILLING_ACCOUNT,
+  BILLING_ACCOUNT_LABEL,
   CONFIRM_TRANSFER,
-  NEEDS_CARD,
+  NEEDS_ACCOUNT,
+  NO_BILLING_ACCOUNT_YET,
+  TRANSFER_ACCOUNTS_LEAD,
   declinedNote,
   undatedDecline,
   NO_REQUESTS,
@@ -32,7 +37,6 @@ import {
   TRANSFER_CHARGE_NOTE,
   expiresLabel,
 } from "@/features/subscription/lib/transfer";
-import type { ReviewedRequest } from "@/features/subscription/hooks/useSubscriptionRequests";
 
 import {
   PLAN_TONE,
@@ -104,15 +108,24 @@ export function RequestList({
   );
 }
 
-/** The card's number, as the summary grid's second row draws it. */
-function CardNumber({ card }: { card: SavedPaymentMethod | null }) {
+/** The chosen billing account's card number, as the summary grid's second row draws it. A
+ *  card is only ever shown as an account's, so with no account there is no card to name. */
+function CardNumber({
+  account,
+  card,
+}: {
+  account: ReviewedRequest["account"];
+  card: SavedPaymentMethod | null;
+}) {
   return (
     <p className="text-xl font-bold text-black" data-payment-method>
-      {card === null
-        ? "No card yet"
-        : card.last4
-          ? `${card.brand_label || "Card"} ${card.last4}`
-          : card.label}
+      {account === null
+        ? NO_BILLING_ACCOUNT_YET
+        : card === null
+          ? "No card"
+          : card.last4
+            ? `${card.brand_label || "Card"} ${card.last4}`
+            : card.label}
     </p>
   );
 }
@@ -134,11 +147,11 @@ export function IncomingRequestReview({
   onAccept: () => void;
   onDecline: () => void;
 }) {
-  const { row, view, viewStatus, card, cards, offered, taking } = reviewed;
+  const { row, view, viewStatus, card, account, offered, taking } = reviewed;
   const blocked = row.blockers.length > 0;
-  // Only once the wallet has been READ: until then there are no cards because nothing has
+  // Only once the accounts have been READ: until then there is none chosen because nothing has
   // answered yet, and saying "add one" to someone who has three is worse than saying nothing.
-  const needsCard = viewStatus === "ready" && cards.length === 0;
+  const needsAccount = viewStatus === "ready" && account === null;
   const panel: SummaryView["panel"] | null = view?.panel ?? null;
   // The plan the recipient ends up on: the future half when something has been unticked,
   // otherwise the company as it stands. Normalised to one shape so the price box and the
@@ -236,7 +249,7 @@ export function IncomingRequestReview({
           <div className="grid grid-cols-[auto_auto] items-end justify-between gap-x-6">
             <p className="col-start-1 row-start-1 text-[15px] text-[#737a87]">Selected plan</p>
             <p className="col-start-2 row-start-1 justify-self-end text-[15px] text-[#737a87]">
-              Payment method
+              {BILLING_ACCOUNT_LABEL}
             </p>
 
             <div className="col-start-1 row-start-2 mt-3 flex flex-col gap-1">
@@ -275,8 +288,13 @@ export function IncomingRequestReview({
             <span className="col-start-1 row-start-3 text-right text-sm text-[#737a87]">
               {chosen?.lines.find((l) => l.tag)?.tag ?? ""}
             </span>
-            <div className="col-start-2 row-start-3 justify-self-end">
-              <CardNumber card={card} />
+            <div className="col-start-2 row-start-3 flex flex-col items-end justify-self-end">
+              {account && (
+                <p className="text-[15px] text-[#737a87]" data-billing-account>
+                  {account.name}
+                </p>
+              )}
+              <CardNumber account={account} card={card} />
             </div>
 
             <button
@@ -284,7 +302,7 @@ export function IncomingRequestReview({
               onClick={onChangeCard}
               className="col-start-2 row-start-4 justify-self-end text-[15px] text-quiet hover:underline"
             >
-              {needsCard ? "Add a card" : "Change"}
+              {needsAccount ? ADD_BILLING_ACCOUNT : "Change"}
             </button>
           </div>
           {chosen && (
@@ -303,7 +321,7 @@ export function IncomingRequestReview({
           {/* NO DETAIL SECTION. The grey box under the price held two things and both have
               gone: the money line (a handover takes nothing at accept) and the inherited-
               trial lines. What accepting means is the plan and the price above it, and the
-              note below - "charged to your selected payment method from the date that
+              note below - "charged to your selected billing account from the date that
               transfer is completed". */}
 
           {blocked && (
@@ -317,15 +335,15 @@ export function IncomingRequestReview({
             </div>
           )}
           {/* Said HERE rather than left to the API's refusal, because the API can only answer
-              once Confirm has been pressed. The offer is allowed to reach someone with no card
-              — being asked is not being charged — so this is a normal state of this screen and
-              not an error. Only claimed once the wallet has actually been read. */}
-          {needsCard && (
+              once Confirm has been pressed. The offer is allowed to reach someone with no
+              billing account — being asked is not being charged — so this is a normal state of
+              this screen and not an error. Only claimed once the accounts have been read. */}
+          {needsAccount && (
             <div
               role="status"
               className="rounded-lg border border-[#e6ebed] bg-[#f7f9fa] px-3.5 py-2.5 text-sm text-[#6b7380]"
             >
-              {NEEDS_CARD}
+              {NEEDS_ACCOUNT}
             </div>
           )}
           {actionError && (
@@ -337,7 +355,7 @@ export function IncomingRequestReview({
           <button
             type="button"
             onClick={onAccept}
-            disabled={busy || blocked || needsCard || undated !== null}
+            disabled={busy || blocked || needsAccount || undated !== null}
             aria-busy={busy || undefined}
             className="h-[66px] rounded-2xl bg-[#4fc7c7] text-xl font-bold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
           >
@@ -360,46 +378,25 @@ export function IncomingRequestReview({
 }
 
 /**
- * 07-E with Stripe's fields in place of the card list: adding a card without leaving the offer.
- *
- * Drawn as the same sheet as the picker it replaces, so the step reads as the picker changing
- * rather than the screen navigating - which is the whole point of it being here. Cancel goes
- * back to the list; saving picks the new card and goes back to it too.
+ * 07-E: which of the person's BILLING ACCOUNTS the company is billed to. The rows are the "Billing
+ * Accounts" sheet's (`AccountTargetList` - the card each charges, its companies, and the reason a
+ * row is shut: "Payment failed", "No card"), in 07-E's panel beside Minty, so the step reads as
+ * the review's Change opening in place. *New billing account* opens the billing-account sheet
+ * over it (a card and the company and email it bills under); the account it opens comes back
+ * here, picked. Confirm only returns to 07-D: the account is sent with Confirm Subscription
+ * Transfer. No card is ever picked on its own, or saved to no account.
  */
-export function AddCardPanel({
-  setup,
-  onSaved,
-  onCancel,
-}: {
-  setup: SetupIntentState;
-  onSaved: (methods: PayerPaymentMethods, paymentMethodId: string | null) => void;
-  onCancel: () => void;
-}) {
-  return (
-    <section
-      aria-label={ADD_CARD_HEADING}
-      className="flex w-full max-w-[477px] flex-col gap-5 rounded-xl bg-white p-7 shadow-[0px_2px_8px_0px_rgba(0,0,0,0.1)]"
-    >
-      <div>
-        <h3 className="text-[17px] font-bold text-[#16202e]">{ADD_CARD_HEADING}</h3>
-        <p className="mt-1.5 text-[13px] text-[#8b93a0]">{STRIPE_NOTE}</p>
-      </div>
-      <CardCapturePanel setup={setup} onSaved={onSaved} onCancel={onCancel} />
-    </section>
-  );
-}
-
-export function PaymentMethodPicker({
-  cards,
-  cardId,
+export function TransferAccountPicker({
+  targets,
+  accountId,
   busy,
   actionError,
   onPick,
   onAdd,
   onConfirm,
 }: {
-  cards: SavedPaymentMethod[];
-  cardId: string | null;
+  targets: ReviewedRequest["targets"];
+  accountId: string | null;
   busy: boolean;
   actionError: string | null;
   onPick: (id: string) => void;
@@ -408,64 +405,42 @@ export function PaymentMethodPicker({
 }) {
   return (
     <section
-      aria-label="Payment Methods"
+      aria-label={BILLING_ACCOUNTS}
       className="flex w-full max-w-[477px] flex-col gap-5 rounded-xl bg-white p-7 shadow-[0px_2px_8px_0px_rgba(0,0,0,0.1)]"
     >
-      <h3 className="text-[15px] font-semibold text-[#21262e]">Payment Methods</h3>
-      <div className="flex flex-col gap-3">
-        {cards.map((card) => (
-          <RadioCard
-            key={card.id}
-            name="card"
-            value={card.id}
-            checked={card.id === cardId}
-            onSelect={onPick}
-            // The same mark the summary draws. It used to be the label in Visa's blue italic
-            // whatever the card was, which drew a Mastercard as a blue word.
-            leading={
-              <CardBrand
-                brand={card.brand}
-                label={card.brand_label}
-                className="h-[30px] w-[78px] shrink-0"
-              />
-            }
-            title={
-              card.last4 ? `${card.brand_label || "Card"} ending in ${card.last4}` : card.label
-            }
-            subtitle={
-              card.expiry && (
-                <>
-                  <span className="text-[#a0a8b2]">Expire on</span> {card.expiry}
-                </>
-              )
-            }
-          />
-        ))}
-        {cards.length === 0 && <p className="text-sm text-[#6b7380]">No saved cards yet.</p>}
+      <div>
+        <h3 className="text-[15px] font-semibold text-[#21262e]">{BILLING_ACCOUNTS}</h3>
+        <p className="mt-1.5 text-[13.5px] text-[#6b7a80]">{TRANSFER_ACCOUNTS_LEAD}</p>
       </div>
-      <a
-        href={PORTAL.billing}
-        onClick={(e) => {
-          e.preventDefault();
-          onAdd();
-        }}
-        className="self-center text-[15px] font-semibold text-[#2e9b9b] hover:underline"
-      >
-        Add New Card
-      </a>
+      {targets.length > 0 ? (
+        <AccountTargetList
+          rows={targets}
+          picked={accountId}
+          busy={busy}
+          name="transfer-account"
+          onPick={onPick}
+        />
+      ) : (
+        <p className="text-sm text-[#6b7380]">{NEEDS_ACCOUNT}</p>
+      )}
+      <button type="button" onClick={onAdd} disabled={busy} className={SHEET_ADD}>
+        {NEW_BILLING_ACCOUNT}
+      </button>
       {actionError && (
-        <p className="text-sm text-[#b42318]" role="alert">
+        <p role="alert" className={SHEET_ERROR}>
           {actionError}
         </p>
       )}
-      <button
-        type="button"
-        onClick={onConfirm}
-        disabled={busy || !cardId}
-        className="mt-6 h-[44px] w-[96px] self-center rounded-lg bg-[#18c4c7] text-[15px] font-bold text-white hover:opacity-90 disabled:opacity-50"
-      >
-        Confirm
-      </button>
+      <div className={SHEET_SINGLE}>
+        <button
+          type="button"
+          onClick={onConfirm}
+          disabled={busy || !accountId}
+          className={`${SHEET_PRIMARY} min-w-[130px]`}
+        >
+          Confirm
+        </button>
+      </div>
     </section>
   );
 }

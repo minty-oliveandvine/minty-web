@@ -24,9 +24,10 @@
  * CANCELS it applies it at once (`api/moduleChanges.ts` - one API action per module). Either lands on its RESULT (05·C,
  * `lib/changeResult.ts`): in the row for what was added, confirmed, restored or started - where
  * Start Trial lands too - or the whole page for a cancellation. Back to Manage Subscriptions
- * leaves for the portal's landing (08-A), as every result frame's hotspot says. When a card must
- * be collected first, the browser goes to Stripe and comes back to the module page, as it does
- * from there.
+ * leaves for the portal's landing (08-A), as every result frame's hotspot says. When the change
+ * finds no card to charge, "Billing Accounts" is asked AGAIN with the API's sentence - a card is
+ * only ever added through a billing account ("New billing account", in place), never on a
+ * Stripe-hosted page (the user, 2026-10-01).
  *
  * The ⋮'s *Cancel subscription* and *Reactivate* (05·D, on a closed row or the open one) are
  * the same ticks - every ACTIVE module unticked, every module that is not ticked - so they open
@@ -57,7 +58,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { ApiError } from "@/lib/apiClient";
 import { isEntityScoped } from "@/lib/auth";
-import { leaveTo, redirectToHandoff } from "@/lib/handoff";
+import { redirectToHandoff } from "@/lib/handoff";
 import { useToast } from "@/components/ui/Toast";
 
 import { applyChange, billsAnything } from "@/features/subscription/api/moduleChanges";
@@ -162,6 +163,8 @@ type AccountAsk = {
   data: BillingAccounts;
   picked: string | null;
   error: string | null;
+  /** Asked again because the change found no card to charge: cardless accounts are shut. */
+  needCard: boolean;
   key: number;
 };
 
@@ -561,7 +564,7 @@ export function useSubscriptionsList({
         // The asking modal gives way to the sheet only now: a failed read leaves it up, to try
         // its Confirm again.
         setChangePrompt(null);
-        setAccountAsk({ entity, prompt, data, picked, error: null, key: 0 });
+        setAccountAsk({ entity, prompt, data, picked, error: null, needCard: false, key: 0 });
       } catch (err) {
         showToast(err instanceof ApiError ? err.message : ACCOUNTS_LOAD_FAILED, "error");
       } finally {
@@ -631,10 +634,49 @@ export function useSubscriptionsList({
     if (!changeBusy) setChangePrompt(null);
   }, [changeBusy]);
 
+  // No card to charge (the user, 2026-10-01: a payment method only ever goes through a billing
+  // account): "Billing Accounts" is asked AGAIN for the same change, with the API's sentence as
+  // its error, cardless accounts shut, and "New billing account" the way to add one. Read fresh
+  // - the account picked may have just lost its card - and it takes the asking UI's place only
+  // once that read is in (never a blank moment). The summary is NOT reloaded: the ticks stay.
+  const askAgainForCard = useCallback(
+    async (prompt: ChangePrompt, error: string) => {
+      const { entity } = prompt;
+      let data: BillingAccounts;
+      try {
+        data = await fetchBillingAccounts();
+      } catch (err) {
+        // The sheet (if it is the one asking) keeps its rows and says why; whatever else asked
+        // gives way to the toast, as any other failure here does.
+        const said = err instanceof ApiError ? err.message : ACCOUNTS_LOAD_FAILED;
+        showToast(`${error} ${said}`, "error");
+        setAccountAsk((ask) => ask && { ...ask, error, needCard: true });
+        setChangePrompt(null);
+        setDeclined(null);
+        return;
+      }
+      const { picked } = nominationChoice(data, entity.entity_id, { needCard: true });
+      setChangePrompt(null);
+      setDeclined(null);
+      setAccountAsk((ask) => ({
+        entity,
+        // The card named for 06·B belonged to the account that could not pay.
+        prompt: { ...prompt, card: null },
+        data,
+        picked,
+        error,
+        needCard: true,
+        key: (ask?.key ?? 0) + 1,
+      }));
+    },
+    [showToast],
+  );
+
   // Apply a change: from the asking modal's Confirm (a cancellation), from "Billing Accounts"
   // once the company is on the account picked (a change that bills), or again after a decline.
   // Whatever asked STAYS UP, busy, until the answer takes its place - the result and its modal,
-  // 06·B, a toast - so a payment never runs with nothing on the screen saying so.
+  // 06·B, "Billing Accounts" asked again, a toast - so a payment never runs with nothing on the
+  // screen saying so.
   const apply = useCallback(
     async (prompt: ChangePrompt) => {
       const { entity, change, page: before } = prompt;
@@ -648,8 +690,8 @@ export function useSubscriptionsList({
         const applied = await applyChange(entity.entity_id, before, change.codes, {
           cardChosen: Boolean(prompt.card),
         });
-        if (applied.redirect) {
-          leaveTo(applied.redirect);
+        if (applied.needsCard) {
+          await askAgainForCard(prompt, applied.needsCard);
           return;
         }
         if (applied.declined) {
@@ -683,7 +725,7 @@ export function useSubscriptionsList({
         setChangeBusy(false);
       }
     },
-    [summary, showToast, land, reload],
+    [summary, showToast, land, reload, askAgainForCard],
   );
   // The asking modal's Confirm (the user, 2026-09-29, the second time: the modal asks FIRST,
   // then which account pays). A change that bills goes on to "Billing Accounts" and is applied
@@ -760,11 +802,13 @@ export function useSubscriptionsList({
   }, [changeBusy]);
   const accountStep = useMemo<AccountStep | null>(() => {
     if (!accountAsk) return null;
-    const { entity, prompt, data } = accountAsk;
-    const choice = prompt ? nominationChoice : accountChangeChoice;
+    const { entity, prompt, data, needCard } = accountAsk;
+    const targets = prompt
+      ? nominationChoice(data, entity.entity_id, { needCard }).targets
+      : accountChangeChoice(data, entity.entity_id).targets;
     return {
       data,
-      targets: choice(data, entity.entity_id).targets,
+      targets,
       picked: accountAsk.picked,
       error: accountAsk.error,
       lead: nominateLead(entity.entity_name),

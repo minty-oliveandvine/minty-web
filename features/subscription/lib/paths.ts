@@ -55,7 +55,8 @@ export function overviewPath(accountId?: string | null): string {
 export const BILLING = {
   account: ({ id, entity }: { id?: string | null; entity?: string | null } = {}) =>
     withParams(PORTAL.billing, { account: id, entity }),
-  add: (accountId?: string | null) =>
+  // A card is added ON an account or not at all - so the account is not optional here.
+  add: (accountId: string) =>
     withParams(subscriptionPath("/billing/add"), { account: accountId }),
   edit: (paymentMethod: string, accountId?: string | null) =>
     withParams(subscriptionPath("/billing/edit"), { card: paymentMethod, account: accountId }),

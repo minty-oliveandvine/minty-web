@@ -1,5 +1,5 @@
-// The page's orchestration, with the API stubbed at fetch: what loads, what a CTA posts, what
-// a return from Stripe does to the URL, and where each seam sends the browser.
+// The page's orchestration, with the API stubbed at fetch: what loads, what a CTA posts, and
+// where each seam sends the browser. (There is no return from Stripe: nothing leaves for it.)
 
 import { act, renderHook, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
@@ -157,50 +157,6 @@ describe("useModulePage", () => {
     expect(result.current.status).toBe("ready");
     expect(result.current.trialPrompt).not.toBeNull();
     expect(push).not.toHaveBeenCalled();
-  });
-
-  it("back from Checkout: posts checkout-complete, drops session_id from the URL, then loads", async () => {
-    window.history.replaceState(
-      {},
-      "",
-      "/subscription/entities/e1/modules?from=bills&session_id=cs_test_1&purpose=payment_method",
-    );
-    fetchMock.mockResolvedValueOnce(reply(200, { ok: true }));
-    fetchMock.mockResolvedValueOnce(reply(200, FIXTURES.C));
-    const { result } = renderHook(
-      () =>
-        useModulePage({
-          entityId: "e1",
-          sessionId: "cs_test_1",
-          purpose: "payment_method",
-          today: TODAY,
-        }),
-      { wrapper },
-    );
-    await waitFor(() => expect(result.current.status).toBe("ready"));
-
-    const [url, init] = fetchMock.mock.calls[0];
-    expect(String(url)).toBe(`${API}/checkout-complete`);
-    expect(JSON.parse(String(init?.body))).toEqual({
-      session_id: "cs_test_1",
-      purpose: "payment_method",
-    });
-    expect(window.location.search).toBe("?from=bills");
-    expect(fetchMock).toHaveBeenCalledTimes(2);
-  });
-
-  it("a failed return is shown and forgotten", async () => {
-    window.history.replaceState({}, "", "/subscription/entities/e1/modules?checkout_error=Nope");
-    fetchMock.mockResolvedValueOnce(reply(200, FIXTURES.A));
-    const { result } = renderHook(
-      () => useModulePage({ entityId: "e1", checkoutError: "Nope", today: TODAY }),
-      { wrapper },
-    );
-    await waitFor(() => expect(result.current.status).toBe("ready"));
-
-    expect(toasts()).toEqual(["Nope"]);
-    expect(window.location.search).toBe("");
-    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
   it("the seams navigate to the flow's page under the module page", async () => {

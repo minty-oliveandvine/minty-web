@@ -9,6 +9,7 @@ import { setAuth } from "@/lib/auth";
 
 import { ACCOUNTS, WALLET_TWO, invoicePage } from "@/features/subscription/__fixtures__/billing";
 import {
+  NO_ACCOUNT_FOR_CARD,
   confirmCardSetup,
   fetchBillingAccounts,
   fetchPayerInvoices,
@@ -44,12 +45,18 @@ describe("the billing-account calls", () => {
   });
   afterEach(() => vi.unstubAllGlobals());
 
-  it("confirm names the account exactly as onboarding does - or nothing at all", async () => {
-    await confirmCardSetup("seti_1");
+  it("confirm names the account exactly as onboarding does - and never goes out without one", async () => {
+    // A card on no account is refused here, loudly, before the API is asked (it refuses too).
+    await expect(confirmCardSetup("seti_0", false, {})).rejects.toMatchObject({
+      status: 422,
+      message: NO_ACCOUNT_FOR_CARD,
+    });
+    await expect(
+      confirmCardSetup("seti_0", false, { company: "Acme Ltd", email: "" }),
+    ).rejects.toMatchObject({ status: 422 });
     await confirmCardSetup("seti_2", false, { billingGroupId: "acc-1" });
     await confirmCardSetup("seti_3", false, { company: "Acme Ltd", email: "ap@acme.test" });
     expect(sent.map((s) => s.body)).toEqual([
-      { setup_intent: "seti_1", make_default: false },
       { setup_intent: "seti_2", make_default: false, billing_group_id: "acc-1" },
       {
         setup_intent: "seti_3",

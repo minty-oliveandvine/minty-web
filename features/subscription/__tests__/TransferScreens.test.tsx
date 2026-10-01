@@ -1,8 +1,8 @@
 // Section 07's screens as a person sees them, per Figma frame: the picker (07-A) with the
 // current payer tagged and the quote under the pick, Request transfer landing on Transfer
 // requested (07-B), the request waiting (07-C) and its withdrawal told by 07-K's modal, the
-// empty requests page (07-F), a request under review (07-D) with Change → the card picker
-// (07-E) → back, and the list's row landing on Subscription Transfer Completed (07-M).
+// empty requests page (07-F), a request under review (07-D) with Change → the billing-account
+// picker (07-E) → back, and the list's row landing on Subscription Transfer Completed (07-M).
 
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -15,10 +15,12 @@ import { SUMMARY_FIXTURES, TODAY, WALLET } from "@/features/subscription/__fixtu
 import { ENTITIES, subscriptionsPage } from "@/features/subscription/__fixtures__/subscriptions";
 import {
   INCOMING_REQUEST,
-  RECIPIENT_CARDS,
+  RECIPIENT_ACCOUNTS,
+  RECIPIENT_NO_ACCOUNTS,
   SUBSCRIBER_OPTIONS,
   SUBSCRIBER_OPTIONS_PENDING,
 } from "@/features/subscription/__fixtures__/transfers";
+import { NEEDS_ACCOUNT } from "@/features/subscription/lib/transfer";
 import { ManageSubscriptionsScreen } from "@/features/subscription/routes/ManageSubscriptionsScreen";
 import { SubscriptionRequestsScreen } from "@/features/subscription/routes/SubscriptionRequestsScreen";
 import { TransferSubscriptionScreen } from "@/features/subscription/routes/TransferSubscriptionScreen";
@@ -147,14 +149,20 @@ describe("SubscriptionRequestsScreen", () => {
     expect(push).toHaveBeenCalledWith("/subscription/subscriptions");
   });
 
-  it("07-D / 07-E: a request under review, the modules chosen, the card changed, then accepted", async () => {
-    serve({
-      "GET /api/me/subscriptions/transfers": { transfers: [INCOMING_REQUEST] },
-      "GET /api/me/billing/payment-methods": RECIPIENT_CARDS,
-      "POST /api/me/billing/payment-methods/default": {
-        ...RECIPIENT_CARDS,
-        default_id: "pm_master8842",
-      },
+  it("07-D / 07-E: a request under review, the modules chosen, the billing account changed, then accepted", async () => {
+    const posts: { path: string; body: unknown }[] = [];
+    fetchMock.mockImplementation(async (input, init) => {
+      const url = new URL(String(input));
+      if (init?.method === "POST") {
+        posts.push({ path: url.pathname, body: JSON.parse(String(init.body ?? "null")) });
+        return reply(200, { ok: true, message: "Done." });
+      }
+      if (url.pathname === "/api/me/subscriptions/transfers")
+        return reply(200, { transfers: [INCOMING_REQUEST] });
+      if (url.pathname === "/api/me/billing/accounts") return reply(200, RECIPIENT_ACCOUNTS);
+      if (/^\/api\/entities\/[^/]+\/modules$/.test(url.pathname))
+        return reply(200, SUMMARY_FIXTURES.M24);
+      return reply(404, { error: "not_found" });
     });
     render(<SubscriptionRequestsScreen today={TODAY} />);
     await waitFor(() =>
@@ -176,23 +184,32 @@ describe("SubscriptionRequestsScreen", () => {
     const panel = within(review).getByRole("region", { name: "Subscription Summary" });
     expect(within(panel).getByText("Payment Request")).toBeInTheDocument();
     expect(within(panel).getByText("HK$280")).toBeInTheDocument();
+    // The oldest account that can pay - Harbour Trading - named over its Visa, under a
+    // "Billing account" column: the card is shown only as the account's.
+    expect(within(panel).getByText("Billing account")).toBeInTheDocument();
+    expect(within(panel).queryByText("Payment method")).toBeNull();
+    expect(within(panel).getByText(/Harbour Trading/)).toBeInTheDocument();
     expect(within(panel).getByText("Visa 4121")).toBeInTheDocument();
     // NO MONEY LINE: accepting takes nothing, so the panel names no figure and no date.
     expect(within(panel).queryByText(/You’ll be charged/)).toBeNull();
-    expect(screen.getByText(/charged to your selected payment method/)).toBeInTheDocument();
+    expect(screen.getByText(/charged to your selected billing account/)).toBeInTheDocument();
 
     await userEvent.click(within(panel).getByRole("button", { name: "Change" }));
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Transfer Subscription");
-    const cards = screen.getByRole("region", { name: "Payment Methods" });
-    expect(within(cards).getByRole("radio", { name: /Visa ending in 4121/ })).toBeChecked();
-    await userEvent.click(within(cards).getByRole("radio", { name: /Mastercard ending in 8842/ }));
-    expect(within(cards).getByRole("link", { name: "Add New Card" })).toHaveAttribute(
-      "href",
-      "/subscription/billing",
-    );
-    await userEvent.click(within(cards).getByRole("button", { name: "Confirm" }));
+    // 07-E lists BILLING ACCOUNTS - the "Billing Accounts" sheet's rows - not loose cards.
+    const accounts = screen.getByRole("region", { name: "Billing Accounts" });
+    expect(within(accounts).queryByRole("region", { name: "Payment Methods" })).toBeNull();
+    expect(within(accounts).getByRole("radio", { name: /Harbour Trading/ })).toBeChecked();
+    // The account whose collection is failing is shown, and shut, with why.
+    expect(within(accounts).getByRole("radio", { name: /Lapsed Holdings/ })).toBeDisabled();
+    expect(within(accounts).getByText("Payment failed")).toBeInTheDocument();
+    expect(within(accounts).getByRole("button", { name: "New billing account" })).toBeEnabled();
+    await userEvent.click(within(accounts).getByRole("radio", { name: /Kowloon Supplies/ }));
+    await userEvent.click(within(accounts).getByRole("button", { name: "Confirm" }));
     const back = await screen.findByRole("region", { name: "Transfer request" });
     expect(within(back).getByText("Mastercard 8842")).toBeInTheDocument();
+    // Choosing posted nothing: no card was made anyone's default.
+    expect(posts).toEqual([]);
 
     await userEvent.click(
       within(back).getByRole("button", { name: "Confirm Subscription Transfer" }),
@@ -202,6 +219,39 @@ describe("SubscriptionRequestsScreen", () => {
         "/subscription/subscriptions?entity=e-new-company&transferred=1",
       ),
     );
+    expect(posts).toEqual([
+      {
+        path: "/api/me/subscriptions/transfer/respond",
+        body: { transfer: "t-1", accept: true, billing_group_id: "acc-kowloon" },
+      },
+    ]);
+  });
+
+  it("07-D with no billing account: Confirm waits, and New billing account opens the sheet over the offer", async () => {
+    serve({
+      "GET /api/me/subscriptions/transfers": { transfers: [INCOMING_REQUEST] },
+      "GET /api/me/billing/accounts": RECIPIENT_NO_ACCOUNTS,
+      "POST /api/me/billing/payment-methods/setup-intent": {
+        client_secret: "",
+        publishable_key: "",
+        setup_intent: "seti_1",
+      },
+    });
+    render(<SubscriptionRequestsScreen today={TODAY} />);
+    const review = await screen.findByRole("region", { name: "Transfer request" });
+    const panel = within(review).getByRole("region", { name: "Subscription Summary" });
+    await within(panel).findByText(NEEDS_ACCOUNT);
+    expect(
+      within(review).getByRole("button", { name: "Confirm Subscription Transfer" }),
+    ).toBeDisabled();
+
+    await userEvent.click(within(panel).getByRole("button", { name: "Add a billing account" }));
+    const accounts = screen.getByRole("region", { name: "Billing Accounts" });
+    await userEvent.click(within(accounts).getByRole("button", { name: "New billing account" }));
+    // The billing-account sheet, in place: the offer is still there under it.
+    expect(await screen.findByRole("dialog", { name: "New billing account" })).toBeInTheDocument();
+    expect(push).not.toHaveBeenCalled();
+    expect(screen.getByRole("region", { name: "Billing Accounts" })).toBeInTheDocument();
   });
 });
 

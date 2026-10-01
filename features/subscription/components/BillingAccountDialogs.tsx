@@ -16,7 +16,8 @@
  *   Nothing is charged; its paid days travel with it. The rows the API would refuse are shown
  *   and disabled with the reason, rather than refused after Confirm. Step 2's *New billing
  *   account* opens one in place, and the company moves onto it.
- * - "OPEN A BILLING ACCOUNT" (`NewAccountDialog`) - 08-B for a payer with none: the form, then 01-J.
+ * - "OPEN A BILLING ACCOUNT" (`NewAccountDialog`) - 08-B for a payer with none: the form, then
+ *   01-J; and the handover's 07-E, whose "New billing account" opens one over the offer.
  *
  * Section 08 draws none of these: the look is onboarding's, the pickers' words are ours.
  */
@@ -59,6 +60,50 @@ import {
   movableCompanies,
   type MoveTarget,
 } from "@/features/subscription/lib/billingAccounts";
+
+/**
+ * The accounts as radio rows, each that cannot be picked disabled with its reason - the list of
+ * "Billing Accounts" (below), and of the handover's 07-E, which asks the same question of the
+ * incoming payer ("which account pays for this company?") in its own panel.
+ */
+export function AccountTargetList({
+  rows,
+  picked,
+  busy = false,
+  name = "billing-account",
+  onPick,
+}: {
+  rows: MoveTarget[];
+  picked: string | null;
+  busy?: boolean;
+  name?: string;
+  onPick: (accountId: string) => void;
+}) {
+  return (
+    <ul className={SHEET_LIST}>
+      {rows.map(({ account, block }) => (
+        <AccountRow
+          key={account.id}
+          name={name}
+          account={account}
+          checked={picked === account.id}
+          disabled={busy || block !== null}
+          onSelect={onPick}
+          // A row that cannot be picked says why; the others keep the account's own flags
+          // (`undefined`, not null - AccountRow reads null as "no flags").
+          flags={
+            block ? (
+              <SheetFlag
+                text={MOVE_BLOCK_LABEL[block]}
+                tone={block === "in_dunning" || block === "no_card" ? "red" : "grey"}
+              />
+            ) : undefined
+          }
+        />
+      ))}
+    </ul>
+  );
+}
 
 /**
  * Which billing account 08-A shows - and the way to open another. Manage Subscriptions asks
@@ -123,28 +168,7 @@ export function AccountPickerDialog({
       onClose={onClose}
       onDismiss={onClose}
     >
-      <ul className={SHEET_LIST}>
-        {rows.map(({ account, block }) => (
-          <AccountRow
-            key={account.id}
-            name="billing-account"
-            account={account}
-            checked={picked === account.id}
-            disabled={busy || block !== null}
-            onSelect={setPicked}
-            // A row that cannot be picked says why; the others keep the account's own flags
-            // (`undefined`, not null - AccountRow reads null as "no flags").
-            flags={
-              block ? (
-                <SheetFlag
-                  text={MOVE_BLOCK_LABEL[block]}
-                  tone={block === "in_dunning" || block === "no_card" ? "red" : "grey"}
-                />
-              ) : undefined
-            }
-          />
-        ))}
-      </ul>
+      <AccountTargetList rows={rows} picked={picked} busy={busy} onPick={setPicked} />
       <button
         type="button"
         onClick={() => setAdding(true)}

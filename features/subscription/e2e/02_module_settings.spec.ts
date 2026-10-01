@@ -270,24 +270,6 @@ test.describe("module settings page", () => {
     );
   });
 
-  test("back from Checkout: checkout-complete is posted once and session_id leaves the URL", async ({
-    page,
-  }) => {
-    const c = creds();
-    const posts = await stubApi(page, frame("C"));
-    await handoff(page, c, MODULES(c.entityId) + "?from=bills&session_id=cs_test_1");
-
-    await expect(body(page).getByText("Currently Active").first()).toBeVisible();
-    expect(posts).toEqual([{ action: "checkout-complete", body: { session_id: "cs_test_1" } }]);
-    const url = new URL(page.url());
-    expect(url.searchParams.has("session_id")).toBe(false);
-    expect(url.searchParams.get("from")).toBe("bills");
-
-    await page.reload();
-    await expect(body(page).getByText("Currently Active").first()).toBeVisible();
-    expect(posts).toHaveLength(1);
-  });
-
   test("someone who may not manage sees no buttons and who does", async ({ page }) => {
     const c = creds();
     await stubApi(page, NON_MANAGER);

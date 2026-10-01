@@ -3,20 +3,21 @@
 /**
  * "Subscription requests" - the recipient's side of a handover, composed (Figma 07-D/E/F): the
  * banner, then "No requests waiting" (07-F), the requests to pick from when several wait, the
- * one under review with its Confirm Subscription Transfer (07-D), or the card picker (07-E).
+ * one under review with its Confirm Subscription Transfer (07-D), or the billing-account picker
+ * (07-E) - with the billing-account sheet over it while a new account is opened. The
  * `SubscriptionRequests` reads the URL and hands the parameters here; the tests render this
  * directly with fixtures.
  */
 
 import Image from "next/image";
 
+import { NewAccountDialog } from "@/features/subscription/components/BillingAccountDialogs";
 import { PortalHero } from "@/features/subscription/components/PortalHero";
 import {
-  AddCardPanel,
   IncomingRequestReview,
   NoRequests,
-  PaymentMethodPicker,
   RequestList,
+  TransferAccountPicker,
 } from "@/features/subscription/components/SubscriptionRequestsPanels";
 import {
   useSubscriptionRequests,
@@ -67,23 +68,15 @@ export function SubscriptionRequestsScreen(args: UseSubscriptionRequestsArgs) {
               <h2 className="text-[25px] font-bold text-black">{r.reviewed.row.entity_name}</h2>
               <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-[minmax(0,1fr)_auto]">
                 <div className="flex justify-center">
-                  {r.step === "add-card" ? (
-                    <AddCardPanel
-                      setup={r.setup}
-                      onSaved={r.cardSaved}
-                      onCancel={r.cancelAddCard}
-                    />
-                  ) : (
-                    <PaymentMethodPicker
-                      cards={r.reviewed.cards}
-                      cardId={r.reviewed.cardId}
-                      busy={r.busy}
-                      actionError={r.actionError}
-                      onPick={r.pickCard}
-                      onAdd={r.addCard}
-                      onConfirm={() => void r.confirmCard()}
-                    />
-                  )}
+                  <TransferAccountPicker
+                    targets={r.reviewed.targets}
+                    accountId={r.reviewed.accountId}
+                    busy={r.busy}
+                    actionError={r.actionError}
+                    onPick={r.pickAccount}
+                    onAdd={r.addAccount}
+                    onConfirm={r.confirmAccount}
+                  />
                 </div>
                 <Image
                   src="/portal/minty-lemon-handoff.png"
@@ -100,13 +93,21 @@ export function SubscriptionRequestsScreen(args: UseSubscriptionRequestsArgs) {
               reviewed={r.reviewed}
               busy={r.busy}
               actionError={r.actionError}
-              onChangeCard={r.changeCard}
+              onChangeCard={r.chooseAccount}
               onToggleModule={r.toggleModule}
               onAccept={() => void r.accept()}
               onDecline={() => void r.decline()}
             />
           )}
         </section>
+      )}
+
+      {r.addingAccount && (
+        <NewAccountDialog
+          fixture={args.fixture}
+          onOpened={r.accountOpened}
+          onClose={r.cancelAddAccount}
+        />
       )}
     </div>
   );

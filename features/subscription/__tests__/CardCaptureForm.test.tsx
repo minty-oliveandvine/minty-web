@@ -12,6 +12,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { setAuth } from "@/lib/auth";
 
 import { OPENED_ACCOUNT } from "@/features/subscription/__fixtures__/billing";
+import { NO_ACCOUNT_FOR_CARD } from "@/features/subscription/api/payerPortal";
 import {
   CARD_SAVE_FAILED,
   CardCaptureForm,
@@ -255,6 +256,23 @@ describe("CardCaptureForm", () => {
     expect(screen.getByText(/first payment method on your billing account/)).toBeInTheDocument();
     expect(screen.queryByText("Payment method")).toBeNull();
     expect(fake.options.at(-1)).toEqual({ clientSecret: "seti_1_secret" });
+  });
+
+  it("no billing account to put the card on: Save is refused before Stripe or Minty is touched", async () => {
+    const user = userEvent.setup();
+    sheet({ account: null });
+    await save(user);
+    expect(await screen.findByRole("alert")).toHaveTextContent(NO_ACCOUNT_FOR_CARD);
+    expect(fake.elements.submit).not.toHaveBeenCalled();
+    expect(fake.stripe.confirmSetup).not.toHaveBeenCalled();
+    expect(fetchMock).not.toHaveBeenCalled();
+
+    // Half an identity is not an account either: a company with no email opens nothing.
+    sheet({ account: { company: "Acme Ltd", email: "" } });
+    const buttons = await screen.findAllByRole("button", { name: "Save billing account" });
+    await user.click(buttons.at(-1)!);
+    expect(fake.stripe.confirmSetup).not.toHaveBeenCalled();
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it("no publishable key means no form - the Stripe note, not an empty box", () => {
