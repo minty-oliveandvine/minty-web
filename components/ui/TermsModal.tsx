@@ -161,7 +161,7 @@ export function TermsModal({ terms, onAccepted, onChanged }: TermsModalProps) {
                   the version you agreed to before{" "}
                   {links.previous ? (
                     <a
-                      href={`${env.MINTY_URL}${links.previous}`}
+                      href={`${env.PETTY_CASH_URL}${links.previous}`}
                       target="_blank"
                       rel="noopener noreferrer"
                     >
@@ -212,7 +212,7 @@ export function TermsModal({ terms, onAccepted, onChanged }: TermsModalProps) {
               <span>
                 I have read and agree to the{" "}
                 <a
-                  href={`${env.MINTY_URL}${links.terms}`}
+                  href={`${env.PETTY_CASH_URL}${links.terms}`}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
@@ -220,7 +220,7 @@ export function TermsModal({ terms, onAccepted, onChanged }: TermsModalProps) {
                 </a>{" "}
                 and{" "}
                 <a
-                  href={`${env.MINTY_URL}${links.privacy}`}
+                  href={`${env.PETTY_CASH_URL}${links.privacy}`}
                   target="_blank"
                   rel="noopener noreferrer"
                 >

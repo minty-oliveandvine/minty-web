@@ -1,12 +1,12 @@
 # Subscriptions — the hub's first feature
 
-The payer portal and a company's module settings page, over `minty-billing-api` (:8004). This
+The payer portal and a company's module settings page, over `minty-subscription-api` (:8000). This
 page is the map of the feature as it stands (**Part 2 step 1: the shell, the bounded folder,
 the typed API clients and a skeletal index; step 4a: the module settings page, built from its
 Figma design over a stubbed API**) and of what the rest of step 4 fills in. The behaviour being
 ported is described in `Minty/docs/features/modules-and-subscriptions.md` (the Flask module page)
-and billing-frontend's portal components; the API contract in
-`minty-billing-api/docs/features/subscriptions-api.md`.
+and minty-payment-request-web's portal components; the API contract in
+`minty-subscription-api/docs/features/subscriptions-api.md`.
 
 ## 1. What a person gets
 
@@ -42,7 +42,7 @@ index.ts        THE public surface: SubscriptionOverview, ManageSubscriptions, M
                 SubscriptionLayout,
                 SUBSCRIPTION_BASE_PATH
 api/            payerPortal.ts (the /api/me routes - Flask's 15 plus transfer/seen and the four billing-account
-                routes; billing-frontend's function names) · moduleSettings.ts
+                routes; minty-payment-request-web's function names) · moduleSettings.ts
                 (getModulePage, postModuleAction over the 10 actions, startTrial, and the five a confirmed
                 change posts: cancelModule, renewModule, retryPayment, restartBilling, authorizeBilling; the card
                 and page-model types) · moduleChanges.ts (applyChange: the open row's ticks → those actions, in
@@ -71,7 +71,7 @@ lib/            paths.ts (the ONE place the mount point is spelled; PORTAL.*, mo
                 is saved under - the landing's figures) · billingAccounts.ts
                 (which account a page shows, its Bill-to block and address lines, who may move where and why
                 not, the new account's identity, 08-C's fields - what stops Save and what is sent)
-components/     the module page's pieces: SettingsTabs (billing-frontend's pills), PaymentFailedBanner,
+components/     the module page's pieces: SettingsTabs (minty-payment-request-web's pills), PaymentFailedBanner,
                 ManagedByNotice, ModuleCard, ModuleCta, ModuleCardGrid (the header is the shell's AppHeader);
                 the list's: PortalHero, PortalBack (the back line's header slot), TransferRequestCard, SearchField, SubscriptionsTable, ModuleCellView,
                 RowMenu, ListStates, SubscriptionSummaryRow (the open row), ConfirmDialog (the modal shell),
@@ -90,7 +90,7 @@ components/     the module page's pieces: SettingsTabs (billing-frontend's pills
                 (AccountTargetList - the account rows, each shut with its reason, shared with 07-E /
                 AccountPickerDialog / MoveCompanyDialog / NewAccountDialog), BillingDetailsForm (08-C); shared:
                 ModalFrame (every other modal's backdrop, Escape and card - ConfirmDialog is built on it)
-routes/         SubscriptionLayout (PortalChrome = billing-frontend's header; no tab row), ManageSubscriptions (+ Screen),
+routes/         SubscriptionLayout (PortalChrome = minty-payment-request-web's header; no tab row), ManageSubscriptions (+ Screen),
                 ModuleSettingsPage (+ Screen), TransferSubscription (+ Screen), SubscriptionRequests (+ Screen),
                 SubscriptionOverview (+ Screen), BillingPage (+ Screen), CardPages (AddCard / EditCard) +
                 CardScreens, BillingDetailsPage (+ Screen)
@@ -137,12 +137,12 @@ back through Flask's re-handoff once (`lib/handoff.ts`); nothing retries or refr
 (`docs/features/authentication.md`). Every route answers JSON but one: an invoice's PDF, read
 with `apiFetchBlob` - the same bearer, 401 and `ApiError`, since its failures are JSON too.
 
-`api/payerPortal.ts` keeps billing-frontend's function names (`fetchPayerSubscriptions`,
+`api/payerPortal.ts` keeps minty-payment-request-web's function names (`fetchPayerSubscriptions`,
 `fetchSubscriberOptions`, `inviteAdminToEntity`, `initiateTransfer`, `respondToTransfer`,
 `cancelTransfer`, `listIncomingTransfers`, `fetchPaymentMethods`, `startCardSetup`,
 `confirmCardSetup`, `fetchEntityPaymentMethod`, `updatePaymentMethod`, `removePaymentMethod`,
 `fetchPayerInvoices`) and its response types, so the portal screens port mechanically - plus what
-billing-frontend never had: `markTransferSeen`, and the billing accounts (`fetchBillingAccounts`,
+minty-payment-request-web never had: `markTransferSeen`, and the billing accounts (`fetchBillingAccounts`,
 `setAccountDefaultCard`, `updateBillingAccount`, `moveCompanyToAccount`; `confirmCardSetup` REQUIRES
 onboarding's `BillingAccountChoice` - an account id, or a company AND an email to open one - and
 refuses without one (`namesAnAccount`, 422 "Choose a billing account for this card.", the API's own
@@ -179,11 +179,10 @@ Playwright (as in the sibling apps); the capture flow is unit-tested with Stripe
 
 ## 6. Configuration
 
-`lib/env.ts` — `NEXT_PUBLIC_BILLING_API_URL` (8004), `NEXT_PUBLIC_MINTY_URL` (5001, the
-re-handoff, the entity list's and the profile's reads, Petty Cash), `NEXT_PUBLIC_PAYMENTS_WEB_URL`
-and `NEXT_PUBLIC_PAYMENTS_WEB_URL` (3000, the payments app - the side menu's _Bills_, the
-profile's way back). All inlined at build time. In the docker stack this is the
-`minty-web` service on 3002.
+`lib/env.ts` — `SUBSCRIPTION_API_URL` (8000), `PETTY_CASH_URL` (8010, the
+re-handoff, the entity list's and the profile's reads, Petty Cash) and `PAYMENT_REQUEST_WEB_URL`
+(3020, the payment-request app - the side menu's _Bills_, the profile's way back). All inlined at
+build time (`next.config.ts` `env`). In the docker stack this is the `minty-web` service on 3000.
 
 ## 7. Where it is tested
 
@@ -314,7 +313,7 @@ list showing the company - against the seed's `E2E Subscription Shop`, which
 `Minty/scripts/e2e_seed.py` resets to "never held anything" on every run). The landing spec
 stubs the API too (`stubBillingApi`): over the real API a token for a user its database does
 not hold is a 401 that sends the browser out of the app. Still to come with the portal port: the
-five journeys from `billing-frontend/e2e/03_payer_portal.spec.ts`. The fixtures' `TODAY` is the
+five journeys from `minty-payment-request-web/e2e/03_payer_portal.spec.ts`. The fixtures' `TODAY` is the
 real calendar day (UTC 03:00), not a pinned one: a `page.route` stub reaches a page that counts
 from the browser's clock, so a pinned day drifted by one every midnight.
 
@@ -325,7 +324,7 @@ from the browser's clock, so a pinned day drifted by one every midnight.
 | 4a     | **done 2026-09-21** — the module settings page from its Figma design (§9), over a stubbed API; the `(portal)` route group; Flask's `/entity/settings/payments/<id>` redirect for the Payment Settings tab                                                                                                                                                                                                   |
 | 4b     | **the Manage Subscriptions list, done 2026-09-21** (§10) — the design's target of the module page's _Manage Subscription_                                                                                                                                                                                                                                                                                   |
 | 4c     | **live-API journeys done 2026-09-22** (`04_live_api.spec.ts`); **the open row done 2026-09-22** (§11, Figma 05·A and 05·B - the ticks pend on the row until _Confirm Subscription Change_); **the change applied and its result screens done 2026-09-22** (§12, Figma 05·C); **the confirmation modals done 2026-09-22** (§13, Figma section 06 - the confirm button asks first); **the "Calculating…" beat and the ⋮'s items done 2026-09-22** (§11, Figma 05·B-C; §13, Figma 05·D); **the declined-payment and leave-without-saving modals done 2026-09-22** (§13, Figma 06·B); **both sides of a handover done 2026-09-22** (§14, Figma section 07 - _Request transfer_ and the incoming requests, over the live routes; the outcome modals wait for an outgoing-transfer read). **the billing area done 2026-09-23** (§15, Figma section 08 - the portal's landing, the billing page and its states, the card screens; `/subscription` is the landing now and the list is `/subscription/subscriptions`). **Billing accounts done 2026-09-25** (§15 - 08-A shows ONE account, picked by clicking its card; _Change billing account_ moves a company; 08-B is one account's profile; 08-C and the new-account form built; the landing's Next Billing Date no longer prints the anchor). **Same day, at the user's word:** _New billing account_ became onboarding's `BillingSheet` in place (the page went), the account's name took over _Change billing account_ (its button went, and the move's "Nothing is charged now…" note), "Trial ending" counts the trials ending within 30 days and the update lines list them with _Show more_, and 08-B gained the next bill's estimated amount (`next_bill`, priced by the API's renewal runner) and 10 / 50 / 100 invoice paging; one real Stripe test-mode account opened through the sheet on the dev database. **A standalone invoices page (09) was decided AGAINST, 2026-09-28** - the billing page's own invoice list already covers it (paging, each invoice's PDF, the billing-breakdown CSV), so `PORTAL.invoices`, the tab and the route's NotBuiltYet entry were all removed rather than left waiting to be built. **The Invoice PDF became our own document, 2026-09-29** (§15, Figma 09-A - downloaded from `GET /api/me/invoices/{id}/pdf`, where it had linked Stripe's hosted invoice page); **its Inv# previews it, 2026-09-30** (§15 - view-only at the user's word, drawn by pdf.js; the column is still the download) |
-| 5      | Minty's `/handoff/minty-web` route exists — the e2e stub goes. (billing-frontend's profile links go through Minty's `/profile` since 2026-09-29, which picks minty-web's profile when `MINTY_WEB_HUB` is on; its old profile page is deleted here with the portal copies) |
+| 5      | Minty's `/handoff/minty-web` route exists — the e2e stub goes. (minty-payment-request-web's profile links go through Minty's `/profile` since 2026-09-29, which picks minty-web's profile when `MINTY_WEB_HUB` is on; its old profile page is deleted here with the portal copies) |
 | 7      | deployed to a test site with subscriptions on - no dark phase (the switch was removed 2026-10-01, §4)                                                                                                                                                                                                                                                                                                       |
 | Part 3 | the entity list and My Profile **joined the hub 2026-09-29** (`entities.md`, `profile.md`); login, dashboard and settings follow; `@/lib` and `@/components/ui` become `@minty/shared`; each feature folder is liftable per its README |
 
@@ -334,7 +333,7 @@ from the browser's clock, so a pinned day drifted by one every midnight.
 `/subscription/entities/{id}/modules` — Flask's `/entity/settings/module/<org_id>`, re-homed and
 redrawn to the Figma design (section "03 · Settings › Module", six frames). What is on it:
 
-- **The settings chrome is billing-frontend's** (decision 2026-09-21: "the settings design
+- **The settings chrome is minty-payment-request-web's** (decision 2026-09-21: "the settings design
   should be similar to the current billing frontend - the only difference is the module
   contents"). `components/ui/AppHeader` and `components/ui/NavMenu` are ports of its
   `components/layout/{Header,NavMenu}` (Inter through `next/font`, the `material-symbols`
@@ -347,14 +346,14 @@ redrawn to the Figma design (section "03 · Settings › Module", six frames). W
   subscriptions_, a Petty Cash section (Dashboard, Reports - into Minty through
   `/entity/{id}/enter` with the cookie token) and a Payment Request section (Bills), each only
   when that module is on, the cat, _Settings_ (this page) and _Logout_ (Minty's `/logout`). Below it, in the same
-  1024px column, a sticky pill row with billing-frontend's `SettingsPills` classes — Users ·
+  1024px column, a sticky pill row with minty-payment-request-web's `SettingsPills` classes — Users ·
   Entity & Integration · Petty Cash Settings · Payment Settings · **Module** —
   linking to Flask's pages (`lib/flaskLinks.ts`); Payment Settings goes through Flask's
   `GET /entity/settings/payments/<id>`, which mints the payments app's token and sends the
   browser on. A module's settings tab (and its drawer section) shows only when that module is on, as
-  in billing-frontend and Flask - from the page model's `has_access` once it is here, from the
+  in minty-payment-request-web and Flask - from the page model's `has_access` once it is here, from the
   token's `petty_cash_enabled` / `billing_enabled` claims until then (`lib/moduleClaims.ts`,
-  billing-frontend's `getModuleClaims` ported; both default to on), so the pills never vanish
+  minty-payment-request-web's `getModuleClaims` ported; both default to on), so the pills never vanish
   while the page loads or when the API cannot answer. The initials open My Profile in the
   sidebar over the page (`profile.md`; since 2026-09-29 - they were hover-only that morning).
 - **Two cards, six states** (`lib/moduleState.ts`, first match wins):
@@ -464,7 +463,7 @@ redrawn to the Figma design (section "03 · Settings › Module", six frames). W
 
 ## 10. The Manage Subscriptions list
 
-`/subscription/subscriptions` (reached from the landing's _Manage Subscription_, §15) — billing-frontend's `/profile/subscriptions`,
+`/subscription/subscriptions` (reached from the landing's _Manage Subscription_, §15) — minty-payment-request-web's `/profile/subscriptions`,
 re-homed and redrawn to Figma section "04 · Manage Subscriptions — the payer portal" (frames
 04-A … 04-H) and "04·M · Row menu open". The design's own notes fix its behaviour:
 
@@ -472,7 +471,7 @@ re-homed and redrawn to Figma section "04 · Manage Subscriptions — the payer 
   one list, newest first (`created_at` on the row, an addition for the step-3 API; absent, the
   API's order). The hook walks every page of `/api/me/subscriptions` (`per_page=100`) and
   reads the transfer requests alongside (`/api/me/subscriptions/transfers`; a failure there
-  never takes the list down). Search (300 ms debounce, the same fields billing-frontend
+  never takes the list down). Search (300 ms debounce, the same fields minty-payment-request-web
   searched) and the sort arrows work on the loaded list: Entity name A→Z / Z→A, a module
   column by whichever date comes soonest; a third press clears the sort. **The search bar is
   sticky** (2026-09-29): it stops right under the sticky header (`top: var(--app-header-h)`,
@@ -514,7 +513,7 @@ re-homed and redrawn to Figma section "04 · Manage Subscriptions — the payer 
   "not a spinner, the table keeps its shape"; could not load with _Try again_ — "an empty table
   here would read as 'you pay for nothing', which is a worse lie than an error you can retry
   from". The API's 501 stub reads as a sentence here too; any other failure shows the API's own.
-- **Chrome**: billing-frontend's header (`routes/PortalChrome.tsx` over `components/ui/AppHeader`)
+- **Chrome**: minty-payment-request-web's header (`routes/PortalChrome.tsx` over `components/ui/AppHeader`)
   over the design's 1298px column. **The header's left is the page's own back line** (2026-09-29,
   the user: no more chevron header): "‹ Entity List" and the "Subscriptions" title are gone, and
   _Back to the entity dashboard_ (08-A) / _Back to the previous page_ (04-A, 08-B) moved out of
@@ -649,7 +648,7 @@ design's rules live (`buildSummaryView(page, entity, wallet, today, pending)`, `
   - M24 draws a state the engine never produces: a trial beside a paid module is always
     confirmed, so the live twin is N24a.
   - Real data for 38 of the 48 frames is the replay catalogue ("Ang - M44 Nexora Health Limited"
-    and the rest). See minty-billing-api `docs/features/subscriptions-api.md` §8.
+    and the rest). See minty-subscription-api `docs/features/subscriptions-api.md` §8.
 - **The ⋮ on the open row** is the list's `RowMenu` in the same three shapes (section "05·D ·
   Other options — the entity panel ⋮", `1795:3165`, K44/K45/K66): its items are ticks (§13).
 
@@ -747,7 +746,7 @@ them; `useSubscriptionsList` holds the prompt (`changePrompt`, `dismissChangePro
 `applyChangePrompt`) between the button and `applyChange` for a change that cancels, and
 `accountStep` / `confirmed` for one that bills (below).
 
-The dialog family (`ModalFrame`, `ConfirmDialog`, `LeaveDialog`) is copied to billing-frontend at the same paths (its Payment Settings' "Leave without saving?", 2026-10-01) and ported to Flask (Minty `static/js/minty_dialog.js` + `static/css/minty_dialog.css`) - change all three.
+The dialog family (`ModalFrame`, `ConfirmDialog`, `LeaveDialog`) is copied to minty-payment-request-web at the same paths (its Payment Settings' "Leave without saving?", 2026-10-01) and ported to Flask (Minty `static/js/minty_dialog.js` + `static/css/minty_dialog.css`) - change all three.
 
 - **Which modal**: a removal beside an addition → **Subscription Changes** (C-01: "<Removed>
   will be **removed**. You'll continue to have access for another 30 days. <Added> will be
@@ -1066,7 +1065,7 @@ its details (`routes/BillingDetailsScreen`, `hooks/useBillingDetails`,
 **A BILLING ACCOUNT** is the API's `payer_billing_group`: a name ("Bill to" -
 `billing_company`, else the payer), a billing email, the cards on it, the ONE card it charges,
 the companies it pays for and its own dunning clock (`GET /api/me/billing/accounts`,
-minty-billing-api's `portal.build_billing_accounts`). Two facts look like choices and are not:
+minty-subscription-api's `portal.build_billing_accounts`). Two facts look like choices and are not:
 **every account renews on the payer's one anchor**, so the next billing date is one date whichever
 account is shown (the user, 2026-09-25; the engine agrees); and **an account holds no address of
 its own** - it is the Stripe billing address of the card it charges (the user's decision: no
@@ -1234,7 +1233,7 @@ schema change), which 08-C writes.
   companies listed under each (a company row is one Stripe invoice item). Only an invoice the
   processor has, paid, open or uncollectible, has one (`has_pdf`); a draft or a void one shows
   "—". A refusal is the API's sentence: 404 not yours, 409 no PDF, 502 the processor out of
-  reach for the address (the rest is minty-billing-api's `invoice_document.py`). The breakdown is
+  reach for the address (the rest is minty-subscription-api's `invoice_document.py`). The breakdown is
   `GET /api/me/invoices/{id}/breakdown` written as the user's sample file, column for column:
   `Entity Name, Subscription, Monthly amount, Period start, Period end, Charged for the period`,
   saved as `Inv-<reference> Breakdown by Entity.csv` (`lib/breakdown.ts`): a day as "26-Jul-26",

@@ -4,7 +4,7 @@ import { PortalBackProvider } from "@/features/subscription/components/PortalBac
 import { PortalChrome } from "@/features/subscription/routes/PortalChrome";
 
 /**
- * The frame around every portal page: billing-frontend's header over the design's 1298px
+ * The frame around every portal page: minty-payment-request-web's header over the design's 1298px
  * column. `app/subscription/(portal)/layout.tsx` re-exports it.
  *
  * NO TABS (removed 2026-09-29, the user: "remove this navigation header"). The Overview /

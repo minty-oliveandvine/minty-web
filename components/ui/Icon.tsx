@@ -1,6 +1,6 @@
 /**
  * The handful of icons the skeletal screens need, as inline SVG - no icon font, no CDN
- * (billing-frontend loads material-symbols; this app does not until the design pass decides
+ * (minty-payment-request-web loads material-symbols; this app does not until the design pass decides
  * what it wants). `aria-hidden` by default: an icon beside a label is decoration; pass a
  * `label` to make it the label.
  */

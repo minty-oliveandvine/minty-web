@@ -3,7 +3,7 @@
  *
  * Minty's `/entity/<id>/enter` (`entity.module_reenter`) takes the cookie's token, validates it,
  * re-establishes the Flask session and forwards to `next` - so the person lands where they were
- * going, signed in, instead of on a login screen. billing-frontend goes in the same way.
+ * going, signed in, instead of on a login screen. minty-payment-request-web goes in the same way.
  *
  * With no company or no token there is nothing to enter, so the entity list is the fallback -
  * this app's own (`HUB_PATHS.entities`): a URL that always works rather than one built around
@@ -18,7 +18,7 @@ export function mintyEntryUrl(path?: string, entityId?: string): string {
   const auth = getAuth();
   const company = entityId || auth?.entityId;
   if (company && auth?.token) {
-    const base = `${env.MINTY_URL}/entity/${encodeURIComponent(company)}/enter?token=${encodeURIComponent(auth.token)}`;
+    const base = `${env.PETTY_CASH_URL}/entity/${encodeURIComponent(company)}/enter?token=${encodeURIComponent(auth.token)}`;
     return path ? `${base}&next=${encodeURIComponent(path)}` : base;
   }
   return HUB_PATHS.entities;

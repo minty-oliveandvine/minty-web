@@ -9,7 +9,7 @@
  * either.
  *
  * On `ModalFrame`, never busy: a preview still on its way closes like any other - Escape, the
- * backdrop or the X. The card is billing-frontend's attachment preview
+ * backdrop or the X. The card is minty-payment-request-web's attachment preview
  * (`lib/fileAttachmentPreview.tsx`, `FileAttachmentPreviewLayer`): a header that stays - the title
  * and the X - over a grey body that scrolls. The keyboard starts on the X and goes back, on
  * closing, to whatever had it when the dialog opened - the Inv# that opened it (`ModalFrame` does

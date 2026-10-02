@@ -4,7 +4,7 @@
  * Stripe's own card form, mounted on a SetupIntent - in two looks:
  *
  * - "page" (Figma 08-Y / 08-E, a card added to one billing account): the fields in a column, the first-card
- *   note, the mandate, Cancel and Save at the right. Ported from billing-frontend's
+ *   note, the mandate, Cancel and Save at the right. Ported from minty-payment-request-web's
  *   `AddPaymentMethodModal` - the behaviour is that one's, the look is section 08's.
  * - "sheet" (onboarding's 01-D, the New billing account form inside the billing-account sheet):
  *   the caller's fields above, the card fields in their own bordered "Payment method" block

@@ -368,7 +368,7 @@ export function useSubscriptionsList({
     return () => controller.abort();
   }, [fixture, generation]);
 
-  // the search field is live; the list follows it a beat later, as billing-frontend's did
+  // the search field is live; the list follows it a beat later, as minty-payment-request-web's did
   useEffect(() => {
     const id = window.setTimeout(() => setQuery(searchInput), SEARCH_DEBOUNCE_MS);
     return () => window.clearTimeout(id);

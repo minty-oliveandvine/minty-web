@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * The header of the payer portal's pages: billing-frontend's header (`components/ui/AppHeader`),
+ * The header of the payer portal's pages: minty-payment-request-web's header (`components/ui/AppHeader`),
  * as every page here must read as one of its pages. Its left is the page's own way back
  * (`PortalBack`), lined up with the teal banner - no "‹ Entity List" and no title since
  * 2026-09-29 (the user); the banner names the page. The side menu works out for itself whether a

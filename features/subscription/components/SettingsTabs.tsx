@@ -1,5 +1,5 @@
 /**
- * The settings pill row - billing-frontend's `SettingsPills` look (`components/settings/
+ * The settings pill row - minty-payment-request-web's `SettingsPills` look (`components/settings/
  * SettingsPills.tsx` there), so this page reads as its settings page. Every pill but the
  * current one is a Flask page, spelled by `lib/flaskLinks.ts`.
  */

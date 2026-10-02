@@ -191,7 +191,7 @@ export function nextSort(current: ListSort, column: SortColumn): ListSort {
 // ---- searching --------------------------------------------------------------------------------
 
 /**
- * billing-frontend searched on the server over the company name, country, subscriber and
+ * minty-payment-request-web searched on the server over the company name, country, subscriber and
  * "{module name} {status label}"; the same fields here, over the loaded list.
  */
 export function matches(entity: PortalEntity, query: string): boolean {

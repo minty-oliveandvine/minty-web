@@ -62,7 +62,7 @@ describe("ProfileScreen", () => {
     expect(who.getByText("JB")).toBeInTheDocument();
     expect(who.getByText("Shop Manager")).toBeInTheDocument();
     // asked about the cookie's company, of Flask
-    expect(String(fetchMock.mock.calls[0][0])).toBe(`${env.MINTY_URL}/api/me/profile?entity=e-company-a`);
+    expect(String(fetchMock.mock.calls[0][0])).toBe(`${env.PETTY_CASH_URL}/api/me/profile?entity=e-company-a`);
 
     expect(details().getByText("John")).toBeInTheDocument();
     expect(details().getByText("Birmingha")).toBeInTheDocument();
@@ -86,13 +86,13 @@ describe("ProfileScreen", () => {
     const who = within(screen.getByRole("region", { name: "Who you are" }));
     expect(who.queryByText("Company A Limited")).toBeNull();
     expect(who.queryByText("Shop Manager")).toBeNull();
-    expect(String(fetchMock.mock.calls[0][0])).toBe(`${env.MINTY_URL}/api/me/profile`);
+    expect(String(fetchMock.mock.calls[0][0])).toBe(`${env.PETTY_CASH_URL}/api/me/profile`);
     expect(screen.getByRole("link", { name: "Back" })).toHaveAttribute("href", "/entities");
   });
 
   it("the way back: the payments app when opened from it", async () => {
     await show(SCOPED, { from: "bills" });
-    expect(screen.getByRole("link", { name: "Back" })).toHaveAttribute("href", `${env.PAYMENTS_WEB_URL}/`);
+    expect(screen.getByRole("link", { name: "Back" })).toHaveAttribute("href", `${env.PAYMENT_REQUEST_WEB_URL}/`);
   });
 
   it("edits in place, sends only what changed, and the menu shows the new name at once", async () => {
@@ -113,7 +113,7 @@ describe("ProfileScreen", () => {
 
     expect(await details().findByText("Jonathan")).toBeInTheDocument();
     const [url, init] = fetchMock.mock.calls[1];
-    expect(String(url)).toBe(`${env.MINTY_URL}/api/me/profile?entity=e-company-a`);
+    expect(String(url)).toBe(`${env.PETTY_CASH_URL}/api/me/profile?entity=e-company-a`);
     expect(init?.method).toBe("PATCH");
     expect(JSON.parse(String(init?.body))).toEqual({ first_name: "Jonathan" });
     expect(screen.getByText("Your profile is saved.")).toBeInTheDocument();
@@ -168,7 +168,7 @@ describe("ProfileScreen", () => {
   it("Log Out ends the session at Minty, as the menu's Logout does", async () => {
     await show(SCOPED);
     await userEvent.click(screen.getByRole("button", { name: "Log Out" }));
-    expect(navigate).toHaveBeenCalledWith(`${env.MINTY_URL}/logout`);
+    expect(navigate).toHaveBeenCalledWith(`${env.PETTY_CASH_URL}/logout`);
     expect(document.cookie).not.toContain("minty_token=h.");
   });
 

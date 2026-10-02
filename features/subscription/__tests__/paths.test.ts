@@ -24,7 +24,7 @@ describe("subscription paths", () => {
     expect(subscriptionPath("/billing")).toBe("/subscription/billing");
   });
 
-  it("names the portal pages billing-frontend had under /profile - no standalone invoices page", () => {
+  it("names the portal pages minty-payment-request-web had under /profile - no standalone invoices page", () => {
     expect(PORTAL).toEqual({
       index: "/subscription",
       subscriptions: "/subscription/subscriptions",

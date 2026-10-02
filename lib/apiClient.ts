@@ -1,5 +1,5 @@
 /**
- * The one way this app talks to its two backends: minty-billing-api (`apiFetch`; `apiFetchBlob`
+ * The one way this app talks to its two backends: minty-subscription-api (`apiFetch`; `apiFetchBlob`
  * for its one route that answers a file, an invoice's PDF) and Flask's bearer surface for the
  * hub pages - the entity list and My Profile (`mintyFetch`, Minty's
  * `blueprints/shared/hub_api.py`). Both share everything below except where they go and
@@ -8,7 +8,7 @@
  * - The bearer is the cookie token (lib/auth.ts); `X-Entity-Id` is OPT-IN, per call: the payer
  *   portal is person-scoped and sends none, the module settings page names its company (the
  *   token may be unscoped when the page is reached from the portal - the header is how the API
- *   learns which company; billing-frontend does the same with billing-backend).
+ *   learns which company; minty-payment-request-web does the same with minty-payment-request-api).
  * - A 401 means the token has lapsed (or was never valid): the browser goes back through Flask's
  *   re-handoff (lib/handoff.ts) and the call rejects. Nothing retries, nothing refreshes.
  * - Every other non-2xx rejects with an `ApiError` carrying the status and the body's `error`
@@ -137,7 +137,11 @@ async function requestJson<T>(backend: Backend, path: string, init: ApiRequest):
 
 /** The billing API: a 401 always goes back through the re-handoff, for the company named. */
 function billingApi(init: ApiRequest): Backend {
-  return { base: env.BILLING_API_URL, onUnauthorized: "handoff", handoffEntityId: init.entityId };
+  return {
+    base: env.SUBSCRIPTION_API_URL,
+    onUnauthorized: "handoff",
+    handoffEntityId: init.entityId,
+  };
 }
 
 /**
@@ -167,7 +171,7 @@ export async function apiFetchBlob(path: string, init: ApiRequest = {}): Promise
 export async function mintyFetch<T = unknown>(path: string, init: MintyRequest = {}): Promise<T> {
   const { onUnauthorized = "handoff", ...rest } = init;
   const flask: Backend = {
-    base: env.MINTY_URL,
+    base: env.PETTY_CASH_URL,
     onUnauthorized,
     handoffEntityId: getAuth()?.entityId || undefined,
   };

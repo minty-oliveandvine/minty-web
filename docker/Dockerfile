@@ -1,4 +1,4 @@
-# Development image for minty-web (Next.js 16), the shape of onboarding's docker/Dockerfile.
+# Development image for minty-web (Next.js 16), the shape of minty-onboarding-web's docker/Dockerfile.
 # Optimised for local dev with hot-reload - the source is bind-mounted at runtime by
 # Minty/docker/stack/docker-compose.yml, so only the dependencies are baked in here.
 FROM node:22-alpine
@@ -10,8 +10,9 @@ WORKDIR /app
 COPY package.json package-lock.json* ./
 RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
 
-# Next.js dev server port - the hub's digit (rule 6: minty-web 3002, its API 8004).
-EXPOSE 3002
+# Next.js dev server port - the hub's slot (rule 6: minty-web 3000, its API 8000). A host that
+# injects PORT wins.
+EXPOSE 3000
 
-# Bind to 0.0.0.0 so the dev server is reachable from the host.
-CMD ["npm", "run", "dev", "--", "-H", "0.0.0.0"]
+# Bind to 0.0.0.0 so the dev server is reachable from the host. Shell form, so ${PORT} expands.
+CMD ["sh", "-c", "exec npx next dev -H 0.0.0.0 -p ${PORT:-3000}"]

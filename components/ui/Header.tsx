@@ -3,7 +3,7 @@
 /**
  * The shell's header: the app name, the company in play (from the cookie) and the way back to
  * Minty. Part 3 grows the hub's navigation here (login, dashboard, profile, settings);
- * billing-frontend's Header/NavMenu are the model, not the code - skeletal by decision.
+ * minty-payment-request-web's Header/NavMenu are the model, not the code - skeletal by decision.
  */
 
 import { useSyncExternalStore } from "react";
@@ -28,7 +28,7 @@ export function Header({ title = "Minty" }: { title?: string }) {
         {entityName && <span className="text-sm text-muted">{entityName}</span>}
       </div>
       <nav aria-label="Primary">
-        <a className="text-sm underline" href={env.MINTY_URL}>
+        <a className="text-sm underline" href={env.PETTY_CASH_URL}>
           Back to Minty
         </a>
       </nav>

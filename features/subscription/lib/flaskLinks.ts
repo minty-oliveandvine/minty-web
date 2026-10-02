@@ -26,8 +26,8 @@ export type PageOrigin = "bills" | null;
  * page (Flask's `/entity/<id>`, its `report_dashboard`) - which the person knows as "Reports".
  */
 export function backLink(entityId: string, from: PageOrigin): { href: string; label: string } {
-  if (from === "bills") return { href: env.PAYMENTS_WEB_URL, label: "Payments" };
-  return { href: `${env.MINTY_URL}/entity/${encodeURIComponent(entityId)}`, label: "Reports" };
+  if (from === "bills") return { href: env.PAYMENT_REQUEST_WEB_URL, label: "Payments" };
+  return { href: `${env.PETTY_CASH_URL}/entity/${encodeURIComponent(entityId)}`, label: "Reports" };
 }
 
 export function settingsTabs(
@@ -36,7 +36,7 @@ export function settingsTabs(
   from: PageOrigin,
 ): SettingsTab[] {
   const id = encodeURIComponent(entityId);
-  const minty = env.MINTY_URL;
+  const minty = env.PETTY_CASH_URL;
   const tabs: SettingsTab[] = [
     { label: "Users", href: `${minty}/entity/settings/users/${id}` },
     { label: "Entity & Integration", href: `${minty}/entity/${id}/settings/xero` },

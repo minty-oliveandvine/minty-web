@@ -7,7 +7,7 @@
 // Flask: the shared e2e account owes an acceptance nobody may give on it.
 import { expect, test, type Page } from "@playwright/test";
 
-import { answerTerms, BASE_URL, credentials, FLASK_URL, handoff, requireApp } from "./helpers";
+import { answerTerms, BASE_URL, credentials, PETTY_CASH_URL, handoff, requireApp } from "./helpers";
 
 const STUB_CREDS = {
   secret: "stub-flask-never-sees-this",
@@ -50,14 +50,14 @@ const COMPANY = {
 /** The list and the viewer behind the gate; returns every acceptance posted. */
 async function stubFlask(page: Page, acceptStatus = 200): Promise<unknown[]> {
   const posted: unknown[] = [];
-  await page.route(`${FLASK_URL}/api/me/entities**`, (route) =>
+  await page.route(`${PETTY_CASH_URL}/api/me/entities**`, (route) =>
     route.fulfill({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({ entities: [COMPANY], notices: [] }),
     }),
   );
-  await page.route(`${FLASK_URL}/api/me/profile**`, (route) =>
+  await page.route(`${PETTY_CASH_URL}/api/me/profile**`, (route) =>
     route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -74,7 +74,7 @@ async function stubFlask(page: Page, acceptStatus = 200): Promise<unknown[]> {
       }),
     }),
   );
-  await page.route(`${FLASK_URL}/api/me/terms/accept`, (route) => {
+  await page.route(`${PETTY_CASH_URL}/api/me/terms/accept`, (route) => {
     posted.push(route.request().postDataJSON());
     const body =
       acceptStatus === 409
@@ -116,7 +116,7 @@ test.describe("the Terms gate", () => {
     await expect(dialog.getByText("Last updated: 18 September 2026")).toBeVisible();
     await expect(dialog.getByRole("link", { name: "Terms & Conditions" })).toHaveAttribute(
       "href",
-      `${FLASK_URL}/legal/terms`,
+      `${PETTY_CASH_URL}/legal/terms`,
     );
     // the list is behind it, out of reach: hidden from the accessibility tree, and inert
     await expect(page.getByRole("list", { name: "Your companies" })).toHaveCount(0);
@@ -173,13 +173,13 @@ test.describe("the Terms gate", () => {
     page,
   }) => {
     await stubFlask(page);
-    await page.route(`${FLASK_URL}/logout`, (route) =>
+    await page.route(`${PETTY_CASH_URL}/logout`, (route) =>
       route.fulfill({ status: 200, contentType: "text/html", body: "<title>logged out</title>" }),
     );
     const dialog = await arrive(page);
 
     await dialog.getByRole("button", { name: "Cancel" }).click();
-    await page.waitForURL(`${FLASK_URL}/logout`);
+    await page.waitForURL(`${PETTY_CASH_URL}/logout`);
     const jar = await page.context().cookies(BASE_URL);
     expect(jar.find((c) => c.name === "minty_token")?.value ?? "").toBe("");
   });

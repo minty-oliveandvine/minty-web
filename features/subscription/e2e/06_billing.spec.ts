@@ -14,12 +14,7 @@ import { readFile } from "node:fs/promises";
 
 import { expect, test, type Page, type Route } from "@playwright/test";
 
-import {
-  BILLING_API_URL,
-  credentials,
-  handoff,
-  requireApp,
-} from "../../../e2e/helpers";
+import { SUBSCRIPTION_API_URL, credentials, handoff, requireApp } from "../../../e2e/helpers";
 import {
   ADDED_CARD,
   BREAKDOWN,
@@ -68,9 +63,9 @@ async function stubBilling(page: Page, wallet: PayerPaymentMethods) {
     return sent;
   };
   const serveAccounts = (route: Route) => route.fulfill(json(current));
-  await page.route(`${BILLING_API_URL}/api/me/billing/accounts`, serveAccounts);
-  await page.route(`${BILLING_API_URL}/api/me/billing/accounts?*`, serveAccounts);
-  await page.route(`${BILLING_API_URL}/api/me/billing/accounts/default-card`, (route) => {
+  await page.route(`${SUBSCRIPTION_API_URL}/api/me/billing/accounts`, serveAccounts);
+  await page.route(`${SUBSCRIPTION_API_URL}/api/me/billing/accounts?*`, serveAccounts);
+  await page.route(`${SUBSCRIPTION_API_URL}/api/me/billing/accounts/default-card`, (route) => {
     const sent = post(route, "/accounts/default-card");
     current = {
       ...current,
@@ -87,7 +82,7 @@ async function stubBilling(page: Page, wallet: PayerPaymentMethods) {
     };
     return route.fulfill(json(current));
   });
-  await page.route(`${BILLING_API_URL}/api/me/billing/accounts/move`, (route) => {
+  await page.route(`${SUBSCRIPTION_API_URL}/api/me/billing/accounts/move`, (route) => {
     const sent = post(route, "/accounts/move");
     const from = current.accounts.find((a) =>
       a.companies.some((c) => c.entity_id === sent.entity),
@@ -116,7 +111,7 @@ async function stubBilling(page: Page, wallet: PayerPaymentMethods) {
       }),
     );
   });
-  await page.route(`${BILLING_API_URL}/api/me/billing/accounts/update`, (route) => {
+  await page.route(`${SUBSCRIPTION_API_URL}/api/me/billing/accounts/update`, (route) => {
     const sent = post(route, "/accounts/update");
     current = {
       ...current,
@@ -135,10 +130,10 @@ async function stubBilling(page: Page, wallet: PayerPaymentMethods) {
     };
     return route.fulfill(json(current));
   });
-  await page.route(`${BILLING_API_URL}/api/me/billing/payment-methods`, (route) =>
+  await page.route(`${SUBSCRIPTION_API_URL}/api/me/billing/payment-methods`, (route) =>
     route.fulfill(json(wallet)),
   );
-  await page.route(`${BILLING_API_URL}/api/me/billing/payment-methods/remove`, (route) => {
+  await page.route(`${SUBSCRIPTION_API_URL}/api/me/billing/payment-methods/remove`, (route) => {
     const sent = post(route, "/remove");
     current = {
       ...current,
@@ -149,20 +144,20 @@ async function stubBilling(page: Page, wallet: PayerPaymentMethods) {
     };
     return route.fulfill(json(wallet));
   });
-  await page.route(`${BILLING_API_URL}/api/me/billing/payment-methods/setup-intent`, (route) =>
+  await page.route(`${SUBSCRIPTION_API_URL}/api/me/billing/payment-methods/setup-intent`, (route) =>
     // No publishable key: the screen draws, Stripe's iframe never opens (see the header).
     route.fulfill(json({ client_secret: "", publishable_key: "", setup_intent: "seti_stub" })),
   );
-  await page.route(`${BILLING_API_URL}/api/me/subscriptions?*`, (route) =>
+  await page.route(`${SUBSCRIPTION_API_URL}/api/me/subscriptions?*`, (route) =>
     route.fulfill(json(subscriptionsPage())),
   );
-  await page.route(`${BILLING_API_URL}/api/me/invoices/*/breakdown`, (route) =>
+  await page.route(`${SUBSCRIPTION_API_URL}/api/me/invoices/*/breakdown`, (route) =>
     route.fulfill(json(BREAKDOWN)),
   );
-  await page.route(`${BILLING_API_URL}/api/me/invoices/*/pdf`, (route) =>
+  await page.route(`${SUBSCRIPTION_API_URL}/api/me/invoices/*/pdf`, (route) =>
     route.fulfill({ status: 200, contentType: "application/pdf", body: INVOICE_PDF }),
   );
-  await page.route(`${BILLING_API_URL}/api/me/invoices?*`, (route) => {
+  await page.route(`${SUBSCRIPTION_API_URL}/api/me/invoices?*`, (route) => {
     const params = new URL(route.request().url()).searchParams;
     invoiceQueries.push(params.get("account") ?? "");
     invoicePages.push(`${params.get("page")}/${params.get("per_page")}`);
@@ -275,7 +270,7 @@ test.describe("billing", () => {
     // transfer filters on the open statuses, so a declined offer was invisible here.
     const posts: unknown[] = [];
     await stubBilling(page, WALLET_TWO);
-    await page.route(`${BILLING_API_URL}/api/me/subscriptions?*`, (route) =>
+    await page.route(`${SUBSCRIPTION_API_URL}/api/me/subscriptions?*`, (route) =>
       route.fulfill(
         json({
           ...subscriptionsPage(),
@@ -292,7 +287,7 @@ test.describe("billing", () => {
         }),
       ),
     );
-    await page.route(`${BILLING_API_URL}/api/me/subscriptions/transfer/seen`, (route) => {
+    await page.route(`${SUBSCRIPTION_API_URL}/api/me/subscriptions/transfer/seen`, (route) => {
       posts.push(route.request().postDataJSON());
       return route.fulfill(json({ ok: true, message: "Done." }));
     });
@@ -367,8 +362,8 @@ test.describe("billing", () => {
     const email = "angelika.tardaguela+catalogue@oliveandvinehk.com";
     long.accounts[0] = { ...long.accounts[0], billing_email: email, bill_to_email: email };
     const serveLong = (route: Route) => route.fulfill(json(long));
-    await page.route(`${BILLING_API_URL}/api/me/billing/accounts`, serveLong);
-    await page.route(`${BILLING_API_URL}/api/me/billing/accounts?*`, serveLong);
+    await page.route(`${SUBSCRIPTION_API_URL}/api/me/billing/accounts`, serveLong);
+    await page.route(`${SUBSCRIPTION_API_URL}/api/me/billing/accounts?*`, serveLong);
     await handoff(page, creds(), "/subscription/billing", { entity_id: "" });
 
     const next = body(page).getByRole("region", { name: "Next billing" });
@@ -475,21 +470,30 @@ test.describe("billing", () => {
     // This period's renewal declined; once retried, the next read has it paid.
     let settled = false;
     const retries: string[] = [];
-    await page.route(`${BILLING_API_URL}/api/me/invoices?*`, (route) =>
+    await page.route(`${SUBSCRIPTION_API_URL}/api/me/invoices?*`, (route) =>
       route.fulfill(
         json(
           invoicePage(
             settled
-              ? [{ ...FAILED_INVOICES[0], status: "paid", paid: "28 Sep 2026", retryable: false }, ...INVOICES]
+              ? [
+                  { ...FAILED_INVOICES[0], status: "paid", paid: "28 Sep 2026", retryable: false },
+                  ...INVOICES,
+                ]
               : [FAILED_INVOICES[0], ...INVOICES],
           ),
         ),
       ),
     );
-    await page.route(`${BILLING_API_URL}/api/me/invoices/*/retry`, (route) => {
+    await page.route(`${SUBSCRIPTION_API_URL}/api/me/invoices/*/retry`, (route) => {
       retries.push(new URL(route.request().url()).pathname);
       settled = true;
-      return route.fulfill(json({ ok: true, status: "paid", message: "Payment received — your subscription is active again." }));
+      return route.fulfill(
+        json({
+          ok: true,
+          status: "paid",
+          message: "Payment received — your subscription is active again.",
+        }),
+      );
     });
     await handoff(page, creds(), "/subscription/billing", { entity_id: "" });
 
@@ -512,7 +516,9 @@ test.describe("billing", () => {
     await expect(retry).toHaveCSS("background-color", "rgb(220, 90, 90)");
 
     await retry.click();
-    await expect(invoices.getByRole("status")).toHaveText("Payment received — your subscription is active again.");
+    await expect(invoices.getByRole("status")).toHaveText(
+      "Payment received — your subscription is active again.",
+    );
     // Read again: a paid invoice now, and nothing left to retry.
     await expect(row).not.toHaveAttribute("data-failed");
     await expect(invoices.getByRole("button", { name: /Retry payment/ })).toHaveCount(0);

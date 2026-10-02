@@ -41,7 +41,7 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push, replace: vi.fn(), back }),
 }));
 
-const API = env.BILLING_API_URL;
+const API = env.SUBSCRIPTION_API_URL;
 
 function reply(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
@@ -445,7 +445,7 @@ describe("useSubscriptionsList", () => {
     await waitFor(() => expect(result.current.status).toBe("ready"));
 
     act(() => result.current.dismissResult());
-    expect(left).toEqual([`${env.MINTY_URL}/handoff/minty-web?next=%2Fsubscription`]);
+    expect(left).toEqual([`${env.PETTY_CASH_URL}/handoff/minty-web?next=%2Fsubscription`]);
     expect(push).not.toHaveBeenCalled();
     // The company's token is dropped on the way out; the landing stores the new one.
     expect(getAuth()).toBeNull();

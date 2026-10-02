@@ -72,7 +72,7 @@ describe("ModuleSettingsScreen", () => {
     expect(screen.getByRole("heading", { level: 1, name: "Settings" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Payments" })).toHaveAttribute(
       "href",
-      env.PAYMENTS_WEB_URL,
+      env.PAYMENT_REQUEST_WEB_URL,
     );
     expect(screen.getByText("Olive & Vine Limited")).toBeInTheDocument();
     // the initials: My Profile (a link to the page here - no sidebar around a lone screen)
@@ -95,7 +95,7 @@ describe("ModuleSettingsScreen", () => {
     const tabs = within(screen.getByRole("navigation", { name: "Settings sections" }));
     expect(tabs.getByRole("link", { name: "Users" })).toHaveAttribute(
       "href",
-      `${env.MINTY_URL}/entity/settings/users/e1`,
+      `${env.PETTY_CASH_URL}/entity/settings/users/e1`,
     );
     expect(tabs.getByText("Module")).toHaveAttribute("aria-current", "page");
   });
@@ -104,7 +104,7 @@ describe("ModuleSettingsScreen", () => {
     await show(FIXTURES.A);
     expect(screen.getByRole("link", { name: "Reports" })).toHaveAttribute(
       "href",
-      `${env.MINTY_URL}/entity/e1`,
+      `${env.PETTY_CASH_URL}/entity/e1`,
     );
     const tabs = within(screen.getByRole("navigation", { name: "Settings sections" }));
     expect(tabs.getByRole("link", { name: "Petty Cash Settings" })).toBeInTheDocument();
@@ -131,7 +131,7 @@ describe("ModuleSettingsScreen", () => {
     const tabs = within(screen.getByRole("navigation", { name: "Settings sections" }));
     expect(tabs.getByRole("link", { name: "Payment Settings" })).toHaveAttribute(
       "href",
-      `${env.MINTY_URL}/entity/settings/payments/e1?from=bills`,
+      `${env.PETTY_CASH_URL}/entity/settings/payments/e1?from=bills`,
     );
     expect(tabs.queryByRole("link", { name: "Petty Cash Settings" })).toBeNull();
     await userEvent.click(screen.getByRole("button", { name: "Open navigation menu" }));
@@ -238,7 +238,7 @@ describe("ModuleSettingsScreen", () => {
     );
     expect(screen.queryByRole("dialog")).toBeNull();
     const [url, init] = fetchMock.mock.calls[1];
-    expect(String(url)).toBe(`${env.BILLING_API_URL}/api/entities/e1/modules/start-trial`);
+    expect(String(url)).toBe(`${env.SUBSCRIPTION_API_URL}/api/entities/e1/modules/start-trial`);
     expect(JSON.parse(String(init?.body))).toEqual({ codes: ["PAYMENT_REQUEST"] });
   });
 

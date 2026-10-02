@@ -1,5 +1,5 @@
 /**
- * billing-frontend's page header (`components/layout/Header.tsx` there), in two of its shapes:
+ * minty-payment-request-web's page header (`components/layout/Header.tsx` there), in two of its shapes:
  * the settings page's (a back link, the title, then the company - `corporate_fare` + name) and
  * the home page's (`showLogo`: the Minty mark, no way back - the entity list, whose title sits
  * in the middle of the bar: `centerTitle`, the user's call 2026-09-29).
@@ -24,7 +24,7 @@ export type AppHeaderProps = {
   back?: { href: string; label: string };
   /** The company the page is about - omitted on a page about none. */
   companyName?: string;
-  /** The Minty mark at the left, as billing-frontend's home header draws it. */
+  /** The Minty mark at the left, as minty-payment-request-web's home header draws it. */
   showLogo?: boolean;
   /** The title in the middle of the bar rather than beside the way back or the mark. */
   centerTitle?: boolean;
@@ -115,7 +115,7 @@ export function AppHeader({
               </span>
               {/* A plain 6.5rem, not min(100%,6.5rem): a percentage cap counts as no cap while
                   the shrink-0 block around it is sized, so on a phone a long name made it cover
-                  the way back (fixed in billing-frontend's Header and Flask's port too). */}
+                  the way back (fixed in minty-payment-request-web's Header and Flask's port too). */}
               <span className="min-w-0 max-w-[6.5rem] truncate text-sm font-medium text-primary sm:max-w-[9rem] sm:text-base md:max-w-[14rem] lg:max-w-md">
                 {companyName}
               </span>

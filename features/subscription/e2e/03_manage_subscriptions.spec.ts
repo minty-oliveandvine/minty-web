@@ -9,7 +9,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import {
-  BILLING_API_URL,
+  SUBSCRIPTION_API_URL,
   bounceFlaskHandoff,
   credentials,
   handoff,
@@ -39,36 +39,36 @@ async function stubApi(
   // A result's Back to Manage Subscriptions trades a company's token (real credentials name
   // one) for an unscoped one through Flask's handoff: answered as Flask would.
   await bounceFlaskHandoff(page, creds());
-  await page.route(`${BILLING_API_URL}/api/me/subscriptions/transfers`, (route) =>
+  await page.route(`${SUBSCRIPTION_API_URL}/api/me/subscriptions/transfers`, (route) =>
     route.fulfill({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({ transfers }),
     }),
   );
-  await page.route(`${BILLING_API_URL}/api/me/subscriptions?*`, (route) =>
+  await page.route(`${SUBSCRIPTION_API_URL}/api/me/subscriptions?*`, (route) =>
     route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(list) }),
   );
   // The open row's two reads: every company opens as 05·A's M45 (one active, one cancelling).
-  await page.route(`${BILLING_API_URL}/api/entities/*/modules`, (route) =>
+  await page.route(`${SUBSCRIPTION_API_URL}/api/entities/*/modules`, (route) =>
     route.fulfill({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify(SUMMARY_FIXTURES.M45),
     }),
   );
-  await page.route(`${BILLING_API_URL}/api/me/billing/entity-payment-method?*`, (route) =>
+  await page.route(`${SUBSCRIPTION_API_URL}/api/me/billing/entity-payment-method?*`, (route) =>
     route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(WALLET) }),
   );
   // What the overview (08-A) reads besides the list, when a result sends the journey back to it:
   // unstubbed, it would reach the real API with the stand-in token and the 401 would hand the
   // browser back to Minty's sign-in.
-  await page.route(`${BILLING_API_URL}/api/me/billing/accounts`, (route) =>
+  await page.route(`${SUBSCRIPTION_API_URL}/api/me/billing/accounts`, (route) =>
     route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(ACCOUNTS) }),
   );
   // "Billing Accounts" after a billing change's Confirm: the company goes on the account picked
   // (recorded in `moves`, apart from the module actions).
-  await page.route(`${BILLING_API_URL}/api/me/billing/accounts/move`, (route) => {
+  await page.route(`${SUBSCRIPTION_API_URL}/api/me/billing/accounts/move`, (route) => {
     moves.push(route.request().postDataJSON());
     return route.fulfill({
       status: 200,
@@ -76,7 +76,7 @@ async function stubApi(
       body: JSON.stringify({ ...ACCOUNTS, moved: null }),
     });
   });
-  await page.route(`${BILLING_API_URL}/api/entities/*/modules/**`, (route) => {
+  await page.route(`${SUBSCRIPTION_API_URL}/api/entities/*/modules/**`, (route) => {
     const req = route.request();
     posts.push({
       url: req.url(),
@@ -170,7 +170,7 @@ test.describe("manage subscriptions", () => {
 
     expect(posts).toEqual([
       {
-        url: `${BILLING_API_URL}/api/entities/e-harbour-vine-limited/modules/start-trial`,
+        url: `${SUBSCRIPTION_API_URL}/api/entities/e-harbour-vine-limited/modules/start-trial`,
         body: { codes: ["PETTY_CASH"] },
         entity: "e-harbour-vine-limited",
       },
@@ -328,7 +328,7 @@ test.describe("manage subscriptions", () => {
     const posts = await stubApi(page, subscriptionsPage());
     await handoff(page, creds(), "/subscription/subscriptions", { entity_id: "" });
     // M45 for everyone: Payment Request winds down; restoring it is a renew the bank refuses.
-    await page.route(`${BILLING_API_URL}/api/entities/*/modules/renew`, (route) =>
+    await page.route(`${SUBSCRIPTION_API_URL}/api/entities/*/modules/renew`, (route) =>
       route.fulfill({
         status: 402,
         contentType: "application/json",
@@ -372,7 +372,7 @@ test.describe("manage subscriptions", () => {
     const posts = await stubApi(page, subscriptionsPage(), [], moves);
     await handoff(page, creds(), "/subscription/subscriptions", { entity_id: "" });
     const serveModules = (model: unknown) =>
-      page.route(`${BILLING_API_URL}/api/entities/*/modules`, (route) =>
+      page.route(`${SUBSCRIPTION_API_URL}/api/entities/*/modules`, (route) =>
         route.fulfill({
           status: 200,
           contentType: "application/json",
@@ -406,7 +406,7 @@ test.describe("manage subscriptions", () => {
     // The payment is held until released: meanwhile the sheet stays up and says it is working.
     let pay!: () => void;
     const paid = new Promise<void>((resolve) => (pay = resolve));
-    await page.route(`${BILLING_API_URL}/api/entities/*/modules/renew`, async (route) => {
+    await page.route(`${SUBSCRIPTION_API_URL}/api/entities/*/modules/renew`, async (route) => {
       await paid;
       await route.fallback();
     });

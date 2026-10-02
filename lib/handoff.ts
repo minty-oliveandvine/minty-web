@@ -22,7 +22,7 @@ export function safeNext(raw: string | null | undefined, fallback: string = HUB_
 export function handoffUrl(next: string, entityId?: string): string {
   const qs = new URLSearchParams({ next: safeNext(next) });
   if (entityId) qs.set("entity_id", entityId);
-  return `${env.MINTY_URL}/handoff/minty-web?${qs.toString()}`;
+  return `${env.PETTY_CASH_URL}/handoff/minty-web?${qs.toString()}`;
 }
 
 type Navigate = (url: string) => void;

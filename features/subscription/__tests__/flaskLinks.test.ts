@@ -17,10 +17,10 @@ describe("settingsTabs", () => {
       "Payment Settings",
       "Module",
     ]);
-    expect(tabs[0].href).toBe(`${env.MINTY_URL}/entity/settings/users/e1`);
-    expect(tabs[1].href).toBe(`${env.MINTY_URL}/entity/e1/settings/xero`);
-    expect(tabs[2].href).toBe(`${env.MINTY_URL}/entity/settings/entity/e1`);
-    expect(tabs[3].href).toBe(`${env.MINTY_URL}/entity/settings/payments/e1`);
+    expect(tabs[0].href).toBe(`${env.PETTY_CASH_URL}/entity/settings/users/e1`);
+    expect(tabs[1].href).toBe(`${env.PETTY_CASH_URL}/entity/e1/settings/xero`);
+    expect(tabs[2].href).toBe(`${env.PETTY_CASH_URL}/entity/settings/entity/e1`);
+    expect(tabs[3].href).toBe(`${env.PETTY_CASH_URL}/entity/settings/payments/e1`);
     expect(tabs[4]).toEqual({ label: "Module", current: true });
   });
 
@@ -36,16 +36,19 @@ describe("settingsTabs", () => {
 
   it("carries from=bills to Payment Settings and escapes the id", () => {
     const tabs = settingsTabs("a/b", { pettyCash: true, billing: true }, "bills");
-    expect(tabs[3].href).toBe(`${env.MINTY_URL}/entity/settings/payments/a%2Fb?from=bills`);
-    expect(tabs[0].href).toBe(`${env.MINTY_URL}/entity/settings/users/a%2Fb`);
+    expect(tabs[3].href).toBe(`${env.PETTY_CASH_URL}/entity/settings/payments/a%2Fb?from=bills`);
+    expect(tabs[0].href).toBe(`${env.PETTY_CASH_URL}/entity/settings/users/a%2Fb`);
   });
 });
 
 describe("backLink", () => {
   it("goes back to the payments app when it sent the person, else to Petty Cash's reports", () => {
-    expect(backLink("e1", "bills")).toEqual({ href: env.PAYMENTS_WEB_URL, label: "Payments" });
+    expect(backLink("e1", "bills")).toEqual({
+      href: env.PAYMENT_REQUEST_WEB_URL,
+      label: "Payments",
+    });
     expect(backLink("e1", null)).toEqual({
-      href: `${env.MINTY_URL}/entity/e1`,
+      href: `${env.PETTY_CASH_URL}/entity/e1`,
       label: "Reports",
     });
   });

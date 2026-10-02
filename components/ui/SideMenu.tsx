@@ -1,6 +1,6 @@
 "use client";
 
-// COPIED on 2026-09-30 into billing-frontend (same path, behind its components/ui/sidebarHost.ts)
+// COPIED on 2026-09-30 into minty-payment-request-web (same path, behind its components/ui/sidebarHost.ts)
 // and ported to Flask (Minty docs/features/sidebar.md) - change all three until @minty/shared.
 
 /**
@@ -331,7 +331,7 @@ export function SideMenu({ modules, viewer, onClose, onProfile }: SideMenuProps)
                 iconBox=""
               />
               <a
-                href={`${env.PAYMENTS_WEB_URL}/`}
+                href={`${env.PAYMENT_REQUEST_WEB_URL}/`}
                 onClick={onClose}
                 className={`${ROW} ${BUTTON} mt-[28px] min-h-[41px] gap-[25px] pl-[17px]`}
               >

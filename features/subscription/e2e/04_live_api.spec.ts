@@ -1,11 +1,11 @@
 // The module settings page and the Manage Subscriptions list over the LIVE API - no page.route,
-// no fixtures. What this proves is the contract meeting the screens: minty-billing-api's answers
+// no fixtures. What this proves is the contract meeting the screens: minty-subscription-api's answers
 // (Part 2 step 3) render as the pages expect, and two writes land and come back: Start Trial,
 // as a running trial, and 08-C's address - typed into Stripe's own form, over real Stripe in
 // test mode, and put back. Everything the stubbed specs pin (the chrome, every Figma state, the
 // seams) stays in 02/03/06; this file only follows real data.
 //
-// Needs the whole stack up (this app :3002, minty-billing-api :8004 live) and the identity
+// Needs the whole stack up (this app :3000, minty-subscription-api :8000 live) and the identity
 // `Minty/scripts/e2e_seed.py --print` creates. The seed is the reset: it hands the
 // "E2E Subscription Shop" (E2E_MINTY_SUBSCRIPTION_ENTITY) back with both modules OFF and no
 // subscription rows, so the trial journey starts from "never held" on every run. Run it before
@@ -13,7 +13,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import {
-  BILLING_API_URL,
+  SUBSCRIPTION_API_URL,
   bounceFlaskHandoff,
   handoff,
   mintModuleToken,
@@ -43,7 +43,7 @@ function subscriptionShop(): Credentials {
 /** What the API says about one company right now - read the way the page reads it. */
 async function pageModel(creds: Credentials) {
   const token = mintModuleToken(creds);
-  const res = await fetch(`${BILLING_API_URL}/api/entities/${creds.entityId}/modules`, {
+  const res = await fetch(`${SUBSCRIPTION_API_URL}/api/entities/${creds.entityId}/modules`, {
     headers: { Authorization: `Bearer ${token}`, "X-Entity-Id": creds.entityId },
   });
   if (!res.ok) throw new Error(`page model: ${res.status} ${await res.text()}`);
@@ -131,9 +131,9 @@ test.describe("over the live API", () => {
   test("the landing and the billing page read the person's real billing accounts", async ({
     page,
   }) => {
-    // Read-only: what minty-billing-api holds for this person, then the two pages over it.
+    // Read-only: what minty-subscription-api holds for this person, then the two pages over it.
     const c = requireCredentials();
-    const res = await fetch(`${BILLING_API_URL}/api/me/billing/accounts`, {
+    const res = await fetch(`${SUBSCRIPTION_API_URL}/api/me/billing/accounts`, {
       headers: { Authorization: `Bearer ${mintModuleToken(c, { entity_id: "" })}` },
     });
     expect(res.ok, `billing accounts: ${res.status}`).toBe(true);
@@ -179,7 +179,7 @@ test.describe("over the live API", () => {
     const c = requireCredentials();
     const token = mintModuleToken(c, { entity_id: "" });
     const read = async () => {
-      const res = await fetch(`${BILLING_API_URL}/api/me/billing/accounts?countries=1`, {
+      const res = await fetch(`${SUBSCRIPTION_API_URL}/api/me/billing/accounts?countries=1`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       expect(res.ok, `billing accounts: ${res.status}`).toBe(true);

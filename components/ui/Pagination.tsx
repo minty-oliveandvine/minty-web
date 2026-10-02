@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * The pager the portal's three tabs share (billing-frontend/components/profile/Pagination.tsx,
+ * The pager the portal's three tabs share (minty-payment-request-web/components/profile/Pagination.tsx,
  * with the styling stripped). Page numbers are windowed to five. Render it only when there is
  * more than one page - it is deliberately not self-hiding, so a footer's layout stays the
  * caller's. Located in tests by its `aria-label`s, never by class.

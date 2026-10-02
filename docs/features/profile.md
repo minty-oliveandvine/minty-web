@@ -1,7 +1,7 @@
 # My Profile (`features/profile`)
 
 The person's own page (Figma 10-A / 10-B, `43YI3MYtTfX5Xzz6dRoRuT` 1410:3314 / 1410:3364),
-moved from billing-frontend on 2026-09-29 with the new design, and drawn in two places - one
+moved from minty-payment-request-web on 2026-09-29 with the new design, and drawn in two places - one
 body (`components/ProfileBody.tsx`), so the two cannot drift:
 
 - **the sidebar's My Profile** (`routes/ProfilePanel.tsx`) on every page of this app - the user's
@@ -15,7 +15,7 @@ body (`components/ProfileBody.tsx`), so the two cannot drift:
   560 px.
 
 **The other apps carry the sidebar since 2026-09-30** (the user's "build it now and transfer
-later to shared"): billing-frontend holds COPIES of `components/ui/{Sidebar,SideMenu,ViewerBadge,NavMenu}.tsx`,
+later to shared"): minty-payment-request-web holds COPIES of `components/ui/{Sidebar,SideMenu,ViewerBadge,NavMenu}.tsx`,
 `lib/viewer.ts`, this feature (without the page) and the Subscriptions Overview, at the same
 paths, with everything app-specific in its `components/ui/sidebarHost.ts` - they are lifted into
 `@minty/shared` at Part 3 step 4. Flask's pages carry a Jinja port (Minty
@@ -32,7 +32,7 @@ user's call, 2026-09-30); here it stays the module settings page.
   the profile. The panel is mounted only once asked for, so nothing is read before then.
 - **Minty's `/profile`** (`blueprints/entity/routes/modules.py::open_profile`) — every "open my
   profile" link in Minty's ~20 page headers and in the payments app goes through it, and it
-  decides: minty-web's `/profile` page when `MINTY_WEB_HUB` is on, billing-frontend's otherwise.
+  decides: minty-web's `/profile` page when `MINTY_WEB_HUB` is on, minty-payment-request-web's otherwise.
   `?entity_id=` scopes it to the company it was opened from, `?from=bills` sends the back arrow to
   the payments app. The page's titlebar is sticky (2026-09-29, the user: every header in
   minty-web stays put while the page scrolls).
@@ -54,18 +54,18 @@ All of it is one read: Flask's `GET /api/me/profile[?entity=<id>]`
 
 _Edit_ turns the names and the email into fields in the same card (_Cancel_ puts them back);
 _Save_ sends only what changed as `PATCH /api/me/profile`, and the answer is the fresh profile.
-The rules are billing-backend's, ported to Flask (`services/profile.py`): an emptied email is
+The rules are minty-payment-request-api's, ported to Flask (`services/profile.py`): an emptied email is
 refused here first ("We'll need an email here."); Flask refuses a malformed or taken address in
 its own words, shown in the card with what was typed; the sign-in username moves with the email
 only when it WAS the email. After a save the header and the side menu show the new name at once
-(`primeViewer`) — billing-frontend's badge kept the old initials until the next token.
+(`primeViewer`) — minty-payment-request-web's badge kept the old initials until the next token.
 
 **Decided by the user, 2026-09-29:** PASSWORD · _Change_ opens the Xero account page, as the old
 profile did (most people sign in with an email code or with Xero, and Minty holds no password
 for them). "Sign out of Minty for good" is NOT on this page — Flask's API stays
-(`DELETE /minty/api/users/me`); billing-backend's `PUT|DELETE /api/v1/profile/me` and
+(`DELETE /minty/api/users/me`); minty-payment-request-api's `PUT|DELETE /api/v1/profile/me` and
 `GET /api/v1/auth/me` were removed on 2026-10-01 with that app's profile page (the user's call,
-reversing the "its APIs stay" of 09-29 for billing-backend only).
+reversing the "its APIs stay" of 09-29 for minty-payment-request-api only).
 
 ## The slot, and why it is a slot
 

@@ -1,10 +1,10 @@
 # minty-web
 
-Minty's Next.js hub — port **3002**. Born in Part 2 of `Minty/docs/modernisation/modernisation_plan.md`
-with one feature, **subscriptions** (the payer portal from billing-frontend and the module
-settings page from Flask's Jinja), talking to `minty-billing-api` (:8004). Since 2026-09-29 it
+Minty's Next.js hub — port **3000**. Born in Part 2 of `Minty/docs/modernisation/modernisation_plan.md`
+with one feature, **subscriptions** (the payer portal from minty-payment-request-web and the module
+settings page from Flask's Jinja), talking to `minty-subscription-api` (:8000). Since 2026-09-29 it
 also has the **entity list** ("Select Company", its first page, from Flask's Jinja) and **My
-Profile** (from billing-frontend, redrawn to Figma 10-A/10-B), over Flask's bearer routes -
+Profile** (from minty-payment-request-web, redrawn to Figma 10-A/10-B), over Flask's bearer routes -
 Part 3 step 4, pulled forward; login, the dashboard and settings follow in Part 3. Each feature
 is a bounded folder that can be lifted into its own app (`features/*/README.md`).
 
@@ -74,7 +74,7 @@ eslint.config.mjs       next + typescript + the BOUNDARY RULES (eslint-plugin-bo
 ```bash
 npm ci
 copy .env.example .env.local
-npm run dev                       # http://localhost:3002 → /entities
+npm run dev                       # http://localhost:3000 → /entities
 ```
 
 `next.config.ts` copies pdf.js's worker (the invoice preview's) from `node_modules/pdfjs-dist`
@@ -82,9 +82,10 @@ to `public/pdfjs/` whenever `next dev` or `next build` starts - gitignored, neve
 it cannot (no `npm ci` yet), it says so with a `console.error` and the server starts anyway; the
 preview then cannot draw.
 
-The three variables are `NEXT_PUBLIC_BILLING_API_URL` (8004), `NEXT_PUBLIC_MINTY_URL` (5001)
-and `NEXT_PUBLIC_PAYMENTS_WEB_URL` (3000). In the docker stack
-(`Minty/docker/stack`) this is the `minty-web` service on host port 3002.
+The three variables are `PETTY_CASH_URL` (8010), `SUBSCRIPTION_API_URL` (8000) and
+`PAYMENT_REQUEST_WEB_URL` (3020) - plain names, inlined at build time through `next.config.ts`'s
+`env` and read only in `lib/env.ts`. In the docker stack (`Minty/docker/stack`) this is the
+`minty-web` service on host port 3000.
 
 ## Test it
 
@@ -100,7 +101,7 @@ Report the run time (mm:ss) of every suite with its result.
 ## Verifying the shell (done 2026-09-21; rerun after any change)
 
 `npm ci`; `npm run typecheck`, `npm run lint` (a deliberate `import "@/app/page"` inside
-`features/subscription` must fail), `npm test`, `npm run build` green; `npm run dev` on 3002 →
+`features/subscription` must fail), `npm test`, `npm run build` green; `npm run dev` on 3000 →
 `/` redirects to `/entities`, `/landing?token=…` sets the cookie;
 `npm run test:e2e` (01_landing) green against it. Two Windows notes: open the dev server as
 `localhost` in a browser (`allowedDevOrigins` in `next.config.ts` also admits `127.0.0.1`, which a
@@ -110,6 +111,6 @@ Node test runner prefers because `localhost` resolves to `::1` first and stalls)
 ## Cross-cutting rules (from the plan; every repo carries them)
 
 1. Flask is the only minter — this app stores and forwards the token, never mints or refreshes it.
-2. Ports: `300d` for the `-web` — the hub is `d = 2`: this app 3002; its API, billing, is 8004.
-3. One cutover map per app, never inline base URLs — `lib/env.ts` is that map for the four hosts.
+2. Ports: slot N gives `30N0` for the `-web` and `80N0` for its API — the hub is slot 0: this app 3000; its API, minty-subscription-api, is 8000.
+3. One cutover map per app, never inline base URLs — `lib/env.ts` is that map for the three hosts this app calls.
 4. `MAINTENANCE_MODE` will be honoured from Part 3 step 2 (the shared packages); `app/maintenance` is its page.

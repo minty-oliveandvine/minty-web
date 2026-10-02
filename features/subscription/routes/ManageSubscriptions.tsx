@@ -2,7 +2,7 @@
 
 /**
  * `/subscription` and `/subscription/subscriptions` - the payer portal's Manage Subscriptions
- * list (billing-frontend's /profile/subscriptions, re-homed and redrawn to Figma section 04).
+ * list (minty-payment-request-web's /profile/subscriptions, re-homed and redrawn to Figma section 04).
  * The query string carries `entity` (the company to bring into view, opened in place - the
  * module page's *Manage Subscription* lands here), and three dev-only switches (see the hooks):
  * `fixture` (the list's frame, A/B/F), `summary` (the open row's 05·A frame, M11 … N21a) and

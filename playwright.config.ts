@@ -1,6 +1,6 @@
-// Browser tests for minty-web. They run against a stack that is ALREADY UP (this app :3002,
-// minty-billing-api :8004, Minty :5001) -- nothing is started here, for the reasons the
-// onboarding and billing-frontend suites give: the stack has five moving parts, and a config
+// Browser tests for minty-web. They run against a stack that is ALREADY UP (this app :3000,
+// minty-subscription-api :8000, Minty :8010) -- nothing is started here, for the reasons the
+// minty-onboarding-web and minty-payment-request-web suites give: the stack has five moving parts, and a config
 // that starts one of them starts the wrong one. See e2e/README.md.
 //
 // Two folders, one runner: e2e/ holds the shell's specs (landing, terms); the feature's own live
@@ -20,7 +20,7 @@ export default defineConfig({
   timeout: 45_000,
   expect: { timeout: 10_000 },
   use: {
-    baseURL: process.env.E2E_BASE_URL || "http://localhost:3002",
+    baseURL: process.env.E2E_BASE_URL || "http://localhost:3000",
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
     video: "off",

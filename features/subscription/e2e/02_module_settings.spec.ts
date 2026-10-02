@@ -1,6 +1,6 @@
 // The module settings page in a browser, over a STUBBED API: the page model is served by
 // page.route from the same fixtures the unit tests use (features/subscription/__fixtures__),
-// because minty-billing-api's modules router is a 501 stub until Part 2 step 3. What this
+// because minty-subscription-api's modules router is a 501 stub until Part 2 step 3. What this
 // proves is the page in the real app - the route, the proxy's gate, the chrome, the cards, what
 // a CTA sends and where a seam goes - not the API. The API's answers are step 3's contract
 // tests; a journey over the live API joins this file when the router lands.
@@ -12,7 +12,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import {
-  BILLING_API_URL,
+  SUBSCRIPTION_API_URL,
   bounceFlaskHandoff,
   credentials,
   handoff,
@@ -33,10 +33,9 @@ const STUB_CREDS = {
 
 const creds = () => credentials() ?? STUB_CREDS;
 const MODULES = (id: string) => `/subscription/entities/${id}/modules`;
-const PAYMENTS_WEB_URL = (process.env.E2E_PAYMENTS_WEB_URL || "http://localhost:3000").replace(
-  /\/+$/,
-  "",
-);
+const PAYMENT_REQUEST_WEB_URL = (
+  process.env.E2E_PAYMENT_REQUEST_WEB_URL || "http://localhost:3020"
+).replace(/\/+$/, "");
 
 /**
  * Serve the page model from a fixture and record every action posted; after the first action
@@ -45,7 +44,7 @@ const PAYMENTS_WEB_URL = (process.env.E2E_PAYMENTS_WEB_URL || "http://localhost:
  */
 async function stubApi(page: Page, model: ModulePage, next?: ModulePage) {
   const posts: { action: string; body: unknown }[] = [];
-  await page.route(`${BILLING_API_URL}/api/entities/*/modules`, (route) => {
+  await page.route(`${SUBSCRIPTION_API_URL}/api/entities/*/modules`, (route) => {
     const body = posts.length > 0 && next ? next : model;
     return route.fulfill({
       status: 200,
@@ -53,7 +52,7 @@ async function stubApi(page: Page, model: ModulePage, next?: ModulePage) {
       body: JSON.stringify(body),
     });
   });
-  await page.route(`${BILLING_API_URL}/api/entities/*/modules/**`, (route) => {
+  await page.route(`${SUBSCRIPTION_API_URL}/api/entities/*/modules/**`, (route) => {
     const req = route.request();
     const action = new URL(req.url()).pathname.split("/modules/")[1];
     posts.push({ action, body: req.postDataJSON() });
@@ -84,13 +83,13 @@ async function stubList(page: Page, entityId: string, entityName: string) {
     contentType: "application/json",
     body: JSON.stringify(data),
   });
-  await page.route(`${BILLING_API_URL}/api/me/subscriptions/transfers`, (route) =>
+  await page.route(`${SUBSCRIPTION_API_URL}/api/me/subscriptions/transfers`, (route) =>
     route.fulfill(json({ transfers: [] })),
   );
-  await page.route(`${BILLING_API_URL}/api/me/subscriptions?*`, (route) =>
+  await page.route(`${SUBSCRIPTION_API_URL}/api/me/subscriptions?*`, (route) =>
     route.fulfill(json(list)),
   );
-  await page.route(`${BILLING_API_URL}/api/me/billing/entity-payment-method?*`, (route) =>
+  await page.route(`${SUBSCRIPTION_API_URL}/api/me/billing/entity-payment-method?*`, (route) =>
     route.fulfill(json(WALLET)),
   );
 }
@@ -111,7 +110,7 @@ test.describe("module settings page", () => {
     await expect(page.getByRole("heading", { level: 2, name: "Modules" })).toBeVisible();
     await expect(page.getByRole("link", { name: "Payments" })).toHaveAttribute(
       "href",
-      PAYMENTS_WEB_URL,
+      PAYMENT_REQUEST_WEB_URL,
     );
     await expect(page.getByText(c.entityName)).toBeVisible();
     const tabs = page.getByRole("navigation", { name: "Settings sections" });
@@ -243,7 +242,9 @@ test.describe("module settings page", () => {
     );
   });
 
-  test("03-F: the payment-failed banner, and 'here' opens the company's billing account", async ({ page }) => {
+  test("03-F: the payment-failed banner, and 'here' opens the company's billing account", async ({
+    page,
+  }) => {
     const c = creds();
     await stubApi(page, frame("F"));
     await handoff(page, c, MODULES(c.entityId));
@@ -266,7 +267,8 @@ test.describe("module settings page", () => {
     await banner.getByRole("button", { name: "here" }).click();
     // The failing card is the company's billing account's: its page (08-B), by `?entity=`.
     await page.waitForURL(
-      (u) => u.pathname.endsWith("/subscription/billing") && u.searchParams.get("entity") === c.entityId,
+      (u) =>
+        u.pathname.endsWith("/subscription/billing") && u.searchParams.get("entity") === c.entityId,
     );
   });
 

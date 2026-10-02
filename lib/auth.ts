@@ -4,7 +4,7 @@
  * Minty (Flask) mints a 30-minute HS256 JWT when a person opens this app
  * (`_generate_module_token`) and sends the browser to `/landing?token=…`, which stores it here.
  * The cookie is what proxy.ts gates on and what lib/apiClient.ts sends as the bearer.
- * Lifted from billing-frontend/lib/auth.ts with the cookie renamed (`minty_token`, so the two
+ * Lifted from minty-payment-request-web/lib/auth.ts with the cookie renamed (`minty_token`, so the two
  * apps never read each other's) and the refresh removed: this app has no refresh endpoint -
  * a lapsed token goes back through Flask's login-gated re-handoff (lib/handoff.ts).
  *

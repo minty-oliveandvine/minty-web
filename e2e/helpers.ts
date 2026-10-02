@@ -6,8 +6,8 @@
 // (blueprints/entity/routes/modules.py::_generate_module_token) and sends the browser to
 // /landing?token=... here, which stores it in the `minty_token` cookie. A test cannot go
 // through Minty's login (email OTP), but it holds the same SECRET_KEY, so it mints the same
-// token. Nothing is bypassed: minty-billing-api verifies signature, expiry and the user exactly
-// as it does Flask's. (billing-frontend/e2e/helpers.ts, the same reasoning.)
+// token. Nothing is bypassed: minty-subscription-api verifies signature, expiry and the user exactly
+// as it does Flask's. (minty-payment-request-web/e2e/helpers.ts, the same reasoning.)
 import { createHmac } from "node:crypto";
 
 import { test, type Page } from "@playwright/test";
@@ -17,9 +17,9 @@ const b64url = (input: Buffer | string) =>
 
 export type Credentials = { secret: string; userId: string; entityId: string; entityName: string };
 
-export const BASE_URL = process.env.E2E_BASE_URL || "http://localhost:3002";
-export const BILLING_API_URL = process.env.E2E_BILLING_API_URL || "http://localhost:8004";
-export const FLASK_URL = process.env.E2E_FLASK_URL || "http://localhost:5001";
+export const BASE_URL = process.env.E2E_BASE_URL || "http://localhost:3000";
+export const SUBSCRIPTION_API_URL = process.env.E2E_SUBSCRIPTION_API_URL || "http://localhost:8000";
+export const PETTY_CASH_URL = process.env.E2E_PETTY_CASH_URL || "http://localhost:8010";
 
 export function credentials(): Credentials | null {
   const secret = process.env.E2E_JWT_SECRET;
@@ -93,14 +93,14 @@ export async function reachable(url: string): Promise<boolean> {
 
 /** The app itself must be up; the API only for the specs that say so. */
 export async function requireApp(): Promise<void> {
-  test.skip(!(await reachable(BASE_URL + "/landing")), "minty-web (:3002) is not answering");
+  test.skip(!(await reachable(BASE_URL + "/landing")), "minty-web (:3000) is not answering");
 }
 
 export async function requireStack(): Promise<void> {
   await requireApp();
   test.skip(
-    !(await reachable(BILLING_API_URL + "/healthz")),
-    "minty-billing-api (:8004) is not answering",
+    !(await reachable(SUBSCRIPTION_API_URL + "/healthz")),
+    "minty-subscription-api (:8000) is not answering",
   );
 }
 
@@ -111,7 +111,7 @@ export async function requireStack(): Promise<void> {
  * e2e account owes an acceptance that nobody may give on it.
  */
 export async function answerTerms(page: Page, answer: unknown = { owed: false }): Promise<void> {
-  await page.route(`${FLASK_URL}/api/me/terms`, (route) =>
+  await page.route(`${PETTY_CASH_URL}/api/me/terms`, (route) =>
     route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(answer) }),
   );
 }
@@ -147,7 +147,7 @@ export async function handoff(
  * Flask's re-handoff and out of the app under test.
  */
 export async function stubBillingApi(page: Page): Promise<void> {
-  await page.route(`${BILLING_API_URL}/api/**`, (route) =>
+  await page.route(`${SUBSCRIPTION_API_URL}/api/**`, (route) =>
     route.fulfill({
       status: 501,
       contentType: "application/json",
@@ -162,7 +162,7 @@ export async function stubBillingApi(page: Page): Promise<void> {
  * real navigation there with Flask down would be a connection error that hides the assertion.
  */
 export async function stubFlaskHandoff(page: Page): Promise<void> {
-  await page.route(`${FLASK_URL}/handoff/minty-web**`, (route) =>
+  await page.route(`${PETTY_CASH_URL}/handoff/minty-web**`, (route) =>
     route.fulfill({ status: 200, contentType: "text/html", body: "<title>handoff stub</title>" }),
   );
 }
@@ -176,7 +176,7 @@ export async function stubFlaskHandoff(page: Page): Promise<void> {
  */
 export async function bounceFlaskHandoff(page: Page, creds: Credentials): Promise<string[]> {
   const asked: string[] = [];
-  await page.route(`${FLASK_URL}/handoff/minty-web**`, (route) => {
+  await page.route(`${PETTY_CASH_URL}/handoff/minty-web**`, (route) => {
     const url = new URL(route.request().url());
     asked.push(url.search);
     const entityId = url.searchParams.get("entity_id") ?? "";

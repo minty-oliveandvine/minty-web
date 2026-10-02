@@ -1,6 +1,6 @@
 "use client";
 
-// COPIED on 2026-09-30 into billing-frontend (same path, behind its components/ui/sidebarHost.ts)
+// COPIED on 2026-09-30 into minty-payment-request-web (same path, behind its components/ui/sidebarHost.ts)
 // and ported to Flask (Minty docs/features/sidebar.md) - change all three until @minty/shared.
 
 /**

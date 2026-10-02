@@ -67,7 +67,7 @@ describe("NavMenu", () => {
     const petty = within(menu.getByRole("group", { name: "Petty Cash" }));
     expect(petty.getByRole("link", { name: "Dashboard" })).toHaveAttribute(
       "href",
-      `${env.MINTY_URL}/entity/e1/enter?token=${encodeURIComponent(TOKEN)}`,
+      `${env.PETTY_CASH_URL}/entity/e1/enter?token=${encodeURIComponent(TOKEN)}`,
     );
     expect(petty.getByRole("link", { name: "Reports" }).getAttribute("href")).toContain(
       encodeURIComponent("/entity/e1/reports"),
@@ -75,7 +75,7 @@ describe("NavMenu", () => {
     const payments = within(menu.getByRole("group", { name: "Payment Request" }));
     expect(payments.getByRole("link", { name: "Bills" })).toHaveAttribute(
       "href",
-      `${env.PAYMENTS_WEB_URL}/`,
+      `${env.PAYMENT_REQUEST_WEB_URL}/`,
     );
     expect(menu.getByRole("link", { name: "Settings" })).toHaveAttribute(
       "href",
