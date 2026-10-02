@@ -79,7 +79,7 @@ describe("TermsGate", () => {
     const { panel, container } = await owed();
 
     const [url, init] = fetchMock.mock.calls[0];
-    expect(String(url)).toBe(`${env.MINTY_URL}/api/me/terms`);
+    expect(String(url)).toBe(`${env.PETTY_CASH_URL}/api/me/terms`);
     expect(new Headers(init?.headers).get("Authorization")).toBe(`Bearer ${TOKEN}`);
 
     expect(panel.getByText(TERMS_COPY.lead)).toBeInTheDocument();
@@ -93,7 +93,7 @@ describe("TermsGate", () => {
       ["Privacy Policy", "/legal/privacy"],
     ]) {
       const link = panel.getByRole("link", { name });
-      expect(link).toHaveAttribute("href", `${env.MINTY_URL}${path}`);
+      expect(link).toHaveAttribute("href", `${env.PETTY_CASH_URL}${path}`);
       expect(link).toHaveAttribute("target", "_blank");
     }
     expect(tickBox()).not.toBeChecked();
@@ -128,7 +128,7 @@ describe("TermsGate", () => {
 
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     const [url, init] = fetchMock.mock.calls[1];
-    expect(String(url)).toBe(`${env.MINTY_URL}/api/me/terms/accept`);
+    expect(String(url)).toBe(`${env.PETTY_CASH_URL}/api/me/terms/accept`);
     expect(init?.method).toBe("POST");
     expect(JSON.parse(String(init?.body))).toEqual({ accepted: true, terms_version: "beta-1" });
     expect(screen.getByRole("heading", { name: "Select Company" })).toBeInTheDocument();
@@ -180,7 +180,7 @@ describe("TermsGate", () => {
 
     expect(await screen.findByText("New wording.")).toBeInTheDocument();
     expect(tickBox()).not.toBeChecked();
-    expect(String(fetchMock.mock.calls[2][0])).toBe(`${env.MINTY_URL}/api/me/terms`);
+    expect(String(fetchMock.mock.calls[2][0])).toBe(`${env.PETTY_CASH_URL}/api/me/terms`);
   });
 
   it("a refusal is said in the panel, and Accept can be tried again", async () => {
@@ -202,7 +202,7 @@ describe("TermsGate", () => {
   it("Cancel logs out - someone who will not agree has nowhere else to go", async () => {
     await owed();
     await userEvent.click(screen.getByRole("button", { name: TERMS_COPY.cancel }));
-    expect(navigate).toHaveBeenCalledWith(`${env.MINTY_URL}/logout`);
+    expect(navigate).toHaveBeenCalledWith(`${env.PETTY_CASH_URL}/logout`);
     expect(getAuth()).toBeNull();
   });
 
@@ -217,7 +217,7 @@ describe("TermsGate", () => {
     expect(panel.getByText("beta-0")).toBeInTheDocument();
     expect(panel.getByRole("link", { name: "here" })).toHaveAttribute(
       "href",
-      `${env.MINTY_URL}/legal/terms/beta-0`,
+      `${env.PETTY_CASH_URL}/legal/terms/beta-0`,
     );
   });
 

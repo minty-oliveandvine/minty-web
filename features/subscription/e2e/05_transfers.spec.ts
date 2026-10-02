@@ -7,7 +7,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import {
-  BILLING_API_URL,
+  SUBSCRIPTION_API_URL,
   bounceFlaskHandoff,
   credentials,
   handoff,
@@ -46,10 +46,10 @@ test.describe("transfers", () => {
     page,
   }) => {
     const posts: { url: string; body: unknown }[] = [];
-    await page.route(`${BILLING_API_URL}/api/me/subscriptions/subscriber-options?*`, (route) =>
+    await page.route(`${SUBSCRIPTION_API_URL}/api/me/subscriptions/subscriber-options?*`, (route) =>
       route.fulfill(json(SUBSCRIBER_OPTIONS)),
     );
-    await page.route(`${BILLING_API_URL}/api/me/subscriptions/transfer`, (route) => {
+    await page.route(`${SUBSCRIPTION_API_URL}/api/me/subscriptions/transfer`, (route) => {
       posts.push({ url: route.request().url(), body: route.request().postDataJSON() });
       return route.fulfill(json({ ok: true, message: "The handover request has been sent." }));
     });
@@ -70,7 +70,7 @@ test.describe("transfers", () => {
     await request.click();
     expect(posts).toEqual([
       {
-        url: `${BILLING_API_URL}/api/me/subscriptions/transfer`,
+        url: `${SUBSCRIPTION_API_URL}/api/me/subscriptions/transfer`,
         body: { entity: "e-company-b", to_user: "u-jiwon" },
       },
     ]);
@@ -88,11 +88,11 @@ test.describe("transfers", () => {
     page,
   }) => {
     let options = SUBSCRIBER_OPTIONS_PENDING;
-    await page.route(`${BILLING_API_URL}/api/me/subscriptions/subscriber-options?*`, (route) =>
+    await page.route(`${SUBSCRIPTION_API_URL}/api/me/subscriptions/subscriber-options?*`, (route) =>
       route.fulfill(json(options)),
     );
     const posts: unknown[] = [];
-    await page.route(`${BILLING_API_URL}/api/me/subscriptions/transfer/cancel`, (route) => {
+    await page.route(`${SUBSCRIPTION_API_URL}/api/me/subscriptions/transfer/cancel`, (route) => {
       posts.push(route.request().postDataJSON());
       options = SUBSCRIBER_OPTIONS;
       return route.fulfill(json({ ok: true, message: "The handover request has been withdrawn." }));
@@ -114,7 +114,7 @@ test.describe("transfers", () => {
   });
 
   test("07-F: nothing waiting for the recipient", async ({ page }) => {
-    await page.route(`${BILLING_API_URL}/api/me/subscriptions/transfers`, (route) =>
+    await page.route(`${SUBSCRIPTION_API_URL}/api/me/subscriptions/transfers`, (route) =>
       route.fulfill(json({ transfers: [] })),
     );
     await handoff(page, creds(), "/subscription/subscriptions/incoming", { entity_id: "" });
@@ -130,31 +130,31 @@ test.describe("transfers", () => {
   }) => {
     const posts: { url: string; body: unknown }[] = [];
     let transfers = [INCOMING_REQUEST];
-    await page.route(`${BILLING_API_URL}/api/me/subscriptions/transfers`, (route) =>
+    await page.route(`${SUBSCRIPTION_API_URL}/api/me/subscriptions/transfers`, (route) =>
       route.fulfill(json({ transfers })),
     );
-    await page.route(`${BILLING_API_URL}/api/me/billing/accounts*`, (route) =>
+    await page.route(`${SUBSCRIPTION_API_URL}/api/me/billing/accounts*`, (route) =>
       route.fulfill(json(RECIPIENT_ACCOUNTS)),
     );
     // Nothing on 07-E may touch a loose card: no default promoted, no card saved to no account.
-    await page.route(`${BILLING_API_URL}/api/me/billing/payment-methods/**`, (route) => {
+    await page.route(`${SUBSCRIPTION_API_URL}/api/me/billing/payment-methods/**`, (route) => {
       posts.push({ url: route.request().url(), body: route.request().postDataJSON() });
       return route.fulfill(json({ error: "not on this screen" }, 500));
     });
-    await page.route(`${BILLING_API_URL}/api/entities/*/modules`, (route) =>
+    await page.route(`${SUBSCRIPTION_API_URL}/api/entities/*/modules`, (route) =>
       route.fulfill(json(SUMMARY_FIXTURES.M24)),
     );
-    await page.route(`${BILLING_API_URL}/api/me/subscriptions/transfer/respond`, (route) => {
+    await page.route(`${SUBSCRIPTION_API_URL}/api/me/subscriptions/transfer/respond`, (route) => {
       posts.push({ url: route.request().url(), body: route.request().postDataJSON() });
       transfers = [];
       return route.fulfill(json({ ok: true, message: "You're now the subscriber." }));
     });
     // After accepting: the list holds the company (the fixture's, renamed to the request's).
     const mine = { ...ENTITIES[3], entity_id: "e-new-company", entity_name: "New Company Limited" };
-    await page.route(`${BILLING_API_URL}/api/me/subscriptions?*`, (route) =>
+    await page.route(`${SUBSCRIPTION_API_URL}/api/me/subscriptions?*`, (route) =>
       route.fulfill(json(subscriptionsPage([mine, ...ENTITIES.slice(0, 2)]))),
     );
-    await page.route(`${BILLING_API_URL}/api/me/billing/entity-payment-method?*`, (route) =>
+    await page.route(`${SUBSCRIPTION_API_URL}/api/me/billing/entity-payment-method?*`, (route) =>
       route.fulfill(json(WALLET)),
     );
 
@@ -167,9 +167,10 @@ test.describe("transfers", () => {
     // one cancels it for the company as part of accepting.
     const takePc = review.getByRole("checkbox", { name: "Take on Petty Cash" });
     await expect(takePc).toHaveAttribute("aria-checked", "true");
-    await expect(
-      review.getByRole("checkbox", { name: "Take on Payment Request" }),
-    ).toHaveAttribute("aria-checked", "true");
+    await expect(review.getByRole("checkbox", { name: "Take on Payment Request" })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
     await takePc.click();
     await expect(takePc).toHaveAttribute("aria-checked", "false");
     const panel = review.getByRole("region", { name: "Subscription Summary" });

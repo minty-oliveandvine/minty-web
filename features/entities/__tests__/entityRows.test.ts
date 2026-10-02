@@ -58,9 +58,9 @@ describe("entityRows", () => {
   it("a card leads into its company through Minty's re-entry; + leads to a new one", () => {
     setAuth("h.eyJ1c2VyX2lkIjoidTEifQ.s", "", "");
     expect(enterHref(LIST.entities[1])).toBe(
-      `${env.MINTY_URL}/entity/e-scenario-5/enter?token=h.eyJ1c2VyX2lkIjoidTEifQ.s` +
+      `${env.PETTY_CASH_URL}/entity/e-scenario-5/enter?token=h.eyJ1c2VyX2lkIjoidTEifQ.s` +
         `&next=${encodeURIComponent("/entity/e-scenario-5/modules")}`,
     );
-    expect(createEntityHref()).toBe(`${env.MINTY_URL}/entity/create`);
+    expect(createEntityHref()).toBe(`${env.PETTY_CASH_URL}/entity/create`);
   });
 });

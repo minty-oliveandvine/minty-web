@@ -3,7 +3,7 @@
 /**
  * The ⋮ on a list row (Figma 04·M): a small white popover with only the items that apply -
  * Request transfer always; Cancel subscription when a module is active; Reactivate when one is
- * not. Closes on an outside press or Escape. billing-frontend's SubscriptionRowMenu is the
+ * not. Closes on an outside press or Escape. minty-payment-request-web's SubscriptionRowMenu is the
  * behaviour reference (outside-click, Escape, drop-up near the bottom of the window).
  */
 

@@ -22,7 +22,7 @@
  * suspension; a module never started has no tick, its Start Free Trial button is on the row),
  * and the same modal asks.
  *
- * Copied to billing-frontend at the same path and ported to Flask (Minty `static/js/minty_dialog.js` + `static/css/minty_dialog.css`) - change all three.
+ * Copied to minty-payment-request-web at the same path and ported to Flask (Minty `static/js/minty_dialog.js` + `static/css/minty_dialog.css`) - change all three.
  */
 
 import type {

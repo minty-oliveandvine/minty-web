@@ -1,4 +1,4 @@
-// COPIED into billing-frontend (lib/emailInput.ts), onboarding (lib/validation.ts +
+// COPIED into minty-payment-request-web (lib/emailInput.ts), minty-onboarding-web (lib/validation.ts +
 // lib/emailInput.ts) and the landing page (src/lib/emailInput.ts); Flask's twin is
 // static/js/email_input.js - change all of them until @minty/shared.
 

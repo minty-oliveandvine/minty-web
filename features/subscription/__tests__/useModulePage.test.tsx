@@ -18,7 +18,7 @@ vi.mock("next/navigation", () => ({
 }));
 
 const TOKEN = "h.eyJ1c2VyX2lkIjoidTEifQ.s";
-const API = `${env.BILLING_API_URL}/api/entities/e1/modules`;
+const API = `${env.SUBSCRIPTION_API_URL}/api/entities/e1/modules`;
 
 function reply(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {

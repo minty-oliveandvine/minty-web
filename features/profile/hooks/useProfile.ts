@@ -8,7 +8,7 @@
  * - The company is the cookie's: opened from inside one, the profile names it, the person's
  *   role there and its plan; opened from the entity list, there is none to name.
  * - A save sends only what changed, answers with the fresh profile, and tells the header and
- *   the side menu the new name at once (`primeViewer`) - billing-frontend's badge kept the old
+ *   the side menu the new name at once (`primeViewer`) - minty-payment-request-web's badge kept the old
  *   initials until the next token. A refusal is Flask's sentence, shown in the card; the card
  *   stays open so nothing typed is lost.
  * - `fixture`: dev-only, `?fixture=SCOPED|SUPERMINTY|UNSCOPED` (`__fixtures__/profile.ts`).

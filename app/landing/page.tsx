@@ -10,7 +10,7 @@ import { redirectToHandoff, safeNext } from "@/lib/handoff";
  * Where Minty sends people: `/landing?token=<jwt>&next=<path>&entity_id=…&entity_name=…`.
  * Stores the token (lib/auth.ts) and forwards to `next`. Reached with no token - a bookmark,
  * a stale tab - it goes to Flask's re-handoff for `next`, which comes back here with one.
- * Lifted from billing-frontend/app/landing; the `from` provenance cookie is not needed here
+ * Lifted from minty-payment-request-web/app/landing; the `from` provenance cookie is not needed here
  * (this app has one way back, to Minty).
  */
 function LandingContent() {

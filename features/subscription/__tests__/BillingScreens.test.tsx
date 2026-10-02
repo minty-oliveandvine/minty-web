@@ -1290,7 +1290,7 @@ describe("08-A, the portal's landing", () => {
       .getAttribute("href")!;
     // through /enter, so the Flask session is re-established on the way
     expect(href).toBe(
-      `${env.MINTY_URL}/entity/e1/enter?token=${encodeURIComponent(TOKEN)}` +
+      `${env.PETTY_CASH_URL}/entity/e1/enter?token=${encodeURIComponent(TOKEN)}` +
         `&next=${encodeURIComponent("/entity/e1/modules")}`,
     );
   });

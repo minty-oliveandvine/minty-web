@@ -1,4 +1,4 @@
-// The Flask half of lib/apiClient.ts: the hub pages' reads go to MINTY_URL, never carry
+// The Flask half of lib/apiClient.ts: the hub pages' reads go to PETTY_CASH_URL, never carry
 // X-Entity-Id (Flask's CORS would refuse the preflight), and a 401 either re-authenticates
 // keeping the company in the cookie or - for decoration - only rejects.
 
@@ -35,7 +35,7 @@ describe("mintyFetch", () => {
 
     expect(body).toEqual({ user: { name: "Olive Vine" } });
     const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toBe(`${env.MINTY_URL}/api/me/profile?entity=e1`);
+    expect(url).toBe(`${env.PETTY_CASH_URL}/api/me/profile?entity=e1`);
     const headers = new Headers(init?.headers);
     expect(headers.get("Authorization")).toBe(`Bearer ${TOKEN}`);
     expect(headers.has("X-Entity-Id")).toBe(false);

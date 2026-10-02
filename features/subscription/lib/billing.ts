@@ -84,7 +84,7 @@ export const EDIT_CARD_FOOT =
 export const STRIPE_NOTE =
   "Card details are held by our payment provider, Stripe — they are never stored by Minty.";
 /**
- * The mandate, word for word as onboarding, Minty and billing-frontend print it. NOT fine print:
+ * The mandate, word for word as onboarding, Minty and minty-payment-request-web print it. NOT fine print:
  * Stripe's own authorisation line is suppressed inside the card form (it names the Stripe
  * ACCOUNT, not Minty), so this sentence IS the disclosure and the two go together or not at all.
  */

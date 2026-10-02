@@ -43,7 +43,7 @@ describe("profileView", () => {
   it("the back arrow: the list, the payments app, or the company it was opened from", () => {
     expect(backHref("", null)).toBe("/entities");
     expect(backHref("", "bills")).toBe("/entities"); // no company: nothing to go back into
-    expect(backHref("e1", "bills")).toBe(`${env.PAYMENTS_WEB_URL}/`);
+    expect(backHref("e1", "bills")).toBe(`${env.PAYMENT_REQUEST_WEB_URL}/`);
     setAuth("h.eyJ1c2VyX2lkIjoidTEifQ.s", "e1", "Olive Shop");
     expect(backHref("e1", null)).toContain(encodeURIComponent("/entity/e1/modules"));
   });

@@ -41,8 +41,19 @@ const nextConfig: NextConfig = {
   /** Slightly smaller responses; security-through-obscurity only. */
   poweredByHeader: false,
   /**
+   * The sibling URLs lib/env.ts reads. Listing them here is what makes Next inline the literal
+   * `process.env.X` reads at build time - in client code, server code and proxy.ts alike - under
+   * their plain names (no NEXT_PUBLIC_ prefix). Raw values only: lib/env.ts owns the defaults.
+   * A change needs `npm run dev` restarted or `npm run build` rerun.
+   */
+  env: {
+    PETTY_CASH_URL: process.env.PETTY_CASH_URL ?? "",
+    SUBSCRIPTION_API_URL: process.env.SUBSCRIPTION_API_URL ?? "",
+    PAYMENT_REQUEST_WEB_URL: process.env.PAYMENT_REQUEST_WEB_URL ?? "",
+  },
+  /**
    * Next 16 refuses dev-only requests (HMR, the hydration payload) from an origin other than the
-   * one the dev server was started as; without this, opening http://127.0.0.1:3002 renders the
+   * one the dev server was started as; without this, opening http://127.0.0.1:3000 renders the
    * HTML and never hydrates - the landing shows "Loading…" forever. 127.0.0.1 is what a
    * Windows-hosted test runner reaches for, because Node resolves `localhost` to ::1 first and
    * stalls ~2 s per request. Production is unaffected.

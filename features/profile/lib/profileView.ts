@@ -57,7 +57,7 @@ export function planLabel(company: ProfileCompany | null): PlanLabel | null {
  */
 export function backHref(entityId: string, from: string | null): string {
   if (!entityId) return HUB_PATHS.entities;
-  if (from === "bills") return `${env.PAYMENTS_WEB_URL}/`;
+  if (from === "bills") return `${env.PAYMENT_REQUEST_WEB_URL}/`;
   return mintyModulesUrl(entityId);
 }
 

@@ -10,5 +10,5 @@ import { leaveTo } from "@/lib/handoff";
 
 export function logOut() {
   clearAuth();
-  leaveTo(`${env.MINTY_URL}/logout`);
+  leaveTo(`${env.PETTY_CASH_URL}/logout`);
 }

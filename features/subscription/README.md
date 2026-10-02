@@ -10,7 +10,7 @@ its own app when login, dashboard, profile and settings join `minty-web` in Part
 
 ```
 index.ts        the ONLY public surface: route components + SUBSCRIPTION_BASE_PATH
-api/            typed clients over the minty-billing-api contracts (payerPortal, moduleSettings, notice)
+api/            typed clients over the minty-subscription-api contracts (payerPortal, moduleSettings, notice)
 hooks/          state and orchestration over api/ - what the screens call; tested
 lib/            pure helpers (paths, moduleState, flaskLinks; payerPortalFormat.ts arrives with the port)
 components/     the screens' pieces; the portal's are plain and the design pass replaces them ONE FOR ONE,
@@ -62,11 +62,11 @@ and text, never by class).
 
 Step 1 of Part 2: the folder, its index, the three API clients (typed to the contract, methods
 mapped to the routes) and two skeletal routes (the index and the layout). Step 4a (2026-09-21):
-the module settings page, built to its Figma design over a stubbed API, under billing-frontend's
+the module settings page, built to its Figma design over a stubbed API, under minty-payment-request-web's
 settings chrome (`@/components/ui/{AppHeader,NavMenu}`) - `hooks/useModulePage`,
 `lib/moduleState`, `lib/flaskLinks`, six components, the fixtures, its unit and browser tests
 (`docs/features/subscriptions.md` §9). Step 4b builds the pages its CTAs lead to and ports the
-portal screens from `billing-frontend/components/profile/*` (behaviour, not look). Step 4b (same
+portal screens from `minty-payment-request-web/components/profile/*` (behaviour, not look). Step 4b (same
 day): the Manage Subscriptions list from Figma section 04 - `hooks/useSubscriptionsList`,
 `lib/portalRows`, eight components, `__fixtures__/subscriptions.ts`, its unit and browser tests
 (`docs/features/subscriptions.md` §10); `/subscription` is that list now.
@@ -115,7 +115,7 @@ days and the update lines have _Show more_; 08-B shows the next bill's estimated
 `next_bill`, priced by its renewal runner), pages its invoices 10 / 50 / 100 and downloads each
 one's billing breakdown as the user's sample CSV (`lib/breakdown`, `lib/download`).
 `components/ModalFrame` is shared by the other modals (§15). A
-standalone invoices page (billing-frontend's section 09) was deliberately NOT built: the billing
+standalone invoices page (minty-payment-request-web's section 09) was deliberately NOT built: the billing
 page's own invoice list already lists every invoice, paged, with its PDF and the
 billing-breakdown CSV, so a second page listing the same rows would be pure duplication - see
 `lib/paths.ts::PORTAL`. 2026-09-29: that PDF is our own document (Figma 09-A), downloaded -

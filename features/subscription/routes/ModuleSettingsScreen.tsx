@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * The module settings page of one company, composed the way billing-frontend composes its
+ * The module settings page of one company, composed the way minty-payment-request-web composes its
  * settings page (`app/settings/page.tsx` + `components/settings/SettingsContent.tsx` there):
  * its header, a sticky pill row in a 1024px column, and then the contents - which is the one
  * thing that differs: the "Modules" heading, the payment-failed banner when a renewal failed,
@@ -49,7 +49,7 @@ export function ModuleSettingsScreen({ from, ...args }: ModuleSettingsScreenProp
   const claims = useSyncExternalStore(noSubscribe, readClaims, serverClaims);
 
   // Which modules the company has, for the pills and the drawer: the page model's fresh
-  // `has_access` once it is here, the token's claims until then (billing-frontend's
+  // `has_access` once it is here, the token's claims until then (minty-payment-request-web's
   // `useEntitlements`, the same two sources in the same order) - so the pills never vanish
   // while the page loads or when the API cannot answer.
   const access = useMemo<ModuleClaims>(() => {

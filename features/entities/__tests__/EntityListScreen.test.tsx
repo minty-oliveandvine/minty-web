@@ -63,7 +63,7 @@ describe("EntityListScreen", () => {
     expect(screen.getByRole("heading", { level: 1, name: "Select Company" })).toBeInTheDocument();
     const five = await screen.findByRole("link", { name: /Scenario 5 - Free trial \+ Active/ });
     expect(five.getAttribute("href")).toBe(
-      `${env.MINTY_URL}/entity/e-scenario-5/enter?token=${encodeURIComponent(TOKEN)}` +
+      `${env.PETTY_CASH_URL}/entity/e-scenario-5/enter?token=${encodeURIComponent(TOKEN)}` +
         `&next=${encodeURIComponent("/entity/e-scenario-5/modules")}`,
     );
     const card = within(five);
@@ -80,11 +80,11 @@ describe("EntityListScreen", () => {
 
     expect(screen.getByRole("link", { name: "Add a new entity" })).toHaveAttribute(
       "href",
-      `${env.MINTY_URL}/entity/create`,
+      `${env.PETTY_CASH_URL}/entity/create`,
     );
     // one read of the list; nothing else went to the network (the viewer is stubbed out)
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(String(fetchMock.mock.calls[0][0])).toBe(`${env.MINTY_URL}/api/me/entities`);
+    expect(String(fetchMock.mock.calls[0][0])).toBe(`${env.PETTY_CASH_URL}/api/me/entities`);
   });
 
   it("searches as the person types, and says so when nothing matches", async () => {
@@ -107,7 +107,7 @@ describe("EntityListScreen", () => {
     expect(await screen.findByRole("heading", { name: "No Entity Found" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Create Entity" })).toHaveAttribute(
       "href",
-      `${env.MINTY_URL}/entity/create`,
+      `${env.PETTY_CASH_URL}/entity/create`,
     );
     expect(screen.queryByRole("link", { name: "Add a new entity" })).toBeNull();
     expect(screen.queryByRole("textbox", { name: "Search company" })).toBeNull();
@@ -132,7 +132,7 @@ describe("EntityListScreen", () => {
       await screen.findByText("Hmm, I looked everywhere but couldn't find that one."),
     ).toBeInTheDocument();
     expect(String(fetchMock.mock.calls[0][0])).toBe(
-      `${env.MINTY_URL}/api/me/entities?flash=signed-hand-over`,
+      `${env.PETTY_CASH_URL}/api/me/entities?flash=signed-hand-over`,
     );
     await waitFor(() => expect(replace).toHaveBeenCalledWith("/entities"));
     expect(screen.getAllByText("Hmm, I looked everywhere but couldn't find that one.")).toHaveLength(1);

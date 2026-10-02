@@ -2,7 +2,7 @@
 
 /**
  * A PDF drawn page by page onto canvases by pdf.js - what the Inv# preview shows
- * (`InvoicePreviewDialog`). A port of billing-frontend's `PdfJsCanvasRenderer`
+ * (`InvoicePreviewDialog`). A port of minty-payment-request-web's `PdfJsCanvasRenderer`
  * (`components/PdfJsCanvasPreview.tsx`), cut to what our own invoice needs:
  *
  * - pdf.js loads with the first PDF shown (`import("pdfjs-dist")`), never with the page, and its

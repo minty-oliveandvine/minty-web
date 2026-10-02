@@ -51,7 +51,7 @@ describe("apiFetch", () => {
     await fetchPayerSubscriptions({ query: " acme ", page: 2 });
 
     const [url, init] = fetchMock.mock.calls[0];
-    expect(String(url)).toBe(`${env.BILLING_API_URL}/api/me/subscriptions?q=acme&page=2`);
+    expect(String(url)).toBe(`${env.SUBSCRIPTION_API_URL}/api/me/subscriptions?q=acme&page=2`);
     const headers = new Headers(init?.headers);
     expect(headers.get("Authorization")).toBe(`Bearer ${TOKEN}`);
     expect(headers.has("X-Entity-Id")).toBe(false);
@@ -71,7 +71,7 @@ describe("apiFetch", () => {
     await getModulePage("e1");
 
     const [url, init] = fetchMock.mock.calls[0];
-    expect(String(url)).toBe(`${env.BILLING_API_URL}/api/entities/e1/modules`);
+    expect(String(url)).toBe(`${env.SUBSCRIPTION_API_URL}/api/entities/e1/modules`);
     expect(new Headers(init?.headers).get("X-Entity-Id")).toBe("e1");
   });
 
@@ -80,7 +80,7 @@ describe("apiFetch", () => {
     await postModuleAction("e1", "start-trial", { codes: ["PETTY_CASH"] });
 
     const [url, init] = fetchMock.mock.calls[0];
-    expect(String(url)).toBe(`${env.BILLING_API_URL}/api/entities/e1/modules/start-trial`);
+    expect(String(url)).toBe(`${env.SUBSCRIPTION_API_URL}/api/entities/e1/modules/start-trial`);
     expect(init?.method).toBe("POST");
     expect(new Headers(init?.headers).get("Content-Type")).toBe("application/json");
     expect(JSON.parse(String(init?.body))).toEqual({ codes: ["PETTY_CASH"] });
@@ -114,7 +114,7 @@ describe("apiFetch", () => {
     expect(getAuth()).toBeNull();
     expect(navigated).toHaveLength(1);
     const target = new URL(navigated[0]);
-    expect(target.origin + target.pathname).toBe(`${env.MINTY_URL}/handoff/minty-web`);
+    expect(target.origin + target.pathname).toBe(`${env.PETTY_CASH_URL}/handoff/minty-web`);
     expect(target.searchParams.get("next")).toBe("/subscription/billing?page=2");
   });
 
@@ -130,7 +130,7 @@ describe("apiFetch", () => {
       expect(file.type).toBe("application/pdf");
       expect(await file.text()).toBe(INVOICE_PDF);
       const [url, init] = fetchMock.mock.calls[0];
-      expect(String(url)).toBe(`${env.BILLING_API_URL}/api/me/invoices/in_1/pdf`);
+      expect(String(url)).toBe(`${env.SUBSCRIPTION_API_URL}/api/me/invoices/in_1/pdf`);
       const headers = new Headers(init?.headers);
       expect(headers.get("Accept")).toBe("application/pdf, application/json");
       expect(headers.get("Authorization")).toBe(`Bearer ${TOKEN}`);
@@ -168,7 +168,7 @@ describe("apiFetch", () => {
       fetchMock.mockResolvedValueOnce(pdf("application/pdf; charset=binary"));
       expect((await fetchInvoicePdf("in 1/x")).size).toBe(INVOICE_PDF.length);
       expect(String(fetchMock.mock.calls[0][0])).toBe(
-        `${env.BILLING_API_URL}/api/me/invoices/in%201%2Fx/pdf`,
+        `${env.SUBSCRIPTION_API_URL}/api/me/invoices/in%201%2Fx/pdf`,
       );
 
       // A 200 that is not the document - a proxy's page, say - is never handed on to be saved.

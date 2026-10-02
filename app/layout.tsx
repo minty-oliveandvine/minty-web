@@ -10,7 +10,7 @@ import { SubscriptionsOverviewCard } from "@/features/subscription";
 
 import "./globals.css";
 
-// The same face billing-frontend sets (app/layout.tsx there): a page here must read as one of
+// The same face minty-payment-request-web sets (app/layout.tsx there): a page here must read as one of
 // its pages, with only the contents differing (decision 2026-09-21).
 const inter = Inter({ subsets: ["latin"], display: "swap", variable: "--font-inter" });
 

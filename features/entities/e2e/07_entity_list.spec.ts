@@ -8,10 +8,10 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import {
-  BILLING_API_URL,
+  SUBSCRIPTION_API_URL,
   bounceFlaskHandoff,
   credentials,
-  FLASK_URL,
+  PETTY_CASH_URL,
   handoff,
   requireApp,
   storedScope,
@@ -41,7 +41,7 @@ const VIEWER = {
 
 async function stubFlask(page: Page, list: EntityListAnswer = LIST): Promise<string[]> {
   const asked: string[] = [];
-  await page.route(`${FLASK_URL}/api/me/entities**`, (route) => {
+  await page.route(`${PETTY_CASH_URL}/api/me/entities**`, (route) => {
     asked.push(new URL(route.request().url()).search);
     return route.fulfill({
       status: 200,
@@ -49,14 +49,14 @@ async function stubFlask(page: Page, list: EntityListAnswer = LIST): Promise<str
       body: JSON.stringify(list),
     });
   });
-  await page.route(`${FLASK_URL}/api/me/profile**`, (route) =>
+  await page.route(`${PETTY_CASH_URL}/api/me/profile**`, (route) =>
     route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(VIEWER) }),
   );
   // The sidebar's My Profile carries the subscription feature's overview card, which reads the
   // billing API: answered here with a 404 (the card shows its failed-read state, which no test
   // here looks at), so a live billing API never sees the stub token - its 401 would send the
   // browser through Flask's re-handoff.
-  await page.route(`${BILLING_API_URL}/api/me/subscriptions**`, (route) =>
+  await page.route(`${SUBSCRIPTION_API_URL}/api/me/subscriptions**`, (route) =>
     route.fulfill({
       status: 404,
       contentType: "application/json",
@@ -88,7 +88,7 @@ test.describe("the entity list", () => {
     await expect(main.getByText("Setup in progress")).toBeVisible();
     // the "+" is held to the screen's corner, outside `main`
     const add = page.getByRole("link", { name: "Add a new entity" });
-    await expect(add).toHaveAttribute("href", `${FLASK_URL}/entity/create`);
+    await expect(add).toHaveAttribute("href", `${PETTY_CASH_URL}/entity/create`);
     const viewport = page.viewportSize()!;
     const addBox = (await add.boundingBox())!;
     expect(viewport.width - (addBox.x + addBox.width)).toBeLessThan(64);

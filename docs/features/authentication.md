@@ -3,7 +3,7 @@
 This app **stores and forwards a token; it never mints or refreshes one.** Minty (Flask) signs
 the person in — email OTP or Xero — mints the module JWT (`_generate_module_token`, 30 minutes)
 and hands it over in the launch URL; the system-wide picture is `Minty/docs/features/authentication.md`,
-the verifying half `minty-billing-api/docs/features/authentication.md`.
+the verifying half `minty-subscription-api/docs/features/authentication.md`.
 
 ## The landing
 
@@ -27,7 +27,7 @@ Flask mint the payer's token, back through `/landing`. This app still mints noth
 ## The gate (`proxy.ts`)
 
 **The cookie.** Every page but `/landing` and `/maintenance` (`OPEN_PATHS`, `lib/hubPaths.ts`)
-needs `minty_token`. Without it: `307` to `NEXT_PUBLIC_MINTY_URL/handoff/minty-web?next=<page>` —
+needs `minty_token`. Without it: `307` to `PETTY_CASH_URL/handoff/minty-web?next=<page>` —
 Flask's login-gated route (Minty's `/handoff/minty-web`, landed 2026-09-21) that mints the same token and comes back to
 `/landing`. Silent while the Flask session (24 h) is alive; a login when it is not. This app
 has no login form of its own.
@@ -39,7 +39,7 @@ and its `/not-available` page) was removed on 2026-10-01: subscriptions are simp
 
 The entity list and My Profile read Flask's bearer routes (`GET /api/me/entities`, `GET` /
 `PATCH /api/me/profile` - Minty's `blueprints/shared/hub_api.py`): the same bearer, the base
-`NEXT_PUBLIC_MINTY_URL`, and never `X-Entity-Id` (Flask's CORS allows only `Authorization` and
+`PETTY_CASH_URL`, and never `X-Entity-Id` (Flask's CORS allows only `Authorization` and
 `Content-Type`; a company travels as `?entity=`). A 401 re-authenticates keeping the cookie's
 company - except for the header's initials (`lib/viewer.ts`, `onUnauthorized: "reject"`),
 which are decoration and must never move the page. Flask refuses a token for a deactivated
@@ -76,18 +76,18 @@ of tolerance; a document that does not scroll unlocks at once), _Accept & Contin
 
 ## Talking to the API (`lib/apiClient.ts`)
 
-`Authorization: Bearer <cookie token>` on every call to `NEXT_PUBLIC_BILLING_API_URL`.
+`Authorization: Bearer <cookie token>` on every call to `SUBSCRIPTION_API_URL`.
 `X-Entity-Id` is **opt-in per call**: the payer portal (`/api/me/*`) is person-scoped and sends
 none; the module settings page (`/api/entities/{id}/*`) names its company, because the token may
-be the unscoped one when the page is reached from the portal — the same convention billing-frontend
-uses with billing-backend. A **401** clears the cookies and sends the browser to the re-handoff
+be the unscoped one when the page is reached from the portal — the same convention minty-payment-request-web
+uses with minty-payment-request-api. A **401** clears the cookies and sends the browser to the re-handoff
 for the current page, once (several requests fail together; one navigation). Nothing retries.
 
 ## What this app never does
 
 - **Mint or refresh a token.** `jwt` is not a dependency; the only signing in the repo is
   `e2e/helpers.ts`, which mints the token Flask would, with the shared secret, for the browser
-  tests. billing-frontend's `refreshToken` was deliberately not ported.
+  tests. minty-payment-request-web's `refreshToken` was deliberately not ported.
 - **Verify a token.** `lib/auth.ts::decodeJwtPayload` reads `exp` to size the cookie; the
   signature is the API's to check on every request.
 - **Hold a company's data outside the cookie.** No local storage, no session; the three cookies
@@ -96,8 +96,8 @@ for the current page, once (several requests fail together; one navigation). Not
 
 ## Configuration
 
-`NEXT_PUBLIC_MINTY_URL` (the re-handoff and "Back to Minty"), `NEXT_PUBLIC_BILLING_API_URL`,
-`NEXT_PUBLIC_PAYMENTS_WEB_URL` — all inlined at build time (`lib/env.ts`).
+`PETTY_CASH_URL` (the re-handoff and "Back to Minty"), `SUBSCRIPTION_API_URL`,
+`PAYMENT_REQUEST_WEB_URL` — all inlined at build time (`next.config.ts` `env`, read in `lib/env.ts`).
 
 ## Tests
 

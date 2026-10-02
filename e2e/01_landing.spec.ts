@@ -9,7 +9,7 @@ import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
 
 import {
-  FLASK_URL,
+  PETTY_CASH_URL,
   handoff,
   requireApp,
   requireCredentials,
@@ -20,13 +20,21 @@ import {
 /** The entity list reads Flask; answer it, with nobody's companies - these specs are about where
  *  the browser lands, not what the list says. */
 async function stubEntityList(page: Page) {
-  await page.route(`${FLASK_URL}/api/me/**`, (route) =>
-    route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ entities: [], notices: [], user: null, entity: null }) }),
+  await page.route(`${PETTY_CASH_URL}/api/me/**`, (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ entities: [], notices: [], user: null, entity: null }),
+    }),
   );
 }
 
 /** Arriving with no company - as Minty's /entity sends people - so the list keeps the token. */
-const unscoped = (creds: ReturnType<typeof requireCredentials>) => ({ ...creds, entityId: "", entityName: "" });
+const unscoped = (creds: ReturnType<typeof requireCredentials>) => ({
+  ...creds,
+  entityId: "",
+  entityName: "",
+});
 
 test.describe("landing and the gates", () => {
   test.beforeEach(async () => {
@@ -39,7 +47,7 @@ test.describe("landing and the gates", () => {
     expect(response?.ok()).toBeTruthy();
     await page.waitForURL((u) => u.pathname.endsWith("/handoff/minty-web"), { timeout: 15_000 });
     const landed = new URL(page.url());
-    expect(landed.origin).toBe(new URL(FLASK_URL).origin);
+    expect(landed.origin).toBe(new URL(PETTY_CASH_URL).origin);
     expect(landed.searchParams.get("next")).toBe("/subscription/billing");
   });
 
@@ -51,7 +59,7 @@ test.describe("landing and the gates", () => {
     const res = await page.request.get("/subscription/billing?page=2", { maxRedirects: 0 });
     expect(res.status()).toBe(307);
     const location = new URL(res.headers()["location"]);
-    expect(location.origin + location.pathname).toBe(FLASK_URL + "/handoff/minty-web");
+    expect(location.origin + location.pathname).toBe(PETTY_CASH_URL + "/handoff/minty-web");
     expect(location.searchParams.get("next")).toBe("/subscription/billing?page=2");
   });
 

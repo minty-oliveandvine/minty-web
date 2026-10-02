@@ -5,7 +5,13 @@
 // covers Flask's side). Located by role and text.
 import { expect, test, type Page } from "@playwright/test";
 
-import { BILLING_API_URL, credentials, FLASK_URL, handoff, requireApp } from "../../../e2e/helpers";
+import {
+  SUBSCRIPTION_API_URL,
+  credentials,
+  PETTY_CASH_URL,
+  handoff,
+  requireApp,
+} from "../../../e2e/helpers";
 import { SCOPED, SUPERMINTY, UNSCOPED } from "../__fixtures__/profile";
 import type { Profile } from "../api/profile";
 
@@ -65,7 +71,7 @@ const PAYER_LIST = {
 
 async function stub(page: Page, profile: Profile, saved?: Profile): Promise<unknown[]> {
   const sent: unknown[] = [];
-  await page.route(`${FLASK_URL}/api/me/profile**`, (route) => {
+  await page.route(`${PETTY_CASH_URL}/api/me/profile**`, (route) => {
     const req = route.request();
     if (req.method() === "PATCH") {
       sent.push(req.postDataJSON());
@@ -81,7 +87,7 @@ async function stub(page: Page, profile: Profile, saved?: Profile): Promise<unkn
       body: JSON.stringify(profile),
     });
   });
-  await page.route(`${BILLING_API_URL}/api/me/subscriptions**`, (route) =>
+  await page.route(`${SUBSCRIPTION_API_URL}/api/me/subscriptions**`, (route) =>
     route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -152,7 +158,7 @@ test.describe("My Profile", () => {
     page,
   }) => {
     await stub(page, UNSCOPED);
-    await page.route(`${FLASK_URL}/api/me/entities**`, (route) =>
+    await page.route(`${PETTY_CASH_URL}/api/me/entities**`, (route) =>
       route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -194,7 +200,7 @@ test.describe("My Profile", () => {
       ...SUPERMINTY,
       entity: { ...SUPERMINTY.entity!, name: "Digitalisation - Scenario 5 - Free trial + Active" },
     });
-    await page.route(`${FLASK_URL}/api/me/entities**`, (route) =>
+    await page.route(`${PETTY_CASH_URL}/api/me/entities**`, (route) =>
       route.fulfill({
         status: 200,
         contentType: "application/json",

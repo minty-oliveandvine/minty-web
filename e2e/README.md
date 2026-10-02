@@ -6,8 +6,8 @@ npx playwright install chromium   # once
 npm run test:e2e                  # against a stack that is already running
 ```
 
-Real browser, stack already up (this app :3002 `npm run dev`, minty-billing-api :8004, Minty
-:5001). **Nothing is started here.** Specs skip with a reason when a service or the credentials
+Real browser, stack already up (this app :3000 `npm run dev`, minty-subscription-api :8000, Minty
+:8010). **Nothing is started here.** Specs skip with a reason when a service or the credentials
 are missing.
 
 Two folders, one runner (`playwright.config.ts`): `e2e/` holds the shell's specs; each
@@ -26,21 +26,21 @@ themselves with the shared `SECRET_KEY` (see `e2e/helpers.ts` for why nothing is
 
 | Variable                                                 | What                                                                                                                                    |
 | -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| `E2E_JWT_SECRET`                                         | the `SECRET_KEY` shared by Minty and minty-billing-api                                                                                  |
+| `E2E_JWT_SECRET`                                         | the `SECRET_KEY` shared by Minty and minty-subscription-api                                                                             |
 | `E2E_MINTY_USER` / `E2E_MINTY_ENTITY`                    | the identity `Minty/scripts/e2e_seed.py --print` creates                                                                                |
 | `E2E_MINTY_SUBSCRIPTION_ENTITY`                          | the seed's second company (`E2E Subscription Shop`), reset to "never held anything" on every seed run - the live trial journey's target |
 | `E2E_MINTY_ENTITY_NAME`                                  | optional, default `E2E Petty Cash Shop`                                                                                                 |
-| `E2E_BASE_URL` / `E2E_BILLING_API_URL` / `E2E_FLASK_URL` | the three hosts; default the local ports (`E2E_FLASK_URL` must equal the app's `NEXT_PUBLIC_MINTY_URL`)                                 |
+| `E2E_BASE_URL` / `E2E_SUBSCRIPTION_API_URL` / `E2E_PETTY_CASH_URL` | the three hosts; default the local ports (`E2E_PETTY_CASH_URL` must equal the app's `PETTY_CASH_URL`)                         |
 
 Run the seed in the Minty repo before every run. Never commit any of these values. Report the
 run time (mm:ss) with the result.
 
 Two traps. The stubbed specs (`02`, `03`, `05`, `06`) intercept the URL the BROWSER calls, which is the
-app's `NEXT_PUBLIC_BILLING_API_URL` (default `http://localhost:8004`): leave `E2E_BILLING_API_URL`
+app's `SUBSCRIPTION_API_URL` (default `http://localhost:8000`): leave `E2E_SUBSCRIPTION_API_URL`
 at its default, or set both to the same host - with them apart the stubs miss and the real API
 answers the fixture assertions. And the browser must open the app on the origin the API allows
-(`E2E_BASE_URL` = `http://localhost:3002`, as `CORS_ALLOWED_ORIGINS` names it); on
-`127.0.0.1:3002` every preflight fails and the pages report "couldn't load".
+(`E2E_BASE_URL` = `http://localhost:3000`, as `CORS_ALLOWED_ORIGINS` names it); on
+`127.0.0.1:3000` every preflight fails and the pages report "couldn't load".
 
 ## Specs
 
@@ -54,11 +54,11 @@ answers the fixture assertions. And the browser must open the app on the origin 
 | `features/entities/e2e/07_entity_list.spec.ts` | "Select Company" over a STUBBED Flask: the rows and where they lead, search, the "+" in the screen's corner; the layout measured (the bar across the screen with the title in its middle, Flask's column widths and 65 / 24 px spacing, the search box that stays while the rows scroll, a phone's single column); the initials open My Profile over the list; the menu without Settings, the cat above Logout; Flask's flashed notices; a company's token traded for an unscoped one |
 | `features/profile/e2e/08_profile.spec.ts` | My Profile over a STUBBED Flask and API: the page opened inside a company and from the list, an edit saved in place (the menu names the person anew; its name only closes the sidebar on the page); the sidebar's My Profile from the initials and from the menu's name, ‹ back to the menu, the whole screen on a phone and its close |
 | `e2e/09_terms.spec.ts` | the Terms gate over a STUBBED Flask: Flask's panel over the list with the list out of reach, not dismissible, the tick box locked until the document is scrolled to its end in a real layout, Accept posts the version on screen and lifts it where the person stands; a 409 reads the new version and asks again; Cancel logs out at Minty; a phone's single column without the illustration |
-| `features/subscription/e2e/06_billing.spec.ts`              | the billing area over the STUBBED routes (Figma 08): the portal's landing at `/subscription` - who is billed, the two figures, the failure lines - and _Manage Subscription_ landing on the list (08-A); the billing page's next bill (amber, "Due Immediately"), the default card pinned first with its chip and month, the invoice rows, an invoice's PDF downloaded as `Inv-<reference>.pdf` and its breakdown as the CSV, and its Inv#'s view-only preview - a real pdf.js canvas at the A4 page's true width from the worker the app serves (`/pdfjs`), the X its one control, no download event (08-B); the _Update card_ menu promoting a saved card and the chips swapping (08-W); the default card's removal refused (08-R) and another card's removal posted; "No card saved" leading to the add screen (08-H → 08-Y, with the publishable key withheld so Stripe's iframe never opens); the expired card's line (08-I); and the card that just arrived being made the default (08-N → 08-S). A standalone invoices page (billing-frontend's section 09) was decided against - this spec's invoice rows and their two downloads are the whole of it |
+| `features/subscription/e2e/06_billing.spec.ts`              | the billing area over the STUBBED routes (Figma 08): the portal's landing at `/subscription` - who is billed, the two figures, the failure lines - and _Manage Subscription_ landing on the list (08-A); the billing page's next bill (amber, "Due Immediately"), the default card pinned first with its chip and month, the invoice rows, an invoice's PDF downloaded as `Inv-<reference>.pdf` and its breakdown as the CSV, and its Inv#'s view-only preview - a real pdf.js canvas at the A4 page's true width from the worker the app serves (`/pdfjs`), the X its one control, no download event (08-B); the _Update card_ menu promoting a saved card and the chips swapping (08-W); the default card's removal refused (08-R) and another card's removal posted; "No card saved" leading to the add screen (08-H → 08-Y, with the publishable key withheld so Stripe's iframe never opens); the expired card's line (08-I); and the card that just arrived being made the default (08-N → 08-S). A standalone invoices page (minty-payment-request-web's section 09) was decided against - this spec's invoice rows and their two downloads are the whole of it |
 
 ## Not covered here
 
 Stripe card capture (Elements iframes stay out of Playwright, as in the sibling apps; the
 capture flow is unit-tested with Stripe stubbed - `06_billing.spec.ts` stubs the SetupIntent
 with an empty publishable key, which draws the screen and opens no iframe). The API's own contract is
-`minty-billing-api/e2e`.
+`minty-subscription-api/e2e`.

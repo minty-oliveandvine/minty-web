@@ -1,4 +1,4 @@
-// The token's module claims (lib/moduleClaims.ts, billing-frontend's getModuleClaims ported):
+// The token's module claims (lib/moduleClaims.ts, minty-payment-request-web's getModuleClaims ported):
 // what the settings pills and the drawer show before the page model has answered.
 
 import { describe, expect, it } from "vitest";

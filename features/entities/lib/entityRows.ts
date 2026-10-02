@@ -70,5 +70,5 @@ export function enterHref(row: EntityRow): string {
 
 /** A new company: Minty's /entity/create launches the onboarding wizard with its own token. */
 export function createEntityHref(): string {
-  return `${env.MINTY_URL}/entity/create`;
+  return `${env.PETTY_CASH_URL}/entity/create`;
 }

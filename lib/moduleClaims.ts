@@ -1,5 +1,5 @@
 /**
- * Which modules the company in the token has - billing-frontend's `lib/moduleClaims.ts`
+ * Which modules the company in the token has - minty-payment-request-web's `lib/moduleClaims.ts`
  * (`getModuleClaims`), ported. Flask mints `petty_cash_enabled` / `billing_enabled` into the
  * module token (`_generate_module_token`); the settings pills and the nav drawer show a
  * module's entries only when it is on.

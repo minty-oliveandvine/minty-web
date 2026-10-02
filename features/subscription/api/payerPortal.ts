@@ -1,12 +1,12 @@
 /**
  * The payer portal's API: the `/api/me/*` routes, typed to the contract - Flask's fifteen
- * paths, plus what minty-billing-api added: `transfer/seen`, the four `billing/accounts` routes
+ * paths, plus what minty-subscription-api added: `transfer/seen`, the four `billing/accounts` routes
  * and an invoice's `breakdown`, `retry` and `pdf`. Every one answers JSON but `pdf`, the file
  * itself (`apiFetchBlob`).
  *
- * billing-frontend/lib/payerPortal.ts, moved: the same function names, parameters, request
+ * minty-payment-request-web/lib/payerPortal.ts, moved: the same function names, parameters, request
  * bodies, query names and response types, so the portal screens port mechanically (Part 2
- * step 4). What changed: the base URL is minty-billing-api (lib/apiClient.ts), and the token
+ * step 4). What changed: the base URL is minty-subscription-api (lib/apiClient.ts), and the token
  * refresh is gone - a 401 goes back through Flask's re-handoff instead (lib/handoff.ts).
  * `invite-admin` is the one route the API forwards to Flask; the caller cannot tell.
  *
@@ -436,7 +436,7 @@ export function namesAnAccount(
  * Tell the API about the card the browser just confirmed. `account` is REQUIRED (the user,
  * 2026-10-01: a payment method only ever goes through a billing account): the id puts the card
  * on an account the payer holds; a company and an email OPEN one. The body is onboarding's
- * `confirmCardSetup` exactly (onboarding/lib/billing.ts), the same act in two apps.
+ * `confirmCardSetup` exactly (minty-onboarding-web/lib/billing.ts), the same act in two apps.
  */
 export function confirmCardSetup(
   setupIntent: string,

@@ -1,6 +1,6 @@
 /**
  * Onboarding's billing sheet as Tailwind classes - its `.billing-*` rules
- * (`onboarding/app/globals.css`, Figma 01-L / 01-D / 01-J), in one place because two files draw
+ * (`minty-onboarding-web/app/globals.css`, Figma 01-L / 01-D / 01-J), in one place because two files draw
  * from them: the sheet itself (`AccountSheet`) and the card form it mounts (`CardCaptureForm`,
  * look "sheet"). The values are onboarding's, copied rather than approximated - the same dialog
  * in two apps must be the same dialog, so a change to one is a change to the other.

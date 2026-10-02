@@ -1,9 +1,9 @@
 @import "tailwindcss";
-/* billing-frontend's icon font (its Header, NavMenu and pills use these glyphs) */
+/* minty-payment-request-web's icon font (its Header, NavMenu and pills use these glyphs) */
 @import "material-symbols/outlined.css";
 
 /* Skeletal by decision (2026-09-21): a new frontend design replaces this. Only the tokens
-   billing-frontend also carries, so the two apps read the same until then. Nothing pixel-level
+   minty-payment-request-web also carries, so the two apps read the same until then. Nothing pixel-level
    is worth keeping; components/ take their look from here and nowhere else. */
 :root {
   --background: #ffffff;
@@ -34,7 +34,7 @@
   --alert-bg: #fff5f5;
   --alert-border: #f3b6ad;
   --alert-icon: #d92d20;
-  /* Inter from next/font (--font-inter on <html className>), as billing-frontend */
+  /* Inter from next/font (--font-inter on <html className>), as minty-payment-request-web */
   --font-sans:
     var(--font-inter), ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
   --font-mono: ui-monospace, monospace;

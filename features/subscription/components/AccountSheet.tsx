@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * The billing-account sheet - onboarding's `BillingSheet` (`onboarding/components/BillingSheet.tsx`,
+ * The billing-account sheet - onboarding's `BillingSheet` (`minty-onboarding-web/components/BillingSheet.tsx`,
  * Figma 01-L / 01-D / 01-J), drawn in this app for the payer portal's billing accounts.
  *
  * THREE FRAMES, ONE DIALOG. The radio list (01-L, 481 wide), the New billing account form (01-D,

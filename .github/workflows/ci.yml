@@ -5,7 +5,7 @@ name: ci
 
 on:
   push:
-    branches: [main]
+    branches: [main, development]
   pull_request:
 
 jobs:
@@ -27,6 +27,6 @@ jobs:
       - name: build
         run: npm run build
         env:
-          NEXT_PUBLIC_BILLING_API_URL: http://localhost:8004
-          NEXT_PUBLIC_MINTY_URL: http://localhost:5001
-          NEXT_PUBLIC_PAYMENTS_WEB_URL: http://localhost:3000
+          PETTY_CASH_URL: http://localhost:8010
+          SUBSCRIPTION_API_URL: http://localhost:8000
+          PAYMENT_REQUEST_WEB_URL: http://localhost:3020

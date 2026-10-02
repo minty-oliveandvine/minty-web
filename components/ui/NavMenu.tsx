@@ -1,11 +1,11 @@
 "use client";
 
-// COPIED on 2026-09-30 into billing-frontend (same path, behind its components/ui/sidebarHost.ts)
+// COPIED on 2026-09-30 into minty-payment-request-web (same path, behind its components/ui/sidebarHost.ts)
 // and ported to Flask (Minty docs/features/sidebar.md) - change all three until @minty/shared.
 
 /**
  * The header's ≡ - the "sandwich" - on every page of this app: it opens the sidebar on the side
- * menu (Figma 02 / 10-C, `components/ui/SideMenu.tsx`; it replaced billing-frontend's drawer on
+ * menu (Figma 02 / 10-C, `components/ui/SideMenu.tsx`; it replaced minty-payment-request-web's drawer on
  * 2026-09-29). The sidebar belongs to the layout (`SidebarProvider`); this button tells it the
  * page's own knowledge for the menu (fresh modules, a known viewer) and opens it.
  *

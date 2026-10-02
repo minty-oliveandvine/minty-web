@@ -15,7 +15,7 @@ describe("mintyEntryUrl", () => {
 
   it("enters the company the token names, with and without a path", () => {
     setAuth(TOKEN, "e1", "Olive & Vine Limited");
-    const base = `${env.MINTY_URL}/entity/e1/enter?token=${encodeURIComponent(TOKEN)}`;
+    const base = `${env.PETTY_CASH_URL}/entity/e1/enter?token=${encodeURIComponent(TOKEN)}`;
     expect(mintyEntryUrl()).toBe(base);
     expect(mintyEntryUrl("/entity/e1/reports")).toBe(
       `${base}&next=${encodeURIComponent("/entity/e1/reports")}`,
@@ -32,7 +32,7 @@ describe("mintyEntryUrl", () => {
   it("enters ANY company from the entity list, whatever the token is scoped to", () => {
     setAuth(TOKEN, "", "");
     expect(mintyEnterCompanyUrl("e7")).toBe(
-      `${env.MINTY_URL}/entity/e7/enter?token=${encodeURIComponent(TOKEN)}` +
+      `${env.PETTY_CASH_URL}/entity/e7/enter?token=${encodeURIComponent(TOKEN)}` +
         `&next=${encodeURIComponent("/entity/e7/modules")}`,
     );
     setAuth(TOKEN, "e1", "Olive & Vine Limited");

@@ -5,7 +5,7 @@
  * `POST /api/entities/{id}/modules/{action}`    one of ModuleAction, JSON body per action
  *
  * Company-scoped: every call sends `X-Entity-Id` (the token may be unscoped when the page is
- * reached from the portal). minty-billing-api's `billing/tests/test_contract.py` pins the same
+ * reached from the portal). minty-subscription-api's `billing/tests/test_contract.py` pins the same
  * ten names. NONE of them hands the browser to Stripe (the user, 2026-10-01): the actions that
  * did - `checkout`, `payment-method`, `manage-billing`, `checkout-complete`, `confirm-billing`
  * and the company-scoped `payment-methods*` - are gone. A card is only ever added through a

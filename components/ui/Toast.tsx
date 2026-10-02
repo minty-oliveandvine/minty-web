@@ -3,8 +3,8 @@
 /**
  * Toasts: `const { showToast } = useToast(); showToast("Saved", "success")`.
  *
- * The API is billing-frontend's `components/Toast.tsx` (ToastProvider + useToast + the four
- * types), so ported screens keep their calls. This look is the house toast: billing-frontend,
+ * The API is minty-payment-request-web's `components/Toast.tsx` (ToastProvider + useToast + the four
+ * types), so ported screens keep their calls. This look is the house toast: minty-payment-request-web,
  * onboarding and Flask's `flash_messages.html` copy it value for value (the rule and the values:
  * Minty/docs/features/toasts.md) - change all four together. Auto-dismisses after 4 s;
  * announced to screen readers through the live region.

@@ -240,7 +240,7 @@ describe("ManageSubscriptionsScreen", { timeout: 15_000 }, () => {
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     const post = fetchMock.mock.calls.find((c) => String(c[0]).includes("start-trial"));
     expect(String(post![0])).toBe(
-      `${env.BILLING_API_URL}/api/entities/e-harbour-vine-limited/modules/start-trial`,
+      `${env.SUBSCRIPTION_API_URL}/api/entities/e-harbour-vine-limited/modules/start-trial`,
     );
     expect(JSON.parse(String(post![1]?.body))).toEqual({ codes: ["PAYMENT_REQUEST"] });
   });
