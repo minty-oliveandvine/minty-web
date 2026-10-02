@@ -63,6 +63,11 @@ Flask's session, so the redirect drains the flashes, signs them (`itsdangerous`,
 toast, once; the spent `flash` leaves the URL. Forged or older than five minutes, it says
 nothing (and Flask logs it).
 
+Only flashes meant for this hop arrive. Flask drops the queue, and logs it, on any redirect into
+another app (onboarding, minty-web, the payments app), because those apps never show it. Before
+2026-10-02 onboarding's Xero connect flashed on every attempt. Finishing the wizard (→ `/entity`)
+then opened this list under a stack of stale "Connected to Xero!" / "Connection failed" toasts.
+
 ## The header and the sidebar
 
 On the right of the bar, the person's initials (`components/ui/ViewerBadge`) and the ≡
