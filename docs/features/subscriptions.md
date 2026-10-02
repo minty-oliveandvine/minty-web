@@ -371,16 +371,19 @@ redrawn to the Figma design (section "03 · Settings › Module", six frames). W
   centred. A closing trial is still a trial: the access gate ends it, never the date. Days count
   calendar days (the `YYYY-MM-DD` of both sides), floored at zero.
 
-- **Card looks.** Frame 03-A (node `1410:2611`) was redesigned on 2026-09-22: its cards are
-  the tall 300×504 and draw each CTA _inside_ the card as a 248×66, radius-24 button (filled
-  teal, or white with a 1 px teal border); `pageLook` in `lib/moduleState.ts` picks that look
-  only when the page's states are exactly {trialing, trial_eligible}. Every other frame keeps
-  the original 50 px buttons under the cards (and the shared one for B/C), and its cards end
-  under the status line (a fixed 402 px; equal on a page because the description and status blocks
-  are fixed boxes) until it is redesigned - then each is one more `pageLook` case. Every
-  button is the same 248×66 shape (03-A, 03-B's shared _Manage Subscription_, 03-D's
-  _Activate_); only its position differs. A trial is red only with seven days or fewer left
-  (`TRIAL_URGENT_DAYS`), otherwise "Trial Active" in black.
+- **Card looks = the onboarding card** (2026-10-02, the user: "make module settings the same as
+  onboarding card design"). `ModuleCardShell` (`components/ModuleCard.tsx`) copies
+  minty-onboarding-web's step-2 card (`.mp-*` in its `globals.css`): a 3 px frame, grey
+  `#ececea` or, when the module is live, the teal gradient with its glow; a 300×360 card washed
+  in the module's accent (Petty Cash `#f5b945`, Payment Request `#3aa6f5`, onboarding's
+  `MODULES`); the illustration filling the top at 92 % width, never dimmed; the 26 px name;
+  the status pinned 26 px off the bottom edge (grey, teal when live, a state's own colour on
+  its value line); and the description over the whole card on hover. The Figma 03 looks it
+  replaced are gone: the illustration tile, the in-card description box, and frame 03-A's
+  CTA inside a tall 504 px card (`pageLook` was deleted). Every CTA now sits 34 px under its
+  card, or once, centred, under the pair for B/C. Every button is the same 248×66 shape (03-A,
+  03-B's shared _Manage Subscription_, 03-D's _Activate_). A trial is red only with seven days
+  or fewer left (`TRIAL_URGENT_DAYS`), otherwise "Trial Active" in black.
 
 - **Starting a trial asks first** (2026-09-23). _Start Free Trial_ opens the same dialog the
   list asks with — `StartTrialDialog`, Figma 04-G — and only _Confirm_ posts `start-trial`;
@@ -452,11 +455,12 @@ redrawn to the Figma design (section "03 · Settings › Module", six frames). W
   `features/subscription/__fixtures__/modulePage.ts` in a dev build (`NODE_ENV !== "production"`,
   dynamic import — nothing of it ships). Playwright does not use it; it stubs with `page.route`
   so the same spec runs against a production build. The switch goes at step 5.
-- **Illustrations.** `public/modules/{petty-cash,payment-request}.png`, exported from the Figma
-  file; served unoptimized (two 5 KB PNGs; Next's optimizer hung on webp on a Windows dev box).
+- **Illustrations.** `public/modules/{petty-cash,payment-request}.png` are onboarding's own
+  (`pettycash-icon.png` / `payment-icon.png`, 556×384, 24 KB and 89 KB); served unoptimized
+  (Next's optimizer hung on webp on a Windows dev box).
 - **Copy.** Name and description are the catalogue's (`entity_function`, through the page
-  model) verbatim; the description box is a fixed 102 px so the status line sits at the same
-  height on both cards, and a newline in the copy is honoured. The design's copy (Petty Cash
+  model) verbatim; the description shows on hover, over the card, and a newline in the copy
+  is honoured. The design's copy (Petty Cash
   breaks after "expenses,") was written to the local catalogue on 2026-09-22 and is a
   cutover-day UPDATE in Minty's runbook (`modernisation_plan.md`, Part 2 step 7, item 5) -
   the data pipeline restores the 2026-06 seed's wording otherwise.
@@ -501,6 +505,13 @@ re-homed and redrawn to Figma section "04 · Manage Subscriptions — the payer 
   like every other way out.
 - **A row's chevron opens it in place** — the Subscription Summary of §11 (Figma 05·A), one
   company at a time; the chevron on the open row closes it.
+- **The open row takes the view** (2026-10-02, the user: "should focus on the open row"). However
+  it opened — its chevron, a click on the row, `?entity=` — `SubscriptionSummaryRow` scrolls
+  itself to the top on mount (smooth unless reduced motion; `scroll-mt-[var(--list-sticky-top)]`,
+  as `ChangeResultRow` does, so its header strip lands 24px under the sticky header AND the
+  sticky search band - a bare `scroll-mt-6` hid the strip behind them) and puts keyboard focus on its _Close_ chevron, since the _Open_ one unmounted with the
+  closed row. Focus is only taken back from the page itself, never from a dialog or field the
+  list re-rendered behind.
 - **Where the rest goes** — _Request transfer_ → `PORTAL.subscriber?entity=` and _Review and
   accept_ → `PORTAL.incoming?transfer=`, both built (§14); the seams still to be built from
   their own Figma frames: _Subscribe_ → `moduleRoutes(id).activate(code)`; the payment-failed
@@ -553,10 +564,12 @@ company's page model `GET /api/entities/{id}/modules` and its nominated card
 ticks, kept beside that answer) and `lib/subscriptionSummary.ts`, the pure view where the
 design's rules live (`buildSummaryView(page, entity, wallet, today, pending)`, `toggleTick`):
 
-- **The cards** reuse the module page's vocabulary (`lib/moduleState.ts`): "Get Started / 30
-  days trial available" with the illustration dimmed, "Trial / N days remaining", "Trial
-  Expired", "Active", "Cancellation pending / Ends in N days", "Subscription Suspended". Only a
-  **ticked** card carries the teal fill, border and glow.
+- **The cards** are the module page's card, onboarding's design (`ModuleCardShell`, §9 "Card
+  looks"), with a reserved chip slot under the status, and they use the page's vocabulary
+  (`lib/moduleState.ts`): "Get Started / 30 days trial available", "Trial / N days remaining",
+  "Trial Expired", "Active", "Cancellation pending / Ends in N days", "Subscription
+  Suspended". Only a **ticked** card carries the teal gradient frame and glow, as a picked card
+  does in onboarding; a card with a tick to press lifts on hover.
 - **The tick** is the state: ACTIVE (not winding down) → ticked, a press means _cancel_; a
   running trial → unticked, a press _confirms_ it (the N-frames: once confirmed — a card and this
   company's consent, `needs_card` false — it is ticked and a press means cancel); trial expired →
@@ -720,7 +733,7 @@ button in 05·B lands". Built 2026-09-22.
   for the payer's on the way, through Flask's `/handoff/minty-web?next=/subscription` with no
   `entity_id` (`lib/auth.ts::isEntityScoped`, `lib/handoff.ts::redirectToHandoff`; only Flask
   mints). A token already unscoped goes straight there. So 08-A after a result is the payer's:
-  "My entities" in the header, and its way out is Minty's entity list. Back into the list from
+  "Subscriptions" in the header (it read "My entities" until 2026-10-02), and its way out is Minty's entity list. Back into the list from
   there: _Manage Subscription_ on the landing. The illustrations are the design's (`public/portal/minty-celebrating.png`,
   `minty-heart.png`, cropped and shrunk).
 - **Readings and gaps, for the design**: the base frame 05·C-4 ("Subscription Update

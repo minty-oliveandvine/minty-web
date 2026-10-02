@@ -36,7 +36,7 @@ import {
 } from "@/features/subscription/lib/subscriptionSummary";
 
 import { CardBrand, SUMMARY_MARK } from "@/features/subscription/components/CardBrand";
-import { MODULE_ART } from "@/features/subscription/components/ModuleCard";
+import { ModuleCardShell, ModuleStatus } from "@/features/subscription/components/ModuleCard";
 import { RowFooter } from "@/features/subscription/components/RowFooter";
 import { RowMenu } from "@/features/subscription/components/RowMenu";
 
@@ -61,10 +61,11 @@ const CHIP: Record<Chip, string> = {
   Removing: "bg-[#fff7ec] text-[#cc7f03]",
 };
 
+/** The card's own colour (grey, teal when ticked) unless the state has one of its own. */
 const TONE: Record<ModuleStatusLine["tone"], string> = {
   accent: "text-accent",
-  teal: "text-quiet",
-  muted: "text-quiet",
+  teal: "",
+  muted: "",
   info: "text-info",
   plain: "text-black",
 };
@@ -103,57 +104,30 @@ export function SummaryModuleCard({
   module: SummaryModule;
   onToggle?: () => void;
 }) {
-  const art = MODULE_ART[module.code];
-  const live = module.view.live;
-  const frame = live
-    ? "border-2 border-[#4fc7c7] bg-[#f5ffff] shadow-[0px_4px_12px_0px_rgba(69,214,214,0.1),0px_4px_20px_4px_rgba(69,214,214,0.2)]"
-    : "border border-[#e6e6e6] bg-white";
-  const { status } = module.view;
   return (
-    <article
-      aria-label={module.name}
-      data-module={module.code}
-      data-state={module.view.state}
-      data-ticked={module.tick === "ticked"}
-      onClick={onToggle}
-      className={`flex h-[354px] w-full flex-col items-center rounded-[20px] px-4 pt-[31px] text-center ${frame} ${
-        onToggle ? "cursor-pointer" : ""
-      }`}
-    >
-      <div
-        className={`flex h-[120px] w-[167px] items-center justify-center overflow-hidden rounded-[13px] ${art.tile} ${
-          live ? "" : "opacity-50"
-        }`}
-      >
-        <Image
-          src={art.src}
-          alt=""
-          width={art.width}
-          height={art.height}
-          className={art.box}
-          unoptimized
-        />
-      </div>
-      <h3 className="mt-4 text-[26px] font-bold leading-tight text-ink">{module.name}</h3>
-      <div className="mt-auto font-bold">
-        {status.eyebrow && (
-          <p className={`text-sm ${status.tone === "info" ? "text-quiet" : "text-black"}`}>
-            {status.eyebrow}
-          </p>
-        )}
-        <p className={`text-xl ${TONE[status.tone]}`}>{status.text}</p>
-      </div>
-      <div className="flex h-[46px] items-center">
-        {module.chip && (
+    <ModuleCardShell
+      code={module.code}
+      name={module.name}
+      description={module.view.description}
+      selected={module.view.live}
+      status={<ModuleStatus status={module.view.status} tone={TONE} />}
+      footer={
+        module.chip ? (
           <span
             data-chip={module.chip}
             className={`rounded-lg px-6 py-1 text-sm font-bold ${CHIP[module.chip]}`}
           >
             {module.chip}
           </span>
-        )}
-      </div>
-    </article>
+        ) : null
+      }
+      onClick={onToggle}
+      data={{
+        "data-module": module.code,
+        "data-state": module.view.state,
+        "data-ticked": module.tick === "ticked",
+      }}
+    />
   );
 }
 
@@ -372,7 +346,6 @@ export function SubscriptionSummaryRow({
   view,
   error,
   menu,
-  focused = false,
   on,
 }: {
   entity: PortalEntity;
@@ -382,22 +355,29 @@ export function SubscriptionSummaryRow({
   view: SummaryView | null;
   error: string | null;
   menu: MenuItem[];
-  /** Arrived by `?entity=`: bring the open row into view. */
-  focused?: boolean;
   on: SummaryRowHandlers;
 }) {
   const loading = status === "loading";
+  // However it opened - a click on its row or its chevron, or `?entity=` - the open row is what
+  // the person is looking at now: bring it to the top of the view (the user, 2026-10-02: "should
+  // focus on the open row"), and put keyboard focus on its chevron. The closed row's "Open"
+  // chevron unmounted with it, so focus fell to the page; it is only taken back from there, never
+  // from a dialog or a field the list re-rendered behind.
   const ref = useRef<HTMLLIElement>(null);
+  const chevron = useRef<HTMLButtonElement>(null);
   useEffect(() => {
-    if (focused) ref.current?.scrollIntoView({ block: "start" });
-  }, [focused]);
+    const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    ref.current?.scrollIntoView?.({ block: "start", behavior: reduce ? "auto" : "smooth" });
+    const active = document.activeElement;
+    if (!active || active === document.body) chevron.current?.focus({ preventScroll: true });
+  }, []);
 
   return (
     <li
       ref={ref}
       data-entity={entity.entity_id}
       data-open
-      className="flex flex-col gap-8 rounded-xl bg-white px-8 pb-8 pt-10 shadow-[0px_2px_8px_0px_rgba(0,0,0,0.1)]"
+      className="scroll-mt-[var(--list-sticky-top)] flex flex-col gap-8 rounded-xl bg-white px-8 pb-8 pt-10 shadow-[0px_2px_8px_0px_rgba(0,0,0,0.1)]"
     >
       {/*
         The strip is the click target, not the whole `<li>`: the panel below holds the cards and
@@ -412,6 +392,7 @@ export function SubscriptionSummaryRow({
         <h3 className="min-w-0 truncate text-[25px] font-bold text-black">{entity.entity_name}</h3>
         <div className="flex items-center gap-4">
           <button
+            ref={chevron}
             type="button"
             onClick={on.onClose}
             aria-label={`Close ${entity.entity_name}`}

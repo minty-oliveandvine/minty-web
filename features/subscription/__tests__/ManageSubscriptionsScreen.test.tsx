@@ -286,15 +286,33 @@ describe("ManageSubscriptionsScreen", { timeout: 15_000 }, () => {
     // The list's other rows keep their cells; only the open one grows.
     expect(screen.getAllByRole("region", { name: "Subscription Summary" })).toHaveLength(1);
 
+    // Opened, it is what the person looks at: scrolled to and focused, from the chevron...
+    expect(vi.mocked(Element.prototype.scrollIntoView).mock.contexts).toContain(row);
+    expect(within(row).getByRole("button", { name: "Close Kestrel Foods Limited" })).toHaveFocus();
+
+    vi.mocked(Element.prototype.scrollIntoView).mockClear();
     await userEvent.click(screen.getByRole("button", { name: "Open Mino Market Limited" }));
     const opened = await screen.findByRole("region", { name: "Subscription Summary", busy: false });
     expect(opened.closest("li")).toHaveAttribute("data-entity", "e-mino-market-limited");
+    expect(vi.mocked(Element.prototype.scrollIntoView).mock.contexts).toContain(
+      opened.closest("li"),
+    );
     expect(
       screen.queryByRole("button", { name: "Close Kestrel Foods Limited" }),
     ).not.toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("button", { name: "Close Mino Market Limited" }));
     expect(screen.queryByRole("region", { name: "Subscription Summary" })).not.toBeInTheDocument();
+
+    // ...and from a click anywhere on the row.
+    await userEvent.click(screen.getByText("Kestrel Foods Limited"));
+    const clicked = await screen.findByRole("region", { name: "Subscription Summary", busy: false });
+    const clickedRow = clicked.closest("li") as HTMLElement;
+    expect(clickedRow).toHaveAttribute("data-entity", "e-kestrel-foods-limited");
+    expect(
+      within(clickedRow).getByRole("button", { name: "Close Kestrel Foods Limited" }),
+    ).toHaveFocus();
+    await userEvent.click(within(clickedRow).getByRole("button", { name: "Close Kestrel Foods Limited" }));
 
     await userEvent.click(screen.getByRole("button", { name: "Sort by Entity Name" }));
     const names = screen.getAllByRole("listitem").map((li) => li.querySelector("p")?.textContent);

@@ -9,7 +9,6 @@ import {
   daysLabel,
   daysUntil,
   moduleState,
-  pageLook,
   paymentFailed,
   resolveModuleState,
   sharedCta,
@@ -146,7 +145,7 @@ describe("daysUntil", () => {
   });
 });
 
-describe("sharedCta / paymentFailed / pageLook", () => {
+describe("sharedCta / paymentFailed", () => {
   const views = (frame: keyof typeof FIXTURES) =>
     FIXTURES[frame].cards.map((c) => resolveModuleState(c, TODAY));
 
@@ -161,17 +160,6 @@ describe("sharedCta / paymentFailed / pageLook", () => {
     expect(sharedCta(views("D"))).toBeNull();
     expect(sharedCta(views("E"))).toBeNull();
     expect(sharedCta(views("F"))).toBeNull();
-  });
-
-  it("only 03-A draws the CTA inside the card", () => {
-    expect(pageLook(views("A"))).toBe("inline");
-    expect(pageLook([...views("A")].reverse())).toBe("inline");
-    for (const frame of ["B", "C", "D", "E", "F"] as const) {
-      expect(pageLook(views(frame)), frame).toBe("stacked");
-    }
-    // one card alone, or two of the same state, is not the frame
-    expect(pageLook(views("A").slice(0, 1))).toBe("stacked");
-    expect(pageLook([views("A")[1], views("A")[1]])).toBe("stacked");
   });
 
   it("the banner shows only when a module is suspended", () => {

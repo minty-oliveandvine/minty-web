@@ -1,17 +1,12 @@
 /**
- * The two cards side by side. Where each card's CTA goes is the page's look
- * (`pageLook`): inside the card on frame 03-A, which is the tall 504px card; below it on the
- * other frames, whose cards end under the status line - or, when both cards share the same
- * "Manage Subscription" (frames 03-B, 03-C), one CTA centred under the pair. No CTAs at all
- * for a viewer who may not manage the subscription.
+ * The two cards side by side, laid out as onboarding's module step lays its cards out (300px
+ * cards 42px apart, what goes under a card 34px below it). Each card's CTA sits under it - or,
+ * when both cards share the same "Manage Subscription" (frames 03-B, 03-C), one CTA centred
+ * under the pair. No CTAs at all for a viewer who may not manage the subscription.
  */
 
 import type { ModuleCode } from "@/features/subscription/api/moduleSettings";
-import {
-  pageLook,
-  type ModuleCta as ModuleCtaModel,
-  type ModuleView,
-} from "@/features/subscription/lib/moduleState";
+import type { ModuleCta as ModuleCtaModel, ModuleView } from "@/features/subscription/lib/moduleState";
 
 import { ModuleCard } from "@/features/subscription/components/ModuleCard";
 import { ModuleCta } from "@/features/subscription/components/ModuleCta";
@@ -52,25 +47,19 @@ export function ModuleCardGrid({
   busyCode: ModuleCode | null;
   on: ModuleCtaHandlers;
 }) {
-  const look = pageLook(views);
-  const inline = look === "inline";
-  const own = (view: ModuleView) =>
-    canManage && !shared ? (
-      <ModuleCta
-        cta={view.cta}
-        busy={busyCode === view.code}
-        onClick={press(view.cta, view.code, on)}
-      />
-    ) : null;
   return (
-    <div className="flex flex-col items-center gap-7">
-      <ul className="flex flex-wrap justify-center gap-11">
+    <div className="flex flex-col items-center gap-[34px]">
+      <ul className="flex flex-wrap justify-center gap-[42px]">
         {views.map((view) => (
-          <li key={view.code} className="flex flex-col items-center gap-7">
-            <ModuleCard view={view} look={look}>
-              {inline ? own(view) : null}
-            </ModuleCard>
-            {inline ? null : own(view)}
+          <li key={view.code} className="flex w-[300px] flex-col items-center gap-[34px]">
+            <ModuleCard view={view} />
+            {canManage && !shared && (
+              <ModuleCta
+                cta={view.cta}
+                busy={busyCode === view.code}
+                onClick={press(view.cta, view.code, on)}
+              />
+            )}
           </li>
         ))}
       </ul>

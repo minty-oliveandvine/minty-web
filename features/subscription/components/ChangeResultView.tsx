@@ -85,7 +85,7 @@ export function ChangeResultRow({
       ref={ref}
       data-entity={entity.entity_id}
       data-result={result.kind}
-      className="scroll-mt-6 flex flex-col gap-8 rounded-xl bg-white px-8 pb-8 pt-10 shadow-[0px_2px_8px_0px_rgba(0,0,0,0.1)]"
+      className="scroll-mt-[var(--list-sticky-top)] flex flex-col gap-8 rounded-xl bg-white px-8 pb-8 pt-10 shadow-[0px_2px_8px_0px_rgba(0,0,0,0.1)]"
     >
       <div className="flex items-center justify-between gap-4">
         <h3 className="min-w-0 truncate text-[25px] font-bold text-black">{entity.entity_name}</h3>

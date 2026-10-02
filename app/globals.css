@@ -24,11 +24,7 @@
   --pill: #e5e7eb;
   --pill-text: #374151;
   --card-live: #f5ffff;
-  --card-live-border: rgba(79, 199, 199, 0.22);
-  --card-off: rgba(238, 240, 243, 0.4);
-  --card-off-border: #d9d9d9;
   --tile-petty: #fff7ec;
-  --tile-payment: #edf5fc;
   --avatar-bg: #ffe6b1;
   --avatar-fg: #6b3a12;
   --alert-bg: #fff5f5;
@@ -41,6 +37,10 @@
   /* AppHeader's height (its row is h-16 / sm:h-18, plus the 1px border and the notch): what a
      bar that sticks UNDER the sticky header uses as its top. Change the two together. */
   --app-header-h: calc(4rem + 1px + env(safe-area-inset-top, 0px));
+  /* Manage Subscriptions' search band, sticking under the header: SearchField's 62px plus the
+     band's py-3. A row scrolled to the top clears both (`--list-sticky-top`). Change together. */
+  --list-search-h: calc(62px + 1.5rem);
+  --list-sticky-top: calc(var(--app-header-h) + var(--list-search-h) + 1.5rem);
 }
 
 @media (width >= 40rem) {

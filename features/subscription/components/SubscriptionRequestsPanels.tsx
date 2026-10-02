@@ -38,6 +38,7 @@ import {
   expiresLabel,
 } from "@/features/subscription/lib/transfer";
 
+import { MODULE_CARD_HEIGHT } from "@/features/subscription/components/ModuleCard";
 import {
   PLAN_TONE,
   PriceBox,
@@ -226,8 +227,8 @@ export function IncomingRequestReview({
           ))
         ) : (
           <>
-            <div className="h-[354px] animate-pulse rounded-[20px] border border-[#e6e6e6] bg-[#f7f9fa]" />
-            <div className="h-[354px] animate-pulse rounded-[20px] border border-[#e6e6e6] bg-[#f7f9fa]" />
+            <div className={`${MODULE_CARD_HEIGHT} animate-pulse rounded-[23px] bg-[#ececea]`} />
+            <div className={`${MODULE_CARD_HEIGHT} animate-pulse rounded-[23px] bg-[#ececea]`} />
           </>
         )}
 

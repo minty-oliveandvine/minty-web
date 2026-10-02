@@ -183,7 +183,6 @@ function Rows({
             view={open.view}
             error={open.error}
             menu={row.menu}
-            focused={row.entity.entity_id === focusEntityId}
             on={summaryHandlers(row.entity, on)}
           />
         ) : (

@@ -25,6 +25,6 @@ export function PortalChrome() {
   const entityName = useSyncExternalStore(noSubscribe, readEntityName, serverEmpty);
 
   return (
-    <AppHeader lead={<PortalBackSlot />} companyName={entityName || "My entities"} />
+    <AppHeader lead={<PortalBackSlot />} companyName={entityName || "Subscriptions"} />
   );
 }

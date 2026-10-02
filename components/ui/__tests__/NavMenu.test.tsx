@@ -125,7 +125,7 @@ describe("the header's avatar, without a sidebar around it", () => {
     setAuth(TOKEN, "", "");
     at("/subscription");
     _setViewerLoaderForTests(() => Promise.resolve({ name: "Olive Vine", initials: "OV" }));
-    render(<AppHeader title="Subscriptions" back={{ href: "/entities", label: "Entity List" }} companyName="My entities" />);
+    render(<AppHeader title="Subscriptions" back={{ href: "/entities", label: "Entity List" }} companyName="Subscriptions" />);
 
     const badge = await screen.findByRole("link", { name: "Olive Vine, My Profile" });
     expect(badge).toHaveTextContent("OV");

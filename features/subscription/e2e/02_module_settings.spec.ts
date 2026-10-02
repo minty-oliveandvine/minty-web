@@ -121,11 +121,18 @@ test.describe("module settings page", () => {
     const request = body(page).getByRole("article", { name: "Payment Request" });
     await expect(petty.getByText("3 days remaining")).toBeVisible();
     await expect(request.getByText("30 days trial available")).toBeVisible();
-    // 03-A's redesign: the tall card, each CTA inside it
-    await expect(petty.getByRole("button", { name: "Manage Subscription" })).toBeVisible();
-    await expect(request.getByRole("button", { name: "Start Free Trial" })).toBeVisible();
-    expect((await petty.boundingBox())?.height).toBe(504);
-    expect((await request.boundingBox())?.height).toBe(504);
+    // onboarding's card (300x366 with its frame), each CTA 34px under it, not inside it
+    const under = (card: typeof petty) => card.locator("xpath=..");
+    await expect(petty.getByRole("button")).toHaveCount(0);
+    const manage = under(petty).getByRole("button", { name: "Manage Subscription" });
+    await expect(manage).toBeVisible();
+    await expect(under(request).getByRole("button", { name: "Start Free Trial" })).toBeVisible();
+    for (const card of [petty, request]) {
+      const box = (await card.boundingBox())!;
+      expect([box.width, box.height]).toEqual([300, 366]);
+    }
+    const [card, cta] = [(await petty.boundingBox())!, (await manage.boundingBox())!];
+    expect(cta.y - (card.y + card.height)).toBe(34);
     await expect(body(page).getByRole("alert")).toHaveCount(0);
   });
 

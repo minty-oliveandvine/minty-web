@@ -49,7 +49,7 @@ export type ModuleView = {
   name: string;
   description: string;
   state: ModuleState;
-  /** The card's look: live (teal) or inactive (grey, illustration dimmed). */
+  /** The card's look: live (the teal gradient frame) or inactive (the grey frame). */
   live: boolean;
   status: ModuleStatusLine;
   /** Days until the period or access ends, where the state names one; else null. */
@@ -187,22 +187,4 @@ export function sharedCta(views: ModuleView[]): ModuleCta | null {
 /** The page banner (frame 03-F) shows when any module is suspended. */
 export function paymentFailed(views: ModuleView[]): boolean {
   return views.some((v) => v.state === "past_due");
-}
-
-/**
- * Where the page draws each card's CTA. Frame 03-A (node 1410:2611) was redesigned on
- * 2026-09-22 with the CTA INSIDE the card, as a 248x66 rounded button; the other frames still
- * draw it under the card (or once, centred, for the shared CTA) until they are redesigned. The
- * cards themselves are the same size in every frame - only the CTA moves.
- */
-export type PageLook = "inline" | "stacked";
-
-/**
- * `inline` for frame 03-A only: every card is in trial or eligible for one, and both states
- * occur (a page of two trials is 03-B, a page of two eligible cards has no frame).
- */
-export function pageLook(views: ModuleView[]): PageLook {
-  const states = new Set(views.map((v) => v.state));
-  const onlyThese = [...states].every((s) => s === "trialing" || s === "trial_eligible");
-  return onlyThese && states.size === 2 ? "inline" : "stacked";
 }

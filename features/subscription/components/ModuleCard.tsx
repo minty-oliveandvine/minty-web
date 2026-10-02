@@ -1,123 +1,156 @@
 /**
- * One module's card (Figma 03: illustration tile, name, description, status). Two looks: live
- * (teal) when the module is in trial, active or winding down; inactive (grey, illustration
- * dimmed) when it never started, expired or is suspended. Everything it shows is a ModuleView
- * (`lib/moduleState.ts`) - no card flags are read here.
- *
- * The card's height is the page's look (`pageLook`): frame 03-A (node 1410:2611) is 300x504
- * and draws the CTA inside the card, passed as `children`, on the bottom edge; every other
- * frame's cards end under the status line and keep the CTA below the card. On one page every
- * card is the same height either way - the status block is a fixed box.
+ * A module's card, in the onboarding wizard's design (minty-onboarding-web, step 2's
+ * `.mp-*` cards; since 2026-10-02 every module card here is that card): a 3px frame - grey, or
+ * the teal gradient and glow when the card is live - around a 360px card washed in the module's
+ * own accent, the illustration filling its top, the name under it, the status pinned to the
+ * bottom edge, and the description over the whole card on hover. `ModuleCardShell` is that card;
+ * `ModuleCard` is the module settings page's (Figma 03) and `SummaryModuleCard` the open row's
+ * (05·A). Everything shown is a ModuleView (`lib/moduleState.ts`) - no card flags are read here.
  */
 
 import Image from "next/image";
 import type { ReactNode } from "react";
 
 import type { ModuleCode } from "@/features/subscription/api/moduleSettings";
-import type {
-  ModuleStatusLine,
-  ModuleView,
-  PageLook,
-} from "@/features/subscription/lib/moduleState";
+import type { ModuleStatusLine, ModuleView } from "@/features/subscription/lib/moduleState";
 
 /**
- * Each module's illustration and tile (shared with the open row's cards, Figma 05·A).
- * `width`/`height` are the PNG's own pixels, not the drawn size: Tailwind's preflight
- * (`img { height: auto }`) derives the height from the file's ratio, so declaring a square
- * box drew a height the attribute denied and next/image warned on every load. `box` is how
- * the art sits in its tile: since 2026-10-02 both are onboarding's framed illustrations
- * (onboarding/public/*-icon.png, 556x384) and fill the whole 167x120 tile, stretched the 4%
- * the two ratios differ so the illustration's own frame shows on all four sides.
+ * Each module's illustration and accent, as onboarding draws them (its `MODULES`: the same two
+ * 556x384 PNGs, `pettycash-icon.png` / `payment-icon.png`, and the same two accents).
+ * `width`/`height` are the PNG's own pixels, not the drawn size.
  */
-export const MODULE_ART: Record<
-  ModuleCode,
-  { src: string; width: number; height: number; box: string; tile: string }
-> = {
-  PETTY_CASH: {
-    src: "/modules/petty-cash.png",
-    width: 556,
-    height: 384,
-    box: "h-full w-full object-fill",
-    tile: "bg-[var(--tile-petty)]",
-  },
-  PAYMENT_REQUEST: {
-    src: "/modules/payment-request.png",
-    width: 556,
-    height: 384,
-    box: "h-full w-full object-fill",
-    tile: "bg-[var(--tile-payment)]",
-  },
+export const MODULE_ART: Record<ModuleCode, { src: string; width: number; height: number; accent: string }> = {
+  PETTY_CASH: { src: "/modules/petty-cash.png", width: 556, height: 384, accent: "#f5b945" },
+  PAYMENT_REQUEST: { src: "/modules/payment-request.png", width: 556, height: 384, accent: "#3aa6f5" },
 };
+
+/** The card's frame and its inner card, outer edge to outer edge: 360 + 2 x 3px. */
+export const MODULE_CARD_HEIGHT = "h-[366px]";
+
+export function ModuleCardShell({
+  code,
+  name,
+  description,
+  selected,
+  status,
+  footer,
+  onClick,
+  data,
+}: {
+  code: ModuleCode;
+  name: string;
+  description: string;
+  /** Onboarding's "selected": the teal gradient frame, its glow and the teal status line. */
+  selected: boolean;
+  status: ReactNode;
+  /** Under the status, pinned with it (the open row's chip slot); the name makes room for it. */
+  footer?: ReactNode;
+  /** A pointer affordance only (the open row's tick); a card with one lifts on hover. */
+  onClick?: () => void;
+  data: Record<`data-${string}`, string | boolean>;
+}) {
+  const art = MODULE_ART[code];
+  const frame = selected
+    ? "bg-[linear-gradient(90deg,#00cbc6_0%,#00d5bf_100%)] shadow-[0_12px_32px_rgba(0,203,198,0.28)]"
+    : "bg-[#ececea]";
+  const lift = onClick
+    ? "cursor-pointer hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(15,20,25,0.08)]"
+    : "";
+  return (
+    <article
+      aria-label={name}
+      {...data}
+      onClick={onClick}
+      className={`group relative w-full rounded-[23px] p-[3px] transition-[background,transform,box-shadow] duration-200 motion-reduce:transform-none motion-reduce:transition-none ${frame} ${lift}`}
+    >
+      <div
+        className="relative flex h-[360px] w-full flex-col items-center overflow-hidden rounded-[20px]"
+        style={{
+          background: `linear-gradient(150deg, color-mix(in oklab, ${art.accent} 12%, white), white 65%)`,
+        }}
+      >
+        <div className="flex min-h-0 w-full flex-auto items-center justify-center px-5 pt-5">
+          {/* Served as committed: Next's optimizer re-encoding to webp hung the request on a
+              Windows dev box (curl with a browser Accept header timed out at 20 s). */}
+          <Image
+            src={art.src}
+            alt=""
+            width={art.width}
+            height={art.height}
+            className="block h-auto max-h-full w-[92%] object-contain"
+            priority
+            unoptimized
+          />
+        </div>
+        {/* Inset so a long name balances over two lines; the margin is the room the pinned
+            status (and the chip, when there is one) takes at the bottom. */}
+        <h3
+          className={`mt-2 px-[34px] text-center text-[26px] font-bold leading-tight tracking-[-0.015em] text-balance text-[#16202e] ${
+            footer === undefined ? "mb-[86px]" : "mb-[118px]"
+          }`}
+        >
+          {name}
+        </h3>
+        {/* Pinned, not flowing after the name: both cards' status lines line up however their
+            names wrap. */}
+        <div
+          className={`absolute inset-x-0 bottom-[26px] flex flex-col items-center gap-0.5 text-center text-xl font-bold leading-[1.2] ${
+            selected ? "text-[#18c4c7]" : "text-[#8a8d8b]"
+          }`}
+        >
+          {status}
+          {footer !== undefined && <div className="mt-2 flex h-[26px] items-center">{footer}</div>}
+        </div>
+        {/* The description, over the whole card on hover. Inert, so a click lands on the card. */}
+        <div className="pointer-events-none absolute inset-0 z-[2] flex translate-y-2 flex-col justify-center gap-2.5 bg-white/95 p-7 text-center opacity-0 transition-[opacity,transform] duration-200 group-hover:translate-y-0 group-hover:opacity-100 motion-reduce:transition-none">
+          <p aria-hidden className="text-xl font-bold tracking-[-0.01em] text-[#16202e]">
+            {name}
+          </p>
+          <p className="whitespace-pre-line text-[15px] leading-[1.55] text-[#4a4d4b]">{description}</p>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+/**
+ * The status in the card's colours: the eyebrow takes the card's (grey, or teal when live); a
+ * state with a colour of its own - an urgent trial, a cancellation pending, a trial on offer -
+ * keeps it on its value line.
+ */
+export function ModuleStatus({
+  status,
+  tone,
+}: {
+  status: ModuleStatusLine;
+  tone: Record<ModuleStatusLine["tone"], string>;
+}) {
+  return (
+    <>
+      {status.eyebrow && <p>{status.eyebrow}</p>}
+      <p className={tone[status.tone]}>{status.text}</p>
+    </>
+  );
+}
 
 const TONE: Record<ModuleStatusLine["tone"], string> = {
   accent: "text-accent",
-  teal: "text-teal-strong",
-  muted: "text-quiet",
+  teal: "",
+  muted: "",
   info: "text-info",
   plain: "text-black",
 };
 
-export function ModuleCard({
-  view,
-  look,
-  children,
-}: {
-  view: ModuleView;
-  look: PageLook;
-  children?: ReactNode;
-}) {
-  const art = MODULE_ART[view.code];
-  const frame = view.live
-    ? "border-2 border-[var(--card-live-border)] bg-[var(--card-live)]"
-    : "border border-[var(--card-off-border)] bg-[var(--card-off)]";
-  // Fixed either way: with auto height the live card's 2px border made it 2px taller than
-  // the inactive card beside it (frame 03-D). 402 is the live card's natural height.
-  const height = look === "inline" ? "h-[504px]" : "h-[402px]";
-
+/** The module settings page's card (Figma 03); its CTA is drawn under it by the grid. */
+export function ModuleCard({ view }: { view: ModuleView }) {
   return (
-    <article
-      aria-label={view.name}
-      data-module={view.code}
-      data-state={view.state}
-      className={`flex ${height} w-[300px] flex-col items-center rounded-[20px] px-6 pb-8 pt-[31px] text-center ${frame}`}
-    >
-      <div
-        className={`flex h-[120px] w-[167px] items-center justify-center overflow-hidden rounded-[13px] ${art.tile} ${
-          view.live ? "" : "opacity-50"
-        }`}
-      >
-        {/* Two 5 KB PNGs: the optimizer would re-encode them to webp for nothing, and on a
-            Windows dev box that re-encode hung the request (curl with a browser Accept header
-            timed out at 20 s; the plain PNG answered in 6 ms). Served as committed. */}
-        <Image
-          src={art.src}
-          alt=""
-          width={art.width}
-          height={art.height}
-          className={art.box}
-          priority
-          unoptimized
-        />
-      </div>
-      <h2 className="mt-4 text-[26px] font-bold leading-tight text-ink">{view.name}</h2>
-      {/* A fixed box (216px to 318px from the card's top) so the status line sits at the same
-          height on every card however many lines the description wraps to; a newline in the
-          copy is honoured (the design breaks Petty Cash's after "expenses,"). */}
-      <p className="mt-4 h-[102px] whitespace-pre-line text-base leading-normal text-black">
-        {view.description}
-      </p>
-      {/* A fixed 48px box too (the tallest variant: a 20px eyebrow over a 20px line), so cards
-          in different states are the same height on a page whose CTAs sit under them. */}
-      <div className="h-12 font-bold">
-        {view.status.eyebrow && (
-          // "Get Started" is drawn as large as its value line; the other eyebrows are small.
-          <p className={view.status.tone === "info" ? "text-xl text-quiet" : "text-sm text-black"}>
-            {view.status.eyebrow}
-          </p>
-        )}
-        <p className={`text-xl ${TONE[view.status.tone]}`}>{view.status.text}</p>
-      </div>
-      {children && <div className="mt-auto w-full">{children}</div>}
-    </article>
+    <ModuleCardShell
+      code={view.code}
+      name={view.name}
+      description={view.description}
+      selected={view.live}
+      status={<ModuleStatus status={view.status} tone={TONE} />}
+      data={{ "data-module": view.code, "data-state": view.state }}
+    />
   );
 }

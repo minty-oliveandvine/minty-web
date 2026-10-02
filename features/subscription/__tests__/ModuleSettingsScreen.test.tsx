@@ -46,6 +46,8 @@ async function show(page: ModulePage, from: "bills" | null = null) {
 }
 
 const card = (name: string) => within(screen.getByRole("article", { name }));
+/** A card's list item: the card and what is drawn under it. */
+const under = (name: string) => within(screen.getByRole("article", { name }).closest("li")!);
 
 /** The lines of a modal title, as its hard breaks divide them. */
 const titleLines = (heading: HTMLElement) =>
@@ -146,12 +148,13 @@ describe("ModuleSettingsScreen", () => {
     expect(screen.getByRole("heading", { level: 2, name: "Modules" })).toBeInTheDocument();
     expect(card("Petty Cash").getByText("3 days remaining")).toBeInTheDocument();
     expect(card("Payment Request").getByText("30 days trial available")).toBeInTheDocument();
-    // this frame's redesign draws each CTA inside its card
+    // the onboarding card holds no control: each CTA is under its own card, in its list item
+    expect(card("Petty Cash").queryByRole("button")).toBeNull();
     expect(
-      card("Petty Cash").getByRole("button", { name: "Manage Subscription" }),
+      under("Petty Cash").getByRole("button", { name: "Manage Subscription" }),
     ).toBeInTheDocument();
     expect(
-      card("Payment Request").getByRole("button", { name: "Start Free Trial" }),
+      under("Payment Request").getByRole("button", { name: "Start Free Trial" }),
     ).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: /Subscription|Trial/ })).toHaveLength(2);
     expect(screen.queryByRole("alert")).toBeNull();
