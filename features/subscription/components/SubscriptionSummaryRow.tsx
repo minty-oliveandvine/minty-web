@@ -121,7 +121,7 @@ export function SummaryModuleCard({
       }`}
     >
       <div
-        className={`flex h-[120px] w-[167px] items-center justify-center rounded-[13px] ${art.tile} ${
+        className={`flex h-[120px] w-[167px] items-center justify-center overflow-hidden rounded-[13px] ${art.tile} ${
           live ? "" : "opacity-50"
         }`}
       >

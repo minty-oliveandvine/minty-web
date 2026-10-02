@@ -24,8 +24,10 @@ import type {
  * Each module's illustration and tile (shared with the open row's cards, Figma 05·A).
  * `width`/`height` are the PNG's own pixels, not the drawn size: Tailwind's preflight
  * (`img { height: auto }`) derives the height from the file's ratio, so declaring a square
- * box drew a height the attribute denied and next/image warned on every load. `box` is the
- * drawn width the design asks for; the height follows from the ratio.
+ * box drew a height the attribute denied and next/image warned on every load. `box` is how
+ * the art sits in its tile: since 2026-10-02 both are onboarding's framed illustrations
+ * (onboarding/public/*-icon.png, 556x384) and fill the whole 167x120 tile, stretched the 4%
+ * the two ratios differ so the illustration's own frame shows on all four sides.
  */
 export const MODULE_ART: Record<
   ModuleCode,
@@ -33,16 +35,16 @@ export const MODULE_ART: Record<
 > = {
   PETTY_CASH: {
     src: "/modules/petty-cash.png",
-    width: 240,
-    height: 201,
-    box: "w-20",
+    width: 556,
+    height: 384,
+    box: "h-full w-full object-fill",
     tile: "bg-[var(--tile-petty)]",
   },
   PAYMENT_REQUEST: {
     src: "/modules/payment-request.png",
-    width: 210,
-    height: 145,
-    box: "w-[95px]",
+    width: 556,
+    height: 384,
+    box: "h-full w-full object-fill",
     tile: "bg-[var(--tile-payment)]",
   },
 };
@@ -80,7 +82,7 @@ export function ModuleCard({
       className={`flex ${height} w-[300px] flex-col items-center rounded-[20px] px-6 pb-8 pt-[31px] text-center ${frame}`}
     >
       <div
-        className={`flex h-[120px] w-[167px] items-center justify-center rounded-[13px] ${art.tile} ${
+        className={`flex h-[120px] w-[167px] items-center justify-center overflow-hidden rounded-[13px] ${art.tile} ${
           view.live ? "" : "opacity-50"
         }`}
       >
