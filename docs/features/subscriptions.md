@@ -23,7 +23,7 @@ or a company's _Modules_ settings (a scoped token, for that company's page). Nev
 | Add / edit a card | `/subscription/billing/add?account=`, `…/billing/edit?card=&account=` | **built** (§15): Stripe's own card fields on a SetupIntent (08-Y) - the card goes ON the account - and the name and expiry of a saved card (08-D) | —                                                                                                                                             |
 | Billing details   | `/subscription/billing/details?account=`          | **built** (§15): 08-C — the account's billing company and email, and the address in Stripe's own form (the billing address and name of the card it charges) | —                                                                                                                                             |
 | New billing account | — (a sheet, not a page)                           | **built** (§15): onboarding's `BillingSheet` over 08-A and 08-B - the list, then the form in place (a billing email and company, then the card - which OPENS the account), then "New Card added Successfully"; from the move's step 2 the company then moves onto it | —                                                                                                                                             |
-| Module settings   | `/subscription/entities/{id}/modules`             | **built** (§9): the settings chrome, the two module cards in their six states, the payment-failed banner, _Start Free Trial_, the `?from=bills` way back (no Stripe return: nothing leaves for Stripe) — over a stubbed API until step 3 | the pages the other CTAs lead to (Manage / Activate / Resume / Reactivate / payment method), each from its own Figma frame; the live API      |
+| Module settings   | `/subscription/entities/{id}/modules`             | **built** (§9): the settings chrome, the two module cards in their six states, the payment-failed banner, _Start Free Trial_, the way back (no Stripe return: nothing leaves for Stripe) — over a stubbed API until step 3 | the pages the other CTAs lead to (Manage / Activate / Resume / Reactivate / payment method), each from its own Figma frame; the live API      |
 
 **Skeletal by decision** (2026-09-21) for the portal screens: functional, minimal styling, a
 design later. The module settings page is the exception — its design exists (Figma
@@ -339,8 +339,8 @@ redrawn to the Figma design (section "03 · Settings › Module", six frames). W
   `components/layout/{Header,NavMenu}` (Inter through `next/font`, the `material-symbols`
   glyphs, the same classes - but for one fix of 2026-10-01: the company name's cap is a plain
   `max-w-[6.5rem]`, since `min(100%,6.5rem)` counts as no cap while the `shrink-0` block is sized
-  and a long name covered the way back on a phone): the way back (`‹ Payments` when `?from=bills`, else `‹ Reports`
-  to Minty's `/entity/{id}`), "Settings", `corporate_fare` + the company, the viewer's initials
+  and a long name covered the way back on a phone): "‹ Back" (to the page the person came from - `components/ui/BackLink.tsx`; for a new tab,
+  Minty's `/entity/{id}`; the `?from=bills` "‹ Payments" went 2026-10-05), "Settings", `corporate_fare` + the company, the viewer's initials
   (`viewer` on the page model) and the side menu - since 2026-09-29 the Figma 02 design on every
   page (`entities.md`): the person (the way to My Profile), _Select Entity_, _Manage
   subscriptions_, a Petty Cash section (Dashboard, Reports - into Minty through

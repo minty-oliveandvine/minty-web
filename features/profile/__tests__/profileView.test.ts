@@ -4,7 +4,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 
 import { clearAuth, setAuth } from "@/lib/auth";
-import { env } from "@/lib/env";
 import { HUB_PATHS } from "@/lib/hubPaths";
 
 import { SCOPED, SUPERMINTY } from "@/features/profile/__fixtures__/profile";
@@ -40,12 +39,10 @@ describe("profileView", () => {
     expect(planLabel(null)).toBeNull();
   });
 
-  it("the back arrow: the list, the payments app, or the company it was opened from", () => {
-    expect(backHref("", null)).toBe("/entities");
-    expect(backHref("", "bills")).toBe("/entities"); // no company: nothing to go back into
-    expect(backHref("e1", "bills")).toBe(`${env.PAYMENT_REQUEST_WEB_URL}/`);
+  it("the back arrow's new-tab fallback: the list, or the company it was opened from", () => {
+    expect(backHref("")).toBe("/entities"); // no company: nothing to go back into
     setAuth("h.eyJ1c2VyX2lkIjoidTEifQ.s", "e1", "Olive Shop");
-    expect(backHref("e1", null)).toContain(encodeURIComponent("/entity/e1/modules"));
+    expect(backHref("e1")).toContain(encodeURIComponent("/entity/e1/modules"));
   });
 
   it("sends only what changed, and refuses an emptied email before anything is sent", () => {

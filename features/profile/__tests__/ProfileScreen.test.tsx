@@ -26,11 +26,11 @@ function serve(body: unknown, status = 200) {
   );
 }
 
-async function show(profile: Profile, { from = null as string | null, slot = null as React.ReactNode } = {}) {
+async function show(profile: Profile, { slot = null as React.ReactNode } = {}) {
   serve(profile);
   render(
     <ToastProvider>
-      <ProfileScreen from={from} subscriptions={slot} />
+      <ProfileScreen subscriptions={slot} />
     </ToastProvider>,
   );
   await screen.findByRole("heading", { level: 2, name: profile.user.name });
@@ -88,11 +88,6 @@ describe("ProfileScreen", () => {
     expect(who.queryByText("Shop Manager")).toBeNull();
     expect(String(fetchMock.mock.calls[0][0])).toBe(`${env.PETTY_CASH_URL}/api/me/profile`);
     expect(screen.getByRole("link", { name: "Back" })).toHaveAttribute("href", "/entities");
-  });
-
-  it("the way back: the payments app when opened from it", async () => {
-    await show(SCOPED, { from: "bills" });
-    expect(screen.getByRole("link", { name: "Back" })).toHaveAttribute("href", `${env.PAYMENT_REQUEST_WEB_URL}/`);
   });
 
   it("edits in place, sends only what changed, and the menu shows the new name at once", async () => {

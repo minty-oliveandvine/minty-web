@@ -35,11 +35,11 @@ function serve(page: ModulePage) {
   );
 }
 
-async function show(page: ModulePage, from: "bills" | null = null) {
+async function show(page: ModulePage) {
   serve(page);
   render(
     <ToastProvider>
-      <ModuleSettingsScreen entityId="e1" from={from} today={TODAY} />
+      <ModuleSettingsScreen entityId="e1" today={TODAY} />
     </ToastProvider>,
   );
   await waitFor(() => expect(screen.queryByRole("status")).not.toBeInTheDocument());
@@ -69,12 +69,13 @@ describe("ModuleSettingsScreen", () => {
   });
 
   it("draws the settings chrome: the way back, the company, the viewer, the tabs", async () => {
-    await show(FIXTURES.A, "bills");
+    await show(FIXTURES.A);
 
     expect(screen.getByRole("heading", { level: 1, name: "Settings" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Payments" })).toHaveAttribute(
+    // "Back" goes where the person came from; its href is the new-tab fallback
+    expect(screen.getByRole("link", { name: "Back" })).toHaveAttribute(
       "href",
-      env.PAYMENT_REQUEST_WEB_URL,
+      `${env.PETTY_CASH_URL}/entity/e1`,
     );
     expect(screen.getByText("Olive & Vine Limited")).toBeInTheDocument();
     // the initials: My Profile (a link to the page here - no sidebar around a lone screen)
@@ -102,12 +103,8 @@ describe("ModuleSettingsScreen", () => {
     expect(tabs.getByText("Module")).toHaveAttribute("aria-current", "page");
   });
 
-  it("without from=bills the way back is Petty Cash's Reports, and Payment Settings hides when billing is off", async () => {
+  it("Payment Settings hides when billing is off", async () => {
     await show(FIXTURES.A);
-    expect(screen.getByRole("link", { name: "Reports" })).toHaveAttribute(
-      "href",
-      `${env.PETTY_CASH_URL}/entity/e1`,
-    );
     const tabs = within(screen.getByRole("navigation", { name: "Settings sections" }));
     expect(tabs.getByRole("link", { name: "Petty Cash Settings" })).toBeInTheDocument();
     expect(tabs.queryByRole("link", { name: "Payment Settings" })).toBeNull();
@@ -125,7 +122,7 @@ describe("ModuleSettingsScreen", () => {
     );
     render(
       <ToastProvider>
-        <ModuleSettingsScreen entityId="e1" from="bills" today={TODAY} />
+        <ModuleSettingsScreen entityId="e1" today={TODAY} />
       </ToastProvider>,
     );
     await waitFor(() => expect(screen.getByRole("alert")).toBeInTheDocument());
@@ -133,7 +130,7 @@ describe("ModuleSettingsScreen", () => {
     const tabs = within(screen.getByRole("navigation", { name: "Settings sections" }));
     expect(tabs.getByRole("link", { name: "Payment Settings" })).toHaveAttribute(
       "href",
-      `${env.PETTY_CASH_URL}/entity/settings/payments/e1?from=bills`,
+      `${env.PETTY_CASH_URL}/entity/settings/payments/e1`,
     );
     expect(tabs.queryByRole("link", { name: "Petty Cash Settings" })).toBeNull();
     await userEvent.click(screen.getByRole("button", { name: "Open navigation menu" }));

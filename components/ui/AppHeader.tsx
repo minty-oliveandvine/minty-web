@@ -13,6 +13,7 @@
 import Image from "next/image";
 import type { ReactNode } from "react";
 
+import { BackLink } from "@/components/ui/BackLink";
 import { NavMenu, type NavMenuProps } from "@/components/ui/NavMenu";
 import { ViewerBadge } from "@/components/ui/ViewerBadge";
 import type { Viewer } from "@/lib/viewer";
@@ -20,7 +21,9 @@ import type { Viewer } from "@/lib/viewer";
 export type AppHeaderProps = {
   /** The page's name in the bar - omitted when a `lead` stands in for it. */
   title?: string;
-  /** The way back. Omitted on a page that is itself the start (the entity list). */
+  /** The way back: `href` is the fallback; a plain click returns to the page the person came
+   * from (components/ui/BackLink.tsx). Omitted on a page that is itself the start (the entity
+   * list). */
   back?: { href: string; label: string };
   /** The company the page is about - omitted on a page about none. */
   companyName?: string;
@@ -68,7 +71,7 @@ export function AppHeader({
           <div className="flex min-w-0 flex-1 flex-nowrap items-center gap-2 sm:gap-3">
             {lead}
             {!lead && back ? (
-              <a
+              <BackLink
                 href={back.href}
                 className="inline-flex shrink-0 items-center gap-0.5 text-sm font-medium text-primary transition-colors hover:text-secondary sm:text-base"
               >
@@ -79,7 +82,7 @@ export function AppHeader({
                   chevron_left
                 </span>
                 {back.label}
-              </a>
+              </BackLink>
             ) : null}
             {!lead && showLogo ? (
               <Image

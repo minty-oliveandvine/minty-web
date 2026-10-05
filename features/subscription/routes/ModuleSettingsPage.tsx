@@ -4,9 +4,9 @@
  * `/subscription/entities/[entityId]/modules` - Flask's `/entity/settings/module/<org_id>`,
  * re-homed. `app/subscription/entities/[entityId]/modules/page.tsx` re-exports this, so the
  * route parameters are read here, on the client (a page taking `params` could not be a one-line
- * re-export). The query string carries how the page was entered: `from=bills` (the payments
- * app sent the person, and gets them back) and `fixture` (dev only - see the hook). Nothing
- * returns here from Stripe: no page in the app hands the browser to a Stripe-hosted page.
+ * re-export). The query string carries only `fixture` (dev only - see the hook); the way back
+ * is the page the person came from (components/ui/BackLink.tsx). Nothing returns here from
+ * Stripe: no page in the app hands the browser to a Stripe-hosted page.
  *
  * `useSearchParams` needs a Suspense boundary or `next build` refuses the page.
  */
@@ -23,7 +23,6 @@ function ModuleSettingsContent() {
   return (
     <ModuleSettingsScreen
       entityId={entityId}
-      from={q.get("from") === "bills" ? "bills" : null}
       fixture={q.get("fixture")}
     />
   );

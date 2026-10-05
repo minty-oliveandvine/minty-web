@@ -33,9 +33,6 @@ const STUB_CREDS = {
 
 const creds = () => credentials() ?? STUB_CREDS;
 const MODULES = (id: string) => `/subscription/entities/${id}/modules`;
-const PAYMENT_REQUEST_WEB_URL = (
-  process.env.E2E_PAYMENT_REQUEST_WEB_URL || "http://localhost:3020"
-).replace(/\/+$/, "");
 
 /**
  * Serve the page model from a fixture and record every action posted; after the first action
@@ -105,12 +102,13 @@ test.describe("module settings page", () => {
   test("03-A: the chrome, both cards and their CTAs", async ({ page }) => {
     const c = creds();
     await stubApi(page, frame("A"));
-    await handoff(page, c, MODULES(c.entityId) + "?from=bills");
+    await handoff(page, c, MODULES(c.entityId));
 
     await expect(page.getByRole("heading", { level: 2, name: "Modules" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Payments" })).toHaveAttribute(
+    // "Back" goes where the person came from; its href is the new-tab fallback
+    await expect(page.getByRole("link", { name: "Back" })).toHaveAttribute(
       "href",
-      PAYMENT_REQUEST_WEB_URL,
+      new RegExp(`/entity/${c.entityId}$`),
     );
     await expect(page.getByText(c.entityName)).toBeVisible();
     const tabs = page.getByRole("navigation", { name: "Settings sections" });

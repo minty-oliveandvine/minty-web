@@ -21,9 +21,9 @@ import { PaymentFailedBanner } from "@/features/subscription/components/PaymentF
 import { SettingsTabs } from "@/features/subscription/components/SettingsTabs";
 import { StartTrialDialog } from "@/features/subscription/components/StartTrialDialog";
 import { useModulePage, type UseModulePageArgs } from "@/features/subscription/hooks/useModulePage";
-import { backLink, settingsTabs, type PageOrigin } from "@/features/subscription/lib/flaskLinks";
+import { backLink, settingsTabs } from "@/features/subscription/lib/flaskLinks";
 
-export type ModuleSettingsScreenProps = UseModulePageArgs & { from: PageOrigin };
+export type ModuleSettingsScreenProps = UseModulePageArgs;
 
 // The cookie is not readable during server rendering; render "" until hydrated (Header.tsx).
 const noSubscribe = () => () => {};
@@ -41,7 +41,7 @@ const readClaims = (): ModuleClaims | null => {
 };
 const serverClaims = (): ModuleClaims | null => null;
 
-export function ModuleSettingsScreen({ from, ...args }: ModuleSettingsScreenProps) {
+export function ModuleSettingsScreen(args: ModuleSettingsScreenProps) {
   const m = useModulePage(args);
   const { entityId } = args;
   const entityName = useSyncExternalStore(noSubscribe, readEntityName, serverEntityName);
@@ -66,7 +66,7 @@ export function ModuleSettingsScreen({ from, ...args }: ModuleSettingsScreenProp
     <div className="flex h-dvh h-screen min-w-0 max-w-full flex-col overflow-hidden bg-white">
       <AppHeader
         title="Settings"
-        back={backLink(entityId, from)}
+        back={backLink(entityId)}
         companyName={entityName || "Loading…"}
         viewer={m.page?.viewer ?? null}
         nav={{ modules: access }}
@@ -75,7 +75,7 @@ export function ModuleSettingsScreen({ from, ...args }: ModuleSettingsScreenProp
       <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto overflow-x-hidden pb-[env(safe-area-inset-bottom,0px)]">
         <div className="mx-auto w-full max-w-[1024px] px-4 sm:px-6">
           <div className="sticky top-0 z-10 bg-white pt-3 pb-3 sm:pt-4 sm:pb-4">
-            <SettingsTabs tabs={settingsTabs(entityId, access, from)} />
+            <SettingsTabs tabs={settingsTabs(entityId, access)} />
           </div>
 
           <section className="pb-16 pt-6">

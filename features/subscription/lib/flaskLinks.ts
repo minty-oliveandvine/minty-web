@@ -18,23 +18,16 @@ export type SettingsTab = {
 
 export type ModuleAccess = { pettyCash: boolean; billing: boolean };
 
-/** `from` as the page received it - `bills` when the payments app sent the person here. */
-export type PageOrigin = "bills" | null;
-
 /**
- * Where the page came from, to send it back there: the payments app, or Petty Cash's reports
- * page (Flask's `/entity/<id>`, its `report_dashboard`) - which the person knows as "Reports".
+ * The way back: a plain click returns to the page the person came from, whichever app
+ * (components/ui/BackLink.tsx, lib/backLink.ts - the `?from=bills` flag went 2026-10-05). The
+ * href is the fallback for a new tab: Petty Cash's dashboard (Flask's `/entity/<id>`).
  */
-export function backLink(entityId: string, from: PageOrigin): { href: string; label: string } {
-  if (from === "bills") return { href: env.PAYMENT_REQUEST_WEB_URL, label: "Payments" };
-  return { href: `${env.PETTY_CASH_URL}/entity/${encodeURIComponent(entityId)}`, label: "Reports" };
+export function backLink(entityId: string): { href: string; label: string } {
+  return { href: `${env.PETTY_CASH_URL}/entity/${encodeURIComponent(entityId)}`, label: "Back" };
 }
 
-export function settingsTabs(
-  entityId: string,
-  access: ModuleAccess,
-  from: PageOrigin,
-): SettingsTab[] {
+export function settingsTabs(entityId: string, access: ModuleAccess): SettingsTab[] {
   const id = encodeURIComponent(entityId);
   const minty = env.PETTY_CASH_URL;
   const tabs: SettingsTab[] = [
@@ -46,8 +39,7 @@ export function settingsTabs(
   }
   if (access.billing) {
     // Flask mints the payments app's token on the way (Minty's /entity/settings/payments).
-    const qs = from === "bills" ? "?from=bills" : "";
-    tabs.push({ label: "Payment Settings", href: `${minty}/entity/settings/payments/${id}${qs}` });
+    tabs.push({ label: "Payment Settings", href: `${minty}/entity/settings/payments/${id}` });
   }
   tabs.push({ label: "Module", current: true });
   return tabs;

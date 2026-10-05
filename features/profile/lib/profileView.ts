@@ -5,7 +5,6 @@
  */
 
 import { EMAIL_ASCII_HINT, hasNonAsciiEmailChar } from "@/lib/emailInput";
-import { env } from "@/lib/env";
 import { HUB_PATHS } from "@/lib/hubPaths";
 import { mintyModulesUrl } from "@/lib/mintyEntry";
 
@@ -51,13 +50,13 @@ export function planLabel(company: ProfileCompany | null): PlanLabel | null {
 }
 
 /**
- * The back arrow: the payments app when the profile was opened from it (`?from=bills`), the
- * company it was opened from (Minty's module selector picks the module), or - opened from the
- * entity list - the list.
+ * The back arrow's fallback, for a new tab: the company it was opened from (Minty's module
+ * selector picks the module), or - opened from the entity list - the list. A plain click
+ * returns to the page the person came from (components/ui/BackLink.tsx; the `?from=bills`
+ * flag went 2026-10-05).
  */
-export function backHref(entityId: string, from: string | null): string {
+export function backHref(entityId: string): string {
   if (!entityId) return HUB_PATHS.entities;
-  if (from === "bills") return `${env.PAYMENT_REQUEST_WEB_URL}/`;
   return mintyModulesUrl(entityId);
 }
 

@@ -22,17 +22,15 @@ import { useProfile, type UseProfileArgs } from "@/features/profile/hooks/usePro
 import { backHref } from "@/features/profile/lib/profileView";
 
 export type ProfileScreenProps = UseProfileArgs & {
-  /** `?from=bills`: opened from the payments app, so the back arrow returns there. */
-  from?: string | null;
   subscriptions?: ReactNode;
 };
 
-export function ProfileScreen({ from = null, subscriptions, ...args }: ProfileScreenProps) {
+export function ProfileScreen({ subscriptions, ...args }: ProfileScreenProps) {
   const p = useProfile(args);
 
   return (
     <div className="flex min-h-dvh flex-col bg-[#f9fafb]">
-      <ProfileTitlebar back={backHref(p.entityId, from)} />
+      <ProfileTitlebar back={backHref(p.entityId)} />
       <main className="mx-auto flex w-full max-w-[560px] flex-col px-4 pb-10">
         <ProfileBody model={p} subscriptions={subscriptions} />
       </main>

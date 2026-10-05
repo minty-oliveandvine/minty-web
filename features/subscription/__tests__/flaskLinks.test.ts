@@ -9,7 +9,7 @@ import { backLink, settingsTabs } from "@/features/subscription/lib/flaskLinks";
 
 describe("settingsTabs", () => {
   it("names the five tabs, Module being this page", () => {
-    const tabs = settingsTabs("e1", { pettyCash: true, billing: true }, null);
+    const tabs = settingsTabs("e1", { pettyCash: true, billing: true });
     expect(tabs.map((t) => t.label)).toEqual([
       "Users",
       "Entity & Integration",
@@ -26,30 +26,26 @@ describe("settingsTabs", () => {
 
   it("hides a module's settings tab when that module is off", () => {
     const labels = (tabs: ReturnType<typeof settingsTabs>) => tabs.map((t) => t.label);
-    expect(labels(settingsTabs("e1", { pettyCash: false, billing: true }, null))).not.toContain(
+    expect(labels(settingsTabs("e1", { pettyCash: false, billing: true }))).not.toContain(
       "Petty Cash Settings",
     );
-    expect(labels(settingsTabs("e1", { pettyCash: true, billing: false }, null))).not.toContain(
+    expect(labels(settingsTabs("e1", { pettyCash: true, billing: false }))).not.toContain(
       "Payment Settings",
     );
   });
 
-  it("carries from=bills to Payment Settings and escapes the id", () => {
-    const tabs = settingsTabs("a/b", { pettyCash: true, billing: true }, "bills");
-    expect(tabs[3].href).toBe(`${env.PETTY_CASH_URL}/entity/settings/payments/a%2Fb?from=bills`);
+  it("links Payment Settings through Flask, with no origin flag, and escapes the id", () => {
+    const tabs = settingsTabs("a/b", { pettyCash: true, billing: true });
+    expect(tabs[3].href).toBe(`${env.PETTY_CASH_URL}/entity/settings/payments/a%2Fb`);
     expect(tabs[0].href).toBe(`${env.PETTY_CASH_URL}/entity/settings/users/a%2Fb`);
   });
 });
 
 describe("backLink", () => {
-  it("goes back to the payments app when it sent the person, else to Petty Cash's reports", () => {
-    expect(backLink("e1", "bills")).toEqual({
-      href: env.PAYMENT_REQUEST_WEB_URL,
-      label: "Payments",
-    });
-    expect(backLink("e1", null)).toEqual({
+  it("is labelled Back, with Petty Cash's dashboard as the new-tab fallback", () => {
+    expect(backLink("e1")).toEqual({
       href: `${env.PETTY_CASH_URL}/entity/e1`,
-      label: "Reports",
+      label: "Back",
     });
   });
 });

@@ -7,6 +7,7 @@
 
 import Image from "next/image";
 
+import { BackLink } from "@/components/ui/BackLink";
 import { NavMenu } from "@/components/ui/NavMenu";
 import { logOut } from "@/lib/logout";
 
@@ -16,9 +17,9 @@ import { LOG_OUT, PAGE_TITLE, planLabel } from "@/features/profile/lib/profileVi
 export function ProfileTitlebar({ back }: { back: string }) {
   return (
     <header className="sticky top-0 z-40 flex h-14 shrink-0 items-center justify-between bg-[#f9fafb] px-4 py-1.5">
-      <a
+      <BackLink
         href={back}
-        aria-label="Back"
+        ariaLabel="Back"
         className="flex size-10 items-center justify-center rounded-md hover:bg-primary/10"
       >
         <Image
@@ -29,7 +30,7 @@ export function ProfileTitlebar({ back }: { back: string }) {
           height={24}
           unoptimized
         />
-      </a>
+      </BackLink>
       <h1 className="p-2.5 text-center text-base font-semibold whitespace-nowrap text-[#767676]">
         {PAGE_TITLE}
       </h1>

@@ -33,8 +33,7 @@ user's call, 2026-09-30); here it stays the module settings page.
 - **Minty's `/profile`** (`blueprints/entity/routes/modules.py::open_profile`) — every "open my
   profile" link in Minty's ~20 page headers and in the payments app goes through it, and it
   decides: minty-web's `/profile` page when `MINTY_WEB_HUB` is on, minty-payment-request-web's otherwise.
-  `?entity_id=` scopes it to the company it was opened from, `?from=bills` sends the back arrow to
-  the payments app. The page's titlebar is sticky (2026-09-29, the user: every header in
+  `?entity_id=` scopes it to the company it was opened from. The page's titlebar is sticky (2026-09-29, the user: every header in
   minty-web stays put while the page scrolls).
 
 ## What it shows
@@ -80,9 +79,10 @@ boundary rules), so the shell composes the two - in `app/profile/page.tsx` for t
 ## Log Out and the way back
 
 _Log Out_ is the side menu's Logout (`lib/logout.ts`): the token goes, and Minty's `/logout`
-ends the session everywhere. On the page, the back arrow goes to the payments app
-(`?from=bills`), to the company it was opened from (Minty's module selector), or — opened from
-the list — to the list; in the sidebar, ‹ is the menu.
+ends the session everywhere. On the page, the back arrow returns to the page the person came
+from, whichever app (`components/ui/BackLink.tsx`, `lib/backLink.ts`; no `?from=bills` since
+2026-10-05); its `href`, for a new tab, is the company it was opened from (Minty's module
+selector) or - opened from the list - the list. In the sidebar, ‹ is the menu.
 
 ## Tests
 
