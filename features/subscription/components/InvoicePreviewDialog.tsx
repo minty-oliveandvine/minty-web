@@ -20,7 +20,7 @@ import { useEffect, useId, useRef, useState } from "react";
 
 import { Icon } from "@/components/ui/Icon";
 
-import { ModalFrame } from "@/features/subscription/components/ModalFrame";
+import { ModalFrame } from "@/components/ui/ModalFrame";
 import { PdfPages } from "@/features/subscription/components/PdfPages";
 import type { InvoicePreview } from "@/features/subscription/hooks/useBillingPage";
 import { INVOICE_PDF_FAILED, PREPARING_INVOICE } from "@/features/subscription/lib/billing";

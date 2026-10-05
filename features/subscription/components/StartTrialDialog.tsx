@@ -17,7 +17,7 @@
 
 import type { ModuleCode } from "@/features/subscription/api/moduleSettings";
 
-import { ConfirmDialog } from "@/features/subscription/components/ConfirmDialog";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 const MODULE_COLOUR: Record<ModuleCode, string> = {
   PETTY_CASH: "text-[#ea9713]",

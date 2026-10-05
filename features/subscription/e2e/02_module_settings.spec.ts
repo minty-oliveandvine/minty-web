@@ -32,7 +32,9 @@ const STUB_CREDS = {
 };
 
 const creds = () => credentials() ?? STUB_CREDS;
-const MODULES = (id: string) => `/subscription/entities/${id}/modules`;
+// The full id and a placeholder name: the page moves the address to the short id and the
+// company's own name (lib/companyFromAddress.ts).
+const MODULES = (id: string) => `/entities/${id}/company/settings/modules`;
 
 /**
  * Serve the page model from a fixture and record every action posted; after the first action
@@ -105,15 +107,16 @@ test.describe("module settings page", () => {
     await handoff(page, c, MODULES(c.entityId));
 
     await expect(page.getByRole("heading", { level: 2, name: "Modules" })).toBeVisible();
-    // "Back" goes where the person came from; its href is the new-tab fallback
+    // "Back" goes where the person came from; its href is the new-tab fallback, Petty Cash's
+    // dashboard (/petty-cash since 2026-10-05)
     await expect(page.getByRole("link", { name: "Back" })).toHaveAttribute(
       "href",
-      new RegExp(`/entity/${c.entityId}$`),
+      new RegExp(`/entity/${c.entityId}/petty-cash$`),
     );
     await expect(page.getByText(c.entityName)).toBeVisible();
     const tabs = page.getByRole("navigation", { name: "Settings sections" });
     await expect(tabs.getByRole("link", { name: "Users" })).toBeVisible();
-    await expect(tabs.getByText("Module")).toHaveAttribute("aria-current", "page");
+    await expect(tabs.getByText("Modules")).toHaveAttribute("aria-current", "page");
 
     const petty = body(page).getByRole("article", { name: "Petty Cash" });
     const request = body(page).getByRole("article", { name: "Payment Request" });

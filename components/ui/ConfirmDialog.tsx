@@ -10,14 +10,28 @@
  * cancel). Escape and the backdrop take the secondary way out - or `onDismiss` where that is
  * not the safe one; while the change is being applied nothing closes it.
  *
- * Copied to minty-payment-request-web at the same path and ported to Flask (Minty `static/js/minty_dialog.js` + `static/css/minty_dialog.css`) - change all three.
+ * Copied to minty-payment-request-web (features/subscription/components/ConfirmDialog.tsx) and ported to Flask (Minty `static/js/minty_dialog.js` + `static/css/minty_dialog.css`) - change all three.
  */
 
 import Image from "next/image";
 import { useId, type ReactNode } from "react";
 
-import { ModalFrame } from "@/features/subscription/components/ModalFrame";
-import type { ConfirmTone, ModalImage } from "@/features/subscription/lib/changeModal";
+import { ModalFrame } from "@/components/ui/ModalFrame";
+
+/** The Minty pictures a modal can carry (public/portal/). */
+export type ModalImage =
+  | "celebrating"
+  | "surprised"
+  | "sad"
+  | "super"
+  | "payment_failed"
+  | "dont"
+  | "withdrawn"
+  | "thumbs_up"
+  | "envelope"
+  | "hourglass";
+
+export type ConfirmTone = "teal" | "orange" | "red";
 
 export const MODAL_IMAGE: Record<ModalImage, { src: string; width: number; height: number }> = {
   celebrating: { src: "/portal/celebrating.png", width: 138, height: 144 },

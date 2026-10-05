@@ -1,9 +1,26 @@
 # Authentication — minty-web's half
 
 This app **stores and forwards a token; it never mints or refreshes one.** Minty (Flask) signs
-the person in — email OTP or Xero — mints the module JWT (`_generate_module_token`, 30 minutes)
+the person in — email OTP or Xero, on THIS app's sign-in page since phase 2 (below) — mints the module JWT (`_generate_module_token`, 30 minutes)
 and hands it over in the launch URL; the system-wide picture is `Minty/docs/features/authentication.md`,
 the verifying half `minty-subscription-api/docs/features/authentication.md`.
+
+## The sign-in page (`/login`, `features/auth`, phase 2 - 2026-10-05)
+
+Log in, sign up (`?mode=signup`) and invitations (`?invite=&email=&fn=&ln=`) on `/login`, the code
+on `/login/confirm` - Flask's `/` + `/register` and minty-onboarding-web's `/auth` pages until
+2026-10-05; those forward here (Flask's `hub_login_url`, onboarding's `next.config.ts`). The page
+is a client of Flask's identity, nothing more: `POST /auth/email/request-code` (log-in mode asks
+Flask to refuse an address with no account), `POST /auth/email/verify-code` (a new address's
+account is made there, with the names and the Terms version agreed), and the verify's answer is
+a one-shot hand-off URL on Flask's origin - followed only there - that sets Flask's session and
+goes on to `next` (kept from Flask's `login_required` redirect, a path on Flask only) or the
+list. Xero is a navigation to Flask's `/xero_auth`. Flask's flashes from the way here arrive
+signed in `?flash=` and are read back from `GET /auth/notices`, shown as toasts. Sign-up and a
+new invitee agree to the Terms on the gate's own panel (`components/ui/TermsModal`, `agree` =
+keep the version shown, which then rides with verify). `/login` is an open path: no cookie, no
+Terms gate. The invite token leaves the address bar on arrival; the handover to the code's page
+is sessionStorage (`features/auth/lib/handover.ts`). Recipe: `features/auth/README.md`.
 
 ## The landing
 
@@ -37,8 +54,8 @@ Flask mint the payer's token, back through `/landing`. This app still mints noth
 **The cookie.** Every page but `/landing` and `/maintenance` (`OPEN_PATHS`, `lib/hubPaths.ts`)
 needs `minty_token`. Without it: `307` to `PETTY_CASH_URL/handoff/minty-web?next=<page>` —
 Flask's login-gated route (Minty's `/handoff/minty-web`, landed 2026-09-21) that mints the same token and comes back to
-`/landing`. Silent while the Flask session (24 h) is alive; a login when it is not. This app
-has no login form of its own.
+`/landing`. Silent while the Flask session (24 h) is alive; when it is not, Flask's
+`login_required` sends the browser to this app's `/login` with that route as `next`.
 
 There is no second gate. The subscription feature's dark switch (`NEXT_PUBLIC_SUBSCRIPTION_ENABLED`
 and its `/not-available` page) was removed on 2026-10-01: subscriptions are simply on.
@@ -104,7 +121,7 @@ for the current page, once (several requests fail together; one navigation). Not
 
 ## Configuration
 
-`PETTY_CASH_URL` (the re-handoff and "Back to Minty"), `SUBSCRIPTION_API_URL`,
+`PETTY_CASH_URL` (the re-handoff, sign-in's calls and "Back to Minty"), `SUBSCRIPTION_API_URL`,
 `PAYMENT_REQUEST_WEB_URL` — all inlined at build time (`next.config.ts` `env`, read in `lib/env.ts`).
 
 ## Tests
@@ -115,4 +132,7 @@ panel, the lock, accept, 409, refusals, Cancel, once per token, the open pages, 
 the browser `e2e/01_landing.spec.ts` (no token → re-handoff; no cookie → re-handoff for that page;
 the handoff stores a cookie that lives as long as the token; an unsafe `next` is ignored) and `e2e/09_terms.spec.ts` (the gate over the list in a real layout). Every other
 spec arrives with the Terms answered "nothing owed" (`e2e/helpers.ts::handoff`). Flask's side:
-Minty's `tests/test_hub_terms.py`.
+Minty's `tests/test_hub_terms.py`. Sign-in: `features/auth/__tests__/{LoginScreen,ConfirmScreen}.test.tsx`
+(log-in mode, sign-up with the read-to-agree Terms, the invitation, Xero, the flashes; the code,
+the lockout, the hand-off refused off Flask's origin) and `features/auth/e2e/10_login.spec.ts`;
+Flask's side `tests/test_hub_sign_in.py` and `tests/test_otp_identity_gate.py`.

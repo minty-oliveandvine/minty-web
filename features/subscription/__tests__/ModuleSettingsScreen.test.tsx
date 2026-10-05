@@ -60,7 +60,7 @@ describe("ModuleSettingsScreen", () => {
   beforeEach(() => {
     vi.stubGlobal("fetch", fetchMock);
     setAuth("h.eyJ1c2VyX2lkIjoidTEifQ.s", "e1", "Olive & Vine Limited");
-    window.history.replaceState({}, "", "/subscription/entities/e1/modules");
+    window.history.replaceState({}, "", "/entities/e1/olive-shop/settings/modules");
     push.mockReset();
   });
 
@@ -96,18 +96,19 @@ describe("ModuleSettingsScreen", () => {
     await userEvent.keyboard("{Escape}");
 
     const tabs = within(screen.getByRole("navigation", { name: "Settings sections" }));
+    // Users is this app's own tab since phase 2 (features/company-settings)
     expect(tabs.getByRole("link", { name: "Users" })).toHaveAttribute(
       "href",
-      `${env.PETTY_CASH_URL}/entity/e1/settings/users`,
+      expect.stringMatching(/^\/entities\/e1\/[^/]+\/settings\/users$/),
     );
-    expect(tabs.getByText("Module")).toHaveAttribute("aria-current", "page");
+    expect(tabs.getByText("Modules")).toHaveAttribute("aria-current", "page");
   });
 
-  it("Payment Settings hides when billing is off", async () => {
+  it("Payment Request Settings hides when billing is off", async () => {
     await show(FIXTURES.A);
     const tabs = within(screen.getByRole("navigation", { name: "Settings sections" }));
     expect(tabs.getByRole("link", { name: "Petty Cash Settings" })).toBeInTheDocument();
-    expect(tabs.queryByRole("link", { name: "Payment Settings" })).toBeNull();
+    expect(tabs.queryByRole("link", { name: "Payment Request Settings" })).toBeNull();
   });
 
   it("before the page model answers, the pills and the drawer follow the token's claims", async () => {
@@ -128,7 +129,7 @@ describe("ModuleSettingsScreen", () => {
     await waitFor(() => expect(screen.getByRole("alert")).toBeInTheDocument());
 
     const tabs = within(screen.getByRole("navigation", { name: "Settings sections" }));
-    expect(tabs.getByRole("link", { name: "Payment Settings" })).toHaveAttribute(
+    expect(tabs.getByRole("link", { name: "Payment Request Settings" })).toHaveAttribute(
       "href",
       `${env.PETTY_CASH_URL}/entity/e1/settings/payment-request`,
     );

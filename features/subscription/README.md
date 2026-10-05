@@ -12,7 +12,7 @@ its own app when login, dashboard, profile and settings join `minty-web` in Part
 index.ts        the ONLY public surface: route components + SUBSCRIPTION_BASE_PATH
 api/            typed clients over the minty-subscription-api contracts (payerPortal, moduleSettings, notice)
 hooks/          state and orchestration over api/ - what the screens call; tested
-lib/            pure helpers (paths, moduleState, flaskLinks; payerPortalFormat.ts arrives with the port)
+lib/            pure helpers (paths, moduleState; the settings chrome's tabs are the shell's lib/settingsTabs.ts)
 components/     the screens' pieces; the portal's are plain and the design pass replaces them ONE FOR ONE,
                 the module page's are built to its Figma design
 routes/         the page-level components app/subscription/**/page.tsx re-export
@@ -64,7 +64,7 @@ Step 1 of Part 2: the folder, its index, the three API clients (typed to the con
 mapped to the routes) and two skeletal routes (the index and the layout). Step 4a (2026-09-21):
 the module settings page, built to its Figma design over a stubbed API, under minty-payment-request-web's
 settings chrome (`@/components/ui/{AppHeader,NavMenu}`) - `hooks/useModulePage`,
-`lib/moduleState`, `lib/flaskLinks`, six components, the fixtures, its unit and browser tests
+`lib/moduleState`, six components, the fixtures, its unit and browser tests
 (`docs/features/subscriptions.md` §9). Step 4b builds the pages its CTAs lead to and ports the
 portal screens from `minty-payment-request-web/components/profile/*` (behaviour, not look). Step 4b (same
 day): the Manage Subscriptions list from Figma section 04 - `hooks/useSubscriptionsList`,

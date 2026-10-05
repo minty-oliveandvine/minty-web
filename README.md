@@ -5,7 +5,8 @@ with one feature, **subscriptions** (the payer portal from minty-payment-request
 settings page from Flask's Jinja), talking to `minty-subscription-api` (:8000). Since 2026-09-29 it
 also has the **entity list** ("Select Company", its first page, from Flask's Jinja) and **My
 Profile** (from minty-payment-request-web, redrawn to Figma 10-A/10-B), over Flask's bearer routes -
-Part 3 step 4, pulled forward; login, the dashboard and settings follow in Part 3. Each feature
+Part 3 step 4, pulled forward; since phase 2 (2026-10-05) also **sign-in** (`/login`, from Flask
+and minty-onboarding-web); the dashboard follows in Part 3. Each feature
 is a bounded folder that can be lifted into its own app (`features/*/README.md`).
 
 **Status: the shell (Part 2 step 1).** Landing, the cookie gate, the plumbing, the UI seed, the

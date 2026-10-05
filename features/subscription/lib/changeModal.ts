@@ -30,6 +30,7 @@ import type {
   ModuleCode,
   ModulePage,
 } from "@/features/subscription/api/moduleSettings";
+import type { ConfirmTone, ModalImage } from "@/components/ui/ConfirmDialog";
 import type { ModuleRef, ResultPart } from "@/features/subscription/lib/changeResult";
 import {
   billable,
@@ -41,20 +42,6 @@ import {
 
 export type ModalKind =
   "activate" | "reactivate" | "continue" | "remove" | "cancel_subscription" | "bundle" | "changes";
-
-export type ModalImage =
-  | "celebrating"
-  | "surprised"
-  | "sad"
-  | "super"
-  | "payment_failed"
-  | "dont"
-  | "withdrawn"
-  | "thumbs_up"
-  | "envelope"
-  | "hourglass";
-
-export type ConfirmTone = "teal" | "orange" | "red";
 
 export type ChangeModal = {
   kind: ModalKind;

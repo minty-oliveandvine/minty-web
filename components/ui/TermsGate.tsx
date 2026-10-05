@@ -5,7 +5,7 @@
  * (Minty `blueprints/legal/routes/gate.py`) as this app draws it. While the person owes an
  * acceptance, the page is inert behind `TermsModal`; accepting lifts it and they stay on the
  * page they are on. Since 2026-09-29 Flask's `/entity` hands the browser here whether or not
- * Terms are owed (MINTY_WEB_HUB), so this is where most people meet them.
+ * Terms are owed (always, since phase 2), so this is where most people meet them.
  *
  * - Asked once per token (`lib/terms.ts`), on every page but the open ones (`isOpenPath`: the
  *   landing, where the token arrives, and the two static pages) - and again after a

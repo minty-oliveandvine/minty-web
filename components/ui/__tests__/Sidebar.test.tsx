@@ -136,7 +136,7 @@ describe("the sidebar", () => {
 
   it("the menu carries what the page knows better than the token (fresh modules)", async () => {
     setAuth(TOKEN, "e1", "Olive Shop");
-    at("/subscription/entities/e1/modules");
+    at("/entities/e1/olive-shop/settings/modules");
     render(app(<NavMenu modules={{ pettyCash: false, billing: true }} />));
     await userEvent.click(screen.getByRole("button", { name: "Open navigation menu" }));
 

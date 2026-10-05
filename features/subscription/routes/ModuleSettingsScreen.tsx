@@ -12,16 +12,16 @@
 import { useMemo, useSyncExternalStore } from "react";
 
 import { AppHeader } from "@/components/ui/AppHeader";
+import { SettingsTabs } from "@/components/ui/SettingsTabs";
 import { getAuth } from "@/lib/auth";
 import { getModuleClaims, type ModuleClaims } from "@/lib/moduleClaims";
+import { settingsBackLink, settingsTabs } from "@/lib/settingsTabs";
 
 import { ManagedByNotice } from "@/features/subscription/components/ManagedByNotice";
 import { ModuleCardGrid } from "@/features/subscription/components/ModuleCardGrid";
 import { PaymentFailedBanner } from "@/features/subscription/components/PaymentFailedBanner";
-import { SettingsTabs } from "@/features/subscription/components/SettingsTabs";
 import { StartTrialDialog } from "@/features/subscription/components/StartTrialDialog";
 import { useModulePage, type UseModulePageArgs } from "@/features/subscription/hooks/useModulePage";
-import { backLink, settingsTabs } from "@/features/subscription/lib/flaskLinks";
 
 export type ModuleSettingsScreenProps = UseModulePageArgs;
 
@@ -66,7 +66,7 @@ export function ModuleSettingsScreen(args: ModuleSettingsScreenProps) {
     <div className="flex h-dvh h-screen min-w-0 max-w-full flex-col overflow-hidden bg-white">
       <AppHeader
         title="Settings"
-        back={backLink(entityId)}
+        back={settingsBackLink(entityId)}
         companyName={entityName || "Loading…"}
         viewer={m.page?.viewer ?? null}
         nav={{ modules: access }}
@@ -75,7 +75,7 @@ export function ModuleSettingsScreen(args: ModuleSettingsScreenProps) {
       <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto overflow-x-hidden pb-[env(safe-area-inset-bottom,0px)]">
         <div className="mx-auto w-full max-w-[1024px] px-4 sm:px-6">
           <div className="sticky top-0 z-10 bg-white pt-3 pb-3 sm:pt-4 sm:pb-4">
-            <SettingsTabs tabs={settingsTabs(entityId, access)} />
+            <SettingsTabs tabs={settingsTabs({ id: entityId, name: entityName }, access, "modules")} />
           </div>
 
           <section className="pb-16 pt-6">

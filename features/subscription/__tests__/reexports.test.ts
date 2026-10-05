@@ -27,8 +27,11 @@ function walk(dir: string, out: string[] = []): string[] {
 
 const REEXPORT = /^export \{ \w+ as default \} from "@\/features\/subscription";\n?$/;
 
+// The Module tab lives among the company's settings, outside the feature's mount.
+const MODULE_TAB = join(ROOT, "app", "entities", "[ref]", "[slug]", "settings", "modules");
+
 describe("app/subscription is re-exports only", () => {
-  const files = walk(join(ROOT, "app", "subscription"));
+  const files = [...walk(join(ROOT, "app", "subscription")), ...walk(MODULE_TAB)];
 
   // The portal pages sit in a route group so their tabbed layout does not wrap the module
   // settings page of a company, which draws Flask's settings chrome instead.
@@ -39,10 +42,11 @@ describe("app/subscription is re-exports only", () => {
     expect(names).toContain("app/subscription/(portal)/subscriptions/page.tsx");
     // one billing account's name and address (08-C); opening an account is a sheet, not a page
     expect(names).toContain("app/subscription/(portal)/billing/details/page.tsx");
+    expect(names).toContain("app/entities/[ref]/[slug]/settings/modules/page.tsx");
     expect(names).not.toContain("app/subscription/(portal)/billing/new-account/page.tsx");
-    // a company by short id and name (2026-10-05), and the old full-id address that moves to it
-    expect(names).toContain("app/subscription/entities/[ref]/[slug]/modules/page.tsx");
-    expect(names).toContain("app/subscription/entities/[ref]/modules/page.tsx");
+    // the module page is a company's settings tab since phase 2 (app/entities/[ref]/[slug]/
+    // settings/modules, checked below); its old addresses move there in proxy.ts
+    expect(names.filter((n) => n.startsWith("app/subscription/entities/"))).toEqual([]);
     // No catch-all routes: every flow has its page, so a stray path is Next's own not-found
     // (the "Not built yet" placeholder went on 2026-09-29 with its last flow).
     expect(names.filter((n) => n.includes("[..."))).toEqual([]);

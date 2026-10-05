@@ -23,7 +23,7 @@ or a company's _Modules_ settings (a scoped token, for that company's page). Nev
 | Add / edit a card | `/subscription/billing/add?account=`, `…/billing/edit?card=&account=` | **built** (§15): Stripe's own card fields on a SetupIntent (08-Y) - the card goes ON the account - and the name and expiry of a saved card (08-D) | —                                                                                                                                             |
 | Billing details   | `/subscription/billing/details?account=`          | **built** (§15): 08-C — the account's billing company and email, and the address in Stripe's own form (the billing address and name of the card it charges) | —                                                                                                                                             |
 | New billing account | — (a sheet, not a page)                           | **built** (§15): onboarding's `BillingSheet` over 08-A and 08-B - the list, then the form in place (a billing email and company, then the card - which OPENS the account), then "New Card added Successfully"; from the move's step 2 the company then moves onto it | —                                                                                                                                             |
-| Module settings   | `/subscription/entities/{shortid}/{name}/modules`             | **built** (§9): the settings chrome, the two module cards in their six states, the payment-failed banner, _Start Free Trial_, the way back (no Stripe return: nothing leaves for Stripe) — over a stubbed API until step 3 | the pages the other CTAs lead to (Manage / Activate / Resume / Reactivate / payment method), each from its own Figma frame; the live API      |
+| Module settings   | `/entities/{shortid}/{name}/settings/modules`                 | **built** (§9): the settings chrome, the two module cards in their six states, the payment-failed banner, _Start Free Trial_, the way back (no Stripe return: nothing leaves for Stripe) — over a stubbed API until step 3 | the pages the other CTAs lead to (Manage / Activate / Resume / Reactivate / payment method), each from its own Figma frame; the live API      |
 
 **Skeletal by decision** (2026-09-21) for the portal screens: functional, minimal styling, a
 design later. The module settings page is the exception — its design exists (Figma
@@ -58,7 +58,7 @@ hooks/          useModulePage (the module page's state and its CTAs) · useSubsc
                 the sheet, a company moved, an account opened) · useCardForm (useAddCard onto an account /
                 useNewAccount - the sheet's form, reporting what it opened / useEditCard) · useBillingDetails (08-C)
 lib/            paths.ts (the ONE place the mount point is spelled; PORTAL.*, modulesPath(id), moduleRoutes(id))
-                · moduleState.ts (card flags → what the card shows) · flaskLinks.ts (the settings chrome's Flask URLs)
+                · moduleState.ts (card flags → what the card shows)
                 · portalRows.ts (the list's cells, sections, ⋮ shapes, sort and search) · subscriptionSummary.ts
                 (the open row: ticks, chips, the panel's forecast) · changeModal.ts (what the confirmation asks)
                 · changeResult.ts (where a change lands) · transfer.ts (both sides of a handover: minor-unit money,
@@ -71,10 +71,10 @@ lib/            paths.ts (the ONE place the mount point is spelled; PORTAL.*, mo
                 is saved under - the landing's figures) · billingAccounts.ts
                 (which account a page shows, its Bill-to block and address lines, who may move where and why
                 not, the new account's identity, 08-C's fields - what stops Save and what is sent)
-components/     the module page's pieces: SettingsTabs (minty-payment-request-web's pills), PaymentFailedBanner,
+components/     the module page's pieces: PaymentFailedBanner,
                 ManagedByNotice, ModuleCard, ModuleCta, ModuleCardGrid (the header is the shell's AppHeader);
                 the list's: PortalHero, PortalBack (the back line's header slot), TransferRequestCard, SearchField, SubscriptionsTable, ModuleCellView,
-                RowMenu, ListStates, SubscriptionSummaryRow (the open row), ConfirmDialog (the modal shell),
+                RowMenu, ListStates, SubscriptionSummaryRow (the open row),
                 StartTrialDialog and ChangeDialog (the confirmations), InterruptedDialogs (PaymentFailedDialog /
                 LeaveDialog - when it fails or gets interrupted), ChangeResultView (ChangeResultRow /
                 ChangeResultPage - the result screens); the handover's: TransferSubscriptionPanels (SubscriberPicker /
@@ -85,11 +85,14 @@ components/     the module page's pieces: SettingsTabs (minty-payment-request-we
                 view-only preview) over PdfPages (pdf.js drawing a PDF onto canvases), CardDialogs (CardAddedDialog /
                 RemoveCardDialog), CardCaptureForm (Stripe's own fields on a SetupIntent - in the page's look or
                 onboarding's 01-D - with the fields and the account a screen adds), BillingOverviewPanels
-                (BillingAccountCard / SubscriptionOverviewCard), AccountSheet + sheetClasses (onboarding's
+                (BillingAccountCard / SubscriptionOverviewCard), AccountSheet (onboarding's
                 BillingSheet: the frame, the radio rows, the 01-D form, 01-J), BillingAccountDialogs
                 (AccountTargetList - the account rows, each shut with its reason, shared with 07-E /
-                AccountPickerDialog / MoveCompanyDialog / NewAccountDialog), BillingDetailsForm (08-C); shared:
-                ModalFrame (every other modal's backdrop, Escape and card - ConfirmDialog is built on it)
+                AccountPickerDialog / MoveCompanyDialog / NewAccountDialog), BillingDetailsForm (08-C). Since
+                phase 2 the shared pieces live in the shell, for the other features too:
+                `components/ui/{ModalFrame, ConfirmDialog (the modal shell, with its ModalImage and
+                ConfirmTone), sheetClasses, SettingsTabs, CompanyFromAddress}`, `lib/settingsTabs.ts`
+                (the settings chrome's tabs and Back) and `lib/companyFromAddress.ts`
 routes/         SubscriptionLayout (PortalChrome = minty-payment-request-web's header; no tab row), ManageSubscriptions (+ Screen),
                 ModuleSettingsPage (+ Screen), TransferSubscription (+ Screen), SubscriptionRequests (+ Screen),
                 SubscriptionOverview (+ Screen), BillingPage (+ Screen), CardPages (AddCard / EditCard) +
@@ -104,7 +107,7 @@ __fixtures__/   modulePage.ts — the page model in each Figma state (03's A–F
                 `accountsFor(wallet)`, an account opened in the sheet (`OPENED_ACCOUNT`, `ACCOUNTS_OPENED`), and
                 the invoices (`invoicePage(rows, paging)`); shared by
                 Vitest, Playwright and ?fixture=
-__tests__/      apiClient (from the feature's side), paths, the re-export guard, moduleState, flaskLinks,
+__tests__/      apiClient (from the feature's side), paths, the re-export guard, moduleState,
                 useModulePage, ModuleSettingsScreen, portalRows, useSubscriptionsList, ManageSubscriptionsScreen,
                 subscriptionSummary, useEntitySummary, SubscriptionSummaryRow, changeModal, ChangeDialog,
                 InterruptedDialogs, changeResult, ChangeResultView, transfer, useTransferSubscription,
@@ -120,9 +123,10 @@ outside imports it except `app/subscription/**`, and only `index.ts`; (3) `app/s
 files are one-line re-exports. A fourth by convention: links inside the feature go through
 `lib/paths.ts`, never a literal `/subscription/…`.
 
-The portal pages live in the route group `app/subscription/(portal)/` so their tabbed layout
-does not wrap `app/subscription/entities/[entityId]/modules`, which draws Flask's settings chrome
-instead. The module page reads its parameters on the client (`useParams`, `useSearchParams`
+The portal pages live in the route group `app/subscription/(portal)/`. The module page is
+mounted outside the feature's folder since phase 2 - `app/entities/[ref]/[slug]/settings/modules`,
+a company's settings tab (the ESLint element `app-subscription` and the re-export guard both
+cover it); it draws the settings chrome instead of the portal's. The module page reads its parameters on the client (`useParams`, `useSearchParams`
 under `Suspense`) because a page taking `params` could not be a one-line re-export.
 
 ## 3. Talking to the API
@@ -190,7 +194,7 @@ build time (`next.config.ts` `env`). In the docker stack this is the `minty-web`
 401, the error sentence with its status - the same for a file, `apiFetchBlob`, and an answer
 that is not a PDF refused), `paths.test.ts`, `reexports.test.ts` (rules 2 and 3
 from the source), `moduleState.test.ts` (every card state, the precedence, the day arithmetic),
-`flaskLinks.test.ts`, `useModulePage.test.tsx` (load, error, a trial asked about then posted and
+`useModulePage.test.tsx` (load, error, a trial asked about then posted and
 the way back out, the seams, the fixture switch), `ModuleSettingsScreen.test.tsx` (each Figma frame rendered),
 `portalRows.test.ts` (the list's cells, sections, the three ⋮ shapes, the orders, the search),
 `useSubscriptionsList.test.tsx` (the pages walked, the transfers alongside, search/sort, Start
@@ -324,13 +328,15 @@ from the browser's clock, so a pinned day drifted by one every midnight.
 | 4a     | **done 2026-09-21** — the module settings page from its Figma design (§9), over a stubbed API; the `(portal)` route group; Flask's `/entity/settings/payments/<id>` redirect for the Payment Settings tab                                                                                                                                                                                                   |
 | 4b     | **the Manage Subscriptions list, done 2026-09-21** (§10) — the design's target of the module page's _Manage Subscription_                                                                                                                                                                                                                                                                                   |
 | 4c     | **live-API journeys done 2026-09-22** (`04_live_api.spec.ts`); **the open row done 2026-09-22** (§11, Figma 05·A and 05·B - the ticks pend on the row until _Confirm Subscription Change_); **the change applied and its result screens done 2026-09-22** (§12, Figma 05·C); **the confirmation modals done 2026-09-22** (§13, Figma section 06 - the confirm button asks first); **the "Calculating…" beat and the ⋮'s items done 2026-09-22** (§11, Figma 05·B-C; §13, Figma 05·D); **the declined-payment and leave-without-saving modals done 2026-09-22** (§13, Figma 06·B); **both sides of a handover done 2026-09-22** (§14, Figma section 07 - _Request transfer_ and the incoming requests, over the live routes; the outcome modals wait for an outgoing-transfer read). **the billing area done 2026-09-23** (§15, Figma section 08 - the portal's landing, the billing page and its states, the card screens; `/subscription` is the landing now and the list is `/subscription/subscriptions`). **Billing accounts done 2026-09-25** (§15 - 08-A shows ONE account, picked by clicking its card; _Change billing account_ moves a company; 08-B is one account's profile; 08-C and the new-account form built; the landing's Next Billing Date no longer prints the anchor). **Same day, at the user's word:** _New billing account_ became onboarding's `BillingSheet` in place (the page went), the account's name took over _Change billing account_ (its button went, and the move's "Nothing is charged now…" note), "Trial ending" counts the trials ending within 30 days and the update lines list them with _Show more_, and 08-B gained the next bill's estimated amount (`next_bill`, priced by the API's renewal runner) and 10 / 50 / 100 invoice paging; one real Stripe test-mode account opened through the sheet on the dev database. **A standalone invoices page (09) was decided AGAINST, 2026-09-28** - the billing page's own invoice list already covers it (paging, each invoice's PDF, the billing-breakdown CSV), so `PORTAL.invoices`, the tab and the route's NotBuiltYet entry were all removed rather than left waiting to be built. **The Invoice PDF became our own document, 2026-09-29** (§15, Figma 09-A - downloaded from `GET /api/me/invoices/{id}/pdf`, where it had linked Stripe's hosted invoice page); **its Inv# previews it, 2026-09-30** (§15 - view-only at the user's word, drawn by pdf.js; the column is still the download) |
-| 5      | Minty's `/handoff/minty-web` route exists — the e2e stub goes. (minty-payment-request-web's profile links go through Minty's `/profile` since 2026-09-29, which picks minty-web's profile when `MINTY_WEB_HUB` is on; its old profile page is deleted here with the portal copies) |
+| 5      | Minty's `/handoff/minty-web` route exists — the e2e stub goes. (minty-payment-request-web's profile links go through Minty's `/profile` since 2026-09-29, which opens minty-web's profile; its old profile page is deleted here with the portal copies) |
 | 7      | deployed to a test site with subscriptions on - no dark phase (the switch was removed 2026-10-01, §4)                                                                                                                                                                                                                                                                                                       |
 | Part 3 | the entity list and My Profile **joined the hub 2026-09-29** (`entities.md`, `profile.md`); login, dashboard and settings follow; `@/lib` and `@/components/ui` become `@minty/shared`; each feature folder is liftable per its README |
 
 ## 9. The module settings page
 
-`/subscription/entities/{shortid}/{name}/modules` — Flask's `/entity/<shortid>/<name>/settings/modules`, re-homed and
+`/entities/{shortid}/{name}/settings/modules` (until phase 2, 2026-10-05,
+`/subscription/entities/{shortid}/{name}/modules` - proxy.ts 307s that and the older full-id form here) —
+Flask's `/entity/<shortid>/<name>/settings/modules`, re-homed and
 redrawn to the Figma design (section "03 · Settings › Module", six frames). What is on it:
 
 - **The settings chrome is minty-payment-request-web's** (decision 2026-09-21: "the settings design
@@ -347,8 +353,8 @@ redrawn to the Figma design (section "03 · Settings › Module", six frames). W
   `/entity/{id}/enter` with the cookie token) and a Payment Request section (Bills), each only
   when that module is on, the cat, _Settings_ (this page) and _Logout_ (Minty's `/logout`). Below it, in the same
   1024px column, a sticky pill row with minty-payment-request-web's `SettingsPills` classes — Users ·
-  Entity & Integration · Petty Cash Settings · Payment Settings · **Module** —
-  linking to Flask's pages (`lib/flaskLinks.ts`); Payment Settings goes through Flask's
+  Entity & Integration · Petty Cash Settings · Payment Request Settings · **Modules** (the pills' labels since 2026-10-05; "Payment Settings" and "Module" before) —
+  spelled by `lib/settingsTabs.ts` (shared with the other settings tabs); Payment Request Settings goes through Flask's
   `GET /entity/<id>/settings/payment-request` (Flask shows it by short id and name), which mints the payments app's token and sends the
   browser on. A module's settings tab (and its drawer section) shows only when that module is on, as
   in minty-payment-request-web and Flask - from the page model's `has_access` once it is here, from the
@@ -770,7 +776,7 @@ them; `useSubscriptionsList` holds the prompt (`changePrompt`, `dismissChangePro
 `applyChangePrompt`) between the button and `applyChange` for a change that cancels, and
 `accountStep` / `confirmed` for one that bills (below).
 
-The dialog family (`ModalFrame`, `ConfirmDialog`, `LeaveDialog`) is copied to minty-payment-request-web at the same paths (its Payment Settings' "Leave without saving?", 2026-10-01) and ported to Flask (Minty `static/js/minty_dialog.js` + `static/css/minty_dialog.css`) - change all three.
+The dialog family (`components/ui/ModalFrame`, `components/ui/ConfirmDialog`, `LeaveDialog`) is copied to minty-payment-request-web (under its `features/subscription/components/`) (its Payment Request Settings' "Leave without saving?", 2026-10-01) and ported to Flask (Minty `static/js/minty_dialog.js` + `static/css/minty_dialog.css`) - change all three.
 
 - **Which modal**: a removal beside an addition → **Subscription Changes** (C-01: "<Removed>
   will be **removed**. You'll continue to have access for another 30 days. <Added> will be
@@ -1313,7 +1319,7 @@ schema change), which 08-C writes.
   - **The pickers are onboarding's sheet, not 08-G** (the user's call, 2026-09-25): section 08
     draws no frame for them, and onboarding's `BillingSheet` is the same act in another app - so
     the list, the form and 01-J are its 481 / 880 / 435 frames, its rows and buttons (the values
-    in `components/sheetClasses.ts`). Our words for the pickers; its words for the form and 01-J.
+    in `components/ui/sheetClasses.ts`). Our words for the pickers; its words for the form and 01-J.
     The frame's whole-card hotspot to 08-B opens the sheet (the user's call); the link still goes
     to 08-B. Two changes from onboarding, both toward safety: the sheet cannot be closed
     mid-save, and a card form that fails to open offers Try again in place.

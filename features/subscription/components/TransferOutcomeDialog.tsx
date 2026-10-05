@@ -10,9 +10,8 @@
 
 import type { ReactNode } from "react";
 
-import type { ModalImage } from "@/features/subscription/lib/changeModal";
 
-import { ConfirmDialog } from "@/features/subscription/components/ConfirmDialog";
+import { ConfirmDialog, type ModalImage } from "@/components/ui/ConfirmDialog";
 
 export type TransferOutcome = "withdrawn" | "accepted" | "declined" | "expired";
 

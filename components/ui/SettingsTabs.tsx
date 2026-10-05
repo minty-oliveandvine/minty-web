@@ -1,10 +1,10 @@
 /**
  * The settings pill row - minty-payment-request-web's `SettingsPills` look (`components/settings/
- * SettingsPills.tsx` there), so this page reads as its settings page. Every pill but the
- * current one is a Flask page, spelled by `lib/flaskLinks.ts`.
+ * SettingsPills.tsx` there), so a company's settings read as one place across the apps. The tabs
+ * and their addresses come from `lib/settingsTabs.ts`.
  */
 
-import type { SettingsTab } from "@/features/subscription/lib/flaskLinks";
+import type { SettingsTab } from "@/lib/settingsTabs";
 
 const pill = (active: boolean) =>
   `cursor-pointer shrink-0 rounded-full px-4 py-2 text-center text-sm font-medium transition-colors flex items-center justify-center ${

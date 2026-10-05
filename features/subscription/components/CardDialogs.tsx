@@ -7,7 +7,7 @@
  * for otherwise. The card's name is drawn in the design's orange in each one.
  */
 
-import { ConfirmDialog } from "@/features/subscription/components/ConfirmDialog";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import {
   CARD_ADDED,
   CARD_ADDED_DEFAULT,

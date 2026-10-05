@@ -47,7 +47,7 @@ import {
   SHEET_INPUT_BAD,
   SHEET_INPUT_OK,
   SHEET_LABEL,
-} from "@/features/subscription/components/sheetClasses";
+} from "@/components/ui/sheetClasses";
 import { useNewAccount, type OpenedAccount } from "@/features/subscription/hooks/useCardForm";
 import {
   CARD_ADDED,

@@ -19,7 +19,7 @@ import {
   SHEET_ERROR,
   SHEET_PRIMARY,
   SHEET_SINGLE,
-} from "@/features/subscription/components/sheetClasses";
+} from "@/components/ui/sheetClasses";
 import type { ReviewedRequest } from "@/features/subscription/hooks/useSubscriptionRequests";
 import { BILLING_ACCOUNTS, NEW_BILLING_ACCOUNT } from "@/features/subscription/lib/billingAccounts";
 import { utcDay, type SummaryView } from "@/features/subscription/lib/subscriptionSummary";

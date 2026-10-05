@@ -21,7 +21,7 @@ paths, with everything app-specific in its `components/ui/sidebarHost.ts` - they
 `@minty/shared` at Part 3 step 4. Flask's pages carry a Jinja port (Minty
 `docs/features/sidebar.md`), retired with them in Part 3. Until then a change here is a change
 in all three. One difference by design: in those two apps the menu's **Settings** opens that
-app's own settings (Flask's Petty Cash Settings, or the payments app's Payment Settings - the
+app's own settings (Flask's Petty Cash Settings, or the payments app's Payment Request Settings - the
 user's call, 2026-09-30); here it stays the module settings page.
 
 ## How a person gets here
@@ -32,7 +32,7 @@ user's call, 2026-09-30); here it stays the module settings page.
   the profile. The panel is mounted only once asked for, so nothing is read before then.
 - **Minty's `/profile`** (`blueprints/entity/routes/modules.py::open_profile`) — every "open my
   profile" link in Minty's ~20 page headers and in the payments app goes through it, and it
-  decides: minty-web's `/profile` page when `MINTY_WEB_HUB` is on, minty-payment-request-web's otherwise.
+  opens minty-web's `/profile` page (always, since 2026-10-01).
   `?entity_id=` scopes it to the company it was opened from. The page's titlebar is sticky (2026-09-29, the user: every header in
   minty-web stays put while the page scrolls).
 

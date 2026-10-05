@@ -3,17 +3,18 @@
 `minty-web` is the Next.js hub of the Minty system, born in Part 2 of the modernisation plan
 with one feature: subscriptions — the payer portal and a company's module settings page, over
 `minty-subscription-api`. Since 2026-09-29 it also has the entity list ("Select Company", the hub's
-first page) and My Profile, over Flask's bearer routes — Part 3 step 4, pulled forward; login,
-the dashboard and settings follow in Part 3. Written for
+first page) and My Profile, over Flask's bearer routes — Part 3 step 4, pulled forward; since
+phase 2 (2026-10-05) also sign-in (`/login`); the dashboard follows in Part 3. Written for
 someone new to the codebase; the plan (`Minty/docs/modernisation/modernisation_plan.md`) and
 the sibling repos' `docs/features/` folders are linked, not repeated.
 
 | Feature                                                                                                                                                  | Document                                                                                                                                                                  |
 | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Getting in: the module token, the cookie, the cookie gate in `proxy.ts`, the re-handoff, what this app never does                                        | [authentication.md](authentication.md) — Minty's `docs/features/authentication.md` has the system-wide picture                                                            |
+| Getting in: the sign-in page (`/login`, phase 2), the module token, the cookie, the cookie gate in `proxy.ts`, the re-handoff, what this app never does | [authentication.md](authentication.md) — `features/auth/README.md` holds the recipe; Minty's `docs/features/authentication.md` has the system-wide picture |
 | The subscription feature: the pages, the bounded folder and its three rules, the API clients, no switch, card capture, tests, and which step fills what  | [subscriptions.md](subscriptions.md) — `features/subscription/README.md` holds the extraction recipe; `minty-subscription-api/docs/features/subscriptions-api.md` the contract |
 | The entity list ("Select Company"): where it comes from, the cards, what Flask flashed on the way, the header and the side menu on every page | [entities.md](entities.md) — `features/entities/README.md` holds the extraction recipe |
 | My Profile: the Figma 10-A/10-B page, editing in place, the subscription feature's card in its slot | [profile.md](profile.md) — `features/profile/README.md` holds the extraction recipe |
+| A company's Users and Entity & Integration tabs (phase 2): members, roles, invitations, the company's details and its Xero connection | [company-settings.md](company-settings.md) — `features/company-settings/README.md` holds the extraction recipe |
 | Toasts - `components/ui/Toast.tsx` is the reference every app copies | `Minty/docs/features/toasts.md` - the system-wide rule and the other three apps' copies |
 
 Running it: `npm run dev` on 3000 with `.env.local` (the three URLs in

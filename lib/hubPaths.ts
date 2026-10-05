@@ -19,23 +19,42 @@ export const HUB_PATHS = {
 export const HUB_HOME = HUB_PATHS.entities;
 
 /**
- * The pages that stand without a person: the landing (where a token arrives) and the
- * maintenance page. proxy.ts lets them through without the cookie, and the Terms gate
- * (`components/ui/TermsGate.tsx`) asks nothing on them - there is nobody to ask yet.
+ * The pages that stand without a person: the landing (where a token arrives), sign-in
+ * (`/login`, features/auth - phase 2) and the maintenance page. proxy.ts lets them through
+ * without the cookie, and the Terms gate (`components/ui/TermsGate.tsx`) asks nothing on them -
+ * there is nobody to ask yet.
  */
-export const OPEN_PATHS = ["/landing", "/maintenance"] as const;
+export const OPEN_PATHS = ["/landing", "/login", "/maintenance"] as const;
 
 export function isOpenPath(pathname: string): boolean {
   return OPEN_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 }
 
 /**
- * A company's own settings page (Figma 03-A, the module settings page), addressed by the
- * company's short id and name (lib/companyRef.ts) - where the side menu's
- * Settings goes from inside a company. It belongs to the subscription feature
- * (`modulesPath`); spelled here too because the menu is shared chrome and may not reach into a
- * feature, and pinned equal to it by that feature's paths test.
+ * One company's pages: `/entities/<shortid>/<name>[/…]` (lib/companyRef.ts) - its module choice,
+ * then its settings under `/settings/<tab>` (phase 2, 2026-10-05; Flask's company pages are
+ * `/entity/<shortid>/<name>/…` the same way).
  */
-export function companySettingsPath(entityId: string, entityName: string): string {
-  return `${HUB_PATHS.subscription}/entities/${companyRef(entityId, entityName)}/modules`;
+export function companyPath(entityId: string, entityName: string, sub = ""): string {
+  return `${HUB_PATHS.entities}/${companyRef(entityId, entityName)}${sub}`;
 }
+
+/** The settings tabs this app draws; the apps keep their own module settings. */
+export type CompanySettingsTab = "modules" | "users" | "integration";
+
+/**
+ * A company's settings page in this app. With no tab, the Module tab (Figma 03-A) - where the
+ * side menu's Settings goes from inside a company. Each tab's page belongs to a feature (the
+ * Module tab to subscription's `modulesPath`); spelled here too because the menu is shared chrome
+ * and may not reach into a feature, and pinned equal by those features' paths tests.
+ */
+export function companySettingsPath(
+  entityId: string,
+  entityName: string,
+  tab: CompanySettingsTab = "modules",
+): string {
+  return companyPath(entityId, entityName, `/settings/${tab}`);
+}
+
+/** `/entities/<shortid>/<name>/settings/<tab>` - the area lib/backLink.ts and the menu recognise. */
+export const COMPANY_SETTINGS_PATTERN = /^\/entities\/[^/]+\/[^/]+\/settings\/[^/]+\/?$/;

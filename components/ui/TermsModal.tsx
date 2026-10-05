@@ -9,6 +9,10 @@
  * Accept & Continue (Flask records it) and Cancel (log out) - someone who will not agree has
  * nowhere else to go. Focus stays inside it; the page behind is inert (TermsGate).
  *
+ * Sign-up shows the same panel before there is an account (features/auth, phase 2): there the
+ * agreement is not recorded on its own but rides with the account's creation, so the caller
+ * passes `agree` (keep the version shown) and `onCancel` (just close).
+ *
  * The tick box stays locked until the document has been scrolled to its end (4 px of
  * tolerance; a document that does not scroll unlocks at once; re-checked when the box
  * resizes). An INTERFACE control, as Flask's is: the server cannot tell whether anyone
@@ -48,9 +52,19 @@ export type TermsModalProps = {
   onAccepted: () => void;
   /** 409 - the Terms changed while this sat open: read them again and ask again. */
   onChanged: () => void;
+  /** What agreeing does with the version on screen. Default: record it (`acceptTerms`). */
+  agree?: (version: string) => Promise<void>;
+  /** Cancel. Default: log out - at the gate, someone who will not agree cannot stay. */
+  onCancel?: () => void;
 };
 
-export function TermsModal({ terms, onAccepted, onChanged }: TermsModalProps) {
+export function TermsModal({
+  terms,
+  onAccepted,
+  onChanged,
+  agree = acceptTerms,
+  onCancel = logOut,
+}: TermsModalProps) {
   const { document: doc, is_update, previous_version, links } = terms;
   const titleId = useId();
   const hintId = useId();
@@ -122,7 +136,7 @@ export function TermsModal({ terms, onAccepted, onChanged }: TermsModalProps) {
     setBusy(true);
     setError("");
     try {
-      await acceptTerms(doc.version);
+      await agree(doc.version);
       onAccepted();
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) return; // off to Flask for a fresh token
@@ -250,7 +264,7 @@ export function TermsModal({ terms, onAccepted, onChanged }: TermsModalProps) {
               unoptimized
             />
             <div className={styles.actions}>
-              <button type="button" className={styles.cancel} onClick={logOut}>
+              <button type="button" className={styles.cancel} onClick={onCancel}>
                 {TERMS_COPY.cancel}
               </button>
               <button

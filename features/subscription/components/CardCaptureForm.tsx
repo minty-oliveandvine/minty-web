@@ -59,7 +59,7 @@ import {
   SHEET_PAIR_BACK,
   SHEET_PAIR_MAIN,
   SHEET_PRIMARY,
-} from "@/features/subscription/components/sheetClasses";
+} from "@/components/ui/sheetClasses";
 import type { SetupIntentState } from "@/features/subscription/hooks/useCardForm";
 import { CARD_MANDATE, STRIPE_NOTE } from "@/features/subscription/lib/billing";
 import { SAVE_BILLING_ACCOUNT } from "@/features/subscription/lib/billingAccounts";

@@ -55,9 +55,9 @@ describe("subscription paths", () => {
 
   it("addresses the module settings page by the company's short id and name, escaped", () => {
     expect(modulesPath("360812e1-9f94-46a3-aa31-347e21afde8e", "Harbour & Vine Ltd")).toBe(
-      "/subscription/entities/360812e1/harbour-and-vine-ltd/modules",
+      "/entities/360812e1/harbour-and-vine-ltd/settings/modules",
     );
-    expect(modulesPath("a/b", "")).toBe("/subscription/entities/a%2Fb/company/modules");
+    expect(modulesPath("a/b", "")).toBe("/entities/a%2Fb/company/settings/modules");
   });
 
   it("names where a module card's CTA leads", () => {

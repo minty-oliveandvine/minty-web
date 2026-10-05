@@ -3,6 +3,9 @@
 // "it should be easily extracted"), and since 2026-09-29 `features/entities` (the select-company
 // list) and `features/profile` (My Profile), built the same way at the user's word:
 //
+//   (features/auth - sign-in - and features/company-settings - a company's Users and Entity &
+//   Integration tabs - joined them in phase 2, 2026-10-05.)
+//
 //   1. features/<name>/** imports only itself, @/lib/**, @/components/ui/** and packages -
 //      never @/app/** and never another feature;
 //   2. nothing outside imports @/features/<name>/* except app/<its folder>/**, and it may import
@@ -40,9 +43,21 @@ const eslintConfig = defineConfig([
         // the root layout: every page's shell, where the sidebar's My Profile view is composed
         { type: "app-layout", pattern: "app/layout.tsx", mode: "full" },
         // the shell's route folder for each feature: allowed to import that feature's index
-        { type: "app-subscription", pattern: "app/subscription/**/*", mode: "full" },
+        // (the Module tab is a company's settings page since phase 2, mounted under app/entities;
+        // listed before app-entities, because the first element a file matches is its type)
+        {
+          type: "app-subscription",
+          pattern: ["app/subscription/**/*", "app/entities/*/*/settings/modules/**/*"],
+          mode: "full",
+        },
+        {
+          type: "app-company-settings",
+          pattern: ["app/entities/*/*/settings/users/**/*", "app/entities/*/*/settings/integration/**/*"],
+          mode: "full",
+        },
         { type: "app-entities", pattern: "app/entities/**/*", mode: "full" },
         { type: "app-profile", pattern: "app/profile/**/*", mode: "full" },
+        { type: "app-auth", pattern: "app/login/**/*", mode: "full" },
         // the rest of the shell's routes
         { type: "app", pattern: "app/**/*", mode: "full" },
         // one element per feature folder; `name` captures the folder so a feature may import itself
@@ -69,6 +84,14 @@ const eslintConfig = defineConfig([
             {
               from: "app-entities",
               allow: ["shared", "app-entities", ["feature", { name: "entities" }]],
+            },
+            {
+              from: "app-company-settings",
+              allow: ["shared", "app-company-settings", ["feature", { name: "company-settings" }]],
+            },
+            {
+              from: "app-auth",
+              allow: ["shared", "app-auth", ["feature", { name: "auth" }]],
             },
             {
               from: "app-profile",
@@ -111,6 +134,8 @@ const eslintConfig = defineConfig([
                 "app-subscription",
                 "app-entities",
                 "app-profile",
+                "app-auth",
+                "app-company-settings",
                 "proxy",
               ],
               allow: "**",

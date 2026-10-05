@@ -26,9 +26,9 @@ export function mintyEntryUrl(path?: string, entityId?: string): string {
 
 /**
  * Into ANY company from the entity list: `/entity/<id>/enter` re-establishes the Flask session
- * from the token (it checks the token, not a membership - an unscoped one is fine) and hands
- * on to that company's module selector, which checks the membership, records the visit on
- * the list's clock and picks the module.
+ * from the token (a member's or a superuser's - an unscoped one is fine) and hands on to that
+ * company's module router, which records the visit on the list's clock and picks the module:
+ * straight into the only one, or this app's module choice (`/entities/<shortid>/<name>`) for two.
  */
 export function mintyEnterCompanyUrl(entityId: string): string {
   return mintyEntryUrl(`/entity/${entityId}/modules`, entityId);
@@ -37,8 +37,7 @@ export function mintyEnterCompanyUrl(entityId: string): string {
 /**
  * The company's modules (Minty's `entity.module_selector`), which is a router, not a page: one
  * module enabled sends the person straight into it - Petty Cash's dashboard, or the payments
- * app - and two offer the module selection. Minty decides, from `entity_function_map`, so this
- * app does not count modules of its own.
+ * app - and two come back to this app's module choice. Minty decides, from `entity_function_map`.
  */
 export function mintyModulesUrl(entityId: string): string {
   return entityId ? mintyEntryUrl(`/entity/${entityId}/modules`) : mintyEntryUrl();

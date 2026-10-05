@@ -8,11 +8,11 @@ is the whole screen (the layout, below).
 
 ## How a person gets here
 
-- **From Minty.** With Minty's `MINTY_WEB_HUB` on, Flask's `GET /entity` (the page every login
-  lands on, and the target of seventy-odd redirects) mints an unscoped token and sends the
-  browser to `/landing?next=/entities` — whether or not the person owes a Terms acceptance:
-  this app's Terms gate takes it (`authentication.md`). Off (the default, and production until
-  minty-web is deployed there), Flask keeps its own list and its own Terms modal.
+- **From Minty.** Flask's `GET /entity` (the page every login lands on, and the target of
+  seventy-odd redirects) mints an unscoped token and sends the browser to
+  `/landing?next=/entities` — whether or not the person owes a Terms acceptance: this app's
+  Terms gate takes it (`authentication.md`). Always, since phase 2 (2026-10-05): the
+  `MINTY_WEB_HUB` switch and Flask's own list are gone.
 - **From this app.** The side menu's _Select Entity_, the portal overview's _Back to the entity
   dashboard_ when no company is in the cookie, the empty Manage Subscriptions list and `mintyEntryUrl`'s fallback all
   lead here (`HUB_PATHS.entities`).
@@ -70,6 +70,22 @@ another app (onboarding, minty-web, the payments app), because those apps never 
 2026-10-02 onboarding's Xero connect flashed on every attempt. Finishing the wizard (→ `/entity`)
 then opened this list under a stack of stale "Connected to Xero!" / "Connection failed" toasts.
 
+## A company's module choice (`/entities/<shortid>/<name>`, phase 2 - 2026-10-05)
+
+Clicking a row goes through Minty's `/entity/<id>/enter` to its router, `/entity/<co>/modules`
+(Minty `routes/modules.py::module_selector`): a company still onboarding resumes its wizard, one
+module switched on goes straight into it, and **two come back here**, to "Choose Module Type"
+(`features/entities/routes/ModuleChoiceScreen.tsx`) with a token scoped to the company. It was
+minty-payment-request-web's `/module-selection` until 2026-10-05 and looks as it did: the mark,
+the company, two doors (`components/ModuleChoiceButton.tsx`, Minty peeking out on hover). The
+doors are the DATABASE's modules - the list's row, `GET /api/me/entities` - never the token's
+claims; each enters its module through Minty's `/enter` (`lib/moduleChoice.ts`): Petty Cash's
+dashboard, or `/entity/<id>/payment-request`, which mints the payments app's token. Opened some
+other way (a bookmark), one module goes straight in and none says so with the way to the
+Module tab; a failed read says so, logs it and offers Try again. The company comes from the
+address (`components/ui/CompanyFromAddress`), a wrong name corrected in place. Header: Back
+(where the person came from, else the list), the initials and the menu.
+
 ## The header and the sidebar
 
 On the right of the bar, the person's initials (`components/ui/ViewerBadge`) and the ≡
@@ -89,6 +105,11 @@ The initials and name come from Flask's `GET /api/me/profile`, read once per tok
 the page.
 
 ## Tests
+
+Module choice: `features/entities/__tests__/ModuleChoiceScreen.test.tsx` (the doors, one
+module straight in, none, a failed read) and `features/entities/e2e/11_module_choice.spec.ts`
+(the doors' addresses, a corrected name, one module, 360 / 768 / 1440); Flask's router:
+Minty's `tests/test_module_selector.py`.
 
 `features/entities/__tests__/` (the rules, the screen with its states and notices, the
 re-export guard), `components/ui/__tests__/{NavMenu,Sidebar}.test.tsx`,

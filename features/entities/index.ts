@@ -8,4 +8,5 @@
  */
 
 export { EntityList } from "@/features/entities/routes/EntityList";
+export { ModuleChoice } from "@/features/entities/routes/ModuleChoice";
 export { ENTITIES_BASE_PATH } from "@/features/entities/lib/paths";

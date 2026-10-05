@@ -10,7 +10,7 @@
  * `className` dresses the card. (The billing-account dialogs are not on it: they are
  * onboarding's sheet - `AccountSheet` - whose scrim scrolls with a tall card form.)
  *
- * Copied to minty-payment-request-web at the same path and ported to Flask (Minty `static/js/minty_dialog.js` + `static/css/minty_dialog.css`) - change all three.
+ * Copied to minty-payment-request-web (features/subscription/components/ModalFrame.tsx) and ported to Flask (Minty `static/js/minty_dialog.js` + `static/css/minty_dialog.css`) - change all three.
  */
 
 import { useEffect, type ReactNode } from "react";

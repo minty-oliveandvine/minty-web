@@ -17,7 +17,7 @@
  * Copied to minty-payment-request-web at the same path and ported to Flask (Minty `static/js/minty_dialog.js` + `static/css/minty_dialog.css`) - change all three.
  */
 
-import { ConfirmDialog } from "@/features/subscription/components/ConfirmDialog";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 export const PAYMENT_FAILED_TITLE = "Payment could not be processed";
 export const PAYMENT_FAILED_RETRY = "We'll automatically retry in a few days.";

@@ -27,11 +27,15 @@ function walk(dir: string, out: string[] = []): string[] {
 const rel = (f: string) => relative(ROOT, f).replace(/\\/g, "/");
 const REEXPORT = /^export \{ \w+ as default \} from "@\/features\/entities";\n?$/;
 
-describe("app/entities is re-exports only", () => {
-  const files = walk(join(ROOT, "app", "entities"));
+// A company's settings tabs sit under app/entities/[ref]/[slug]/settings but belong to the
+// features that draw them (the Module tab: subscription) - their guards check them.
+const SETTINGS = /^app\/entities\/\[ref\]\/\[slug\]\/settings\//;
 
-  it("has the list's page", () => {
-    expect(files.map(rel)).toEqual(["app/entities/page.tsx"]);
+describe("app/entities is re-exports only", () => {
+  const files = walk(join(ROOT, "app", "entities")).filter((f) => !SETTINGS.test(rel(f)));
+
+  it("has the list's page and a company's module choice", () => {
+    expect(files.map(rel).sort()).toEqual(["app/entities/[ref]/[slug]/page.tsx", "app/entities/page.tsx"]);
   });
 
   it.each(files.map((f) => [rel(f), f]))("%s is a single re-export from the feature index", (_n, file) => {

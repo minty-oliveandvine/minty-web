@@ -1,7 +1,7 @@
 /**
  * Log out - the side menu's Logout and My Profile's Log Out are the same act: forget this
  * app's token, then end the session at Minty (Flask's /logout signs the person out and lands
- * on its sign-in page), so no app is left signed in behind the one that said goodbye.
+ * on the sign-in page - this app's /login since phase 2), so no app is left signed in behind the one that said goodbye.
  */
 
 import { clearAuth } from "@/lib/auth";

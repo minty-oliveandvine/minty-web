@@ -44,7 +44,7 @@ import {
   SHEET_PAIR_MAIN,
   SHEET_PRIMARY,
   SHEET_SINGLE,
-} from "@/features/subscription/components/sheetClasses";
+} from "@/components/ui/sheetClasses";
 import type { OpenedAccount } from "@/features/subscription/hooks/useCardForm";
 import {
   BILLING_ACCOUNTS,

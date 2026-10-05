@@ -15,7 +15,7 @@ import type { ChangeModal } from "@/features/subscription/lib/changeModal";
 import type { ResultPart } from "@/features/subscription/lib/changeResult";
 
 import { PLAN_TONE } from "@/features/subscription/components/ChangeResultView";
-import { ConfirmDialog } from "@/features/subscription/components/ConfirmDialog";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 function Part({ part }: { part: ResultPart }) {
   if (part.style === "plain") return <>{part.text}</>;

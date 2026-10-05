@@ -14,8 +14,10 @@
  * Flask's static/js/back_link.js is the same rule for its settings pages.
  */
 
-// The module page: /subscription/entities/<shortid>/<name>/modules, or the old <full id> form.
-const SETTINGS_AREA = [/^\/subscription\/entities\/[^/]+(?:\/[^/]+)?\/modules\/?$/, /^\/profile\/?$/];
+import { COMPANY_SETTINGS_PATTERN } from "@/lib/hubPaths";
+
+// A company's settings tabs (/entities/<shortid>/<name>/settings/<tab>) and My Profile.
+const SETTINGS_AREA = [COMPANY_SETTINGS_PATTERN, /^\/profile\/?$/];
 
 type NavEntry = { index: number; url: string | null };
 type NavigationLike = { currentEntry: NavEntry | null; entries(): NavEntry[] };

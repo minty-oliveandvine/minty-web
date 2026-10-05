@@ -6,7 +6,7 @@
  * so extraction into an app that mounts it at `/` is a one-line change here (README.md).
  */
 
-import { companyRef } from "@/lib/companyRef";
+import { companySettingsPath } from "@/lib/hubPaths";
 
 export const SUBSCRIPTION_BASE_PATH = "/subscription";
 
@@ -68,10 +68,11 @@ export const BILLING = {
     withParams(subscriptionPath("/billing/details"), { account: accountId }),
 } as const;
 
-/** The module settings page of one company (Flask's settings/modules, re-homed), addressed by the
- * company's short id and name (lib/companyRef.ts). */
+/** The module settings page of one company (Flask's settings/modules, re-homed): NOT under the
+ * feature's mount - since phase 2 it is the Module tab among the company's settings,
+ * `/entities/<shortid>/<name>/settings/modules` (lib/hubPaths.ts spells the company's pages). */
 export function modulesPath(entityId: string, entityName: string): string {
-  return subscriptionPath(`/entities/${companyRef(entityId, entityName)}/modules`);
+  return companySettingsPath(entityId, entityName, "modules");
 }
 
 /** The list with a company's row open and one module ticked, ready to confirm. */

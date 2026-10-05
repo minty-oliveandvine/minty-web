@@ -23,7 +23,7 @@ import type { ReactNode } from "react";
 
 import { getAuth } from "@/lib/auth";
 import { env } from "@/lib/env";
-import { companySettingsPath, HUB_PATHS } from "@/lib/hubPaths";
+import { COMPANY_SETTINGS_PATTERN, companySettingsPath, HUB_PATHS } from "@/lib/hubPaths";
 import { logOut } from "@/lib/logout";
 import { mintyEntryUrl } from "@/lib/mintyEntry";
 import { getModuleClaims, type ModuleClaims } from "@/lib/moduleClaims";
@@ -56,7 +56,7 @@ type Current = "profile" | "entities" | "subscriptions" | "settings" | null;
 export function currentOf(pathname: string): Current {
   if (pathname === HUB_PATHS.profile) return "profile";
   if (pathname === HUB_PATHS.entities) return "entities";
-  if (pathname.startsWith(`${HUB_PATHS.subscription}/entities/`)) return "settings";
+  if (COMPANY_SETTINGS_PATTERN.test(pathname)) return "settings";
   if (pathname === HUB_PATHS.subscription || pathname.startsWith(`${HUB_PATHS.subscription}/`)) {
     return "subscriptions";
   }
