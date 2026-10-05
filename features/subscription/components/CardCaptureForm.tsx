@@ -270,7 +270,7 @@ function PageForm(props: FormProps) {
         </p>
       )}
       <p className="text-[13px] leading-relaxed text-[#8b93a0]">
-        {CARD_MANDATE} <span className="font-semibold text-[#2e9b9b]">(Details)</span>
+        {CARD_MANDATE}
       </p>
       {form.error && (
         <p
@@ -326,7 +326,7 @@ function SheetForm(props: FormProps) {
         </div>
       </div>
       <p className="mt-6 text-[12.5px] leading-normal text-[#6b7a80] [overflow-wrap:anywhere]">
-        {CARD_MANDATE} <span className="font-semibold text-[#128f92]">(Details)</span>
+        {CARD_MANDATE}
       </p>
       {form.error && (
         <p role="alert" className={SHEET_ERROR}>
