@@ -40,7 +40,9 @@ describe("app/subscription is re-exports only", () => {
     // one billing account's name and address (08-C); opening an account is a sheet, not a page
     expect(names).toContain("app/subscription/(portal)/billing/details/page.tsx");
     expect(names).not.toContain("app/subscription/(portal)/billing/new-account/page.tsx");
-    expect(names).toContain("app/subscription/entities/[entityId]/modules/page.tsx");
+    // a company by short id and name (2026-10-05), and the old full-id address that moves to it
+    expect(names).toContain("app/subscription/entities/[ref]/[slug]/modules/page.tsx");
+    expect(names).toContain("app/subscription/entities/[ref]/modules/page.tsx");
     // No catch-all routes: every flow has its page, so a stray path is Next's own not-found
     // (the "Not built yet" placeholder went on 2026-09-29 with its last flow).
     expect(names.filter((n) => n.includes("[..."))).toEqual([]);

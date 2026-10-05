@@ -23,7 +23,7 @@ or a company's _Modules_ settings (a scoped token, for that company's page). Nev
 | Add / edit a card | `/subscription/billing/add?account=`, `…/billing/edit?card=&account=` | **built** (§15): Stripe's own card fields on a SetupIntent (08-Y) - the card goes ON the account - and the name and expiry of a saved card (08-D) | —                                                                                                                                             |
 | Billing details   | `/subscription/billing/details?account=`          | **built** (§15): 08-C — the account's billing company and email, and the address in Stripe's own form (the billing address and name of the card it charges) | —                                                                                                                                             |
 | New billing account | — (a sheet, not a page)                           | **built** (§15): onboarding's `BillingSheet` over 08-A and 08-B - the list, then the form in place (a billing email and company, then the card - which OPENS the account), then "New Card added Successfully"; from the move's step 2 the company then moves onto it | —                                                                                                                                             |
-| Module settings   | `/subscription/entities/{id}/modules`             | **built** (§9): the settings chrome, the two module cards in their six states, the payment-failed banner, _Start Free Trial_, the way back (no Stripe return: nothing leaves for Stripe) — over a stubbed API until step 3 | the pages the other CTAs lead to (Manage / Activate / Resume / Reactivate / payment method), each from its own Figma frame; the live API      |
+| Module settings   | `/subscription/entities/{shortid}/{name}/modules`             | **built** (§9): the settings chrome, the two module cards in their six states, the payment-failed banner, _Start Free Trial_, the way back (no Stripe return: nothing leaves for Stripe) — over a stubbed API until step 3 | the pages the other CTAs lead to (Manage / Activate / Resume / Reactivate / payment method), each from its own Figma frame; the live API      |
 
 **Skeletal by decision** (2026-09-21) for the portal screens: functional, minimal styling, a
 design later. The module settings page is the exception — its design exists (Figma
@@ -330,7 +330,7 @@ from the browser's clock, so a pinned day drifted by one every midnight.
 
 ## 9. The module settings page
 
-`/subscription/entities/{id}/modules` — Flask's `/entity/settings/module/<org_id>`, re-homed and
+`/subscription/entities/{shortid}/{name}/modules` — Flask's `/entity/<shortid>/<name>/settings/modules`, re-homed and
 redrawn to the Figma design (section "03 · Settings › Module", six frames). What is on it:
 
 - **The settings chrome is minty-payment-request-web's** (decision 2026-09-21: "the settings design
@@ -349,7 +349,7 @@ redrawn to the Figma design (section "03 · Settings › Module", six frames). W
   1024px column, a sticky pill row with minty-payment-request-web's `SettingsPills` classes — Users ·
   Entity & Integration · Petty Cash Settings · Payment Settings · **Module** —
   linking to Flask's pages (`lib/flaskLinks.ts`); Payment Settings goes through Flask's
-  `GET /entity/settings/payments/<id>`, which mints the payments app's token and sends the
+  `GET /entity/<id>/settings/payment-request` (Flask shows it by short id and name), which mints the payments app's token and sends the
   browser on. A module's settings tab (and its drawer section) shows only when that module is on, as
   in minty-payment-request-web and Flask - from the page model's `has_access` once it is here, from the
   token's `petty_cash_enabled` / `billing_enabled` claims until then (`lib/moduleClaims.ts`,
@@ -445,7 +445,7 @@ redrawn to the Figma design (section "03 · Settings › Module", six frames). W
 - **Not on this page any more** (moved to the Manage Subscription flow by the design): the "Your
   subscription" panel, the next-payment-date card, the decision dialog and the lapsed-trial
   restart takeover Flask forced on every load.
-- **From Flask.** Minty's `/entity/settings/module/<id>` is always a hand-over to this page
+- **From Flask.** Minty's `/entity/<shortid>/<name>/settings/modules` is always a hand-over to this page
   (Flask's Jinja version was deleted on 2026-10-01): it redirects here through `/landing` with
   the company's token, and a lapsed token goes back through Minty's `/handoff/minty-web` - both
   landed 2026-09-21. The page answers the API's 501 stub with "not served by the subscription

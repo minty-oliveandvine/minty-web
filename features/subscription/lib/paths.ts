@@ -6,6 +6,8 @@
  * so extraction into an app that mounts it at `/` is a one-line change here (README.md).
  */
 
+import { companyRef } from "@/lib/companyRef";
+
 export const SUBSCRIPTION_BASE_PATH = "/subscription";
 
 export function subscriptionPath(sub = ""): string {
@@ -66,9 +68,10 @@ export const BILLING = {
     withParams(subscriptionPath("/billing/details"), { account: accountId }),
 } as const;
 
-/** The module settings page of one company (Flask's /entity/settings/module/<org_id>, re-homed). */
-export function modulesPath(entityId: string): string {
-  return subscriptionPath(`/entities/${encodeURIComponent(entityId)}/modules`);
+/** The module settings page of one company (Flask's settings/modules, re-homed), addressed by the
+ * company's short id and name (lib/companyRef.ts). */
+export function modulesPath(entityId: string, entityName: string): string {
+  return subscriptionPath(`/entities/${companyRef(entityId, entityName)}/modules`);
 }
 
 /** The list with a company's row open and one module ticked, ready to confirm. */

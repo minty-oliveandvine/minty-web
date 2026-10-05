@@ -368,7 +368,7 @@ export function SideMenu({ modules, viewer, onClose, onProfile }: SideMenuProps)
       <div className="mt-[14px] flex flex-col gap-[3px]">
         {inCompany ? (
           <MenuLink
-            href={companySettingsPath(entityId)}
+            href={companySettingsPath(entityId, getAuth()?.entityName ?? "")}
             current={current === "settings"}
             onNavigate={onClose}
             className="min-h-[52px] gap-[16px] pl-[14px]"

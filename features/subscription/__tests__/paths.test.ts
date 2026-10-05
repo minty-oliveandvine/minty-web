@@ -53,9 +53,11 @@ describe("subscription paths", () => {
     expect(Object.keys(BILLING)).toEqual(["account", "add", "edit", "added", "details"]);
   });
 
-  it("escapes the company id in the module settings path", () => {
-    expect(modulesPath("abc-123")).toBe("/subscription/entities/abc-123/modules");
-    expect(modulesPath("a/b")).toBe("/subscription/entities/a%2Fb/modules");
+  it("addresses the module settings page by the company's short id and name, escaped", () => {
+    expect(modulesPath("360812e1-9f94-46a3-aa31-347e21afde8e", "Harbour & Vine Ltd")).toBe(
+      "/subscription/entities/360812e1/harbour-and-vine-ltd/modules",
+    );
+    expect(modulesPath("a/b", "")).toBe("/subscription/entities/a%2Fb/company/modules");
   });
 
   it("names where a module card's CTA leads", () => {
@@ -80,6 +82,6 @@ describe("the shell's spelling of this feature's paths", () => {
   // which may not import the feature - so the two spellings are pinned together here.
   it("agrees with the feature's own", () => {
     expect(HUB_PATHS.subscription).toBe(SUBSCRIPTION_BASE_PATH);
-    expect(companySettingsPath("e 1")).toBe(modulesPath("e 1"));
+    expect(companySettingsPath("e 1", "Olive Shop")).toBe(modulesPath("e 1", "Olive Shop"));
   });
 });

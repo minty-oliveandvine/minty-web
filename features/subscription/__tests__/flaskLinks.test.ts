@@ -17,10 +17,10 @@ describe("settingsTabs", () => {
       "Payment Settings",
       "Module",
     ]);
-    expect(tabs[0].href).toBe(`${env.PETTY_CASH_URL}/entity/settings/users/e1`);
-    expect(tabs[1].href).toBe(`${env.PETTY_CASH_URL}/entity/e1/settings/xero`);
-    expect(tabs[2].href).toBe(`${env.PETTY_CASH_URL}/entity/settings/entity/e1`);
-    expect(tabs[3].href).toBe(`${env.PETTY_CASH_URL}/entity/settings/payments/e1`);
+    expect(tabs[0].href).toBe(`${env.PETTY_CASH_URL}/entity/e1/settings/users`);
+    expect(tabs[1].href).toBe(`${env.PETTY_CASH_URL}/entity/e1/settings/integration`);
+    expect(tabs[2].href).toBe(`${env.PETTY_CASH_URL}/entity/e1/settings/petty-cash`);
+    expect(tabs[3].href).toBe(`${env.PETTY_CASH_URL}/entity/e1/settings/payment-request`);
     expect(tabs[4]).toEqual({ label: "Module", current: true });
   });
 
@@ -36,8 +36,8 @@ describe("settingsTabs", () => {
 
   it("links Payment Settings through Flask, with no origin flag, and escapes the id", () => {
     const tabs = settingsTabs("a/b", { pettyCash: true, billing: true });
-    expect(tabs[3].href).toBe(`${env.PETTY_CASH_URL}/entity/settings/payments/a%2Fb`);
-    expect(tabs[0].href).toBe(`${env.PETTY_CASH_URL}/entity/settings/users/a%2Fb`);
+    expect(tabs[3].href).toBe(`${env.PETTY_CASH_URL}/entity/a%2Fb/settings/payment-request`);
+    expect(tabs[0].href).toBe(`${env.PETTY_CASH_URL}/entity/a%2Fb/settings/users`);
   });
 });
 

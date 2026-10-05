@@ -31,15 +31,15 @@ export function settingsTabs(entityId: string, access: ModuleAccess): SettingsTa
   const id = encodeURIComponent(entityId);
   const minty = env.PETTY_CASH_URL;
   const tabs: SettingsTab[] = [
-    { label: "Users", href: `${minty}/entity/settings/users/${id}` },
-    { label: "Entity & Integration", href: `${minty}/entity/${id}/settings/xero` },
+    { label: "Users", href: `${minty}/entity/${id}/settings/users` },
+    { label: "Entity & Integration", href: `${minty}/entity/${id}/settings/integration` },
   ];
   if (access.pettyCash) {
-    tabs.push({ label: "Petty Cash Settings", href: `${minty}/entity/settings/entity/${id}` });
+    tabs.push({ label: "Petty Cash Settings", href: `${minty}/entity/${id}/settings/petty-cash` });
   }
   if (access.billing) {
-    // Flask mints the payments app's token on the way (Minty's /entity/settings/payments).
-    tabs.push({ label: "Payment Settings", href: `${minty}/entity/settings/payments/${id}` });
+    // Flask mints the payments app's token on the way (Minty's /entity/<id>/settings/payment-request).
+    tabs.push({ label: "Payment Settings", href: `${minty}/entity/${id}/settings/payment-request` });
   }
   tabs.push({ label: "Module", current: true });
   return tabs;

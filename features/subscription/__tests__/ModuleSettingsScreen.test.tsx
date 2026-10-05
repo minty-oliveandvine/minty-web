@@ -98,7 +98,7 @@ describe("ModuleSettingsScreen", () => {
     const tabs = within(screen.getByRole("navigation", { name: "Settings sections" }));
     expect(tabs.getByRole("link", { name: "Users" })).toHaveAttribute(
       "href",
-      `${env.PETTY_CASH_URL}/entity/settings/users/e1`,
+      `${env.PETTY_CASH_URL}/entity/e1/settings/users`,
     );
     expect(tabs.getByText("Module")).toHaveAttribute("aria-current", "page");
   });
@@ -130,7 +130,7 @@ describe("ModuleSettingsScreen", () => {
     const tabs = within(screen.getByRole("navigation", { name: "Settings sections" }));
     expect(tabs.getByRole("link", { name: "Payment Settings" })).toHaveAttribute(
       "href",
-      `${env.PETTY_CASH_URL}/entity/settings/payments/e1`,
+      `${env.PETTY_CASH_URL}/entity/e1/settings/payment-request`,
     );
     expect(tabs.queryByRole("link", { name: "Petty Cash Settings" })).toBeNull();
     await userEvent.click(screen.getByRole("button", { name: "Open navigation menu" }));
