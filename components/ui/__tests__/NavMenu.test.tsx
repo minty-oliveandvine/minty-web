@@ -70,7 +70,7 @@ describe("NavMenu", () => {
       `${env.PETTY_CASH_URL}/entity/e1/enter?token=${encodeURIComponent(TOKEN)}`,
     );
     expect(petty.getByRole("link", { name: "Reports" }).getAttribute("href")).toContain(
-      encodeURIComponent("/entity/e1/reports"),
+      encodeURIComponent("/entity/e1/petty-cash/reports"),
     );
     const payments = within(menu.getByRole("group", { name: "Payment Request" }));
     expect(payments.getByRole("link", { name: "Bills" })).toHaveAttribute(

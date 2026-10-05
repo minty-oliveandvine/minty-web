@@ -184,7 +184,7 @@ export function SideMenu({ modules, viewer, onClose, onProfile }: SideMenuProps)
     logOut();
   };
 
-  const reports = entityId ? `/entity/${entityId}/reports` : undefined;
+  const reports = entityId ? `/entity/${entityId}/petty-cash/reports` : undefined;
   const who = (
     <>
       <span

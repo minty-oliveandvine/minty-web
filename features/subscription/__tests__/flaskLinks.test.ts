@@ -44,7 +44,7 @@ describe("settingsTabs", () => {
 describe("backLink", () => {
   it("is labelled Back, with Petty Cash's dashboard as the new-tab fallback", () => {
     expect(backLink("e1")).toEqual({
-      href: `${env.PETTY_CASH_URL}/entity/e1`,
+      href: `${env.PETTY_CASH_URL}/entity/e1/petty-cash`,
       label: "Back",
     });
   });

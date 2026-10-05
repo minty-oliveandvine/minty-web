@@ -21,10 +21,10 @@ export type ModuleAccess = { pettyCash: boolean; billing: boolean };
 /**
  * The way back: a plain click returns to the page the person came from, whichever app
  * (components/ui/BackLink.tsx, lib/backLink.ts - the `?from=bills` flag went 2026-10-05). The
- * href is the fallback for a new tab: Petty Cash's dashboard (Flask's `/entity/<id>`).
+ * href is the fallback for a new tab: Petty Cash's dashboard (Flask's `/entity/<id>/petty-cash`).
  */
 export function backLink(entityId: string): { href: string; label: string } {
-  return { href: `${env.PETTY_CASH_URL}/entity/${encodeURIComponent(entityId)}`, label: "Back" };
+  return { href: `${env.PETTY_CASH_URL}/entity/${encodeURIComponent(entityId)}/petty-cash`, label: "Back" };
 }
 
 export function settingsTabs(entityId: string, access: ModuleAccess): SettingsTab[] {
