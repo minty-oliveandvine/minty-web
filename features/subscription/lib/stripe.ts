@@ -7,7 +7,11 @@
  * configured), so this is a small cache rather than a constant.
  */
 
-import { loadStripe, type Stripe } from "@stripe/stripe-js";
+// `/pure`: the main entry injects js.stripe.com on IMPORT, and this module sits behind the
+// subscription barrel the root layout imports - so every page, /landing with its token in
+// the address bar included, ran Stripe's script. `/pure` loads it only when a form calls this.
+import { loadStripe } from "@stripe/stripe-js/pure";
+import type { Stripe } from "@stripe/stripe-js";
 
 const stripeByKey = new Map<string, Promise<Stripe | null>>();
 

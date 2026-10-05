@@ -25,7 +25,7 @@ const fake = vi.hoisted(() => ({
   options: [] as unknown[],
 }));
 
-vi.mock("@stripe/stripe-js", () => ({
+vi.mock("@stripe/stripe-js/pure", () => ({
   loadStripe: vi.fn(async () => fake.stripe),
 }));
 

@@ -12,11 +12,11 @@
 import { clearAuth } from "@/lib/auth";
 import { env } from "@/lib/env";
 import { HUB_HOME } from "@/lib/hubPaths";
+import { safeNextPath } from "@/lib/safeNext";
 
-/** A path this app may land on after the handoff: same-origin, absolute, not protocol-relative. */
+/** A path this app may land on after the handoff (lib/safeNext.ts has the rule). */
 export function safeNext(raw: string | null | undefined, fallback: string = HUB_HOME): string {
-  if (!raw) return fallback;
-  return raw.startsWith("/") && !raw.startsWith("//") ? raw : fallback;
+  return safeNextPath(raw, fallback);
 }
 
 export function handoffUrl(next: string, entityId?: string): string {

@@ -75,7 +75,7 @@ const stripeForm = vi.hoisted(() => ({
     },
   },
 }));
-vi.mock("@stripe/stripe-js", () => ({ loadStripe: vi.fn(async () => ({})) }));
+vi.mock("@stripe/stripe-js/pure", () => ({ loadStripe: vi.fn(async () => ({})) }));
 vi.mock("@stripe/react-stripe-js", () => ({
   Elements: ({ options, children }: { options: unknown; children: ReactNode }) => {
     stripeForm.elementOptions.push(options);

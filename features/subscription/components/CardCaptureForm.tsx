@@ -31,11 +31,11 @@ import {
   useElements,
   useStripe,
 } from "@stripe/react-stripe-js";
-import {
-  type Appearance,
-  type StripeAddressElementChangeEvent,
-  type StripeAddressElementOptions,
-  type StripePaymentElementOptions,
+import type {
+  Appearance,
+  StripeAddressElementChangeEvent,
+  StripeAddressElementOptions,
+  StripePaymentElementOptions,
 } from "@stripe/stripe-js";
 import { useMemo, useState, type FormEvent, type ReactNode } from "react";
 

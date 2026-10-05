@@ -11,8 +11,16 @@ the verifying half `minty-subscription-api/docs/features/authentication.md`.
 Stores the three values in cookies (`lib/auth.ts`: `minty_token`, `minty_entity_id`,
 `minty_entity_name`; `SameSite=Lax`, `Secure` on https, **max-age = the token's `exp`**, so an
 expired session is caught by proxy.ts before a page renders) and `router.replace`s to
-`next` — same-origin, absolute, not protocol-relative (`lib/handoff.ts::safeNext`), else the
+`next` — a path on this origin (`lib/safeNext.ts`, through `lib/handoff.ts::safeNext`), else the
 entity list (`lib/hubPaths.ts::HUB_HOME`). Reached with no token it goes to Flask's re-handoff for `next`.
+The rule refuses `//host`, any backslash and any control character before checking the
+origin: until 2026-10-05 `/landing?token=x&next=/%5Cevil.com` (or `/%09/evil.com`) passed a
+`startsWith("/")` check and landed on another site. minty-payment-request-web carries a copy of
+the file - change both. Stripe.js is imported from `@stripe/stripe-js/pure`
+(`features/subscription/lib/stripe.ts`), so it loads only when a card or address form needs
+it - not on `/landing` while the token is still in the URL. Every response carries
+`Referrer-Policy: same-origin`, `X-Content-Type-Options`, `frame-ancestors 'self'` and (in
+production) HSTS (`next.config.ts`).
 
 Two tokens arrive here: the **unscoped** one (`entity_id: ""`) from Minty's entity list for the
 portal, and the **scoped** one from inside a company for its module settings page. Both are

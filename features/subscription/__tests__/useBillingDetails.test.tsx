@@ -27,7 +27,7 @@ vi.mock("next/navigation", () => ({
 
 // `stripeFor` caches per key, so a case that needs Stripe.js to fail uses its own key.
 const BLOCKED = "pk_test_blocked";
-vi.mock("@stripe/stripe-js", () => ({
+vi.mock("@stripe/stripe-js/pure", () => ({
   loadStripe: vi.fn(async (key: string) => (key === BLOCKED ? null : { key })),
 }));
 
