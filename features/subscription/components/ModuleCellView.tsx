@@ -31,10 +31,19 @@ export function ModuleBadge({ code }: { code: ModuleCode }) {
   const b = BADGE[code];
   return (
     <span
-      className={`flex size-[76px] shrink-0 items-center justify-center rounded-full ${b.circle}`}
+      className={`flex size-14 shrink-0 items-center justify-center rounded-full lg:size-[76px] ${b.circle}`}
       aria-hidden
     >
-      <Image src={b.src} alt="" width={b.width} height={b.height} unoptimized />
+      {/* Drawn for the 76px circle: a share of it, so it shrinks with the circle below `lg`. */}
+      <Image
+        src={b.src}
+        alt=""
+        width={b.width}
+        height={b.height}
+        className="h-auto"
+        style={{ width: `${(b.width / 76) * 100}%` }}
+        unoptimized
+      />
     </span>
   );
 }
@@ -42,24 +51,31 @@ export function ModuleBadge({ code }: { code: ModuleCode }) {
 export function ModuleCellView({
   cell,
   entityName,
+  className = "",
   onStartTrial,
   onSubscribe,
 }: {
   cell: ModuleCell;
   entityName: string;
+  /** Its place in the row's grid. */
+  className?: string;
   onStartTrial: (code: ModuleCode) => void;
   onSubscribe: (code: ModuleCode) => void;
 }) {
   const label = `${cell.name} · ${entityName}`;
   return (
-    <div className="flex min-w-0 items-center gap-6" data-module={cell.code} data-cell={cell.kind}>
+    <div
+      className={`flex min-w-0 items-center gap-4 lg:gap-6 ${className}`}
+      data-module={cell.code}
+      data-cell={cell.kind}
+    >
       <ModuleBadge code={cell.code} />
       {cell.kind === "start_trial" ? (
         <button
           type="button"
           onClick={() => onStartTrial(cell.code)}
           aria-label={`Start Trial · ${label}`}
-          className="h-[54px] rounded-full bg-secondary px-6 text-xl font-bold text-white hover:opacity-90"
+          className="h-11 rounded-full bg-secondary px-5 text-base font-bold text-white hover:opacity-90 lg:h-[54px] lg:px-6 lg:text-xl"
         >
           Start Trial
         </button>

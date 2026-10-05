@@ -7,6 +7,13 @@
 
 import Image from "next/image";
 
+import {
+  LIST_ACTIONS,
+  LIST_CELL,
+  LIST_GRID,
+  LIST_ROW,
+} from "@/features/subscription/components/listGrid";
+
 const CARD =
   "flex flex-col items-center rounded-xl border border-[#e5ebed] bg-white px-6 text-center shadow-[0px_2px_8px_0px_rgba(0,0,0,0.1)]";
 const TITLE = "text-[25px] font-bold leading-[42px] text-ink";
@@ -68,18 +75,16 @@ export function ListSkeleton({ rows = 3 }: { rows?: number }) {
       {Array.from({ length: rows }).map((_, i) => (
         <li
           key={i}
-          className="grid min-h-[125px] animate-pulse grid-cols-[minmax(200px,1.3fr)_1fr_1fr_auto] items-center gap-6 rounded-xl bg-white px-7 py-5 shadow-[0px_2px_8px_0px_rgba(0,0,0,0.1)]"
+          className={`${LIST_GRID} ${LIST_ROW} animate-pulse bg-white shadow-[0px_2px_8px_0px_rgba(0,0,0,0.1)]`}
         >
           <span className="h-5 w-[300px] max-w-full rounded bg-gray-200" />
-          <span className="flex items-center gap-6">
-            <span className="size-[76px] rounded-full bg-gray-100" />
-            <span className="h-[18px] w-[130px] rounded bg-gray-200" />
-          </span>
-          <span className="flex items-center gap-6">
-            <span className="size-[76px] rounded-full bg-gray-100" />
-            <span className="h-[18px] w-[130px] rounded bg-gray-200" />
-          </span>
-          <span className="w-[88px]" />
+          {[0, 1].map((cell) => (
+            <span key={cell} className={`flex items-center gap-4 lg:gap-6 ${LIST_CELL}`}>
+              <span className="size-14 shrink-0 rounded-full bg-gray-100 lg:size-[76px]" />
+              <span className="h-[18px] w-[130px] rounded bg-gray-200" />
+            </span>
+          ))}
+          <span className={`w-10 lg:w-[88px] ${LIST_ACTIONS}`} />
         </li>
       ))}
     </ul>

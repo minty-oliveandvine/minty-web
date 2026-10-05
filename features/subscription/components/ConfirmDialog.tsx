@@ -92,7 +92,7 @@ export function ConfirmDialog({
       labelledBy={titleId}
       busy={busy}
       onDismiss={dismiss}
-      className="max-w-[435px] rounded-[24px] border border-white/40 bg-white p-12 shadow-[0px_4px_8px_0px_rgba(15,23,42,0.08),0px_12px_32px_0px_rgba(0,0,0,0.1)]"
+      className="max-w-[435px] rounded-[24px] border border-white/40 bg-white p-12 max-[560px]:p-6 shadow-[0px_4px_8px_0px_rgba(15,23,42,0.08),0px_12px_32px_0px_rgba(0,0,0,0.1)]"
     >
       {/*
           The company sits in the TITLE's column, tight under the last line of it and no wider
@@ -145,16 +145,21 @@ export function ConfirmDialog({
           339px, so the row reaches back out by 9px a side and the two buttons share what is
           left - which lands them on 169px again, without pinning a width that a longer label
           ("Confirm Cancellation") could not wrap inside. One button on its own (`hideBack`) is
-          centred at the fixed 169px, as the design draws that case.
+          centred at the fixed 169px, as the design draws that case. On a phone the pair stacks,
+          the action on top, as the billing sheet's does (`SHEET_PAIR`).
         */}
-      <div className={`mt-8 flex gap-5 ${hideBack ? "justify-center" : "-mx-[9px]"}`}>
+      <div
+        className={`mt-8 flex gap-5 max-[560px]:gap-3 ${
+          hideBack ? "justify-center" : "-mx-[9px] max-[560px]:mx-0 max-[560px]:flex-col-reverse"
+        }`}
+      >
         {!hideBack && (
           <button
             type="button"
             onClick={onBack}
             disabled={busy}
             data-tone={backTone}
-            className={`h-[66px] flex-1 rounded-[14px] border bg-white text-lg leading-tight disabled:opacity-60 ${BACK_TONE[backTone]}`}
+            className={`h-[66px] flex-1 rounded-[14px] max-[560px]:h-14 max-[560px]:w-full max-[560px]:flex-none border bg-white text-lg leading-tight disabled:opacity-60 ${BACK_TONE[backTone]}`}
           >
             {backLabel}
           </button>
@@ -168,7 +173,9 @@ export function ConfirmDialog({
           // the transparent border matters: with `flex-1` the bordered button beside it would
           // otherwise end up 2px wider, both being basis-0 under border-box
           className={`h-[66px] rounded-[14px] border border-transparent text-lg font-bold leading-tight text-white hover:opacity-90 disabled:cursor-wait disabled:opacity-60 ${
-            hideBack ? "w-[169px]" : "flex-1"
+            hideBack
+              ? "w-[169px]"
+              : "flex-1 max-[560px]:h-14 max-[560px]:w-full max-[560px]:flex-none"
           } ${CONFIRM_TONE[confirmTone]}`}
         >
           {confirmLabel}

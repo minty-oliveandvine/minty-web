@@ -23,6 +23,13 @@ import type {
 import { pluralEntities } from "@/features/subscription/lib/portalRows";
 
 import { ChangeResultRow } from "@/features/subscription/components/ChangeResultView";
+import {
+  LIST_ACTIONS,
+  LIST_CELL,
+  LIST_GRID,
+  LIST_LG_COLUMNS,
+  LIST_ROW,
+} from "@/features/subscription/components/listGrid";
 import { ModuleCellView } from "@/features/subscription/components/ModuleCellView";
 import { RowMenu } from "@/features/subscription/components/RowMenu";
 import {
@@ -60,8 +67,6 @@ export type OpenRow = {
   error: string | null;
 };
 
-const GRID = "grid grid-cols-[minmax(200px,1.3fr)_1fr_1fr_auto] items-center gap-6";
-
 function SortHead({
   column,
   label,
@@ -85,7 +90,7 @@ function SortHead({
       aria-pressed={active}
       data-direction={direction ?? "none"}
       className={`flex items-center gap-1.5 ${
-        strong ? "text-[25px] font-bold text-ink" : "text-lg text-[#6b7380]"
+        strong ? "text-lg font-bold text-ink lg:text-[25px]" : "text-base text-[#6b7380] lg:text-lg"
       }`}
     >
       {label}
@@ -115,21 +120,24 @@ function Row({ row, focused, on }: { row: SubscriptionRow; focused: boolean; on:
       onClick={(e) => {
         if (!fromControl(e)) on.onToggle(row.entity);
       }}
-      className={`${GRID} min-h-[125px] cursor-pointer rounded-xl px-7 py-5 shadow-[0px_2px_8px_0px_rgba(0,0,0,0.1)] ${
+      className={`${LIST_GRID} ${LIST_ROW} cursor-pointer shadow-[0px_2px_8px_0px_rgba(0,0,0,0.1)] ${
         suspended ? "bg-[#f5f5f5]" : "bg-white"
       } ${focused ? "ring-2 ring-secondary" : ""}`}
     >
-      <p className="min-w-0 truncate text-[25px] font-bold text-black">{row.entity.entity_name}</p>
+      <p className="min-w-0 truncate text-xl font-bold text-black sm:text-[25px]">
+        {row.entity.entity_name}
+      </p>
       {row.cells.map((cell) => (
         <ModuleCellView
           key={cell.code}
           cell={cell}
           entityName={row.entity.entity_name}
+          className={LIST_CELL}
           onStartTrial={(code) => on.onStartTrial(row.entity, code)}
           onSubscribe={(code) => on.onSubscribe(row.entity, code)}
         />
       ))}
-      <div className="flex items-center gap-4">
+      <div className={`flex items-center gap-2 sm:gap-4 ${LIST_ACTIONS}`}>
         <button
           type="button"
           onClick={() => on.onToggle(row.entity)}
@@ -232,10 +240,14 @@ export function SubscriptionsTable({
   return (
     <div className="flex flex-col gap-10">
       <section aria-label="Active subscriptions" className="flex flex-col gap-4">
-        <h2 className="px-3 text-[25px] font-bold text-ink">
+        <h2 className="px-3 text-xl font-bold text-ink sm:text-[25px]">
           Active Subscriptions ({pluralEntities(active.length)})
         </h2>
-        <div className={`${GRID} px-6`} role="presentation">
+        {/* Below `lg` the rows have no columns to head: the sort buttons wrap on one line. */}
+        <div
+          className={`flex flex-wrap items-center gap-x-5 gap-y-1 px-4 sm:px-6 ${LIST_LG_COLUMNS}`}
+          role="presentation"
+        >
           <SortHead column="entity" label="Entity Name" sort={sort} onToggle={onToggleSort} />
           <SortHead
             column="PETTY_CASH"
@@ -251,7 +263,7 @@ export function SubscriptionsTable({
             onToggle={onToggleSort}
             strong
           />
-          <span aria-hidden className="w-[88px]" />
+          <span aria-hidden className="hidden w-[88px] lg:block" />
         </div>
         <ul className="flex flex-col gap-[29px]">
           <Rows rows={active} focusEntityId={focusEntityId} open={open} result={result} on={on} />
@@ -259,7 +271,7 @@ export function SubscriptionsTable({
       </section>
       {suspended.length > 0 && (
         <section aria-label="Suspended subscriptions" className="flex flex-col gap-4">
-          <h2 className="px-3 text-[25px] font-bold text-[var(--ink-soft)]">
+          <h2 className="px-3 text-xl font-bold text-[var(--ink-soft)] sm:text-[25px]">
             Suspended Subscriptions ({pluralEntities(suspended.length)})
           </h2>
           <ul className="flex flex-col gap-[29px]">

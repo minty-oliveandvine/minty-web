@@ -85,17 +85,19 @@ export function ChangeResultRow({
       ref={ref}
       data-entity={entity.entity_id}
       data-result={result.kind}
-      className="scroll-mt-[var(--list-sticky-top)] flex flex-col gap-8 rounded-xl bg-white px-8 pb-8 pt-10 shadow-[0px_2px_8px_0px_rgba(0,0,0,0.1)]"
+      className="scroll-mt-[var(--list-sticky-top)] flex flex-col gap-6 rounded-xl bg-white px-4 pb-6 pt-6 shadow-[0px_2px_8px_0px_rgba(0,0,0,0.1)] sm:gap-8 sm:px-8 sm:pb-8 sm:pt-10"
     >
       <div className="flex items-center justify-between gap-4">
-        <h3 className="min-w-0 truncate text-[25px] font-bold text-black">{entity.entity_name}</h3>
+        <h3 className="min-w-0 truncate text-xl font-bold text-black sm:text-[25px]">
+          {entity.entity_name}
+        </h3>
         <RowMenu entityName={entity.entity_name} items={menu} onSelect={onMenu} />
       </div>
 
       <div className="grid grid-cols-1 items-center gap-8 md:grid-cols-[minmax(0,1fr)_auto] md:px-12">
         <div className="flex flex-col gap-8">
           <h4
-            className={`text-[40px] font-bold leading-tight ${celebrate ? "text-[#54d3da]" : "text-[#161f2e]"}`}
+            className={`text-[28px] font-bold leading-tight sm:text-[40px] ${celebrate ? "text-[#54d3da]" : "text-[#161f2e]"}`}
           >
             {result.headline.text}
           </h4>
@@ -169,15 +171,15 @@ export function ChangeResultPage({
       aria-label={result.hero ?? result.headline.text}
       data-result={result.kind}
       data-entity={entity.entity_id}
-      className="relative rounded-xl bg-white px-8 pb-16 pt-14 shadow-[0px_2px_8px_0px_rgba(0,0,0,0.1)]"
+      className="relative rounded-xl bg-white px-5 pb-10 pt-14 shadow-[0px_2px_8px_0px_rgba(0,0,0,0.1)] sm:px-8 sm:pb-16"
     >
-      <div className="absolute right-8 top-8">
+      <div className="absolute right-4 top-4 sm:right-8 sm:top-8">
         <RowMenu entityName={entity.entity_name} items={menu} onSelect={onMenu} />
       </div>
       <div className="grid grid-cols-1 items-center gap-8 md:grid-cols-[minmax(0,1fr)_auto] md:px-12">
         <div className="flex flex-col gap-6">
           <div className="flex flex-col gap-2">
-            <h2 className="text-[40px] font-bold leading-tight text-[#54d3da]">
+            <h2 className="text-[28px] font-bold leading-tight text-[#54d3da] sm:text-[40px]">
               {result.headline.module && (
                 <span className={PLAN_TONE[result.headline.module.tone]}>
                   {result.headline.module.name}

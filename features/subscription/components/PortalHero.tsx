@@ -16,8 +16,8 @@ export function PortalHero({ title, onBack }: { title: string; onBack?: () => vo
           </button>
         </PortalBack>
       )}
-      <div className="rounded-[32px] bg-gradient-to-r from-[#18c4c7] via-[#42ccc5] via-[74%] to-[#78d7c5] px-[54px] py-10">
-        <h1 className="text-[40px] font-bold leading-none text-white">{title}</h1>
+      <div className="rounded-[32px] bg-gradient-to-r from-[#18c4c7] via-[#42ccc5] via-[74%] to-[#78d7c5] px-6 py-7 sm:px-[54px] sm:py-10">
+        <h1 className="text-[28px] font-bold leading-none text-white sm:text-[40px]">{title}</h1>
       </div>
     </>
   );

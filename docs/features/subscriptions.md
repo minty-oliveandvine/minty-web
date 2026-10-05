@@ -548,6 +548,12 @@ re-homed and redrawn to Figma section "04 · Manage Subscriptions — the payer 
 - **Seeing it without the API**: `?fixture=A` (the full list + a transfer), `B` (empty), `F`
   (the suspended companies) — dev only, as the module page's; with a list fixture the open row
   is served from a 05·A frame too, `?summary=M11 … N21a` (M44 unless named).
+- **On a phone** (2026-10-05; the design has no phone frames): the four columns
+  (`components/listGrid.ts`, shared by the rows, the column heads and the skeleton) need ~820px,
+  so they start at `lg`. Below it a row puts the name and chevron/⋮ on its top line and each
+  module cell on a full line of its own (smaller badge and Start Trial pill), and the column
+  heads become one wrapping line of sort buttons, so sorting still works. Nothing may scroll
+  sideways at 375px.
 
 ## 11. The open row — "Subscription Summary" and a change pending
 
@@ -655,6 +661,11 @@ design's rules live (`buildSummaryView(page, entity, wallet, today, pending)`, `
   model answers, and the boxes wait for it) and for `CALCULATING_MS` = 1.2 s after every tick
   (the cards flip and take their chip at once; the panel and its confirm button follow). The
   design's beat, not a wait for anything.
+- **On a phone** (2026-10-05): the panel needs 360px of its own, so the three columns start at
+  `lg`. From `sm` the two cards sit side by side with the panel full-width below them; below
+  `sm` everything stacks. Padding and the price shrink, the plan/payment-method line wraps, and
+  the struck-out price moves into the corner so it clears the price. The confirmation modal
+  (§13) stacks its two buttons at 560px or less, action on top, as the billing sheet does.
 - **Dev switch**: `?summary=M44` (any of `M11 M21 M22 M24 M31 M44 M45 M51 M61 N21a`) serves the
   open row from `__fixtures__/modulePage.ts` outside production; the list fixture opens M44 unless
   named. A 05·B state is reached by pressing a box on it.

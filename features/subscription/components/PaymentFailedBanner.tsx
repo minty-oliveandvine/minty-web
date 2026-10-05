@@ -13,7 +13,7 @@ export function PaymentFailedBanner({
   return (
     <div
       role="alert"
-      className="mx-auto flex w-full max-w-[718px] items-center gap-6 rounded-xl border border-[var(--alert-border)] bg-[var(--alert-bg)] px-8 py-3 text-base text-black"
+      className="mx-auto flex w-full max-w-[718px] items-center gap-4 rounded-xl border border-[var(--alert-border)] bg-[var(--alert-bg)] px-4 py-3 sm:gap-6 sm:px-8 text-base text-black"
     >
       <Icon name="warning" size={40} className="shrink-0 text-[var(--alert-icon)]" />
       <p className="flex-1 text-center">
