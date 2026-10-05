@@ -10,6 +10,7 @@
  * - `flash` (Flask's signed hand-over, `?flash=`) comes back from the API as `notices` - each
  *   is toasted once, and the parameter is dropped from the URL so a reload says nothing. It is
  *   read ONCE, at mount: dropping it from the URL must not read the list a second time.
+ * - Order: "Setup in progress" first, then A→Z (`sortRows`), not Flask's most-recently-opened.
  * - Search is Flask's `filterCompanies`: case-insensitive, anywhere in the name, as typed.
  * - `fixture`: dev-only, `?fixture=LIST|EMPTY` (`__fixtures__/entities.ts`).
  */
@@ -27,7 +28,7 @@ import {
   type EntityListAnswer,
   type EntityRow,
 } from "@/features/entities/api/entities";
-import { filterRows, LOAD_FAILED } from "@/features/entities/lib/entityRows";
+import { filterRows, LOAD_FAILED, sortRows } from "@/features/entities/lib/entityRows";
 import { ENTITIES_BASE_PATH } from "@/features/entities/lib/paths";
 
 export type UseEntityListArgs = { flash?: string | null; fixture?: string | null };
@@ -92,7 +93,7 @@ export function useEntityList({ flash = null, fixture = null }: UseEntityListArg
   const status: EntityListStatus =
     loaded === null || loaded.attempt !== attempt ? "loading" : loaded.error ? "error" : "ready";
   const all = useMemo<EntityRow[]>(
-    () => (status === "ready" ? (loaded?.answer?.entities ?? []) : []),
+    () => (status === "ready" ? sortRows(loaded?.answer?.entities ?? []) : []),
     [status, loaded],
   );
   const rows = useMemo(() => filterRows(all, query), [all, query]);

@@ -28,7 +28,19 @@ export function filterRows(rows: EntityRow[], query: string): EntityRow[] {
   return rows.filter((row) => row.name.toLowerCase().includes(q));
 }
 
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+/**
+ * "Setup in progress" first, then A→Z by name - case-insensitive, numbers in numeric order
+ * ("Scenario 2" before "Scenario 10"). Flask sends most-recently-opened; this list re-sorts.
+ */
+export function sortRows(rows: EntityRow[]): EntityRow[] {
+  return [...rows].sort(
+    (a, b) =>
+      Number(isSettingUp(b)) - Number(isSettingUp(a)) ||
+      a.name.localeCompare(b.name, undefined, { sensitivity: "base", numeric: true }),
+  );
+}
+
+const MONTHS =["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 /**
  * "9 Jun 5:42 PM" in the VIEWER's zone - the format and the zone Flask's page ended up with

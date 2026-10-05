@@ -100,6 +100,35 @@ test.describe("the entity list", () => {
     await expect(main.getByText("No companies found.")).toBeVisible();
   });
 
+  test("setup in progress first, then A→Z, kept while searching, at phone to desktop widths", async ({
+    page,
+  }) => {
+    await stubFlask(page);
+    await page.setViewportSize({ width: 360, height: 800 });
+    await handoff(page, creds(), "/entities");
+    const main = page.getByRole("main");
+    const cards = main.getByRole("list", { name: "Your companies" }).getByRole("link");
+    const order = async () =>
+      (await cards.allInnerTexts()).map((t) => t.match(/Scenario( \d+)?/)![0]);
+    for (const width of [360, 768, 1440]) {
+      await page.setViewportSize({ width, height: 800 });
+      await expect(cards).toHaveCount(LIST.entities.length);
+      expect(await order()).toEqual([
+        "Scenario",
+        "Scenario 2",
+        "Scenario 5",
+        "Scenario 6",
+        "Scenario 8",
+        "Scenario 9",
+        "Scenario 10",
+      ]);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    }
+    await main.getByRole("textbox", { name: "Search company" }).fill("trial");
+    await expect(cards).toHaveCount(3);
+    expect(await order()).toEqual(["Scenario 2", "Scenario 5", "Scenario 6"]);
+  });
+
   test("the whole screen: the bar across the top, the title in its middle, and Flask's column under it", async ({
     page,
   }) => {

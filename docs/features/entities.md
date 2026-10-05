@@ -41,8 +41,10 @@ for Flask's widths and spacing instead.
 ## What it shows, and where it comes from
 
 One read: Flask's `GET /api/me/entities` (`blueprints/entity/routes/me_api.py`), the SAME
-builder the Jinja list draws from (`services/entity_list.build_entity_list`) — onboarding first,
-then most recently opened; a superuser sees every company. Per card (`components/EntityCard`):
+builder the Jinja list draws from (`services/entity_list.build_entity_list`); a superuser sees
+every company. Flask sends them onboarding first, then most recently opened; minty-web re-sorts
+(`lib/entityRows.sortRows`, user's choice 2026-10-05): "Setup in progress" first, then A→Z by
+name (case-insensitive, "Scenario 2" before "Scenario 10"). Flask's own Jinja list keeps its order. Per card (`components/EntityCard`):
 the "Setup in progress" pill, the name, the free-trial badge (the design's own tag, named
 "Free trial: <modules>"), one badge per module that is on, the last-opened clock ("9 Jun 5:42
 PM" in the viewer's zone, "By <name>" on hover, grey "Not opened yet" when nobody has) and the

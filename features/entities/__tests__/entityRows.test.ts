@@ -1,4 +1,4 @@
-// The select-company list's rules: search as Flask searched, the clock in the viewer's own
+// The select-company list's rules: the order, search as Flask searched, the clock in the viewer's own
 // zone, the trial badge naming its modules, and where a card leads.
 
 import { afterEach, describe, expect, it } from "vitest";
@@ -14,6 +14,7 @@ import {
   filterRows,
   lastAccessedLabel,
   lastOpenedLabel,
+  sortRows,
   trialLabel,
 } from "@/features/entities/lib/entityRows";
 import { ENTITIES_BASE_PATH } from "@/features/entities/lib/paths";
@@ -35,6 +36,22 @@ describe("entityRows", () => {
       "Digitalisation - Scenario 2: 1 Trial + Not started",
     ]);
     expect(names("nothing like it")).toEqual([]);
+  });
+
+  it("puts setup in progress first, then A→Z ignoring case, numbers in order, input untouched", () => {
+    const before = LIST.entities.map((r) => r.id);
+    const lower = { ...LIST.entities[6], id: "e-lower", name: "digitalisation - Scenario 3" };
+    expect(sortRows([...LIST.entities, lower]).map((r) => r.id)).toEqual([
+      "e-scenario", // onboarding, though "S" sorts after "D"
+      "e-scenario-2",
+      "e-lower",
+      "e-scenario-5",
+      "e-scenario-6",
+      "e-scenario-8",
+      "e-scenario-9",
+      "e-scenario-10",
+    ]);
+    expect(LIST.entities.map((r) => r.id)).toEqual(before);
   });
 
   it("reads the last opening in the viewer's zone, as Flask's page did", () => {
