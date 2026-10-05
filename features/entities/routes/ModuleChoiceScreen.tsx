@@ -17,10 +17,10 @@ import { HUB_PATHS, companySettingsPath } from "@/lib/hubPaths";
 
 import { fetchEntities } from "@/features/entities/api/entities";
 import { ModuleChoiceButton } from "@/features/entities/components/ModuleChoiceButton";
-import { moduleChoices, type ModuleChoice } from "@/features/entities/lib/moduleChoice";
+import { MODULE_CHOICE_TITLE, moduleChoices, type ModuleChoice } from "@/features/entities/lib/moduleChoice";
 
 export const MODULE_CHOICE_COPY = {
-  title: "Choose Module Type",
+  title: MODULE_CHOICE_TITLE,
   none: "No module is switched on for this company yet.",
   settings: "Open its module settings",
   failed: "I couldn't load this company's modules just now.",

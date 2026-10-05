@@ -83,6 +83,8 @@ test.describe("company settings", () => {
     await handoff(page, creds(), `${BASE}/users`);
 
     await expect(page.getByRole("heading", { level: 2, name: "Users" })).toBeVisible();
+    // the browser tab names the company (lib/companyTitle.ts)
+    await expect(page).toHaveTitle(`Users - ${NAME}`);
     await expect(page.getByText("Subscriber")).toBeVisible();
     await page.getByRole("button", { name: "Invite" }).click();
     const dialog = page.getByRole("dialog");
@@ -101,6 +103,7 @@ test.describe("company settings", () => {
     await page.getByRole("navigation", { name: "Settings sections" }).getByRole("link", { name: "Entity & Integration" }).click();
     await expect(page).toHaveURL(new RegExp(`${BASE}/integration$`));
     await expect(page.getByRole("heading", { level: 2, name: "Entity & Integration" })).toBeVisible();
+    await expect(page).toHaveTitle(`Entity & Integration - ${NAME}`);
   });
 
   test("Entity & Integration: a save sends only what changed; Disconnect asks first", async ({ page }) => {

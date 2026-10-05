@@ -21,6 +21,13 @@ export type SettingsTab = {
 
 export type SettingsCompany = { id: string; name: string };
 
+/** The pills this app draws - and their pages' tab titles ("Users - <company>"). */
+export const SETTINGS_TAB_LABELS: Record<CompanySettingsTab, string> = {
+  users: "Users",
+  integration: "Entity & Integration",
+  modules: "Modules",
+};
+
 /**
  * The way back: a plain click returns to the page the person came from, whichever app
  * (components/ui/BackLink.tsx, lib/backLink.ts). The href is the fallback for a new tab: Petty
@@ -44,13 +51,16 @@ export function settingsTabs(
   const tab = (label: string, page: CompanySettingsTab | null, href: string): SettingsTab =>
     page === current ? { label, current: true } : { label, href };
 
-  const tabs: SettingsTab[] = [tab("Users", "users", hub("users")), tab("Entity & Integration", "integration", hub("integration"))];
+  const tabs: SettingsTab[] = [
+    tab(SETTINGS_TAB_LABELS.users, "users", hub("users")),
+    tab(SETTINGS_TAB_LABELS.integration, "integration", hub("integration")),
+  ];
   if (access.pettyCash) {
     tabs.push(tab("Petty Cash Settings", null, `${flask}/entity/${id}/settings/petty-cash`));
   }
   if (access.billing) {
     tabs.push(tab("Payment Request Settings", null, `${flask}/entity/${id}/settings/payment-request`));
   }
-  tabs.push(tab("Modules", "modules", hub("modules")));
+  tabs.push(tab(SETTINGS_TAB_LABELS.modules, "modules", hub("modules")));
   return tabs;
 }

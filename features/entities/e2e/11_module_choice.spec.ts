@@ -51,6 +51,8 @@ test.describe("module choice", () => {
 
     await expect(page).toHaveURL(/\/entities\/360812e1\/olive-and-vine$/);
     await expect(page.getByRole("heading", { level: 1, name: "Choose Module Type" })).toBeVisible();
+    // the browser tab names the company (lib/companyTitle.ts)
+    await expect(page).toHaveTitle(`Choose Module Type - ${COMPANY.name}`);
     const petty = page.getByRole("link", { name: "Petty Cash" });
     await expect(petty).toHaveAttribute("href", new RegExp(`/entity/${COMPANY.id}/enter\\?token=.+&next=%2Fentity%2F${COMPANY.id}%2Fpetty-cash$`));
     await expect(page.getByRole("link", { name: "Payment Request" })).toHaveAttribute(

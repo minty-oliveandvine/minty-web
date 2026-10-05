@@ -11,6 +11,9 @@
 
 import { mintyEntryUrl } from "@/lib/mintyEntry";
 
+/** The page's heading, and its browser tab's title (lib/metadata.ts). */
+export const MODULE_CHOICE_TITLE = "Choose Module Type";
+
 export type ModuleChoice = {
   code: "PETTY_CASH" | "PAYMENT_REQUEST";
   label: string;

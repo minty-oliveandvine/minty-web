@@ -107,13 +107,16 @@ test.describe("module settings page", () => {
     await handoff(page, c, MODULES(c.entityId));
 
     await expect(page.getByRole("heading", { level: 2, name: "Modules" })).toBeVisible();
+    // the browser tab names the company (lib/companyTitle.ts)
+    await expect(page).toHaveTitle(`Modules - ${c.entityName}`);
     // "Back" goes where the person came from; its href is the new-tab fallback, Petty Cash's
     // dashboard (/petty-cash since 2026-10-05)
     await expect(page.getByRole("link", { name: "Back" })).toHaveAttribute(
       "href",
       new RegExp(`/entity/${c.entityId}/petty-cash$`),
     );
-    await expect(page.getByText(c.entityName)).toBeVisible();
+    // exact: the route announcer also reads the tab title "Modules - <company>"
+    await expect(page.getByText(c.entityName, { exact: true })).toBeVisible();
     const tabs = page.getByRole("navigation", { name: "Settings sections" });
     await expect(tabs.getByRole("link", { name: "Users" })).toBeVisible();
     await expect(tabs.getByText("Modules")).toHaveAttribute("aria-current", "page");

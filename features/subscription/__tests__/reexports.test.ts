@@ -25,7 +25,8 @@ function walk(dir: string, out: string[] = []): string[] {
   return out;
 }
 
-const REEXPORT = /^export \{ \w+ as default \} from "@\/features\/subscription";\n?$/;
+// a page may also carry its tab title (`generateMetadata`, lib/companyTitle.ts) - still one line
+const REEXPORT = /^export \{ \w+ as default(, \w+ as generateMetadata)? \} from "@\/features\/subscription";\n?$/;
 
 // The Module tab lives among the company's settings, outside the feature's mount.
 const MODULE_TAB = join(ROOT, "app", "entities", "[ref]", "[slug]", "settings", "modules");

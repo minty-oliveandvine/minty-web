@@ -84,7 +84,9 @@ dashboard, or `/entity/<id>/payment-request`, which mints the payments app's tok
 other way (a bookmark), one module goes straight in and none says so with the way to the
 Module tab; a failed read says so, logs it and offers Try again. The company comes from the
 address (`components/ui/CompanyFromAddress`), a wrong name corrected in place. Header: Back
-(where the person came from, else the list), the initials and the menu.
+(where the person came from, else the list), the initials and the menu. The browser tab reads
+"Choose Module Type - <company>" (`lib/companyTitle.ts`, as for the settings tabs -
+`docs/features/company-settings.md`).
 
 ## The header and the sidebar
 

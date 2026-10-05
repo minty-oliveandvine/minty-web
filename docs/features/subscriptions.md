@@ -337,7 +337,9 @@ from the browser's clock, so a pinned day drifted by one every midnight.
 `/entities/{shortid}/{name}/settings/modules` (until phase 2, 2026-10-05,
 `/subscription/entities/{shortid}/{name}/modules` - proxy.ts 307s that and the older full-id form here) —
 Flask's `/entity/<shortid>/<name>/settings/modules`, re-homed and
-redrawn to the Figma design (section "03 · Settings › Module", six frames). What is on it:
+redrawn to the Figma design (section "03 · Settings › Module", six frames). Its browser tab reads
+"Modules - <company>" (2026-10-05; `lib/companyTitle.ts`, as for the other settings tabs -
+docs/features/company-settings.md). What is on it:
 
 - **The settings chrome is minty-payment-request-web's** (decision 2026-09-21: "the settings design
   should be similar to the current billing frontend - the only difference is the module

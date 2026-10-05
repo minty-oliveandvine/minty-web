@@ -5,3 +5,4 @@
  */
 
 export { CompanyIntegrationPage, CompanyUsersPage } from "@/features/company-settings/routes/CompanySettingsPages";
+export { integrationMetadata, usersMetadata } from "@/features/company-settings/lib/metadata";

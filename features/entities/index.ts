@@ -9,4 +9,5 @@
 
 export { EntityList } from "@/features/entities/routes/EntityList";
 export { ModuleChoice } from "@/features/entities/routes/ModuleChoice";
+export { moduleChoiceMetadata } from "@/features/entities/lib/metadata";
 export { ENTITIES_BASE_PATH } from "@/features/entities/lib/paths";

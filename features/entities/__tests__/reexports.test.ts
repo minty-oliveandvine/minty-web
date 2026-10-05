@@ -25,7 +25,8 @@ function walk(dir: string, out: string[] = []): string[] {
 }
 
 const rel = (f: string) => relative(ROOT, f).replace(/\\/g, "/");
-const REEXPORT = /^export \{ \w+ as default \} from "@\/features\/entities";\n?$/;
+// a page may also carry its tab title (`generateMetadata`, lib/companyTitle.ts) - still one line
+const REEXPORT = /^export \{ \w+ as default(, \w+ as generateMetadata)? \} from "@\/features\/entities";\n?$/;
 
 // A company's settings tabs sit under app/entities/[ref]/[slug]/settings but belong to the
 // features that draw them (the Module tab: subscription) - their guards check them.

@@ -64,7 +64,8 @@ test.describe("over the live API", () => {
     await handoff(page, c, MODULES(c.entityId));
 
     await expect(page.getByRole("heading", { level: 2, name: "Modules" })).toBeVisible();
-    await expect(page.getByText(c.entityName)).toBeVisible();
+    // exact: the route announcer also reads the tab title "Modules - <company>"
+    await expect(page.getByText(c.entityName, { exact: true })).toBeVisible();
     const cards = body(page).getByRole("article");
     await expect(cards).toHaveCount(2);
     await expect(body(page).getByRole("article", { name: "Petty Cash" })).toBeVisible();

@@ -47,6 +47,13 @@ company, the initials, the menu), the sticky pill row in a 1024px column, then P
 cards. Members stack on a phone (name over role and actions), one line from 640px; every control is
 at least 44px; nothing is wider than the screen at 360 / 768 / 1440 (`e2e/12_company_settings.spec.ts`).
 
+The browser tab names the company (2026-10-05), as Flask's and Payment Request's do: "Users -
+<company>", "Entity & Integration - <company>" (and the Module tab's "Modules - <company>"). The
+words are the pills' (`SETTINGS_TAB_LABELS`, `lib/settingsTabs.ts`); the title is the server's
+(`lib/companyTitle.ts`, re-exported as each page's `generateMetadata` on the route file's one
+line): the company is the `minty_entity_name` cookie's when the address names that company, and
+the tab says only the page while the address names another (the hand-off is on its way).
+
 ## Tests
 
 `features/company-settings/__tests__/screens.test.tsx` (each row's offers, the address as text, a

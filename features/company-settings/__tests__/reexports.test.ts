@@ -29,7 +29,8 @@ function walk(dir: string, out: string[] = []): string[] {
 }
 
 const rel = (f: string) => relative(ROOT, f).replace(/\\/g, "/");
-const REEXPORT = /^export \{ \w+ as default \} from "@\/features\/company-settings";\n?$/;
+// a page may also carry its tab title (`generateMetadata`, lib/companyTitle.ts) - still one line
+const REEXPORT = /^export \{ \w+ as default(, \w+ as generateMetadata)? \} from "@\/features\/company-settings";\n?$/;
 const TABS = ["users", "integration"].map((tab) => join(ROOT, "app", "entities", "[ref]", "[slug]", "settings", tab));
 
 describe("the two tabs' route files are re-exports only", () => {

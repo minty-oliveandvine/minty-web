@@ -18,6 +18,9 @@ const ENTITY_NAME_KEY = "minty_entity_name";
 
 /** Cookie name checked by proxy.ts for the auth gate. */
 export const AUTH_COOKIE_NAME = TOKEN_KEY;
+/** The company the token is for - read on the server for the tab title (lib/companyTitle.ts). */
+export const ENTITY_ID_COOKIE_NAME = ENTITY_ID_KEY;
+export const ENTITY_NAME_COOKIE_NAME = ENTITY_NAME_KEY;
 
 /** What a token is allowed to live when its `exp` cannot be read - Flask's token lifetime. */
 const FALLBACK_MAX_AGE_SECONDS = 60 * 30;
