@@ -75,7 +75,7 @@ describe("ModuleSettingsScreen", () => {
     // "Back" goes where the person came from; its href is the new-tab fallback
     expect(screen.getByRole("link", { name: "Back" })).toHaveAttribute(
       "href",
-      `${env.PETTY_CASH_URL}/entity/e1`,
+      `${env.PETTY_CASH_URL}/entity/e1/petty-cash`,
     );
     expect(screen.getByText("Olive & Vine Limited")).toBeInTheDocument();
     // the initials: My Profile (a link to the page here - no sidebar around a lone screen)
