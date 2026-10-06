@@ -119,13 +119,16 @@ export async function answerTerms(page: Page, answer: unknown = { owed: false })
 /**
  * Arrive the way Minty sends people: /landing stores the token and forwards to ``next``.
  * `terms`: what the Terms check answers on the way in (`answerTerms`) - nothing owed by default.
+ * `idle`: wait for the network to go quiet after arriving (the default). Off for a page with
+ * Stripe's iframes, whose own traffic can keep it busy past the test's timeout - wait for what
+ * the page shows instead.
  */
 export async function handoff(
   page: Page,
   creds: Credentials,
   next = "/subscription",
   overrides: Record<string, unknown> = {},
-  { terms = { owed: false } as unknown } = {},
+  { terms = { owed: false } as unknown, idle = true } = {},
 ): Promise<void> {
   await answerTerms(page, terms);
   const token = mintModuleToken(creds, overrides);
@@ -137,7 +140,7 @@ export async function handoff(
   });
   await page.goto(`/landing?${qs.toString()}`);
   await page.waitForURL((u) => !u.pathname.startsWith("/landing"), { timeout: 15_000 });
-  await page.waitForLoadState("networkidle");
+  if (idle) await page.waitForLoadState("networkidle");
 }
 
 /**

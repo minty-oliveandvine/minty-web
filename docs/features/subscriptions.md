@@ -1364,5 +1364,8 @@ schema change), which 08-C writes.
     `BillingScreens.test.tsx`) — the same rule the sibling apps keep. Over the LIVE API,
     `04_live_api.spec.ts` drives 08-C's `AddressElement` for real, in Stripe test mode only: it
     opens on the card's address, a new line 2 reaches the card and 08-B, and the line is put back.
+    It arrives with `handoff(..., { idle: false })` and waits for the field's value instead: Stripe's
+    iframes can keep the network busy, and a "networkidle" wait then ran into the test's timeout
+    (2026-10-06).
     The sheet was driven once for real with Stripe's test card on the dev database (2026-09-25, a
     hand check, not a spec): the account opened, 01-J, Done on 08-A.

@@ -125,10 +125,13 @@ test.describe("over the live API", () => {
     );
     expect(asked).toEqual([`?next=${encodeURIComponent("/subscription")}`]);
     expect(await storedScope(page)).toEqual({ cookie: "", claim: "" });
-    const wayOut = await body(page)
+    // The way out sits in the header bar (PortalBack), not the page body; with no company
+    // scoped it is this app's own entity list.
+    const wayOut = await page
+      .getByRole("banner")
       .getByRole("link", { name: "Back to the entity dashboard" })
       .getAttribute("href");
-    expect(wayOut).toMatch(/\/entity$/);
+    expect(wayOut).toMatch(/\/entities$/);
   });
 
   test("the landing and the billing page read the person's real billing accounts", async ({
@@ -204,7 +207,8 @@ test.describe("over the live API", () => {
 
     /** 08-C, with Stripe's form open on what the card holds. */
     const form = async () => {
-      await handoff(page, c, `/subscription/billing/details?account=${id}`, { entity_id: "" });
+      // not "networkidle": Stripe's iframes can keep the network busy - the field's value is the wait
+      await handoff(page, c, `/subscription/billing/details?account=${id}`, { entity_id: "" }, { idle: false });
       const region = body(page).getByRole("region", { name: "Address (Stripe)" });
       const stripe = region.locator('iframe[title="Secure address input frame"]').contentFrame();
       await expect(stripe.getByLabel("Address line 1")).toHaveValue(address!.line1!, {
