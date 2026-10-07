@@ -1,6 +1,6 @@
 // A company's settings chrome: which tabs show, where each goes, and the way back. Petty Cash
 // and Payment Settings stay in their apps (through Flask); Users, Entity & Integration and the
-// Module tab are this app's own pages under /entities/<shortid>/<name>/settings (phase 2).
+// Module tab are this app's own pages under /entity/<shortid>/<name>/settings (phase 2).
 
 import { describe, expect, it } from "vitest";
 
@@ -21,8 +21,8 @@ describe("settingsTabs", () => {
       "Payment Request Settings",
       "Modules",
     ]);
-    expect(tabs[0].href).toBe("/entities/360812e1/olive-and-vine/settings/users");
-    expect(tabs[1].href).toBe("/entities/360812e1/olive-and-vine/settings/integration");
+    expect(tabs[0].href).toBe("/entity/360812e1/olive-and-vine/settings/users");
+    expect(tabs[1].href).toBe("/entity/360812e1/olive-and-vine/settings/integration");
     expect(tabs[2].href).toBe(`${FLASK}/settings/petty-cash`);
     expect(tabs[3].href).toBe(`${FLASK}/settings/payment-request`);
     expect(tabs[4]).toEqual({ label: "Modules", current: true });
@@ -31,10 +31,10 @@ describe("settingsTabs", () => {
   it("links the Module tab to this app's page from another tab", () => {
     const tabs = settingsTabs(COMPANY, ALL, "users");
     expect(tabs[0]).toEqual({ label: "Users", current: true });
-    expect(tabs[1]).toEqual({ label: "Entity & Integration", href: "/entities/360812e1/olive-and-vine/settings/integration" });
+    expect(tabs[1]).toEqual({ label: "Entity & Integration", href: "/entity/360812e1/olive-and-vine/settings/integration" });
     expect(tabs[4]).toEqual({
       label: "Modules",
-      href: "/entities/360812e1/olive-and-vine/settings/modules",
+      href: "/entity/360812e1/olive-and-vine/settings/modules",
     });
   });
 

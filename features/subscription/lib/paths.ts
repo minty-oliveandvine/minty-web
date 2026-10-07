@@ -70,7 +70,7 @@ export const BILLING = {
 
 /** The module settings page of one company (Flask's settings/modules, re-homed): NOT under the
  * feature's mount - since phase 2 it is the Module tab among the company's settings,
- * `/entities/<shortid>/<name>/settings/modules` (lib/hubPaths.ts spells the company's pages). */
+ * `/entity/<shortid>/<name>/settings/modules` (lib/hubPaths.ts spells the company's pages). */
 export function modulesPath(entityId: string, entityName: string): string {
   return companySettingsPath(entityId, entityName, "modules");
 }

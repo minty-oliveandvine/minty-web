@@ -23,7 +23,7 @@ or a company's _Modules_ settings (a scoped token, for that company's page). Nev
 | Add / edit a card | `/subscription/billing/add?account=`, `…/billing/edit?card=&account=` | **built** (§15): Stripe's own card fields on a SetupIntent (08-Y) - the card goes ON the account - and the name and expiry of a saved card (08-D) | —                                                                                                                                             |
 | Billing details   | `/subscription/billing/details?account=`          | **built** (§15): 08-C — the account's billing company and email, and the address in Stripe's own form (the billing address and name of the card it charges) | —                                                                                                                                             |
 | New billing account | — (a sheet, not a page)                           | **built** (§15): onboarding's `BillingSheet` over 08-A and 08-B - the list, then the form in place (a billing email and company, then the card - which OPENS the account), then "New Card added Successfully"; from the move's step 2 the company then moves onto it | —                                                                                                                                             |
-| Module settings   | `/entities/{shortid}/{name}/settings/modules`                 | **built** (§9): the settings chrome, the two module cards in their six states, the payment-failed banner, _Start Free Trial_, the way back (no Stripe return: nothing leaves for Stripe) — over a stubbed API until step 3 | the pages the other CTAs lead to (Manage / Activate / Resume / Reactivate / payment method), each from its own Figma frame; the live API      |
+| Module settings   | `/entity/{shortid}/{name}/settings/modules`                 | **built** (§9): the settings chrome, the two module cards in their six states, the payment-failed banner, _Start Free Trial_, the way back (no Stripe return: nothing leaves for Stripe) — over a stubbed API until step 3 | the pages the other CTAs lead to (Manage / Activate / Resume / Reactivate / payment method), each from its own Figma frame; the live API      |
 
 **Skeletal by decision** (2026-09-21) for the portal screens: functional, minimal styling, a
 design later. The module settings page is the exception — its design exists (Figma
@@ -124,7 +124,7 @@ files are one-line re-exports. A fourth by convention: links inside the feature 
 `lib/paths.ts`, never a literal `/subscription/…`.
 
 The portal pages live in the route group `app/subscription/(portal)/`. The module page is
-mounted outside the feature's folder since phase 2 - `app/entities/[ref]/[slug]/settings/modules`,
+mounted outside the feature's folder since phase 2 - `app/entity/[ref]/[slug]/settings/modules`,
 a company's settings tab (the ESLint element `app-subscription` and the re-export guard both
 cover it); it draws the settings chrome instead of the portal's. The module page reads its parameters on the client (`useParams`, `useSearchParams`
 under `Suspense`) because a page taking `params` could not be a one-line re-export.
@@ -334,7 +334,7 @@ from the browser's clock, so a pinned day drifted by one every midnight.
 
 ## 9. The module settings page
 
-`/entities/{shortid}/{name}/settings/modules` (until phase 2, 2026-10-05,
+`/entity/{shortid}/{name}/settings/modules` (until phase 2, 2026-10-05,
 `/subscription/entities/{shortid}/{name}/modules` - proxy.ts 307s that and the older full-id form here) —
 Flask's `/entity/<shortid>/<name>/settings/modules`, re-homed and
 redrawn to the Figma design (section "03 · Settings › Module", six frames). Its browser tab reads

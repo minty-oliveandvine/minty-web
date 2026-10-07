@@ -29,7 +29,7 @@ const SUBSCRIPTION_SHOP_NAME =
 const body = (page: Page) => page.getByRole("main");
 // The full id and a placeholder name: the page moves the address to the short id and the
 // company's own name (lib/companyFromAddress.ts).
-const MODULES = (id: string) => `/entities/${id}/company/settings/modules`;
+const MODULES = (id: string) => `/entity/${id}/company/settings/modules`;
 
 /** The subscription shop's credentials: the seeded user on the company the seed resets. */
 function subscriptionShop(): Credentials {

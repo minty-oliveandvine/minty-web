@@ -1,5 +1,5 @@
 /**
- * THE public surface of the entity-list feature. `app/entities/**` re-exports from here and
+ * THE public surface of the entity-list feature. `app/entities/**` (the list) and `app/entity/**` (one company) re-export from here and
  * nothing else may import anything deeper (eslint.config.mjs, boundaries/entry-point).
  *
  * Route components only, plus where the feature is mounted - the same rule as

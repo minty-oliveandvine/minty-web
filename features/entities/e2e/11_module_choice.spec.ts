@@ -47,9 +47,9 @@ test.describe("module choice", () => {
 
   test("two doors, each entering its module through Minty; a wrong name is corrected", async ({ page }) => {
     await stubFlask(page, ["PETTY_CASH", "PAYMENT_REQUEST"]);
-    await handoff(page, creds(), "/entities/360812e1/old-name");
+    await handoff(page, creds(), "/entity/360812e1/old-name");
 
-    await expect(page).toHaveURL(/\/entities\/360812e1\/olive-and-vine$/);
+    await expect(page).toHaveURL(/\/entity\/360812e1\/olive-and-vine$/);
     await expect(page.getByRole("heading", { level: 1, name: "Choose Module Type" })).toBeVisible();
     // the browser tab names the company (lib/companyTitle.ts)
     await expect(page).toHaveTitle(`Choose Module Type - ${COMPANY.name}`);
@@ -66,7 +66,7 @@ test.describe("module choice", () => {
 
   test("one module goes straight into it", async ({ page }) => {
     await stubFlask(page, ["PETTY_CASH"]);
-    await handoff(page, creds(), "/entities/360812e1/olive-and-vine");
+    await handoff(page, creds(), "/entity/360812e1/olive-and-vine");
     await expect(page).toHaveURL(new RegExp(`${PETTY_CASH_URL}/entity/${COMPANY.id}/enter.*petty-cash`));
   });
 
@@ -74,7 +74,7 @@ test.describe("module choice", () => {
     test(`nothing is wider than the screen at ${width}px`, async ({ page }) => {
       await page.setViewportSize({ width, height: 900 });
       await stubFlask(page, ["PETTY_CASH", "PAYMENT_REQUEST"]);
-      await handoff(page, creds(), "/entities/360812e1/olive-and-vine");
+      await handoff(page, creds(), "/entity/360812e1/olive-and-vine");
       await expect(page.getByRole("link", { name: "Petty Cash" })).toBeVisible();
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
       expect(overflow).toBeLessThanOrEqual(0);

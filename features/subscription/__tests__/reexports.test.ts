@@ -29,7 +29,7 @@ function walk(dir: string, out: string[] = []): string[] {
 const REEXPORT = /^export \{ \w+ as default(, \w+ as generateMetadata)? \} from "@\/features\/subscription";\n?$/;
 
 // The Module tab lives among the company's settings, outside the feature's mount.
-const MODULE_TAB = join(ROOT, "app", "entities", "[ref]", "[slug]", "settings", "modules");
+const MODULE_TAB = join(ROOT, "app", "entity", "[ref]", "[slug]", "settings", "modules");
 
 describe("app/subscription is re-exports only", () => {
   const files = [...walk(join(ROOT, "app", "subscription")), ...walk(MODULE_TAB)];
@@ -43,9 +43,9 @@ describe("app/subscription is re-exports only", () => {
     expect(names).toContain("app/subscription/(portal)/subscriptions/page.tsx");
     // one billing account's name and address (08-C); opening an account is a sheet, not a page
     expect(names).toContain("app/subscription/(portal)/billing/details/page.tsx");
-    expect(names).toContain("app/entities/[ref]/[slug]/settings/modules/page.tsx");
+    expect(names).toContain("app/entity/[ref]/[slug]/settings/modules/page.tsx");
     expect(names).not.toContain("app/subscription/(portal)/billing/new-account/page.tsx");
-    // the module page is a company's settings tab since phase 2 (app/entities/[ref]/[slug]/
+    // the module page is a company's settings tab since phase 2 (app/entity/[ref]/[slug]/
     // settings/modules, checked below); its old addresses move there in proxy.ts
     expect(names.filter((n) => n.startsWith("app/subscription/entities/"))).toEqual([]);
     // No catch-all routes: every flow has its page, so a stray path is Next's own not-found

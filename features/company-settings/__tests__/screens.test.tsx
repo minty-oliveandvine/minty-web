@@ -15,7 +15,7 @@ import { IntegrationScreen } from "@/features/company-settings/routes/Integratio
 import { UsersScreen } from "@/features/company-settings/routes/UsersScreen";
 
 const router = { push: vi.fn(), replace: vi.fn(), back: vi.fn() };
-vi.mock("next/navigation", () => ({ useRouter: () => router, usePathname: () => "/entities/e1/olive-shop/settings/users" }));
+vi.mock("next/navigation", () => ({ useRouter: () => router, usePathname: () => "/entity/e1/olive-shop/settings/users" }));
 
 const ID = "e1";
 const COMPANY = { id: ID, name: "Olive Shop" };

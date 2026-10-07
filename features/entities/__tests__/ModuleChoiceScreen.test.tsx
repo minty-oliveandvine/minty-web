@@ -85,7 +85,7 @@ describe("ModuleChoiceScreen", () => {
     expect(await screen.findByText(MODULE_CHOICE_COPY.none)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: MODULE_CHOICE_COPY.settings })).toHaveAttribute(
       "href",
-      "/entities/360812e1/olive-and-vine/settings/modules",
+      "/entity/360812e1/olive-and-vine/settings/modules",
     );
   });
 

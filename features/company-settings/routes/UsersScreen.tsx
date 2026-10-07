@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * `/entities/<shortid>/<name>/settings/users` - the company's people (Flask's Users tab until
+ * `/entity/<shortid>/<name>/settings/users` - the company's people (Flask's Users tab until
  * phase 2, 2026-10-05): its members with their roles, the "Subscriber" tag, and the invitations
  * waiting. What each person may do is Flask's answer per row - change a role (at or below their
  * own), remove (accountant and up), invite (shop manager and up). Names are not edited here: each

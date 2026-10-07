@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * The feature's two routes, as `app/entities/[ref]/[slug]/settings/{users,integration}` mount
+ * The feature's two routes, as `app/entity/[ref]/[slug]/settings/{users,integration}` mount
  * them: the company from the address (`components/ui/CompanyFromAddress`), and `?flash=` - what
  * Flask flashed on the way here (a Xero reconnect's outcome, a refusal) - read once.
  * `useSearchParams` needs a Suspense boundary or `next build` refuses the page.

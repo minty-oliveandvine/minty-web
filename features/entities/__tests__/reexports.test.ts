@@ -28,15 +28,18 @@ const rel = (f: string) => relative(ROOT, f).replace(/\\/g, "/");
 // a page may also carry its tab title (`generateMetadata`, lib/companyTitle.ts) - still one line
 const REEXPORT = /^export \{ \w+ as default(, \w+ as generateMetadata)? \} from "@\/features\/entities";\n?$/;
 
-// A company's settings tabs sit under app/entities/[ref]/[slug]/settings but belong to the
+// A company's settings tabs sit under app/entity/[ref]/[slug]/settings but belong to the
 // features that draw them (the Module tab: subscription) - their guards check them.
-const SETTINGS = /^app\/entities\/\[ref\]\/\[slug\]\/settings\//;
+const SETTINGS = /^app\/entity\/\[ref\]\/\[slug\]\/settings\//;
 
-describe("app/entities is re-exports only", () => {
-  const files = walk(join(ROOT, "app", "entities")).filter((f) => !SETTINGS.test(rel(f)));
+// The list is app/entities (plural - every company); one company's pages are app/entity.
+describe("app/entities and app/entity are re-exports only", () => {
+  const files = [...walk(join(ROOT, "app", "entities")), ...walk(join(ROOT, "app", "entity"))].filter(
+    (f) => !SETTINGS.test(rel(f)),
+  );
 
   it("has the list's page and a company's module choice", () => {
-    expect(files.map(rel).sort()).toEqual(["app/entities/[ref]/[slug]/page.tsx", "app/entities/page.tsx"]);
+    expect(files.map(rel).sort()).toEqual(["app/entities/page.tsx", "app/entity/[ref]/[slug]/page.tsx"]);
   });
 
   it.each(files.map((f) => [rel(f), f]))("%s is a single re-export from the feature index", (_n, file) => {

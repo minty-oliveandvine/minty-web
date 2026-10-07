@@ -29,7 +29,7 @@ e2e/            Playwright: 07_entity_list.spec.ts and 11_module_choice.spec.ts,
    `@/app/**`, never another feature.
 2. Nothing outside imports `@/features/entities/*` except `app/entities/**`, and it imports the
    index only.
-3. `app/entities/page.tsx` and `app/entities/[ref]/[slug]/page.tsx` are one-line re-exports
+3. `app/entities/page.tsx` and `app/entity/[ref]/[slug]/page.tsx` are one-line re-exports
    (`__tests__/reexports.test.ts`; the company's settings tabs under `[slug]/settings/` belong to
    the features that draw them).
 4. Links inside the feature to its own mount point use `lib/paths.ts`; to other features,

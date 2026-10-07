@@ -8,7 +8,7 @@ import { PETTY_CASH_URL, SUBSCRIPTION_API_URL, credentials, handoff, requireApp 
 
 const ID = "360812e1-9f94-46a3-aa31-347e21afde8e";
 const NAME = "Olive & Vine";
-const BASE = "/entities/360812e1/olive-and-vine/settings";
+const BASE = "/entity/360812e1/olive-and-vine/settings";
 const STUB_CREDS = { secret: "stub-flask-never-sees-this", userId: "u-e2e", entityId: ID, entityName: NAME };
 const creds = () => ({ ...(credentials() ?? STUB_CREDS), entityId: ID, entityName: NAME });
 

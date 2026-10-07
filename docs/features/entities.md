@@ -70,7 +70,12 @@ another app (onboarding, minty-web, the payments app), because those apps never 
 2026-10-02 onboarding's Xero connect flashed on every attempt. Finishing the wizard (→ `/entity`)
 then opened this list under a stack of stale "Connected to Xero!" / "Connection failed" toasts.
 
-## A company's module choice (`/entities/<shortid>/<name>`, phase 2 - 2026-10-05)
+## A company's module choice (`/entity/<shortid>/<name>`, phase 2 - 2026-10-05)
+
+The address is SINGULAR, and so is everything under it (the settings tabs): it names ONE company.
+It was the plural `/entities/<shortid>/<name>/…` until 2026-10-07 - `proxy.ts` 307s the old
+form, so the links already out there still land. The plural `/entities` is the LIST alone, and
+nothing lives below it (`HUB_PATHS.company` vs `HUB_PATHS.entities`, `lib/hubPaths.ts`).
 
 Clicking a row goes through Minty's `/entity/<id>/enter` to its router, `/entity/<co>/modules`
 (Minty `routes/modules.py::module_selector`): a company still onboarding resumes its wizard, one

@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Which company a company page's address names - `/entities/<shortid>/<name>/…` (lib/companyRef.ts).
+ * Which company a company page's address names - `/entity/<shortid>/<name>/…` (lib/companyRef.ts).
  * Every company page this app draws (module choice, the settings tabs) resolves it the same way:
  *
  * - The token held is that company's (the cookie's entity): done, no request.
@@ -73,7 +73,7 @@ export function useCompanyFromAddress(
           matches.find((c) => c.id === fullId) ??
           (matches.length === 1 ? matches[0] : matches.find((c) => slugifyName(c.name) === slug));
         if (!match) {
-          console.error(`[${label}] no company of yours matches /entities/${ref}`);
+          console.error(`[${label}] no company of yours matches /entity/${ref}`);
           setResolution({ state: "unknown" });
           return;
         }

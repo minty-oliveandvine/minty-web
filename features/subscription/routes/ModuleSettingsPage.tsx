@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * `/entities/[ref]/[slug]/settings/modules` - Flask's settings/modules, re-homed, addressed by the
+ * `/entity/[ref]/[slug]/settings/modules` - Flask's settings/modules, re-homed, addressed by the
  * company's short id and name (`lib/companyRef.ts`; under `/entities` since phase 2, 2026-10-05 -
  * the old `/subscription/entities/…/modules` addresses move here in proxy.ts). The company comes
  * from the address (`components/ui/CompanyFromAddress.tsx`). The query string carries only

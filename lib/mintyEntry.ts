@@ -28,7 +28,7 @@ export function mintyEntryUrl(path?: string, entityId?: string): string {
  * Into ANY company from the entity list: `/entity/<id>/enter` re-establishes the Flask session
  * from the token (a member's or a superuser's - an unscoped one is fine) and hands on to that
  * company's module router, which records the visit on the list's clock and picks the module:
- * straight into the only one, or this app's module choice (`/entities/<shortid>/<name>`) for two.
+ * straight into the only one, or this app's module choice (`/entity/<shortid>/<name>`) for two.
  */
 export function mintyEnterCompanyUrl(entityId: string): string {
   return mintyEntryUrl(`/entity/${entityId}/modules`, entityId);

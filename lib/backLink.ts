@@ -16,7 +16,7 @@
 
 import { COMPANY_SETTINGS_PATTERN } from "@/lib/hubPaths";
 
-// A company's settings tabs (/entities/<shortid>/<name>/settings/<tab>) and My Profile.
+// A company's settings tabs (/entity/<shortid>/<name>/settings/<tab>) and My Profile.
 const SETTINGS_AREA = [COMPANY_SETTINGS_PATTERN, /^\/profile\/?$/];
 
 type NavEntry = { index: number; url: string | null };

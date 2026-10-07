@@ -1,5 +1,5 @@
 /**
- * Where the feature is mounted: a company's settings, `/entities/<shortid>/<name>/settings/<tab>`
+ * Where the feature is mounted: a company's settings, `/entity/<shortid>/<name>/settings/<tab>`
  * (the shell spells the company's pages - `lib/hubPaths.ts` - and this feature owns two tabs).
  */
 

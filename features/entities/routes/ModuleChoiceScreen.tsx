@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * `/entities/<shortid>/<name>` - "Choose Module Type" for a company with both modules on (phase 2,
+ * `/entity/<shortid>/<name>` - "Choose Module Type" for a company with both modules on (phase 2,
  * 2026-10-05; minty-payment-request-web's `/module-selection` until then). Flask's router
  * (`/entity/<id>/modules`) decides who comes here: a company still onboarding resumes its wizard,
  * one module goes straight into it, and only two come to this page. Opened any other way (a

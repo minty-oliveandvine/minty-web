@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 import { inSettingsArea, stepsBack } from "@/lib/backLink";
 
 const ORIGIN = "https://hub.minty.test";
-const MODULES = `${ORIGIN}/entities/e1/olive-shop/settings/modules`;
+const MODULES = `${ORIGIN}/entity/e1/olive-shop/settings/modules`;
 const PROFILE = `${ORIGIN}/profile`;
 
 /** A tab's history as the Navigation API reports it: only THIS origin's run of entries, each

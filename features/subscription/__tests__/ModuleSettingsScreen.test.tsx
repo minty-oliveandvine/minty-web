@@ -60,7 +60,7 @@ describe("ModuleSettingsScreen", () => {
   beforeEach(() => {
     vi.stubGlobal("fetch", fetchMock);
     setAuth("h.eyJ1c2VyX2lkIjoidTEifQ.s", "e1", "Olive & Vine Limited");
-    window.history.replaceState({}, "", "/entities/e1/olive-shop/settings/modules");
+    window.history.replaceState({}, "", "/entity/e1/olive-shop/settings/modules");
     push.mockReset();
   });
 
@@ -99,7 +99,7 @@ describe("ModuleSettingsScreen", () => {
     // Users is this app's own tab since phase 2 (features/company-settings)
     expect(tabs.getByRole("link", { name: "Users" })).toHaveAttribute(
       "href",
-      expect.stringMatching(/^\/entities\/e1\/[^/]+\/settings\/users$/),
+      expect.stringMatching(/^\/entity\/e1\/[^/]+\/settings\/users$/),
     );
     expect(tabs.getByText("Modules")).toHaveAttribute("aria-current", "page");
   });

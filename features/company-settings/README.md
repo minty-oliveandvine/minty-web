@@ -1,7 +1,7 @@
 # features/company-settings — a company's Users and Entity & Integration tabs
 
 Since phase 2 (2026-10-05) these two tabs are this app's, at
-`/entities/<shortid>/<name>/settings/{users,integration}` beside the Module tab (the subscription
+`/entity/<shortid>/<name>/settings/{users,integration}` beside the Module tab (the subscription
 feature's). They were Flask's Jinja pages; Flask keeps their old addresses as hand-overs here and
 stays the backend: `/api/me/company/*` (Minty `blueprints/entity/routes/hub_settings.py`). Petty
 Cash Settings and Payment Request Settings stay in their own apps.
@@ -22,7 +22,7 @@ e2e/            12_company_settings.spec.ts, over a stubbed Flask
 ```
 
 The rules are the other features' (`features/subscription/README.md`): this folder imports only
-itself, `@/lib/**` and `@/components/ui/**`; only `app/entities/[ref]/[slug]/settings/{users,integration}`
+itself, `@/lib/**` and `@/components/ui/**`; only `app/entity/[ref]/[slug]/settings/{users,integration}`
 import it, and only its index; those two files are one-line re-exports.
 
 Shared pieces: `components/ui/{AppHeader, SettingsTabs, ConfirmDialog, ModalFrame, sheetClasses,

@@ -11,6 +11,7 @@ import { companyRef } from "@/lib/companyRef";
 
 export const HUB_PATHS = {
   entities: "/entities",
+  company: "/entity",
   profile: "/profile",
   subscription: "/subscription",
 } as const;
@@ -31,12 +32,13 @@ export function isOpenPath(pathname: string): boolean {
 }
 
 /**
- * One company's pages: `/entities/<shortid>/<name>[/…]` (lib/companyRef.ts) - its module choice,
- * then its settings under `/settings/<tab>` (phase 2, 2026-10-05; Flask's company pages are
- * `/entity/<shortid>/<name>/…` the same way).
+ * One company's pages: `/entity/<shortid>/<name>[/…]` (lib/companyRef.ts) - its module choice,
+ * then its settings under `/settings/<tab>` (phase 2, 2026-10-05). SINGULAR: the address names
+ * one company, like Flask's `/entity/<shortid>/<name>/…` (the plural `/entities` is the LIST
+ * and nothing below it - proxy.ts 307s the old plural company addresses here).
  */
 export function companyPath(entityId: string, entityName: string, sub = ""): string {
-  return `${HUB_PATHS.entities}/${companyRef(entityId, entityName)}${sub}`;
+  return `${HUB_PATHS.company}/${companyRef(entityId, entityName)}${sub}`;
 }
 
 /** The settings tabs this app draws; the apps keep their own module settings. */
@@ -56,5 +58,5 @@ export function companySettingsPath(
   return companyPath(entityId, entityName, `/settings/${tab}`);
 }
 
-/** `/entities/<shortid>/<name>/settings/<tab>` - the area lib/backLink.ts and the menu recognise. */
-export const COMPANY_SETTINGS_PATTERN = /^\/entities\/[^/]+\/[^/]+\/settings\/[^/]+\/?$/;
+/** `/entity/<shortid>/<name>/settings/<tab>` - the area lib/backLink.ts and the menu recognise. */
+export const COMPANY_SETTINGS_PATTERN = /^\/entity\/[^/]+\/[^/]+\/settings\/[^/]+\/?$/;

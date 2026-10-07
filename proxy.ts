@@ -40,15 +40,24 @@ export function proxy(request: NextRequest) {
 /**
  * The Module tab's addresses before phase 2 (2026-10-05): `/subscription/entities/<shortid>/<name>/modules`
  * and the older `/subscription/entities/<full id>/modules`. Both move to
- * `/entities/<ref>/<name>/settings/modules`; a full id gets a placeholder name, which the page
+ * `/entity/<ref>/<name>/settings/modules`; a full id gets a placeholder name, which the page
  * replaces with the company's own (lib/companyFromAddress.ts).
  */
 const OLD_MODULE_PAGE = /^\/subscription\/entities\/([^/]+)(?:\/([^/]+))?\/modules\/?$/;
 
+/**
+ * One company's pages were under the PLURAL `/entity/<shortid>/<name>/…` until 2026-10-07. The
+ * address names a single company, so they are `/entity/…` now (lib/hubPaths.ts) - the plural is
+ * the LIST and nothing below it. `/entities` itself is untouched.
+ */
+const OLD_PLURAL_COMPANY = /^\/entities\/(.+)$/;
+
 export function movedModulePage(pathname: string): string | null {
   const m = OLD_MODULE_PAGE.exec(pathname);
-  if (!m) return null;
-  return `/entities/${m[1]}/${m[2] ?? "company"}/settings/modules`;
+  if (m) return `/entity/${m[1]}/${m[2] ?? "company"}/settings/modules`;
+  const plural = OLD_PLURAL_COMPANY.exec(pathname);
+  if (plural) return `/entity/${plural[1]}`;
+  return null;
 }
 
 export const config = {

@@ -44,7 +44,7 @@ describe("useModulePage", () => {
   beforeEach(() => {
     vi.stubGlobal("fetch", fetchMock);
     setAuth(TOKEN, "e1", "Olive & Vine Limited");
-    window.history.replaceState({}, "", "/entities/e1/olive-shop/settings/modules");
+    window.history.replaceState({}, "", "/entity/e1/olive-shop/settings/modules");
     push.mockReset();
   });
 

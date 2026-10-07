@@ -34,7 +34,7 @@ const STUB_CREDS = {
 const creds = () => credentials() ?? STUB_CREDS;
 // The full id and a placeholder name: the page moves the address to the short id and the
 // company's own name (lib/companyFromAddress.ts).
-const MODULES = (id: string) => `/entities/${id}/company/settings/modules`;
+const MODULES = (id: string) => `/entity/${id}/company/settings/modules`;
 
 /**
  * Serve the page model from a fixture and record every action posted; after the first action

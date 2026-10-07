@@ -79,7 +79,7 @@ describe("NavMenu", () => {
     );
     expect(menu.getByRole("link", { name: "Settings" })).toHaveAttribute(
       "href",
-      "/entities/e1/olive-shop/settings/modules",
+      "/entity/e1/olive-shop/settings/modules",
     );
     expect(menu.getByRole("link", { name: "Manage subscriptions" })).toHaveAttribute(
       "aria-current",
@@ -89,7 +89,7 @@ describe("NavMenu", () => {
 
   it("the cat sits above Settings and Logout", async () => {
     setAuth(TOKEN, "e1", "Olive Shop");
-    at("/entities/e1/olive-shop/settings/modules");
+    at("/entity/e1/olive-shop/settings/modules");
     render(<NavMenu modules={{ pettyCash: true, billing: false }} />);
 
     const menu = await openMenu();

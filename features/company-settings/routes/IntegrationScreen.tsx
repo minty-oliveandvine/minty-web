@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * `/entities/<shortid>/<name>/settings/integration` - the company's details and its Xero
+ * `/entity/<shortid>/<name>/settings/integration` - the company's details and its Xero
  * connection (Flask's Entity & Integration tab until phase 2, 2026-10-05). Read by everyone who
  * may see settings (cashier and up), changed by an accountant and up, renamed by an admin.
  * Disconnecting asks first - it was one click on the Jinja page, and it wipes the company's

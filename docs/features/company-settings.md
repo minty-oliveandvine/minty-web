@@ -1,7 +1,7 @@
 # A company's Users and Entity & Integration tabs (`features/company-settings`)
 
 Phase 2 (2026-10-05) moved these two of a company's settings tabs from Flask's Jinja pages to this
-app, beside the Module tab: `/entities/<shortid>/<name>/settings/users` and `…/integration`. The
+app, beside the Module tab: `/entity/<shortid>/<name>/settings/users` and `…/integration`. The
 other two tabs stay in their apps (Petty Cash Settings in Flask, Payment Request Settings in the payments
 app) - each app keeps its own settings. Flask is the backend (`/api/me/company/*`, Minty
 `blueprints/entity/routes/hub_settings.py`; Minty `docs/features/entities-and-members.md` has the
