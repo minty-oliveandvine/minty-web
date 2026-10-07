@@ -1,6 +1,7 @@
-# Day-one CI: types, the boundary rules, the unit tests and a production build. Browser tests
-# (npm run test:e2e) need the whole stack and run locally / in Part 2 step 6's full-stack proof;
-# Part 3 step 1 replaces this with the org's reusable workflows.
+# Types, the boundary rules, the unit tests and a production build. The workflow body is shared:
+# minty-oliveandvine/.github -> .github/workflows/next-web.yml
+#
+# Browser tests (npm run test:e2e) need the whole stack and run from Minty's e2e.yml.
 name: ci
 
 on:
@@ -10,23 +11,9 @@ on:
 
 jobs:
   check:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-      - name: typecheck
-        run: npm run typecheck
-      - name: lint (with the boundary rules)
-        run: npm run lint
-      - name: unit tests
-        run: npm test
-      - name: build
-        run: npm run build
-        env:
-          PETTY_CASH_URL: http://localhost:8010
-          SUBSCRIPTION_API_URL: http://localhost:8000
-          PAYMENT_REQUEST_WEB_URL: http://localhost:3020
+    uses: minty-oliveandvine/.github/.github/workflows/next-web.yml@v1
+    with:
+      build-env: |
+        PETTY_CASH_URL=http://localhost:8010
+        SUBSCRIPTION_API_URL=http://localhost:8000
+        PAYMENT_REQUEST_WEB_URL=http://localhost:3020
