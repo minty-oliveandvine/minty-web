@@ -605,9 +605,10 @@ describe("ManageSubscriptionsScreen", { timeout: 15_000 }, () => {
     const landed = await screen.findByText("Congratulations!", {}, AFTER_BEAT);
     expect(screen.queryByRole("dialog")).toBeNull();
     const resultRow = landed.closest("li[data-result]")!;
-    expect(
-      vi.mocked(Element.prototype.scrollIntoView).mock.contexts.includes(resultRow),
-    ).toBe(true);
+    // The row's own effect scrolls it, so it lands a commit after the text findByText saw.
+    await waitFor(() =>
+      expect(vi.mocked(Element.prototype.scrollIntoView).mock.contexts).toContain(resultRow),
+    );
   });
 
   it("05·C: a cancellation retitles the banner and stands alone", async () => {
