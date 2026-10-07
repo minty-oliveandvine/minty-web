@@ -104,11 +104,15 @@ async function show(
 // The 1.2s "Calculating…" beat goes on top of the usual 2.5s find budget, not inside it: a
 // bare 2500 left a loaded CI runner ~1.3s to render and flaked two different tests. Every find
 // that waits out a beat uses this; the suite's per-test timeout leaves room for two beats.
-const AFTER_BEAT = { timeout: CALCULATING_MS + 2500 };
+// 2500 was still not enough - CI flaked again (run 37582261300, the 06 billing-accounts test),
+// because 59 files build their jsdom environments at once on a 2-core runner and the beat is
+// real time. A waiting budget costs nothing when the app is quick, so it is generous.
+const AFTER_BEAT = { timeout: CALCULATING_MS + 6000 };
 
 const rowOf = (name: string) => within(screen.getByText(name).closest("li") as HTMLElement);
 
-describe("ManageSubscriptionsScreen", { timeout: 15_000 }, () => {
+// Two AFTER_BEAT waits plus userEvent's own pacing have to fit inside one test (06 does both).
+describe("ManageSubscriptionsScreen", { timeout: 30_000 }, () => {
   beforeEach(() => {
     vi.stubGlobal("fetch", fetchMock);
     setAuth("h.eyJ1c2VyX2lkIjoidTEifQ.s", "", "");
