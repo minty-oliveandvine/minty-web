@@ -169,14 +169,16 @@ export function useEntitySummary(
 
   // The design's beat after a tick: the panel calculates for a moment, the cards flip at once.
   const [calcUntil, setCalcUntil] = useState<{ key: string; at: number } | null>(null);
-  const [now, setNow] = useState(() => Date.now());
+  // The beat ends by clearing its own deadline, not by comparing it with a clock held in state.
+  // A contended machine can take longer than the beat to commit the tick's render, so this
+  // effect first runs already past the deadline; a `now` that only moved when the timer fired
+  // could never catch up, and the panel stuck on "Calculating…" for good - the row's Confirm
+  // button never appeared (CI runs 37582261300, 37584305032). A due beat ends on the next tick.
   useEffect(() => {
     if (!calcUntil || calcUntil.key !== key) return;
-    const wait = calcUntil.at - Date.now();
-    if (wait <= 0) return;
-    const id = window.setTimeout(() => setNow(Date.now()), wait);
+    const id = window.setTimeout(() => setCalcUntil(null), Math.max(0, calcUntil.at - Date.now()));
     return () => window.clearTimeout(id);
-  }, [calcUntil, key, now]);
+  }, [calcUntil, key]);
 
   // The view is rebuilt from the answer and the pending ticks. An answer the API should never
   // give (a page model without its cards) fails here, in render, so it is caught here: the row
@@ -215,9 +217,7 @@ export function useEntitySummary(
       const card = current?.page?.cards.find((c) => c.code === code);
       if (!card || !key) return;
       setTicks((t) => ({ key, pending: toggleTick(t && t.key === key ? t.pending : {}, card) }));
-      const at = Date.now() + CALCULATING_MS;
-      setCalcUntil({ key, at });
-      setNow(Date.now());
+      setCalcUntil({ key, at: Date.now() + CALCULATING_MS });
     },
     [current, key],
   );
@@ -225,16 +225,13 @@ export function useEntitySummary(
   const setTicksFor = useCallback(
     (forEntityId: string, pending: PendingTicks) => {
       setTicks({ key: `${forEntityId}#${generation}`, pending });
-      const at = Date.now() + CALCULATING_MS;
-      setCalcUntil({ key: `${forEntityId}#${generation}`, at });
-      setNow(Date.now());
+      setCalcUntil({ key: `${forEntityId}#${generation}`, at: Date.now() + CALCULATING_MS });
     },
     [generation],
   );
 
   const calculating =
-    status === "loading" ||
-    (status === "ready" && calcUntil !== null && calcUntil.key === key && calcUntil.at > now);
+    status === "loading" || (status === "ready" && calcUntil !== null && calcUntil.key === key);
 
   return {
     status,

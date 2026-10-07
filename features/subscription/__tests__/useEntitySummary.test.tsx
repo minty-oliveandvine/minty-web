@@ -171,6 +171,34 @@ describe("useEntitySummary", () => {
     expect(result.current.view?.pendingChange?.codes).toEqual(["PETTY_CASH"]);
   });
 
+  it("05·B-C: the beat ends even if the tick's render lands after it was due", async () => {
+    // A contended CI runner can take longer than the beat itself to commit the tick's render,
+    // so the effect that schedules the beat's end first runs already past its deadline. The
+    // beat still has to end: it used to stick on "Calculating…" for good, and the row's
+    // Confirm button never appeared (runs 37582261300, 37584305032).
+    fetchMock.mockImplementation(async (input) => {
+      const url = new URL(String(input));
+      if (url.pathname.endsWith("/modules")) return reply(200, SUMMARY_FIXTURES.M44);
+      return reply(200, WALLET);
+    });
+    const { result } = renderHook(() => useEntitySummary(entity, { today: TODAY }));
+    await waitFor(() => expect(result.current.status).toBe("ready"));
+    const real = Date.now;
+    const stall = vi.spyOn(Date, "now").mockImplementation(() => real() + CALCULATING_MS * 3);
+    try {
+      // The tick reads the clock twice (its deadline, then the beat's start) before the stall;
+      // the effect that schedules the beat's end reads it after.
+      stall.mockImplementationOnce(() => real()).mockImplementationOnce(() => real());
+      act(() => result.current.toggleTick("PETTY_CASH"));
+      await waitFor(() => expect(result.current.calculating).toBe(false), {
+        timeout: CALCULATING_MS + 1000,
+      });
+    } finally {
+      stall.mockRestore();
+    }
+    expect(result.current.view?.pendingChange?.codes).toEqual(["PETTY_CASH"]);
+  });
+
   it("uses the house sentence for an unwired API (501)", async () => {
     fetchMock.mockImplementation(async () => reply(501, { error: "not_implemented" }));
     const { result } = renderHook(() => useEntitySummary(entity, { today: TODAY }));
