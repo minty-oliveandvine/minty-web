@@ -1,7 +1,9 @@
 # Development image for minty-web (Next.js 16), the shape of minty-onboarding-web's docker/Dockerfile.
 # Optimised for local dev with hot-reload - the source is bind-mounted at runtime by
 # Minty/docker/stack/docker-compose.yml, so only the dependencies are baked in here.
-FROM node:22-alpine
+# Node 24: what every Vercel project builds with, and what CI uses (.github's next-web.yml)
+# - the container runs the app on the runtime it is deployed on.
+FROM node:24-alpine
 
 WORKDIR /app
 
