@@ -902,6 +902,67 @@ describe("useSubscriptionsList", () => {
     expect(fetchMock.mock.calls.every((c) => (c[1]?.method ?? "GET") === "GET")).toBe(true);
   });
 
+  // A trial establishes no SUBSCRIBER, so Activate Subscription takes Confirm Subscription
+  // Change's slot - and asks in the SAME section-06 modal (the user, 2026-10-08).
+  /** `serveRow` plus the billing accounts the picker reads. */
+  function serveRowAndAccounts(page: unknown) {
+    serveRow(fetchMock, page);
+    const inner = fetchMock.getMockImplementation()!;
+    fetchMock.mockImplementation(async (input, init) => {
+      if (new URL(String(input)).pathname === "/api/me/billing/accounts")
+        return reply(200, ACCOUNTS);
+      return inner(input, init);
+    });
+  }
+
+  it("Activate Subscription asks in the change modal, then Billing Accounts", async () => {
+    serveRowAndAccounts(SUMMARY_FIXTURES.M31);
+    const e = { ...ENTITIES[0], subscriber: null, has_subscriber: false };
+    const { result } = renderHook(
+      () =>
+        useSubscriptionsList({ focusEntityId: e.entity_id, tickCode: "PETTY_CASH", today: TODAY }),
+      { wrapper },
+    );
+    await waitFor(() => expect(result.current.summary.view?.pendingChange).toBeTruthy());
+    const change = result.current.summary.view!.pendingChange!;
+
+    act(() => result.current.activateChange(e, change));
+
+    // The modal first - nothing is read about accounts and nothing is posted yet.
+    await waitFor(() => expect(result.current.changePrompt).toBeTruthy());
+    expect(result.current.changePrompt?.activate).toBe(true);
+    expect(result.current.accountStep).toBeNull();
+
+    // Its Confirm opens Billing Accounts, asked for the ACTIVATION.
+    await act(async () => {
+      await result.current.applyChangePrompt();
+    });
+    await waitFor(() => expect(result.current.accountStep).toBeTruthy());
+    expect(result.current.changePrompt).toBeNull();
+    expect(fetchMock.mock.calls.every((c) => (c[1]?.method ?? "GET") === "GET")).toBe(true);
+  });
+
+  it("Activate Subscription still opens the sheet when the change has no modal to show", async () => {
+    // `buildChangeModal` answers null when no ticked code carries a seam, and it is a DIFFERENT
+    // computation from the `pendingChange` the button is gated on - so the two can disagree. A
+    // change simply shows no modal then; activation must not become a dead button.
+    serveRowAndAccounts(SUMMARY_FIXTURES.M31);
+    const e = { ...ENTITIES[0], subscriber: null, has_subscriber: false };
+    const { result } = renderHook(
+      () =>
+        useSubscriptionsList({ focusEntityId: e.entity_id, tickCode: "PETTY_CASH", today: TODAY }),
+      { wrapper },
+    );
+    await waitFor(() => expect(result.current.summary.view?.pendingChange).toBeTruthy());
+    const change = result.current.summary.view!.pendingChange!;
+
+    // A code the page has no card for: no seam, so no modal.
+    act(() => result.current.activateChange(e, { ...change, codes: [] }));
+
+    await waitFor(() => expect(result.current.accountStep).toBeTruthy());
+    expect(result.current.changePrompt).toBeNull();
+  });
+
   it("a tick it cannot give is simply not given", async () => {
     // Payment Request was never started on M31: its control is Start Free Trial, not a box.
     serveRow(fetchMock, SUMMARY_FIXTURES.M31);

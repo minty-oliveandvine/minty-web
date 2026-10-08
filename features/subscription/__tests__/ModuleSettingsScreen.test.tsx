@@ -9,6 +9,7 @@ import { ToastProvider } from "@/components/ui/Toast";
 import { setAuth } from "@/lib/auth";
 import { env } from "@/lib/env";
 
+import { ACCOUNTS } from "@/features/subscription/__fixtures__/billing";
 import {
   FIXTURES,
   NON_MANAGER,
@@ -241,6 +242,97 @@ describe("ModuleSettingsScreen", () => {
     const [url, init] = fetchMock.mock.calls[1];
     expect(String(url)).toBe(`${env.SUBSCRIPTION_API_URL}/api/entities/e1/modules/start-trial`);
     expect(JSON.parse(String(init?.body))).toEqual({ codes: ["PAYMENT_REQUEST"] });
+  });
+
+  // A trial establishes no SUBSCRIBER (the user, 2026-10-08). The button on a running trial
+  // becomes Activate Subscription, and pressing it asks which billing account pays - here on
+  // the page, since a company nobody pays for is in nobody's billing relationship yet.
+  describe("Activate Subscription", () => {
+    const unactivated: ModulePage = { ...FIXTURES.A, has_subscriber: false };
+
+    it("replaces Manage Subscription on an unconfirmed trial, and leaves Start Free Trial", async () => {
+      await show(unactivated);
+
+      expect(under("Petty Cash").getByRole("button", { name: "Activate Subscription" })).toBeVisible();
+      expect(screen.queryByRole("button", { name: "Manage Subscription" })).toBeNull();
+      // Anyone may still start a free trial: it is free and commits nobody.
+      expect(
+        under("Payment Request").getByRole("button", { name: "Start Free Trial" }),
+      ).toBeVisible();
+      // The card itself is unchanged - only the button differs.
+      expect(card("Petty Cash").getByText("3 days remaining")).toBeVisible();
+    });
+
+    it("asks which account pays, then confirms billing in one request", async () => {
+      await show(unactivated);
+      fetchMock.mockResolvedValueOnce(
+        new Response(JSON.stringify(ACCOUNTS), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      );
+
+      await userEvent.click(screen.getByRole("button", { name: "Activate Subscription" }));
+
+      const sheet = within(await screen.findByRole("dialog", { name: "Billing Accounts" }));
+      expect(sheet.getByText("Choose the account that pays for Olive & Vine Ltd.")).toBeVisible();
+      expect(fetchMock).toHaveBeenCalledTimes(2); // read the accounts, posted nothing
+
+      fetchMock.mockResolvedValueOnce(
+        new Response(JSON.stringify({ ok: true, charged: false }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      );
+      serve({ ...FIXTURES.A, has_subscriber: true }); // the reload after it lands
+      await userEvent.click(sheet.getByRole("button", { name: "Confirm" }));
+
+      await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+      const [url, init] = fetchMock.mock.calls[2];
+      expect(String(url)).toBe(
+        `${env.SUBSCRIPTION_API_URL}/api/entities/e1/modules/activate-subscription`,
+      );
+      // NO `codes`: naming them is how a lapsed module is bought back, and confirming a
+      // running trial must charge nothing.
+      expect(JSON.parse(String(init?.body))).toEqual({ account: "acc-company-a" });
+      // Confirmed, so the page now offers Manage Subscription again.
+      await waitFor(() =>
+        expect(screen.getByRole("button", { name: "Manage Subscription" })).toBeVisible(),
+      );
+    });
+
+    it("a 402 asks the sheet again in the API's own words", async () => {
+      await show(unactivated);
+      fetchMock.mockResolvedValueOnce(
+        new Response(JSON.stringify(ACCOUNTS), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      );
+
+      await userEvent.click(screen.getByRole("button", { name: "Activate Subscription" }));
+      const sheet = within(await screen.findByRole("dialog", { name: "Billing Accounts" }));
+
+      fetchMock.mockResolvedValueOnce(
+        new Response(JSON.stringify({ error: "Choose a billing account for this company." }), {
+          status: 402,
+          headers: { "Content-Type": "application/json" },
+        }),
+      );
+      fetchMock.mockResolvedValueOnce(
+        new Response(JSON.stringify(ACCOUNTS), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      );
+      await userEvent.click(sheet.getByRole("button", { name: "Confirm" }));
+
+      // Still asking, with the refusal on it - the company is as subscriber-less as it was.
+      const again = within(await screen.findByRole("dialog", { name: "Billing Accounts" }));
+      expect(await again.findByRole("alert")).toHaveTextContent(
+        "Choose a billing account for this company.",
+      );
+    });
   });
 
   it("Go back from the trial dialog posts nothing", async () => {

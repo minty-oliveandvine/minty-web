@@ -35,6 +35,7 @@ function handlers(): SummaryRowHandlers {
     onStartTrial: vi.fn(),
     onTick: vi.fn(),
     onConfirmChange: vi.fn(),
+    onActivate: vi.fn(),
     onMenu: vi.fn(),
     onChangePaymentMethod: vi.fn(),
     onRetry: vi.fn(),

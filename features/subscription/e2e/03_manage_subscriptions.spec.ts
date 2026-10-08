@@ -196,6 +196,101 @@ test.describe("manage subscriptions", () => {
     await expect(body(page).getByRole("link", { name: "Go to entity list" })).toBeVisible();
   });
 
+  // A trial establishes no SUBSCRIBER (the user, 2026-10-08), and the list carries the companies
+  // nobody pays for to their admins - so one is reachable here rather than invisible. Activating
+  // is asked INSIDE the open row, in Confirm Subscription Change's place.
+  const unactivatedList = () => {
+    const [first, ...rest] = ENTITIES;
+    const unactivated = { ...first, subscriber: null, has_subscriber: false };
+    return { unactivated, list: subscriptionsPage([unactivated, ...rest]) };
+  };
+
+  test("a company with no subscriber activates from the open row, not the closed one", async ({
+    page,
+  }) => {
+    const { unactivated, list } = unactivatedList();
+    const posts = await stubApi(page, list);
+    await handoff(page, creds(), "/subscription/subscriptions", { entity_id: "" });
+
+    const row = body(page).locator(`li[data-entity='${unactivated.entity_id}']`);
+    // The CLOSED row offers nothing.
+    await expect(row.getByRole("button", { name: /Activate Subscription/ })).toHaveCount(0);
+
+    await row.getByRole("button", { name: `Open ${unactivated.entity_name}` }).click();
+    const panel = body(page).getByRole("region", { name: "Subscription Summary" });
+    await expect(panel).toBeVisible();
+    // Nothing ticked: the panel offers NO act at all (the user, 2026-10-08 - the button must
+    // not sit under "No pending changes").
+    await expect(panel.getByRole("button", { name: "Activate Subscription" })).toHaveCount(0);
+    await expect(panel.getByRole("button", { name: "Confirm Subscription Change" })).toHaveCount(0);
+
+    // Ticked (M45's cancelling Payment Request, restored - the same tick the 06 test uses), it
+    // is Activate Subscription that appears in Confirm Subscription Change's slot: a company
+    // with no subscriber has to get one before anything can be confirmed.
+    await row.getByRole("checkbox", { name: "Payment Request subscription" }).click();
+    const activate = panel.getByRole("button", { name: "Activate Subscription" });
+    await expect(activate).toBeVisible({ timeout: 15_000 });
+    await expect(panel.getByRole("button", { name: "Confirm Subscription Change" })).toHaveCount(0);
+    await activate.click();
+
+    // The SAME section-06 modal a change asks in (the user, 2026-10-08), word for word, then
+    // the sheet.
+    const unlock = page.getByRole("dialog", { name: "You have unlocked Super Minty" });
+    await expect(unlock).toContainText(unactivated.entity_name);
+    expect(posts).toEqual([]);
+    await unlock.getByRole("button", { name: "Confirm" }).click();
+
+    // The same Billing Accounts sheet Manage Subscriptions asks a change with.
+    const sheet = page.getByRole("dialog", { name: "Billing Accounts" });
+    await expect(sheet).toBeVisible();
+    await sheet.getByRole("button", { name: "Confirm" }).click();
+
+    await expect.poll(() => posts.length).toBe(1);
+    expect(posts[0].url).toContain(
+      `/api/entities/${unactivated.entity_id}/modules/activate-subscription`,
+    );
+    // No `codes`: naming them is how a lapsed module is bought back, and confirming a running
+    // trial must charge nothing.
+    expect(posts[0].body).toEqual({ account: "acc-company-a" });
+  });
+
+  // 360 / 768 / 1440 - the three widths the Responsive UI rules name.
+  for (const width of [360, 768, 1440]) {
+    test(`at ${width}px Activate Subscription is a real tap target and nothing overflows`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height: 780 });
+      const { unactivated, list } = unactivatedList();
+      await stubApi(page, list);
+      await handoff(page, creds(), "/subscription/subscriptions", { entity_id: "" });
+
+      const row = body(page).locator(`li[data-entity='${unactivated.entity_id}']`);
+      await row.getByRole("button", { name: `Open ${unactivated.entity_name}` }).click();
+      // The button is gated on a pending selection, so tick one first.
+      await row.getByRole("checkbox", { name: "Payment Request subscription" }).click();
+      const activate = body(page)
+        .getByRole("region", { name: "Subscription Summary" })
+        .getByRole("button", { name: "Activate Subscription" });
+      await expect(activate).toBeVisible({ timeout: 15_000 });
+      expect((await activate.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+      // The page itself never scrolls sideways (the Responsive UI rules).
+      expect(
+        await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1),
+      ).toBe(true);
+
+      // And the sheet it opens, through the change modal, is full-width rather than a desktop
+      // dialog squeezed onto a phone.
+      await activate.click();
+      await page
+        .getByRole("dialog", { name: "You have unlocked Super Minty" })
+        .getByRole("button", { name: "Confirm" })
+        .click();
+      const sheet = page.getByRole("dialog", { name: "Billing Accounts" });
+      await expect(sheet).toBeVisible();
+      expect((await sheet.boundingBox())!.width).toBeLessThanOrEqual(width);
+    });
+  }
+
   test("the module page's Manage Subscription lands on the company's row, opened", async ({
     page,
   }) => {

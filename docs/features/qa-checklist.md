@@ -147,7 +147,29 @@ run" below).
       pettycashv3.entity_module_subscription WHERE entity_id = '<id>';` — a confirmed trial
       start inserts/updates the row for that `function_code` and projects into
       `pettycashv3.entity_function_map` (`is_enabled`, `enabled_at`) — that second table is
-      what actually gates app access, so check both, not just the subscription row.
+      what actually gates app access, so check both, not just the subscription row. Since
+      2026-10-08 `payer_user_id` must be **NULL** after a trial start - whoever pressed the
+      button is not the subscriber.
+- [ ] Manage Subscriptions: the CLOSED row of a company with no subscriber carries no extra
+      button. Open it with nothing ticked and the panel shows "No pending changes" and **no
+      button at all** — neither Activate nor Confirm.
+- [ ] Tick a module on that company: the teal button appears and reads **Activate Subscription**
+      (not Confirm), in _Confirm Subscription Change_'s place.
+- [ ] Pressing it opens the SAME section-06 modal a change opens ("You have unlocked Super
+      Minty" etc.) naming the company and the modules chosen, and posts nothing. Its Confirm
+      opens Billing Accounts; that Confirm activates. Nothing is charged, and afterwards the
+      company has a subscriber with Confirm Subscription Change back in the slot.
+- [ ] On a company whose trial is unconfirmed, the card's button reads **Activate Subscription**
+      (the trial line itself unchanged) while a module with no trial still offers **Start Free
+      Trial**; a SECOND admin sees the same buttons, because nobody is being billed yet.
+- [ ] Pressing it opens Billing Accounts over the page; an account with no card cannot be
+      picked. Confirm posts `activate-subscription` with `{account}` and nothing else - no
+      `codes`, so nothing is charged.
+- [ ] **DB after confirming:** one `pettycashv3.entity_billing_group` row for the company, one
+      `pettycashv3.entity_billing_consent` row, and EVERY `entity_module_subscription` row of the
+      company stamped with that admin. No `subscription_invoice` row.
+- [ ] Cancel out of the sheet instead, or hit the 402: `payer_user_id` is still NULL and there
+      is no consent row, so the picker can be answered again.
 - [ ] **DB:** confirm each state change also appends a `pettycashv3.subscription_audit_log` row
       — a CTA that changed `phase` with no matching audit row is a silent write to report.
 

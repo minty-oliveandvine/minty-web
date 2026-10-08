@@ -8,11 +8,22 @@
  * Stripe to settle: nothing in the app hands the browser to a Stripe-hosted page any more (the
  * user, 2026-10-01 - a card is only ever added through a billing account, in the app).
  *
- * Actions: starting a trial is the one CTA that acts here, and it ASKS FIRST - `askStartTrial`
- * opens Figma 04-G's dialog (`StartTrialDialog`, the same one the list uses), `confirmStartTrial`
- * posts and then LEAVES for the list, where the company's row says what happened (RV11); the
- * API's sentence goes to a toast and the dialog stays open to try again. The other CTAs are
- * seams - they navigate to the sub-page that owns the flow
+ * Actions: TWO CTAs act here, and both ask first.
+ *
+ * Starting a trial - `askStartTrial` opens Figma 04-G's dialog (`StartTrialDialog`, the same one
+ * the list uses), `confirmStartTrial` posts and then LEAVES for the list, where the company's
+ * row says what happened (RV11); the API's sentence goes to a toast and the dialog stays open
+ * to try again.
+ *
+ * Activating the subscription - a trial establishes no SUBSCRIBER, so a company running one
+ * that nobody has confirmed shows "Activate Subscription" instead of "Manage Subscription".
+ * `activateTrial` opens the Billing Accounts picker, HERE on the page rather than through a
+ * seam: the company belongs to no payer yet, and the act is one request. Confirming posts
+ * `activate-subscription` with the account, which places the company on it, records consent and
+ * makes the viewer the subscriber - charging nothing, because a running trial has paid days
+ * left. A 402 asks the sheet again with the API's own sentence, as Manage Subscriptions does.
+ *
+ * The other CTAs are seams - they navigate to the sub-page that owns the flow
  * (`lib/paths.ts::moduleRoutes`), each built in its own step from its own Figma frame.
  *
  * `fixture`: a dev-only switch (`?fixture=A` … `F`) that serves the page model from
@@ -27,12 +38,25 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { ApiError } from "@/lib/apiClient";
 import { useToast } from "@/components/ui/Toast";
 
+import { needsAccountChoice } from "@/features/subscription/api/moduleChanges";
+
 import {
+  activateSubscription,
   getModulePage,
   startTrial as postStartTrial,
   type ModuleCode,
   type ModulePage,
 } from "@/features/subscription/api/moduleSettings";
+import {
+  fetchBillingAccounts,
+  type BillingAccounts,
+} from "@/features/subscription/api/payerPortal";
+import {
+  ACCOUNTS_LOAD_FAILED,
+  nominateLead,
+  nominationChoice,
+  type MoveTarget,
+} from "@/features/subscription/lib/billingAccounts";
 import {
   paymentFailed,
   resolveModuleState,
@@ -53,6 +77,20 @@ export type ModulePageStatus = "loading" | "ready" | "error";
 
 /** A trial asked about and not yet confirmed: the module, and its name for the dialog. */
 export type ModuleTrialPrompt = { code: ModuleCode; moduleName: string };
+
+/**
+ * The Billing Accounts sheet, open over the page because the subscription is being activated.
+ * `key` remounts it so a re-ask starts from the API's new sentence; `targets` carries the rows
+ * that cannot be picked with the reason why.
+ */
+export type ModuleAccountAsk = {
+  data: BillingAccounts;
+  picked: string | null;
+  targets: MoveTarget[];
+  error: string | null;
+  lead: string;
+  key: number;
+};
 
 export type UseModulePageResult = {
   status: ModulePageStatus;
@@ -77,6 +115,13 @@ export type UseModulePageResult = {
   resume: (code: ModuleCode) => void;
   reactivate: (code: ModuleCode) => void;
   updatePaymentMethod: () => void;
+  /** The Billing Accounts sheet while the subscription is being activated. */
+  accountAsk: ModuleAccountAsk | null;
+  /** Confirm is pressed and the activation is in flight; nothing closes the sheet. */
+  activateBusy: boolean;
+  activateTrial: () => Promise<void>;
+  confirmActivate: (accountId: string, accounts?: BillingAccounts) => Promise<void>;
+  dismissAccountAsk: () => void;
 };
 
 /** Shown while the API's modules router is still a stub (Part 2 step 3 fills it). */
@@ -119,6 +164,8 @@ export function useModulePage({
   const [trialPrompt, setTrialPrompt] = useState<ModuleTrialPrompt | null>(null);
   const [fixtureToday, setFixtureToday] = useState<Date | null>(null);
   const [generation, setGeneration] = useState(0);
+  const [accountAsk, setAccountAsk] = useState<ModuleAccountAsk | null>(null);
+  const [activateBusy, setActivateBusy] = useState(false);
 
   const load = useCallback(async () => {
     const { page: model, today: pinned } = await fetchPageModel(entityId, fixture);
@@ -153,7 +200,10 @@ export function useModulePage({
   const views = useMemo(() => {
     if (!page) return [];
     const day = fixtureToday ?? today ?? new Date();
-    return page.cards.map((card) => resolveModuleState(card, day));
+    // `has_subscriber !== false` rather than `=== true`: a fixture or an older answer without
+    // the key behaves as it did before, which is "the company has a payer".
+    const hasSubscriber = page.has_subscriber !== false;
+    return page.cards.map((card) => resolveModuleState(card, day, hasSubscriber));
   }, [page, fixtureToday, today]);
 
   // Starting a trial is asked about first (Figma 04-G), as it is from the list: press, confirm,
@@ -187,6 +237,78 @@ export function useModulePage({
       setBusyCode(null);
     }
   }, [trialPrompt, entityId, router, showToast]);
+
+  // --- Activate Subscription: the Billing Accounts sheet, here on the page ------------------
+  //
+  // An account with no card CANNOT be picked (`needCard`), even though confirming a running
+  // trial charges nothing. Confirming billing to an account that has nothing to charge would
+  // produce a company that looks activated and whose trial still expires - the one outcome
+  // this screen exists to prevent.
+  const askAccounts = useCallback(
+    async (error: string | null) => {
+      let data: BillingAccounts;
+      try {
+        data = await fetchBillingAccounts();
+      } catch (err) {
+        const said = err instanceof ApiError ? err.message : ACCOUNTS_LOAD_FAILED;
+        showToast(error ? `${error} ${said}` : said, "error");
+        return;
+      }
+      const { targets, picked } = nominationChoice(data, entityId, { needCard: true });
+      setAccountAsk((ask) => ({
+        data,
+        picked,
+        targets,
+        error,
+        lead: nominateLead(page?.entity_name ?? ""),
+        key: (ask?.key ?? 0) + 1,
+      }));
+    },
+    [entityId, page, showToast],
+  );
+
+  // PER COMPANY, not per module, and that is why it takes no code: confirming billing gives
+  // the company its subscriber and stamps every one of its module rows. Nothing is charged -
+  // naming codes is how a LAPSED module is bought back, and a running trial must not.
+  const activateTrial = useCallback(async () => {
+    if (activateBusy) return;
+    await askAccounts(null);
+  }, [activateBusy, askAccounts]);
+
+  const confirmActivate = useCallback(
+    async (accountId: string) => {
+      if (activateBusy) return;
+      setActivateBusy(true);
+      try {
+        await activateSubscription(entityId, accountId);
+        setAccountAsk(null);
+        showToast("Billing confirmed. You are now this company's subscriber.", "success");
+        reload();
+      } catch (err) {
+        if (needsAccountChoice(err)) {
+          // The sheet is asked AGAIN for the same act, with the API's sentence as its error -
+          // the loop Manage Subscriptions already uses. A refusal left the company exactly as
+          // subscriber-less as it was, so pressing again is safe.
+          await askAccounts(err instanceof ApiError ? err.message : null);
+          return;
+        }
+        showToast(sentence(err), "error");
+        if (err instanceof ApiError && err.status === 409) {
+          // Somebody else activated it first. Reload, so the page stops offering a button
+          // that is no longer this viewer's to press.
+          setAccountAsk(null);
+          reload();
+        }
+      } finally {
+        setActivateBusy(false);
+      }
+    },
+    [activateBusy, entityId, askAccounts, reload, showToast],
+  );
+
+  const dismissAccountAsk = useCallback(() => {
+    if (!activateBusy) setAccountAsk(null);
+  }, [activateBusy]);
 
   const routes = useMemo(() => moduleRoutes(entityId), [entityId]);
   const manage = useCallback(() => router.push(routes.manage), [router, routes]);
@@ -228,5 +350,10 @@ export function useModulePage({
     resume,
     reactivate,
     updatePaymentMethod,
+    accountAsk,
+    activateBusy,
+    activateTrial,
+    confirmActivate,
+    dismissAccountAsk,
   };
 }

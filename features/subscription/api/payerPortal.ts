@@ -43,7 +43,14 @@ export type PortalEntity = {
   entity_name: string;
   country: string | null;
   country_code: string | null;
-  subscriber: { id: string; name: string; email: string };
+  /**
+   * Who carries this company's bill - null when nobody does yet. A trial is started by any
+   * admin and establishes no subscriber, so the list also carries the companies the viewer
+   * ADMINISTERS that nobody pays for, and those rows offer Activate Subscription.
+   */
+  subscriber: { id: string; name: string; email: string } | null;
+  /** False on exactly those rows. Absent on an older answer, which means "it has one". */
+  has_subscriber?: boolean;
   modules: PortalModule[];
   /** A Minty PATH. Hand the token back through Flask's /entity/<id>/enter to land on it signed in. */
   settings_path: string;

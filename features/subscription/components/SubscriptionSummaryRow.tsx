@@ -25,6 +25,7 @@ import type { PortalEntity } from "@/features/subscription/api/payerPortal";
 import type { MenuItem } from "@/features/subscription/lib/portalRows";
 import type { ModuleStatusLine } from "@/features/subscription/lib/moduleState";
 import {
+  ACTIVATE_SUBSCRIPTION,
   CONFIRM_CHANGE,
   TRIAL_NOTICE,
   type Chip,
@@ -52,6 +53,12 @@ export type SummaryRowHandlers = {
   onTick: (code: ModuleCode) => void;
   /** "Confirm Subscription Change": the pending change, to confirm. */
   onConfirmChange: (change: PendingChange) => void;
+  /**
+   * "Activate Subscription": this company has no SUBSCRIBER, so confirming billing comes
+   * first. It takes the Confirm Subscription Change slot, under the same gate, and asks in the
+   * same section-06 modal - so it carries the pending change the modal is written from.
+   */
+  onActivate: (change: PendingChange) => void;
   onMenu: (item: MenuItem) => void;
   /** "Change" beside the nominated card: which billing account the company is on. */
   onChangePaymentMethod: () => void;
@@ -272,12 +279,17 @@ function CalculatingPanel() {
 
 function SummaryPanel({
   view,
+  needsActivation,
   onChangePaymentMethod,
   onConfirmChange,
+  onActivate,
 }: {
   view: SummaryView;
+  /** The company has no subscriber: the button below activates instead of confirming. */
+  needsActivation: boolean;
   onChangePaymentMethod: () => void;
   onConfirmChange: (change: PendingChange) => void;
+  onActivate: (change: PendingChange) => void;
 }) {
   const changing = view.panel.kind === "changing";
   return (
@@ -331,15 +343,38 @@ function SummaryPanel({
         </>
       )}
 
-      {view.pendingChange && (
-        <button
-          type="button"
-          onClick={() => onConfirmChange(view.pendingChange!)}
-          className="h-14 rounded-2xl bg-[#4fc7c7] text-lg font-bold sm:h-[66px] sm:text-xl text-white hover:opacity-90"
-        >
-          {CONFIRM_CHANGE}
-        </button>
-      )}
+      {/* ONE SLOT, TWO ACTS (the user, 2026-10-08). A company nobody pays for has to get a
+          SUBSCRIBER before anything can be confirmed, so Activate Subscription takes Confirm
+          Subscription Change's place here.
+
+          BOTH ARE GATED ON A PENDING SELECTION (the user, same day, on seeing it under "No
+          pending changes"): the button only appears once something is ticked, so this panel
+          never offers an act over nothing. A company with nothing ticked is activated from its
+          module settings page instead, where the card's own CTA asks.
+
+          BOTH ALSO ASK IN THE SAME SECTION-06 MODAL (the user, same day) - the person is
+          choosing the same modules either way and should read the same words - and both go on
+          to Billing Accounts. What lands differs: a change is applied and may charge;
+          activating only confirms billing, which charges nothing, and then the row is read
+          again (the ticks go with that read, as they do after any applied change). */}
+      {view.pendingChange &&
+        (needsActivation ? (
+          <button
+            type="button"
+            onClick={() => onActivate(view.pendingChange!)}
+            className="h-14 rounded-2xl bg-[#4fc7c7] text-lg font-bold sm:h-[66px] sm:text-xl text-white hover:opacity-90"
+          >
+            {ACTIVATE_SUBSCRIPTION}
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => onConfirmChange(view.pendingChange!)}
+            className="h-14 rounded-2xl bg-[#4fc7c7] text-lg font-bold sm:h-[66px] sm:text-xl text-white hover:opacity-90"
+          >
+            {CONFIRM_CHANGE}
+          </button>
+        ))}
     </section>
   );
 }
@@ -466,8 +501,10 @@ export function SubscriptionSummaryRow({
             ) : (
               <SummaryPanel
                 view={view}
+                needsActivation={entity.has_subscriber === false}
                 onChangePaymentMethod={on.onChangePaymentMethod}
                 onConfirmChange={on.onConfirmChange}
+                onActivate={on.onActivate}
               />
             )}
           </div>

@@ -15,6 +15,11 @@ export type ModuleCtaHandlers = {
   startTrial: (code: ModuleCode) => void;
   manage: () => void;
   activate: (code: ModuleCode) => void;
+  /**
+   * Confirming a started trial: the Billing Accounts picker, here on the page. Per COMPANY,
+   * so it takes no code - confirming billing stamps every module row of the entity.
+   */
+  activateTrial: () => void;
   resume: (code: ModuleCode) => void;
   reactivate: (code: ModuleCode) => void;
 };
@@ -27,6 +32,8 @@ function press(cta: ModuleCtaModel, code: ModuleCode, on: ModuleCtaHandlers): ()
       return on.manage;
     case "activate":
       return () => on.activate(code);
+    case "activate_trial":
+      return on.activateTrial;
     case "resume":
       return () => on.resume(code);
     case "reactivate":

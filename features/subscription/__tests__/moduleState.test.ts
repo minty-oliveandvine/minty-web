@@ -47,6 +47,26 @@ describe("moduleState", () => {
       "expired",
     );
   });
+
+  // A trial establishes no SUBSCRIBER (the user, 2026-10-08): the company gets a payer only
+  // when someone confirms billing on a billing account.
+  it("a running trial on a company with no subscriber needs activating", () => {
+    expect(moduleState(petty("A"), false)).toBe("needs_activation");
+    expect(moduleState(petty("A"), true)).toBe("trialing");
+  });
+
+  it("Start Free Trial still wins - a module with no trial yet is untouched by it", () => {
+    expect(moduleState(payment("A"), false)).toBe("trial_eligible");
+  });
+
+  it("a suspended or cancelling module still says so - both outrank activating", () => {
+    expect(moduleState(petty("F"), false)).toBe("past_due");
+    expect(moduleState({ ...petty("A"), pending_cancel: true }, false)).toBe("pending_cancel");
+  });
+
+  it("defaults to having a subscriber, so a caller without the page model is unchanged", () => {
+    expect(moduleState(petty("A"))).toBe("trialing");
+  });
 });
 
 describe("resolveModuleState", () => {
@@ -64,6 +84,20 @@ describe("resolveModuleState", () => {
     });
     expect(pr.live).toBe(false);
     expect(pr.cta).toEqual({ kind: "start_trial", label: "Start Free Trial", variant: "outline" });
+  });
+
+  it("an unconfirmed trial keeps the trial line verbatim; only the button changes", () => {
+    const confirmed = resolveModuleState(petty("A"), TODAY, true);
+    const unconfirmed = resolveModuleState(petty("A"), TODAY, false);
+
+    expect(unconfirmed.status).toEqual(confirmed.status);
+    expect(unconfirmed.daysRemaining).toBe(confirmed.daysRemaining);
+    expect(unconfirmed.live).toBe(true);
+    expect(unconfirmed.cta).toEqual({
+      kind: "activate_trial",
+      label: "Activate Subscription",
+      variant: "filled",
+    });
   });
 
   it("03-B: a trial is urgent (red) at seven days or fewer, else 'Trial Active' in black", () => {
@@ -165,5 +199,11 @@ describe("sharedCta / paymentFailed", () => {
   it("the banner shows only when a module is suspended", () => {
     expect(paymentFailed(views("F"))).toBe(true);
     expect(paymentFailed(views("E"))).toBe(false);
+  });
+
+  it("two cards awaiting activation keep their own button, so one press settles both", () => {
+    const unactivated = FIXTURES.B.cards.map((c) => resolveModuleState(c, TODAY, false));
+    expect(unactivated.map((v) => v.cta.kind)).toEqual(["activate_trial", "activate_trial"]);
+    expect(sharedCta(unactivated)).toBeNull();
   });
 });

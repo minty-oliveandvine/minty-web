@@ -12,12 +12,20 @@
  *
  *   past_due        "Subscription Suspended"             Reactivate Subscription (outline)
  *   pending_cancel  "Cancellation pending / Ends in N"   Resume Subscription     (filled)
+ *   needs_activation the trialing line, unchanged         Activate Subscription   (filled)
  *   trialing        "Trial / N days remaining" (red, 7 days or fewer)
  *                   "Trial Active / N days remaining" (black, more)
  *                                                        Manage Subscription     (filled)
  *   active          "Currently Active"                   Manage Subscription →   (link)
  *   trial_eligible  "Get Started / 30 days trial…"       Start Free Trial        (outline)
  *   expired         "Trial Expired"                      Activate Subscription   (outline)
+ *
+ * `needs_activation` is a module that HAS a trial or subscription on a company with no
+ * SUBSCRIBER: a trial is started by any admin and commits nobody, so the company gets a payer
+ * only when someone confirms billing on a billing account. It deliberately sits BELOW
+ * `trial_eligible` in that it never reaches a card that could still start a trial - the two
+ * are mutually exclusive on one card, and "Start Free Trial" stays the first thing a module
+ * with no trial offers. Its status line is `trialing`'s, verbatim: only the button differs.
  *
  * A trial that is closing (`trial_closing`) is still a trial here: it is the access gate that
  * ends a trial, never the date (Minty's `subscription-restart-screen` note).
@@ -26,10 +34,22 @@
 import type { ModuleCard, ModuleCode } from "@/features/subscription/api/moduleSettings";
 
 export type ModuleState =
-  "past_due" | "pending_cancel" | "trialing" | "active" | "trial_eligible" | "expired";
+  | "past_due"
+  | "pending_cancel"
+  | "needs_activation"
+  | "trialing"
+  | "active"
+  | "trial_eligible"
+  | "expired";
 
 /** What the CTA does; the hook maps each to a handler, the component to a label and a look. */
-export type ModuleCtaKind = "reactivate" | "resume" | "manage" | "start_trial" | "activate";
+export type ModuleCtaKind =
+  | "reactivate"
+  | "resume"
+  | "manage"
+  | "start_trial"
+  | "activate"
+  | "activate_trial";
 
 export type ModuleCtaVariant = "filled" | "outline" | "link";
 
@@ -60,6 +80,7 @@ export type ModuleView = {
 const CTA: Record<ModuleState, ModuleCta> = {
   past_due: { kind: "reactivate", label: "Reactivate Subscription", variant: "outline" },
   pending_cancel: { kind: "resume", label: "Resume Subscription", variant: "filled" },
+  needs_activation: { kind: "activate_trial", label: "Activate Subscription", variant: "filled" },
   trialing: { kind: "manage", label: "Manage Subscription", variant: "filled" },
   active: { kind: "manage", label: "Manage Subscription", variant: "link" },
   trial_eligible: { kind: "start_trial", label: "Start Free Trial", variant: "outline" },
@@ -108,19 +129,30 @@ export function daysLabel(days: number): string {
   return `${daysPhrase(days)} remaining`;
 }
 
-export function moduleState(card: ModuleCard): ModuleState {
+/**
+ * `hasSubscriber` is the page's `has_subscriber`, defaulting to `true` so a caller that has
+ * not got the page model behaves exactly as before. It only reaches a card that already has a
+ * trial or subscription: nothing about a module you could still start a trial on changes.
+ */
+export function moduleState(card: ModuleCard, hasSubscriber = true): ModuleState {
   if (card.subscription_status === "past_due") return "past_due";
   if (card.pending_cancel || card.cancel_at_period_end || card.trial_cancelled) {
     return "pending_cancel";
   }
-  if (card.subscription_status === "trialing") return "trialing";
+  if (card.subscription_status === "trialing") {
+    return hasSubscriber ? "trialing" : "needs_activation";
+  }
   if (card.subscription_status === "active") return "active";
   if (card.trial_eligible) return "trial_eligible";
   return "expired";
 }
 
-export function resolveModuleState(card: ModuleCard, today: Date): ModuleView {
-  const state = moduleState(card);
+export function resolveModuleState(
+  card: ModuleCard,
+  today: Date,
+  hasSubscriber = true,
+): ModuleView {
+  const state = moduleState(card, hasSubscriber);
   let daysRemaining: number | null = null;
   let status: ModuleStatusLine;
 
@@ -136,6 +168,9 @@ export function resolveModuleState(card: ModuleCard, today: Date): ModuleView {
         tone: "accent",
       };
       break;
+    // The same line for both: a trial nobody has confirmed is still a trial, with the
+    // same days left. Only the button under the card differs.
+    case "needs_activation":
     case "trialing":
       daysRemaining = daysUntil(card.period_end, today);
       status =
@@ -163,7 +198,11 @@ export function resolveModuleState(card: ModuleCard, today: Date): ModuleView {
     name: card.name,
     description: card.description,
     state,
-    live: state === "pending_cancel" || state === "trialing" || state === "active",
+    live:
+      state === "pending_cancel" ||
+      state === "needs_activation" ||
+      state === "trialing" ||
+      state === "active",
     status,
     daysRemaining,
     cta: CTA[state],

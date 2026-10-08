@@ -61,7 +61,11 @@ export type AppliedChange = {
 const NONE: AppliedChange = { needsCard: null, declined: null, refused: null };
 
 /** The API's 402 for a company on no billing account: "Choose a card before …" (a charge) or
- *  "Choose a billing account for this company." (consent) - never a decline. */
+ *  "Choose a billing account for this company." (consent) - never a decline.
+ *
+ *  Exported as `needsAccountChoice` below, because the module settings page asks the same
+ *  question of `activate-subscription`'s 402 and must classify it the same way. The API's
+ *  wording is load-bearing for this regex (`checkout.NO_ACCOUNT_FOR_COMPANY`). */
 function noCardNominated(err: unknown): boolean {
   return (
     err instanceof ApiError &&
@@ -72,6 +76,11 @@ function noCardNominated(err: unknown): boolean {
 
 function declinedBy(err: unknown): boolean {
   return err instanceof ApiError && err.status === 402 && !noCardNominated(err);
+}
+
+/** Whether this refusal is "pick a billing account and try again" rather than a decline. */
+export function needsAccountChoice(err: unknown): boolean {
+  return noCardNominated(err);
 }
 
 /** The modules the change touches, grouped by what the tick means for each. */

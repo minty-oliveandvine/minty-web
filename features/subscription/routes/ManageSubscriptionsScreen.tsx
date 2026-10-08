@@ -121,6 +121,7 @@ export function ManageSubscriptionsScreen(args: UseSubscriptionsListArgs) {
             onToggle: m.toggleRow,
             onStartTrial: m.askStartTrial,
             onSubscribe: m.subscribe,
+            onActivate: m.activateChange,
             onMenu,
             onTick: (_entity, code) => m.summary.toggleTick(code),
             onConfirmChange: m.confirmChange,

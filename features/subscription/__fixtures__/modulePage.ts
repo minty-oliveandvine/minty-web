@@ -193,8 +193,10 @@ function panelFor(cards: ModuleCard[]): ModulePanel {
 function page(cards: ModuleCard[], extra: Partial<ModulePage> = {}): ModulePage {
   return {
     entity_id: ENTITY_ID,
+    entity_name: "Olive & Vine Ltd",
     cards,
     can_manage_modules: true,
+    has_subscriber: true,
     payer: null,
     viewer: { name: "Olive Vine", initials: "OV" },
     next_payment_date: null,

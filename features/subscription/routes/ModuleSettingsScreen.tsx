@@ -17,6 +17,7 @@ import { getAuth } from "@/lib/auth";
 import { getModuleClaims, type ModuleClaims } from "@/lib/moduleClaims";
 import { settingsBackLink, settingsTabs } from "@/lib/settingsTabs";
 
+import { AccountPickerDialog } from "@/features/subscription/components/BillingAccountDialogs";
 import { ManagedByNotice } from "@/features/subscription/components/ManagedByNotice";
 import { ModuleCardGrid } from "@/features/subscription/components/ModuleCardGrid";
 import { PaymentFailedBanner } from "@/features/subscription/components/PaymentFailedBanner";
@@ -119,6 +120,7 @@ export function ModuleSettingsScreen(args: ModuleSettingsScreenProps) {
                     startTrial: m.askStartTrial,
                     manage: m.manage,
                     activate: m.activate,
+                    activateTrial: () => void m.activateTrial(),
                     resume: m.resume,
                     reactivate: m.reactivate,
                   }}
@@ -128,6 +130,26 @@ export function ModuleSettingsScreen(args: ModuleSettingsScreenProps) {
           </section>
         </div>
       </main>
+
+      {/* Activate Subscription: the same Billing Accounts sheet Manage Subscriptions asks
+          with, over this page, because a company with no subscriber is not in anybody's
+          billing relationship yet and the act is one request. */}
+      {m.accountAsk && (
+        <AccountPickerDialog
+          key={m.accountAsk.key}
+          data={m.accountAsk.data}
+          currentId={m.accountAsk.picked}
+          targets={m.accountAsk.targets}
+          busy={m.activateBusy}
+          error={m.accountAsk.error}
+          lead={m.accountAsk.lead}
+          onConfirm={(accountId) => void m.confirmActivate(accountId)}
+          onOpened={(opened) => {
+            if (opened.accountId) void m.confirmActivate(opened.accountId);
+          }}
+          onClose={m.dismissAccountAsk}
+        />
+      )}
 
       {m.trialPrompt && (
         <StartTrialDialog

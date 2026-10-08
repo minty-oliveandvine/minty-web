@@ -1,12 +1,12 @@
 /**
- * The module settings page of one company: one page model and ten actions.
+ * The module settings page of one company: one page model and eleven actions.
  *
  * `GET  /api/entities/{id}/modules`            the page model
  * `POST /api/entities/{id}/modules/{action}`    one of ModuleAction, JSON body per action
  *
  * Company-scoped: every call sends `X-Entity-Id` (the token may be unscoped when the page is
  * reached from the portal). minty-subscription-api's `billing/tests/test_contract.py` pins the same
- * ten names. NONE of them hands the browser to Stripe (the user, 2026-10-01): the actions that
+ * eleven names. NONE of them hands the browser to Stripe (the user, 2026-10-01): the actions that
  * did - `checkout`, `payment-method`, `manage-billing`, `checkout-complete`, `confirm-billing`
  * and the company-scoped `payment-methods*` - are gone. A card is only ever added through a
  * billing account, in the app (`AccountSheet`), and a company is billed to its account's card.
@@ -22,6 +22,7 @@ import { apiFetch } from "@/lib/apiClient";
 
 export const MODULE_ACTIONS = [
   "authorize-billing",
+  "activate-subscription",
   "restart-quote",
   "restart-billing",
   "start-trial",
@@ -77,9 +78,18 @@ export type ModuleCard = {
 
 export type ModulePage = {
   entity_id: string;
+  /** The company's name as the API holds it; "" when it has none recorded. */
+  entity_name: string;
   cards: ModuleCard[];
   /** Admin AND the payer (or no payer yet) - whether the CTAs render at all. */
   can_manage_modules: boolean;
+  /**
+   * Whether the company has a SUBSCRIBER at all. A trial is started by any admin and
+   * establishes no payer, so a running trial on `false` offers "Activate Subscription"
+   * where a confirmed one offers "Manage Subscription". `payer` cannot answer this: it is
+   * null both when nobody pays and when the viewer is the one who does.
+   */
+  has_subscriber: boolean;
   /** Who pays for this company when it is not the viewer; named in the notice. */
   payer: { user_id: string; name: string; email: string } | null;
   /** The person looking, for the header. */
@@ -186,4 +196,29 @@ export function restartBilling(
  */
 export function authorizeBilling(entityId: string): Promise<{ ok: true }> {
   return postModuleAction(entityId, "authorize-billing");
+}
+
+/**
+ * `activate-subscription`: confirm a started trial, which is what gives the company its
+ * SUBSCRIBER. `account` places it on one of the caller's billing accounts in the same
+ * request, so a chosen account and the payer it was chosen for cannot be left half-written.
+ *
+ * `charged` says which of the two the API did, and WHETHER is the API's to decide, not ours.
+ * Passing no `codes` confirms and never charges, which is what a still-running trial wants: a
+ * company can have one module trialling and another lapsed, and confirming the first must not
+ * buy back the second. `codes` names the lapsed modules to buy back, and the API still refuses
+ * (422) any it will not restart.
+ *
+ * A 402 "Choose a billing account…" / "Choose a card…" asks the picker again; any other 402 is
+ * the bank's decline. 409 means somebody else activated first.
+ */
+export function activateSubscription(
+  entityId: string,
+  accountId: string,
+  codes?: ModuleCode[],
+): Promise<{ ok: true; charged: boolean; restarted?: ModuleCode[] }> {
+  return postModuleAction(entityId, "activate-subscription", {
+    account: accountId,
+    ...(codes?.length ? { codes } : {}),
+  });
 }

@@ -45,6 +45,13 @@ export type RowHandlers = {
   onToggle: (entity: PortalEntity) => void;
   onStartTrial: (entity: PortalEntity, code: ModuleCode) => void;
   onSubscribe: (entity: PortalEntity, code: ModuleCode) => void;
+  /**
+   * A company nobody pays for yet: confirm its billing, which makes the viewer its subscriber.
+   * Asked from the OPEN row's Confirm Subscription Change slot (the user, 2026-10-08), never
+   * from the closed row, and it carries the ticks because it asks in the same section-06 modal
+   * a change does.
+   */
+  onActivate: (entity: PortalEntity, change: PendingChange) => void;
   onMenu: (entity: PortalEntity, item: MenuItem) => void;
   onTick: (entity: PortalEntity, code: ModuleCode) => void;
   onConfirmChange: (entity: PortalEntity, change: PendingChange) => void;
@@ -124,6 +131,9 @@ function Row({ row, focused, on }: { row: SubscriptionRow; focused: boolean; on:
         suspended ? "bg-[#f5f5f5]" : "bg-white"
       } ${focused ? "ring-2 ring-secondary" : ""}`}
     >
+      {/* The closed row carries no Activate button (the user, 2026-10-08): activating is asked
+          inside the OPEN row, where Confirm Subscription Change sits - see
+          SubscriptionSummaryRow. */}
       <p className="min-w-0 truncate text-xl font-bold text-black sm:text-[25px]">
         {row.entity.entity_name}
       </p>
@@ -212,6 +222,7 @@ function summaryHandlers(entity: PortalEntity, on: RowHandlers): SummaryRowHandl
     onStartTrial: (code) => on.onStartTrial(entity, code),
     onTick: (code) => on.onTick(entity, code),
     onConfirmChange: (change) => on.onConfirmChange(entity, change),
+    onActivate: (change) => on.onActivate(entity, change),
     onMenu: (item) => on.onMenu(entity, item),
     onChangePaymentMethod: () => on.onChangePaymentMethod(entity),
     onRetry: on.onRetrySummary,

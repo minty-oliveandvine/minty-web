@@ -137,6 +137,11 @@ export const TRIAL_NO_CHARGE = "No additional charges will apply during the tria
 export const NO_MODULE = "No module selected";
 export const NO_MODULES = "No modules selected";
 export const CONFIRM_CHANGE = "Confirm Subscription Change";
+/**
+ * What takes CONFIRM_CHANGE's place on a company with no SUBSCRIBER (the user, 2026-10-08):
+ * confirming billing is what gives it one, and nothing can be confirmed before that.
+ */
+export const ACTIVATE_SUBSCRIPTION = "Activate Subscription";
 
 const TONE: Record<ModuleCode, PlanTone> = { PETTY_CASH: "petty", PAYMENT_REQUEST: "payment" };
 
@@ -617,8 +622,12 @@ function cardFromList(m: PortalModule): ModuleCard {
 export function pageFromList(entity: PortalEntity): ModulePage {
   return {
     entity_id: entity.entity_id,
+    entity_name: entity.entity_name,
     cards: entity.modules.map(cardFromList),
     can_manage_modules: true,
+    // The list row cannot tell; the company page answers it. True keeps the CTAs as
+    // they were before a subscriber was something to be missing.
+    has_subscriber: true,
     payer: null,
     viewer: { name: "", initials: "" },
     next_payment_date: null,

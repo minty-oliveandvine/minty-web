@@ -125,6 +125,84 @@ describe("ManageSubscriptionsScreen", { timeout: 30_000 }, () => {
     vi.unstubAllGlobals();
   });
 
+  // A trial establishes no SUBSCRIBER (the user, 2026-10-08), and the list is built from the
+  // payer's own rows - so without this a company you just trialled would vanish from the one
+  // screen that answers "what am I running?". The API lists it with `has_subscriber: false`.
+  it("a company nobody pays for is listed, and the OPEN row offers Activate Subscription", async () => {
+    const [first, ...rest] = ENTITIES;
+    const unactivated = { ...first, subscriber: null, has_subscriber: false };
+    const posts: [string, unknown][] = [];
+    fetchMock.mockImplementation(async (input, init) => {
+      const url = new URL(String(input));
+      if (url.pathname.endsWith("/transfers")) return reply(200, { transfers: [] });
+      if (url.pathname === "/api/me/billing/accounts") return reply(200, ACCOUNTS);
+      if (init?.method === "POST") {
+        posts.push([url.pathname, JSON.parse(String(init.body ?? "{}"))]);
+        return reply(200, { ok: true, charged: false });
+      }
+      if (/^\/api\/entities\/[^/]+\/modules$/.test(url.pathname))
+        return reply(200, SUMMARY_FIXTURES.M44);
+      if (url.pathname === "/api/me/billing/entity-payment-method") return reply(200, WALLET);
+      return reply(200, subscriptionsPage([unactivated, ...rest]));
+    });
+    render(
+      <ToastProvider>
+        <ManageSubscriptionsScreen today={TODAY} />
+      </ToastProvider>,
+    );
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("status", { name: "Loading your subscriptions" }),
+      ).not.toBeInTheDocument(),
+    );
+
+    // The CLOSED row offers nothing (the user, 2026-10-08): activating is asked inside.
+    expect(
+      rowOf(unactivated.entity_name).queryByRole("button", { name: /Activate Subscription/ }),
+    ).toBeNull();
+
+    await userEvent.click(
+      screen.getByRole("button", { name: `Open ${unactivated.entity_name}` }),
+    );
+    const panel = within(
+      await screen.findByRole("region", { name: "Subscription Summary" }, AFTER_BEAT),
+    );
+    // Nothing ticked yet, so the panel offers NO act at all (the user, 2026-10-08: the button
+    // must not sit under "No pending changes").
+    expect(panel.queryByRole("button", { name: "Activate Subscription" })).toBeNull();
+    expect(panel.queryByRole("button", { name: "Confirm Subscription Change" })).toBeNull();
+
+    // Tick a module and it is Activate Subscription that appears - Confirm Subscription
+    // Change's slot, since a company with no subscriber has to get one before anything can be
+    // confirmed.
+    const item = screen.getByRole("region", { name: "Subscription Summary" }).closest("li")!;
+    await userEvent.click(
+      within(item).getByRole("checkbox", { name: "Petty Cash subscription" }),
+    );
+    const activate = await within(item).findByRole(
+      "button",
+      { name: "Activate Subscription" },
+      AFTER_BEAT,
+    );
+    expect(within(item).queryByRole("button", { name: "Confirm Subscription Change" })).toBeNull();
+    await userEvent.click(activate);
+
+    // It asks in the SAME section-06 modal a change asks in (the user, 2026-10-08) - the person
+    // chose the same modules and reads the same words - and only then opens Billing Accounts.
+    const modal = within(await screen.findByRole("dialog"));
+    expect(modal.getByRole("button", { name: /^Confirm Change/ })).toBeVisible();
+    await userEvent.click(modal.getByRole("button", { name: /^Confirm Change/ }));
+
+    const sheet = within(await screen.findByRole("dialog", { name: "Billing Accounts" }));
+    await userEvent.click(sheet.getByRole("button", { name: "Confirm" }));
+
+    await waitFor(() => expect(posts).toHaveLength(1));
+    // ONE request: it places the company, records consent and makes the viewer its
+    // subscriber. No `codes`, so nothing is charged.
+    expect(posts[0][0]).toBe(`/api/entities/${unactivated.entity_id}/modules/activate-subscription`);
+    expect(posts[0][1]).toEqual({ account: "acc-company-a" });
+  });
+
   it("04-A: the banner, the transfer card, the sections and their counts", async () => {
     await show(subscriptionsPage(), INCOMING_TRANSFERS);
 
