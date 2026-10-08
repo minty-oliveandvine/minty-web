@@ -398,18 +398,21 @@ docs/features/company-settings.md). What is on it:
   _Go back_, Escape and the backdrop post nothing. A refusal is a toast and the dialog stays
   open so it can be tried again. All three places a trial can be started (this page, the list's
   row, the open row's card) now ask the same way; nothing starts a trial on one press.
-- **Confirming leaves for the list** (2026-09-23). The trial's news is told where the design
-  tells it - Figma RV11, the company's row in Manage Subscriptions saying "Congratulations! /
-  <Module> free trial has started — 30 days, free. / Nothing is being charged." - so _Confirm_
-  posts and then pushes `moduleRoutes(id).started(code)` = `/subscription/subscriptions?entity=
-  <id>&started=<code>` instead of refetching this page. The list rebuilds that row from the
-  company's page model ALONE (`lib/changeResult.ts::startedTrialResult`, beside the handover's
-  `transferredResult`), since it has no before-and-after of its own; it refuses to celebrate
-  unless that module really is on trial and not since cancelled, so a link opened in another
-  state simply shows the ordinary row. Starting a trial does NOT make the person the company's
-  payer (the user, 2026-10-08) - it is free and commits nobody - and the company is in the list
-  to land on because the API lists the companies nobody pays for to their admins. A refusal
-  never navigates.
+- **Confirming lands HERE, in the cards' place** (the user, 2026-10-08) - the same way an
+  activation does, and for the same reason: a journey that began on this page should not end on
+  another, under a button offering to go back to a third. _Confirm_ posts, reads the page model
+  again and diffs it against the one it had, through `buildChangeResult({kind:"start_trial",
+  code}, …)`; the outcome reads `"started"`, so the frame is the design's RV11 words -
+  "Congratulations! / <Module> free trial has started — 30 days, free. / Nothing is being
+  charged." - drawn by `ChangeResultRow` in a one-item list. Its button says **Back to Company**
+  and leaves for `/entity/<shortid>/<name>`.
+
+  It used to push `moduleRoutes(id).started(code)` = `/subscription/subscriptions?entity=<id>&
+  started=<code>` and let the list rebuild the row from the company's page model alone
+  (`lib/changeResult.ts::startedTrialResult`). **Nothing builds that URL any more** -
+  `moduleRoutes.started` is gone - but the list still READS `?started=`, so an old link still
+  lands as it did. Starting a trial does NOT make the person the company's payer (the user,
+  2026-10-08): it is free and commits nobody. A refusal is a toast and nothing lands.
 - **The dialog is the design's, with the design's own styling fixed** (2026-09-23). The copy is
   Figma 04-G/04-H word for word - "You've activated free trial for <Module>." and "after trial
   period" without the article - by the user's decision, over the grammar. Its title lockup is a
@@ -432,16 +435,40 @@ docs/features/company-settings.md). What is on it:
   SUBSCRIBER, so a company running one that nobody has confirmed shows *Activate Subscription*
   in place of *Manage Subscription* (`moduleState`'s `needs_activation`, keyed on the page
   model's `has_subscriber`; the card's own line - "Trial / N days remaining" - is unchanged,
-  only the button differs). Pressing it opens the same Billing Accounts sheet Manage
-  Subscriptions asks with, mounted over this page, and Confirm posts ONE request
-  (`activate-subscription` with the account) which places the company, records consent and makes
-  the viewer its subscriber. It charges nothing - no `codes` are sent, and naming codes is how a
-  LAPSED module is bought back, so confirming a running trial can never buy back a sibling.
-  An account with no card cannot be picked even though nothing is charged: a company confirmed
-  onto an account with nothing to charge would look activated and its trial would still expire.
+  only the button differs). Pressing it asks in the **same section-06 modal** a change asks in,
+  then opens the same Billing Accounts sheet Manage Subscriptions asks with, mounted over this
+  page; Confirm posts ONE request (`activate-subscription` with the account) which places the
+  company, records consent and makes the viewer its subscriber. It charges nothing - every
+  module it confirms is a RUNNING trial, whose seam is `confirm_trial`, which is exactly what
+  that request already does; and no `codes` are sent, naming codes being how a LAPSED module is
+  bought back. (The list's twin applies its ticks afterwards and so **can** charge; this page has
+  no ticks. SS11.) An account with no card cannot be picked even so: a company confirmed onto an
+  account with nothing to charge would look activated and its trial would still expire.
   A 402 re-opens the sheet with the API's own sentence (the refusal rolled the stamp back, so
   pressing again is safe); a 409 means somebody else activated first and the page reloads.
   *Start Free Trial* is untouched and still wins on a module with no trial yet.
+
+  **It lands on its result in the cards' place** (2026-10-08), not on a toast. The page model is
+  read again - `fetchPageModel`, so `?fixture=` stays offline - and diffed against the one
+  captured **when the act began** (a 402 re-asks the sheet, and a reload in between must not
+  change what the diff reads against), through the same `buildChangeResult` the list uses. A
+  confirmed trial reads `"confirmed"`, so the frame is 05.C's celebrate row: "Congratulations!",
+  one line per module, the money line. `ChangeResultRow` draws it, wrapped in a one-item list -
+  it is the only result view that draws `lines` and `money`, which for a congratulation are all
+  there is. The settings chrome stays (the tabs are the way out); the heading, the blurb, the
+  banner and the cards do not.
+
+  **Its button says "Back to Company"** and leaves for `/entity/<shortid>/<name>` (`companyHome`),
+  because that is where this journey began - a plain `router.push`, with no handoff: the list
+  trades a company-scoped token for an unscoped one because the portal belongs to the PAYER,
+  while the entity page belongs to the company and this token is already scoped to it. Note that
+  page redirects straight into a module's app when the company has only one module on
+  (`ModuleChoiceScreen`); accepted (the user, 2026-10-08).
+
+  **When both cards await activation the page draws ONE button**, centred, as it does for a
+  shared *Manage Subscription* - the act is per company. It is dispatched through `press` like
+  any other CTA; it was hard-wired to `manage` and silently navigated to the list instead of
+  activating, which was a bug (fixed 2026-10-08).
 - **Activate / Resume / Reactivate on a LAPSED module are not pages** (2026-09-23). Each is ONE module's pending
   change, which the open row already says, so the CTA lands on the list with that company's row
   open and that module **ticked**: `moduleRoutes(id).activate|resume|reactivate(code)` all build
@@ -504,7 +531,8 @@ re-homed and redrawn to Figma section "04 · Manage Subscriptions — the payer 
   trialled would vanish from the one screen that answers "what am I running?". The API decides
   which (`has_subscriber` false, `subscriber` null). The CLOSED row shows nothing extra; the act
   is asked **inside the open row**, in _Confirm Subscription Change_'s place (§11) — per company,
-  not per module, because confirming billing confirms all of it. Newest first (`created_at` on the row, an addition for the step-3 API; absent, the
+  not per module, because confirming billing confirms all of it. **It can charge**, since the
+  ticks are applied with it (SS11). Newest first (`created_at` on the row, an addition for the step-3 API; absent, the
   API's order). The hook walks every page of `/api/me/subscriptions` (`per_page=100`) and
   reads the transfer requests alongside (`/api/me/subscriptions/transfers`; a failure there
   never takes the list down). Search (300 ms debounce, the same fields minty-payment-request-web
@@ -755,8 +783,8 @@ button in 05·B lands". Built 2026-09-22.
   **"Congratulations!"** in the row — "<Module> is confirmed. Billing starts the day its trial
   ends." / "<Module> is active. Your card has been charged." / "<Module> is restored and billing
   carries on as before." / "<Module> free trial has started — 30 days, free." — where the list's
-  _Start Trial_ (04-G) now lands too - and the module settings page's, which leaves for the
-  list rather than refreshing itself (`?started=<code>` beside `?entity=`; see §9).
+  _Start Trial_ (04-G) lands too. The module settings page draws the same frames with the same
+  builder, in place (§9): since 2026-10-08 neither of its acts leaves for the list.
 - **The line of money** under the row's lines is the panel's own arithmetic
   (`subscriptionSummary.ts` `forecast`, in a sentence): "Nothing is being charged." / "HK$400 a
   month." / "Nothing charged today · HK$400 a month when the trial ends." / "HK$280 a month now ·
@@ -845,14 +873,28 @@ The dialog family (`components/ui/ModalFrame`, `components/ui/ConfirmDialog`, `L
   have the you've chosen modal too") - the person is choosing the same modules either way and
   should read the same words - and only its Confirm goes on to the sheet. `buildChangeModal` can
   answer null where `pendingChange` does not (two different computations), and the button must
-  not go dead with it: no modal, straight to the sheet. Then it
-  opens the same **Billing Accounts** sheet, and Confirm posts `activate-subscription` with the
-  account - one request that places the company, records consent and stamps every module row
-  with the viewer. **It charges nothing**: no `codes` are sent, and naming codes is how a lapsed
-  module is bought back, so activating can never quietly buy back a sibling. An account with no
-  card cannot be picked even so - a company confirmed onto an account with nothing to charge
-  would look activated and its trial would still expire. Any pending ticks stay pending; the
-  list reloads and the button goes back to confirming them.
+  not go dead with it: no modal, straight to the sheet (it carries its ticks either way). Then
+  it opens the same **Billing Accounts** sheet.
+
+  **Its Confirm does TWO things, in order** (the user, same day: "the modal said you've chosen
+  X, so do X"). First `activate-subscription` with the account - one request that places the
+  company, records consent and stamps every module row with the viewer. Then the **same apply
+  pass as any other change**, on that same account, which `cardChosen` makes it. So the two acts
+  differ in ORDER, not in outcome, and activating **can charge** - a ticked lapsed module is
+  bought back, which is what the modal said would happen. Either way it lands on the same 05·C
+  result, and its button still reads *Back to Manage Subscriptions*: this journey began in the
+  portal.
+
+  Two rules hold it together. The activation is sent with **no `codes`** - naming them is its
+  own way to buy a lapsed module back, and the apply pass already owns that path, so a lapsed
+  module is charged **exactly once**. And a decline afterwards is **not rolled back**: the
+  company keeps its subscriber and its ticks stay pending, and 06·B's *Try again* re-runs only
+  the charge, because activation lives in `confirmAccount` and the retry re-enters `apply`.
+  Nothing below the activation runs when the activation itself fails, which is what stops the
+  apply pass charging a company that never got a subscriber. An account with no card cannot be
+  picked even so - a company confirmed onto an account with nothing to charge would look
+  activated and its trial would still expire.
+
 - **Every change asks in its modal first; one that bills then asks which account pays**
   (2026-09-29, the user's calls, in order: "confirm should then ask for a billing account to
   nominate a payment method"; then for a while the sheet came first and the modal only once

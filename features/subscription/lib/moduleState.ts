@@ -210,15 +210,27 @@ export function resolveModuleState(
 }
 
 /**
- * Frames 03-B and 03-C: when every card carries the SAME manage CTA, the page draws it once,
- * centred between the cards, instead of once per card. Returns that shared CTA, or null when
- * the cards keep their own.
+ * The CTAs that act on the COMPANY rather than on one module, so two of them side by side would
+ * be the same button twice. `manage` opens the company's row; `activate_trial` confirms billing
+ * for the company, which stamps every one of its module rows at once (the user, 2026-10-08:
+ * "when both modules are active it should only have 1 activate subscription").
+ */
+const COMPANY_WIDE: ReadonlySet<ModuleCtaKind> = new Set<ModuleCtaKind>([
+  "manage",
+  "activate_trial",
+]);
+
+/**
+ * Frames 03-B and 03-C: when every card carries the SAME company-wide CTA, the page draws it
+ * once, centred between the cards, instead of once per card. Returns that shared CTA, or null
+ * when the cards keep their own - which the per-MODULE CTAs always do, since Start Free Trial
+ * on Petty Cash is a different act from Start Free Trial on Payment Request.
  */
 export function sharedCta(views: ModuleView[]): ModuleCta | null {
   if (views.length < 2) return null;
   const [first, ...rest] = views;
-  if (first.cta.kind !== "manage") return null;
-  return rest.every((v) => v.cta.kind === "manage" && v.cta.variant === first.cta.variant)
+  if (!COMPANY_WIDE.has(first.cta.kind)) return null;
+  return rest.every((v) => v.cta.kind === first.cta.kind && v.cta.variant === first.cta.variant)
     ? first.cta
     : null;
 }

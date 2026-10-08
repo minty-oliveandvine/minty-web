@@ -354,9 +354,10 @@ function SummaryPanel({
 
           BOTH ALSO ASK IN THE SAME SECTION-06 MODAL (the user, same day) - the person is
           choosing the same modules either way and should read the same words - and both go on
-          to Billing Accounts. What lands differs: a change is applied and may charge;
-          activating only confirms billing, which charges nothing, and then the row is read
-          again (the ticks go with that read, as they do after any applied change). */}
+          to Billing Accounts. They differ in ORDER, not in outcome: activating confirms
+          billing FIRST, giving the company its subscriber, and then applies the very ticks the
+          modal named (the user, same day: "the modal said you've chosen X, so do X). So it CAN
+          charge, and either way the row lands on its 05.C result. */}
       {view.pendingChange &&
         (needsActivation ? (
           <button

@@ -201,9 +201,23 @@ describe("sharedCta / paymentFailed", () => {
     expect(paymentFailed(views("E"))).toBe(false);
   });
 
-  it("two cards awaiting activation keep their own button, so one press settles both", () => {
+  it("two cards awaiting activation share ONE button - the act is per company", () => {
     const unactivated = FIXTURES.B.cards.map((c) => resolveModuleState(c, TODAY, false));
     expect(unactivated.map((v) => v.cta.kind)).toEqual(["activate_trial", "activate_trial"]);
-    expect(sharedCta(unactivated)).toBeNull();
+    expect(sharedCta(unactivated)).toEqual({
+      kind: "activate_trial",
+      label: "Activate Subscription",
+      variant: "filled",
+    });
+  });
+
+  it("per-MODULE CTAs are never shared, however alike", () => {
+    // Start Free Trial on Petty Cash is a different act from Start Free Trial on Payment
+    // Request, so two of them stay two buttons.
+    const eligible = FIXTURES.A.cards.map((c) => ({
+      ...resolveModuleState(c, TODAY),
+      cta: { kind: "start_trial" as const, label: "Start Free Trial", variant: "outline" as const },
+    }));
+    expect(sharedCta(eligible)).toBeNull();
   });
 });

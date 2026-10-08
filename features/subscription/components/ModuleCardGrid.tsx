@@ -6,7 +6,10 @@
  */
 
 import type { ModuleCode } from "@/features/subscription/api/moduleSettings";
-import type { ModuleCta as ModuleCtaModel, ModuleView } from "@/features/subscription/lib/moduleState";
+import type {
+  ModuleCta as ModuleCtaModel,
+  ModuleView,
+} from "@/features/subscription/lib/moduleState";
 
 import { ModuleCard } from "@/features/subscription/components/ModuleCard";
 import { ModuleCta } from "@/features/subscription/components/ModuleCta";
@@ -70,7 +73,13 @@ export function ModuleCardGrid({
           </li>
         ))}
       </ul>
-      {canManage && shared && <ModuleCta cta={shared} onClick={on.manage} />}
+      {/* Dispatched through `press` like any other CTA, not hard-wired to `on.manage`: the
+          shared slot carries `activate_trial` too since both cards awaiting activation are one
+          company-wide act. The code is irrelevant for either kind - that is what COMPANY_WIDE
+          means - but it is `press` that knows which handler to call. */}
+      {canManage && shared && views.length > 0 && (
+        <ModuleCta cta={shared} onClick={press(shared, views[0].code, on)} />
+      )}
     </div>
   );
 }

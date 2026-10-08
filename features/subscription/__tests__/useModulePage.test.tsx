@@ -94,9 +94,11 @@ describe("useModulePage", () => {
     expect(result.current.error).toBe(NOT_WIRED_YET);
   });
 
-  it("a trial is asked about first, then posted, then the list is where it lands", async () => {
+  it("a trial is asked about first, then posted, then it lands HERE", async () => {
+    // The trial now shows on Payment Request, so the after-model is frame B (both trialing).
     fetchMock.mockResolvedValueOnce(reply(200, FIXTURES.A));
     fetchMock.mockResolvedValueOnce(reply(200, { modules: { PAYMENT_REQUEST: true } }));
+    fetchMock.mockResolvedValueOnce(reply(200, FIXTURES.B));
     const { result } = renderHook(() => useModulePage({ entityId: "e1", today: TODAY }), {
       wrapper,
     });
@@ -117,11 +119,11 @@ describe("useModulePage", () => {
     expect(String(url)).toBe(`${API}/start-trial`);
     expect(init?.method).toBe("POST");
     expect(JSON.parse(String(init?.body))).toEqual({ codes: ["PAYMENT_REQUEST"] });
-    // The news is told on the list's row (RV11), so this page is left, not read again.
-    expect(fetchMock).toHaveBeenCalledTimes(2);
-    expect(push).toHaveBeenCalledWith(
-      "/subscription/subscriptions?entity=e1&started=PAYMENT_REQUEST",
-    );
+    // The news is told HERE now (the user, 2026-10-08), as an activation's is: the page model
+    // is read again and the result lands in the cards' place. Nothing navigates.
+    await waitFor(() => expect(result.current.result).toBeTruthy());
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(push).not.toHaveBeenCalled();
     expect(result.current.busyCode).toBeNull();
   });
 

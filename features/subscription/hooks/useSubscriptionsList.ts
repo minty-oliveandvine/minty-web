@@ -29,6 +29,16 @@
  * only ever added through a billing account ("New billing account", in place), never on a
  * Stripe-hosted page (the user, 2026-10-01).
  *
+ * ACTIVATION IS A THIRD WAY IN (the user, 2026-10-08). A company with no SUBSCRIBER shows
+ * Activate Subscription in Confirm's slot; it asks in the same modal, opens the same sheet, and
+ * then does TWO things in order: `activate-subscription` on the account picked, which gives the
+ * company its subscriber, and then the same apply pass as any other change - so it CAN charge,
+ * and it lands on the same 05.C result. Two rules hold it together: the activation is sent with
+ * NO `codes`, so a lapsed module is bought back exactly once (by `restart-billing` in the apply
+ * pass, the one charging path); and a decline afterwards is NOT rolled back - the company keeps
+ * its subscriber and its ticks, and 06.B's Try again re-runs only the charge, because activation
+ * lives in `confirmAccount` and not in `apply`.
+ *
  * The ⋮'s *Cancel subscription* and *Reactivate* (05·D, on a closed row or the open one) are
  * the same ticks - every ACTIVE module unticked, every module that is not ticked - so they open
  * the row, set those ticks and ask exactly as that change's button would: with its modal, and
@@ -61,7 +71,11 @@ import { isEntityScoped } from "@/lib/auth";
 import { redirectToHandoff } from "@/lib/handoff";
 import { useToast } from "@/components/ui/Toast";
 
-import { applyChange, billsAnything, needsAccountChoice } from "@/features/subscription/api/moduleChanges";
+import {
+  applyChange,
+  billsAnything,
+  needsAccountChoice,
+} from "@/features/subscription/api/moduleChanges";
 import {
   activateSubscription,
   getModulePage,
@@ -131,20 +145,29 @@ export type TrialPrompt = { entity: PortalEntity; code: ModuleCode; moduleName: 
 /** Where the last change landed: the company and its result screen. */
 export type ListResult = { entity: PortalEntity; result: ChangeResult };
 
-/** A change asked about and not yet confirmed: the company, the ticks, the modal's words, and
- * the page model the change is read against. */
-export type ChangePrompt = {
+/**
+ * Everything `apply` needs to make a change: the company, the ticks, and the page model the
+ * change is read against. Narrower than the modal's prompt ON PURPOSE - an activation whose
+ * modal could not be built still has to carry its ticks to the apply pass, and the sheet and
+ * the declined dialog hold this rather than the fuller shape for the same reason.
+ */
+export type ApplyRequest = {
   entity: PortalEntity;
   change: PendingChange;
-  modal: ChangeModal;
   page: ModulePage;
   /** The card of the billing account picked to pay for it ("Visa 4242") - what 06·B names. */
   card?: string | null;
+};
+
+/** A change asked about and not yet confirmed: an `ApplyRequest` plus the modal's own words. */
+export type ChangePrompt = ApplyRequest & {
+  modal: ChangeModal;
   /**
-   * The company has no SUBSCRIBER, so the act behind this modal is ACTIVATION, not a change.
-   * It asks in the same section-06 modal (the user, 2026-10-08: "activate subscription should
-   * have the you've chosen modal too") and its Confirm goes to the same Billing Accounts sheet
-   * - but what lands is `activate-subscription`, which charges nothing.
+   * The company has no SUBSCRIBER, so the act behind this modal is ACTIVATION FIRST. It asks in
+   * the same section-06 modal (the user, 2026-10-08: "activate subscription should have the
+   * you've chosen modal too") and its Confirm goes to the same Billing Accounts sheet; what
+   * lands is `activate-subscription` and THEN the ticked change, applied on the account just
+   * picked (the user, same day: the modal said "you've chosen X", so X happens).
    */
   activate?: boolean;
 };
@@ -167,7 +190,7 @@ export type AccountStep = {
 type AccountAsk = {
   entity: PortalEntity;
   /** The change waiting on the pick; null when the pick IS the whole ask (the panel's _Change_). */
-  prompt: ChangePrompt | null;
+  prompt: ApplyRequest | null;
   data: BillingAccounts;
   picked: string | null;
   error: string | null;
@@ -184,7 +207,7 @@ type AccountAsk = {
 };
 
 /** The bank declined the charge of a change: what was being applied, to try again. */
-export type DeclinedPrompt = { prompt: ChangePrompt; message: string; autoRetry: boolean };
+export type DeclinedPrompt = { prompt: ApplyRequest; message: string; autoRetry: boolean };
 
 /** A way out of the open row asked about while its ticks are pending: what happens on Discard. */
 export type LeavePrompt = { proceed: () => void };
@@ -597,12 +620,12 @@ export function useSubscriptionsList({
 
   /**
    * "Activate Subscription" on a row nobody pays for: the same sheet, asked for a different
-   * act. Confirming it is one request - the company is placed on the account, consent is
-   * recorded, and the viewer becomes its subscriber - and nothing is charged, because the
-   * trial it confirms still has its free days.
+   * act. Confirming it places the company on the account, records consent and makes the viewer
+   * its subscriber - and THEN applies the ticks that put the button there, on that same
+   * account (see `confirmAccount`). The ticks travel in `prompt`, which is why this takes one.
    */
   const openActivate = useCallback(
-    async (entity: PortalEntity) => {
+    async (entity: PortalEntity, prompt: ApplyRequest | null) => {
       if (changeBusy) return;
       setChangeBusy(true);
       try {
@@ -613,7 +636,8 @@ export function useSubscriptionsList({
         setChangePrompt(null);
         setAccountAsk({
           entity,
-          prompt: null,
+          // The ticks travel with it: the sheet's Confirm activates AND THEN applies them.
+          prompt,
           data,
           picked,
           error: null,
@@ -658,7 +682,7 @@ export function useSubscriptionsList({
       const before = summary.page;
       if (!before || changeBusy) return;
       if (!buildChangeModal(before, change.codes)) {
-        void openActivate(entity);
+        void openActivate(entity, { entity, change, page: before, card: null });
         return;
       }
       askChange(entity, change, true);
@@ -722,7 +746,7 @@ export function useSubscriptionsList({
   // - the account picked may have just lost its card - and it takes the asking UI's place only
   // once that read is in (never a blank moment). The summary is NOT reloaded: the ticks stay.
   const askAgainForCard = useCallback(
-    async (prompt: ChangePrompt, error: string) => {
+    async (prompt: ApplyRequest, error: string) => {
       const { entity } = prompt;
       let data: BillingAccounts;
       try {
@@ -760,7 +784,7 @@ export function useSubscriptionsList({
   // 06·B, "Billing Accounts" asked again, a toast - so a payment never runs with nothing on the
   // screen saying so.
   const apply = useCallback(
-    async (prompt: ChangePrompt) => {
+    async (prompt: ApplyRequest) => {
       const { entity, change, page: before } = prompt;
       const closeAsking = () => {
         setChangePrompt(null);
@@ -818,7 +842,7 @@ export function useSubscriptionsList({
     // subscriber, so confirming billing is the act, and `billsAnything` would send a
     // free-trial-only selection straight past the sheet with nothing to nominate.
     if (changePrompt.activate) {
-      await openActivate(changePrompt.entity);
+      await openActivate(changePrompt.entity, changePrompt);
       return;
     }
     if (billsAnything(changePrompt.page, changePrompt.change.codes)) {
@@ -840,10 +864,15 @@ export function useSubscriptionsList({
       // A refusal of the last try is not the answer to this one.
       setAccountAsk((ask) => ask && { ...ask, error: null });
 
+      // ACTIVATION IS A PRELUDE, not a branch that returns. It gives the company its
+      // subscriber on the account just picked, and then the ticks that put the button there
+      // are applied on that same account by the shared tail below - the user, 2026-10-08: the
+      // modal said "you've chosen X", so X happens.
+      //
+      // `activateSubscription` is sent WITHOUT `codes` on purpose: naming them is its own way
+      // to buy a lapsed module back, and `applyChange` below already does that through
+      // `restart-billing`. One charging path, so a lapsed module is bought back exactly once.
       if (intent === "activate") {
-        // ONE request, which places the company, records consent and makes the viewer its
-        // subscriber. No `codes`: naming them is how a LAPSED module is bought back, and
-        // confirming a company must not quietly charge for one.
         try {
           await activateSubscription(entity.entity_id, accountId);
         } catch (err) {
@@ -859,10 +888,30 @@ export function useSubscriptionsList({
           setChangeBusy(false);
           return;
         }
-        setAccountAsk(null);
-        setChangeBusy(false);
-        showToast(`Billing confirmed for ${entity.entity_name}. You are its subscriber.`);
-        reload();
+        // NOTHING BELOW RUNS ON A FAILED ACTIVATION - that is what stops the apply pass
+        // charging a company that never got a subscriber.
+        if (!prompt) {
+          // No ticks to apply. Unreachable now that both entry points carry them, kept so a
+          // third caller degrades to the old behaviour rather than falling through to `apply`
+          // with nothing.
+          setAccountAsk(null);
+          setChangeBusy(false);
+          showToast(`Billing confirmed for ${entity.entity_name}. You are its subscriber.`);
+          reload();
+          return;
+        }
+        // The card the account charges, read from the sheet's own data: there is no
+        // `moveCompanyToAccount` answer here (activation places the company itself), and
+        // `accounts` carries a freshly opened account whose card the stale ask has never seen.
+        // Naming it is what tells `applyChange` a card was chosen.
+        const opened = (accounts ?? accountAsk.data).accounts.find((a) => a.id === accountId);
+        // No toast: `apply` lands the result, and the same news twice over it reads as a flow
+        // that does not believe in its own result screen. The sheet stays up, busy, until
+        // `apply`'s `closeAsking()` replaces it with the answer.
+        await apply({
+          ...prompt,
+          card: opened?.card ? shortCardName(opened.card.brand_label, opened.card.last4) : null,
+        });
         return;
       }
 
@@ -889,7 +938,9 @@ export function useSubscriptionsList({
       const account =
         placed.accounts.find((a) => a.id === accountId) ??
         (accounts ?? accountAsk.data).accounts.find((a) => a.id === accountId);
-      const card = account?.card ? shortCardName(account.card.brand_label, account.card.last4) : null;
+      const card = account?.card
+        ? shortCardName(account.card.brand_label, account.card.last4)
+        : null;
       await apply({ ...prompt, card });
     },
     [accountAsk, changeBusy, apply, summary, showToast, reload],

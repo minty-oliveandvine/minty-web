@@ -6,7 +6,7 @@
  * so extraction into an app that mounts it at `/` is a one-line change here (README.md).
  */
 
-import { companySettingsPath } from "@/lib/hubPaths";
+import { companyPath, companySettingsPath } from "@/lib/hubPaths";
 
 export const SUBSCRIPTION_BASE_PATH = "/subscription";
 
@@ -58,8 +58,7 @@ export const BILLING = {
   account: ({ id, entity }: { id?: string | null; entity?: string | null } = {}) =>
     withParams(PORTAL.billing, { account: id, entity }),
   // A card is added ON an account or not at all - so the account is not optional here.
-  add: (accountId: string) =>
-    withParams(subscriptionPath("/billing/add"), { account: accountId }),
+  add: (accountId: string) => withParams(subscriptionPath("/billing/add"), { account: accountId }),
   edit: (paymentMethod: string, accountId?: string | null) =>
     withParams(subscriptionPath("/billing/edit"), { card: paymentMethod, account: accountId }),
   added: (paymentMethod: string, accountId?: string | null) =>
@@ -71,6 +70,16 @@ export const BILLING = {
 /** The module settings page of one company (Flask's settings/modules, re-homed): NOT under the
  * feature's mount - since phase 2 it is the Module tab among the company's settings,
  * `/entity/<shortid>/<name>/settings/modules` (lib/hubPaths.ts spells the company's pages). */
+/**
+ * The company's OWN page - `/entity/<shortid>/<name>`, Choose Module Type. Where the module
+ * settings journey came from, so where its result screen goes back to. Note it does not always
+ * render: a company with exactly one module on redirects straight into that module's app
+ * (`features/entities/routes/ModuleChoiceScreen`).
+ */
+export function companyHome(entityId: string, entityName: string): string {
+  return companyPath(entityId, entityName);
+}
+
 export function modulesPath(entityId: string, entityName: string): string {
   return companySettingsPath(entityId, entityName, "modules");
 }
@@ -94,13 +103,10 @@ export function moduleRoutes(entityId: string) {
      * portal's list (section 04) with this company's row, so this is the list, not a sub-page.
      */
     manage: `${PORTAL.subscriptions}?entity=${encodeURIComponent(entityId)}`,
-    /**
-     * Where a trial started HERE lands: the same list, with the company's row open on the
-     * "Congratulations!" result (Figma RV11). `started` names the module, because the list has
-     * no before-and-after of its own to read the news from.
-     */
-    started: (code: string) =>
-      `${PORTAL.subscriptions}?entity=${encodeURIComponent(entityId)}&started=${encodeURIComponent(code)}`,
+    // `started` is GONE (2026-10-08). A trial begun on the module settings page used to land on
+    // the list's row (Figma RV11, `?started=<code>`); it now lands in place on the page it was
+    // begun from, as an activation does. The list still READS `?started=` so an old link still
+    // works, but nothing builds one any more.
     /**
      * Activate / Resume / Reactivate all mean the same thing: ONE module's pending change,
      * which the open row already expresses. So they are not pages of their own - they are the

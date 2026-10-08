@@ -11,17 +11,10 @@
 // alert outside the page.
 import { expect, test, type Page } from "@playwright/test";
 
-import {
-  SUBSCRIPTION_API_URL,
-  bounceFlaskHandoff,
-  credentials,
-  handoff,
-  requireApp,
-  storedScope,
-  stubBillingApi,
-} from "../../../e2e/helpers";
-import { FIXTURES, NON_MANAGER, WALLET, type FixtureFrame } from "../__fixtures__/modulePage";
-import { ENTITIES, subscriptionsPage } from "../__fixtures__/subscriptions";
+import { SUBSCRIPTION_API_URL, credentials, handoff, requireApp } from "../../../e2e/helpers";
+import { ACCOUNTS } from "../__fixtures__/billing";
+import { FIXTURES, NON_MANAGER, type FixtureFrame } from "../__fixtures__/modulePage";
+
 import type { ModulePage } from "../api/moduleSettings";
 
 const STUB_CREDS = {
@@ -68,31 +61,6 @@ async function stubApi(page: Page, model: ModulePage, next?: ModulePage) {
  * The payer's list holding exactly this company - what the browser reads when a trial started
  * here lands on the list. The id must be the one the token carries or there is no row to open.
  */
-async function stubList(page: Page, entityId: string, entityName: string) {
-  const list = subscriptionsPage([
-    {
-      ...ENTITIES[0],
-      entity_id: entityId,
-      entity_name: entityName,
-      settings_path: `/entity/settings/module/${entityId}`,
-    },
-  ]);
-  const json = (data: unknown) => ({
-    status: 200,
-    contentType: "application/json",
-    body: JSON.stringify(data),
-  });
-  await page.route(`${SUBSCRIPTION_API_URL}/api/me/subscriptions/transfers`, (route) =>
-    route.fulfill(json({ transfers: [] })),
-  );
-  await page.route(`${SUBSCRIPTION_API_URL}/api/me/subscriptions?*`, (route) =>
-    route.fulfill(json(list)),
-  );
-  await page.route(`${SUBSCRIPTION_API_URL}/api/me/billing/entity-payment-method?*`, (route) =>
-    route.fulfill(json(WALLET)),
-  );
-}
-
 const frame = (letter: FixtureFrame): ModulePage => FIXTURES[letter];
 const body = (page: Page) => page.getByRole("main");
 
@@ -140,15 +108,9 @@ test.describe("module settings page", () => {
     await expect(body(page).getByRole("alert")).toHaveCount(0);
   });
 
-  test("Start Free Trial asks first, then posts and lands on the Congratulations row", async ({
-    page,
-  }) => {
+  test("Start Free Trial asks first, then posts and lands in place", async ({ page }) => {
     const c = creds();
-    // Every billing route this journey does not stub answers 501, never a live API's 401 for
-    // the stub token (the portal's landing reads more than the list) - routes added later win.
-    await stubBillingApi(page);
     const posts = await stubApi(page, frame("A"), frame("B"));
-    await stubList(page, c.entityId, c.entityName);
     await handoff(page, c, MODULES(c.entityId));
 
     await body(page).getByRole("button", { name: "Start Free Trial" }).click();
@@ -161,26 +123,23 @@ test.describe("module settings page", () => {
     expect(posts).toEqual([]);
     await dialog.getByRole("button", { name: "Confirm" }).click();
 
-    // The news is told on the list, in this company's row (Figma RV11).
-    await page.waitForURL((u) => u.pathname === "/subscription/subscriptions");
-    const landed = body(page).locator(`li[data-result='celebrate'][data-entity='${c.entityId}']`);
+    // The news is told HERE, in the cards' place (the user, 2026-10-08) - it used to leave for
+    // the list's row (Figma RV11, `?started=`), which ended a journey begun on this page on
+    // another, under a button offering to go back to a third.
+    const landed = body(page).locator("[data-result='celebrate']");
     await expect(landed).toContainText("Congratulations!");
     await expect(landed).toContainText("Payment Request free trial has started — 30 days, free.");
     expect(posts).toEqual([{ action: "start-trial", body: { codes: ["PAYMENT_REQUEST"] } }]);
     await expect(page.getByRole("dialog")).toHaveCount(0);
+    expect(new URL(page.url()).pathname).toMatch(/\/settings\/modules$/);
+    // The cards are gone while it shows; the Settings chrome is not.
+    await expect(body(page).getByRole("heading", { level: 2, name: "Modules" })).toHaveCount(0);
+    await expect(page.getByRole("heading", { level: 1, name: "Settings" })).toBeVisible();
 
-    // Back to Manage Subscriptions leaves for the portal's landing (08-A) - and, arrived with
-    // the company's token, trades it for an unscoped one on the way: Flask's handoff is asked
-    // with no company, and the portal lands on the token it mints.
-    expect(await storedScope(page)).toEqual({ cookie: c.entityId, claim: c.entityId });
-    const asked = await bounceFlaskHandoff(page, c);
-    await landed.getByRole("button", { name: "Back to Manage Subscriptions" }).click();
-    await page.waitForURL((u) => u.pathname === "/subscription");
-    await expect(body(page).getByRole("heading", { level: 1 })).toHaveText(
-      "Subscription & Billing",
-    );
-    expect(asked).toEqual([`?next=${encodeURIComponent("/subscription")}`]);
-    expect(await storedScope(page)).toEqual({ cookie: "", claim: "" });
+    // And its button leaves for the COMPANY's page - no token trade, because the entity page
+    // is the company's and this token is already scoped to it.
+    await landed.getByRole("button", { name: "Back to Company" }).click();
+    await page.waitForURL((u) => /^\/entity\/[^/]+\/[^/]+$/.test(u.pathname));
   });
 
   test("04-G's modal is laid out as the design draws it, without the design's collision", async ({
@@ -236,6 +195,60 @@ test.describe("module settings page", () => {
         .getByRole("article", { name: "Payment Request" })
         .getByText("30 days trial available"),
     ).toBeVisible();
+  });
+
+  // A trial establishes no SUBSCRIBER, so a running trial nobody has confirmed offers Activate
+  // Subscription - and the act lands on its result HERE, in the cards' place (the user,
+  // 2026-10-08), rather than on a toast or on the list.
+  test("activating lands on its result in place, and Back to Company leaves for the entity", async ({
+    page,
+  }) => {
+    const c = creds();
+    const before: ModulePage = { ...frame("A"), has_subscriber: false };
+    // The after-model: the trial converts now, so it reads confirmed.
+    const after: ModulePage = {
+      ...frame("A"),
+      has_subscriber: true,
+      cards: frame("A").cards.map((card) =>
+        card.code === "PETTY_CASH"
+          ? { ...card, needs_card: false, needs_consent_only: false }
+          : card,
+      ),
+    };
+    await stubApi(page, before, after);
+    await page.route(`${SUBSCRIPTION_API_URL}/api/me/billing/accounts`, (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(ACCOUNTS),
+      }),
+    );
+    await handoff(page, c, MODULES(c.entityId));
+
+    await body(page).getByRole("button", { name: "Activate Subscription" }).click();
+    await page
+      .getByRole("dialog")
+      .first()
+      .getByRole("button", { name: /^Confirm/ })
+      .click();
+    const sheet = page.getByRole("dialog", { name: "Billing Accounts" });
+    await expect(sheet).toBeVisible();
+    await sheet.getByRole("button", { name: "Confirm" }).click();
+
+    // In place: the result takes the cards' place and the page never navigated.
+    const landed = body(page).locator("[data-result]");
+    await expect(landed).toBeVisible();
+    await expect(landed).toHaveAttribute("data-result", "celebrate");
+    await expect(body(page).getByRole("heading", { level: 2, name: "Modules" })).toHaveCount(0);
+    // Still on the settings page - it never navigated. (The address carries the company's
+    // own name by now; the page rewrites the placeholder slug on load.)
+    expect(new URL(page.url()).pathname).toMatch(/\/settings\/modules$/);
+    // The chrome stays - the person is still inside Settings.
+    await expect(page.getByRole("heading", { level: 1, name: "Settings" })).toBeVisible();
+
+    // Its button carries its own words and leaves for the COMPANY's page, not the portal.
+    await landed.getByRole("button", { name: "Back to Company" }).click();
+    await page.waitForURL((u) => /^\/entity\/[^/]+\/[^/]+$/.test(u.pathname));
   });
 
   test("a seam navigates to the flow's page under the module page", async ({ page }) => {

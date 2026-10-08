@@ -20,8 +20,15 @@
  * `activateTrial` opens the Billing Accounts picker, HERE on the page rather than through a
  * seam: the company belongs to no payer yet, and the act is one request. Confirming posts
  * `activate-subscription` with the account, which places the company on it, records consent and
- * makes the viewer the subscriber - charging nothing, because a running trial has paid days
- * left. A 402 asks the sheet again with the API's own sentence, as Manage Subscriptions does.
+ * makes the viewer the subscriber - charging nothing, because every module it confirms is a
+ * RUNNING trial (seam `confirm_trial`), which is the one thing `activate-subscription` already
+ * does. The list's twin applies its ticks afterwards and so can charge; this page has no ticks.
+ * A 402 asks the sheet again with the API's own sentence, as Manage Subscriptions does.
+ *
+ * It LANDS ON ITS RESULT in the cards' place (Figma 05.C), not on a toast - the page model is
+ * read again and diffed against the one captured when the act began, through the same
+ * `buildChangeResult` the list uses. Its button carries its own words and leaves for the
+ * COMPANY's page, because that is where this journey started.
  *
  * The other CTAs are seams - they navigate to the sub-page that owns the flow
  * (`lib/paths.ts::moduleRoutes`), each built in its own step from its own Figma frame.
@@ -39,6 +46,8 @@ import { ApiError } from "@/lib/apiClient";
 import { useToast } from "@/components/ui/Toast";
 
 import { needsAccountChoice } from "@/features/subscription/api/moduleChanges";
+import { buildChangeModal, type ChangeModal } from "@/features/subscription/lib/changeModal";
+import { buildChangeResult, type ChangeResult } from "@/features/subscription/lib/changeResult";
 
 import {
   activateSubscription,
@@ -64,7 +73,7 @@ import {
   type ModuleCta,
   type ModuleView,
 } from "@/features/subscription/lib/moduleState";
-import { BILLING, moduleRoutes } from "@/features/subscription/lib/paths";
+import { BILLING, companyHome, moduleRoutes } from "@/features/subscription/lib/paths";
 
 export type UseModulePageArgs = {
   entityId: string;
@@ -74,6 +83,13 @@ export type UseModulePageArgs = {
 };
 
 export type ModulePageStatus = "loading" | "ready" | "error";
+
+/**
+ * The activation being asked about: the page model it is read against (captured when the act
+ * begins), the modules it confirms, and the section-06 modal - null when `buildChangeModal`
+ * had nothing to say, which is the straight-to-sheet path.
+ */
+type ActivateAsk = { page: ModulePage; codes: ModuleCode[]; modal: ChangeModal | null };
 
 /** A trial asked about and not yet confirmed: the module, and its name for the dialog. */
 export type ModuleTrialPrompt = { code: ModuleCode; moduleName: string };
@@ -120,6 +136,14 @@ export type UseModulePageResult = {
   /** Confirm is pressed and the activation is in flight; nothing closes the sheet. */
   activateBusy: boolean;
   activateTrial: () => Promise<void>;
+  /** The section-06 modal Activate Subscription asks in, before Billing Accounts. */
+  activatePrompt: ChangeModal | null;
+  confirmActivatePrompt: () => Promise<void>;
+  dismissActivatePrompt: () => void;
+  /** Where the activation landed (Figma 05.C), shown in the cards' place until it is dismissed. */
+  result: ChangeResult | null;
+  /** Its button: back to the COMPANY's own page, not the payer's portal. */
+  dismissResult: () => void;
   confirmActivate: (accountId: string, accounts?: BillingAccounts) => Promise<void>;
   dismissAccountAsk: () => void;
 };
@@ -166,6 +190,8 @@ export function useModulePage({
   const [generation, setGeneration] = useState(0);
   const [accountAsk, setAccountAsk] = useState<ModuleAccountAsk | null>(null);
   const [activateBusy, setActivateBusy] = useState(false);
+  const [activateAsk, setActivateAsk] = useState<ActivateAsk | null>(null);
+  const [result, setResult] = useState<ChangeResult | null>(null);
 
   const load = useCallback(async () => {
     const { page: model, today: pinned } = await fetchPageModel(entityId, fixture);
@@ -197,14 +223,17 @@ export function useModulePage({
     setGeneration((g) => g + 1);
   }, []);
 
+  // ONE day for the whole page: the cards' "N days remaining" and the result's dates are read
+  // off the same clock, so they cannot disagree.
+  const day = useMemo(() => fixtureToday ?? today ?? new Date(), [fixtureToday, today]);
+
   const views = useMemo(() => {
     if (!page) return [];
-    const day = fixtureToday ?? today ?? new Date();
     // `has_subscriber !== false` rather than `=== true`: a fixture or an older answer without
     // the key behaves as it did before, which is "the company has a payer".
     const hasSubscriber = page.has_subscriber !== false;
     return page.cards.map((card) => resolveModuleState(card, day, hasSubscriber));
-  }, [page, fixtureToday, today]);
+  }, [page, day]);
 
   // Starting a trial is asked about first (Figma 04-G), as it is from the list: press, confirm,
   // then the post. The module's name comes from the page model the card was drawn from.
@@ -223,20 +252,36 @@ export function useModulePage({
   const confirmStartTrial = useCallback(async () => {
     if (!trialPrompt) return;
     const { code } = trialPrompt;
+    const before = page;
     setBusyCode(code);
     try {
       await postStartTrial(entityId, code);
       setTrialPrompt(null);
-      // The news is told on the list, in the company's row (Figma RV11), as it is when a trial
-      // is started from there - so this page is left rather than refetched.
-      router.push(moduleRoutes(entityId).started(code));
+      // THE NEWS IS TOLD HERE, in the cards' place, exactly as an activation's is (the user,
+      // 2026-10-08). It used to leave for the list and land on the row there (Figma RV11,
+      // `?started=`), which meant a journey that began on this page ended on another, under a
+      // button offering to go back to a third.
+      const { page: after, today: pinned } = await fetchPageModel(entityId, fixture);
+      setPage(after);
+      setFixtureToday(pinned);
+      if (before) {
+        setResult(
+          buildChangeResult(
+            { kind: "start_trial", code },
+            before,
+            after,
+            { entity_name: before.entity_name, created_at: null },
+            pinned ?? day,
+          ),
+        );
+      }
     } catch (err) {
       // The dialog stays open on a refusal, so the answer can be read and tried again.
       showToast(sentence(err), "error");
     } finally {
       setBusyCode(null);
     }
-  }, [trialPrompt, entityId, router, showToast]);
+  }, [trialPrompt, page, entityId, fixture, day, showToast]);
 
   // --- Activate Subscription: the Billing Accounts sheet, here on the page ------------------
   //
@@ -267,23 +312,72 @@ export function useModulePage({
     [entityId, page, showToast],
   );
 
+  /** The modules this page would be confirming: every running trial with no subscriber. */
+  const activateCodes = useMemo(
+    () => views.filter((v) => v.state === "needs_activation").map((v) => v.code),
+    [views],
+  );
+
   // PER COMPANY, not per module, and that is why it takes no code: confirming billing gives
   // the company its subscriber and stamps every one of its module rows. Nothing is charged -
   // naming codes is how a LAPSED module is bought back, and a running trial must not.
+  //
+  // It ASKS FIRST, in the same section-06 modal Manage Subscriptions asks a change in (the
+  // user, 2026-10-08), built from the modules being confirmed - an unconfirmed trial's seam is
+  // `confirm_trial`, so the words are already the right ones. `buildChangeModal` can answer
+  // null, and the button must not go dead with it: no modal, straight to the sheet.
   const activateTrial = useCallback(async () => {
+    if (activateBusy || !page || !activateCodes.length) return;
+    // THE BEFORE IS CAPTURED HERE, at the start of the act, not when the sheet confirms: a 402
+    // re-asks the sheet, and a reload in between must not change what the result is diffed
+    // against. The modal may be null (see above); the ask is made either way, so the straight-
+    // to-sheet path carries its `before` too.
+    const modal = buildChangeModal(page, activateCodes);
+    setActivateAsk({ page, codes: activateCodes, modal });
+    if (!modal) await askAccounts(null);
+  }, [activateBusy, page, activateCodes, askAccounts]);
+
+  /** The modal's Confirm: on to Billing Accounts, as the list's does. */
+  const confirmActivatePrompt = useCallback(async () => {
     if (activateBusy) return;
+    setActivateAsk((ask) => ask && { ...ask, modal: null });
     await askAccounts(null);
   }, [activateBusy, askAccounts]);
+
+  const dismissActivatePrompt = useCallback(() => {
+    if (!activateBusy) setActivateAsk(null);
+  }, [activateBusy]);
 
   const confirmActivate = useCallback(
     async (accountId: string) => {
       if (activateBusy) return;
+      const ask = activateAsk;
       setActivateBusy(true);
       try {
         await activateSubscription(entityId, accountId);
+        // The page model is read AGAIN rather than reloaded: this answer IS the after-model the
+        // result is diffed against, and `reload()` would be a second GET with a "Loading..."
+        // flash under the result. `fetchPageModel`, not `getModulePage`, so `?fixture=` stays
+        // offline in `next dev`.
+        const { page: after, today: pinned } = await fetchPageModel(entityId, fixture);
         setAccountAsk(null);
-        showToast("Billing confirmed. You are now this company's subscriber.", "success");
-        reload();
+        setPage(after);
+        setFixtureToday(pinned);
+        // No toast: the result says it, and the same news twice over it reads as a flow that
+        // does not believe in its own result screen. `created_at` is not on the page model, so
+        // the footer loses its "originally created" sentence and keeps the rest.
+        if (ask) {
+          setResult(
+            buildChangeResult(
+              { kind: "ticks", codes: ask.codes },
+              ask.page,
+              after,
+              { entity_name: ask.page.entity_name, created_at: null },
+              pinned ?? day,
+            ),
+          );
+        }
+        setActivateAsk(null);
       } catch (err) {
         if (needsAccountChoice(err)) {
           // The sheet is asked AGAIN for the same act, with the API's sentence as its error -
@@ -303,12 +397,23 @@ export function useModulePage({
         setActivateBusy(false);
       }
     },
-    [activateBusy, entityId, askAccounts, reload, showToast],
+    [activateBusy, activateAsk, entityId, fixture, day, askAccounts, reload, showToast],
   );
 
   const dismissAccountAsk = useCallback(() => {
     if (!activateBusy) setAccountAsk(null);
   }, [activateBusy]);
+
+  /**
+   * The result's button. It leaves for the COMPANY's own page, not the payer's portal, because
+   * that is where this journey began - and a plain push, with no handoff: the list trades a
+   * company-scoped token for an unscoped one because the portal belongs to the payer, while the
+   * entity page belongs to the company and this token is already scoped to it.
+   */
+  const dismissResult = useCallback(() => {
+    setResult(null);
+    router.push(companyHome(entityId, page?.entity_name ?? ""));
+  }, [router, entityId, page]);
 
   const routes = useMemo(() => moduleRoutes(entityId), [entityId]);
   const manage = useCallback(() => router.push(routes.manage), [router, routes]);
@@ -353,6 +458,11 @@ export function useModulePage({
     accountAsk,
     activateBusy,
     activateTrial,
+    activatePrompt: activateAsk?.modal ?? null,
+    confirmActivatePrompt,
+    dismissActivatePrompt,
+    result,
+    dismissResult,
     confirmActivate,
     dismissAccountAsk,
   };

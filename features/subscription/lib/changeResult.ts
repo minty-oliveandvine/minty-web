@@ -90,6 +90,12 @@ export const CONGRATULATIONS = "Congratulations!";
 export const SUBSCRIPTION_UPDATED = "Subscription updated";
 export const THANK_YOU = "Thank you for being part of Minty";
 export const BACK_TO_LIST = "Back to Manage Subscriptions";
+/**
+ * What the button says when the journey began on the company's own settings page rather than in
+ * the payer's portal (the user, 2026-10-08). "Back to X" like every other result button, and it
+ * fits the fixed 368px where the company's own name would not.
+ */
+export const BACK_TO_COMPANY = "Back to Company";
 export const NOTHING_CHARGED = "Nothing is being charged.";
 
 const TONE: Record<ModuleCode, PlanTone> = { PETTY_CASH: "petty", PAYMENT_REQUEST: "payment" };
@@ -115,7 +121,13 @@ function bundleRef(page: ModulePage): ModuleRef {
  */
 function celebrateLines(added: { card: ModuleCard; outcome: Outcome }[], page: ModulePage) {
   const outcomes = new Set(added.map((d) => d.outcome));
-  if (outcomes.size === 1 && isBundleSet(added.map((d) => d.card), page)) {
+  if (
+    outcomes.size === 1 &&
+    isBundleSet(
+      added.map((d) => d.card),
+      page,
+    )
+  ) {
     // not `module`: Next forbids assigning that identifier (no-assign-module-variable)
     const bundle = bundleRef(page);
     return [{ module: bundle, text: lineFor(added[0].outcome, added[0].card, bundle.name) }];

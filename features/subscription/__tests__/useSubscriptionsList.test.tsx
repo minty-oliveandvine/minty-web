@@ -23,7 +23,7 @@ import {
   subscriptionsPage,
 } from "@/features/subscription/__fixtures__/subscriptions";
 import { ACCOUNTS, ACCOUNTS_OPENED } from "@/features/subscription/__fixtures__/billing";
-import type { BillingAccounts } from "@/features/subscription/api/payerPortal";
+import type { BillingAccounts, PortalEntity } from "@/features/subscription/api/payerPortal";
 import { NO_CARD_FOR_TRIAL } from "@/features/subscription/lib/billingAccounts";
 import {
   LIST_NOT_WIRED_YET,
@@ -940,6 +940,117 @@ describe("useSubscriptionsList", () => {
     await waitFor(() => expect(result.current.accountStep).toBeTruthy());
     expect(result.current.changePrompt).toBeNull();
     expect(fetchMock.mock.calls.every((c) => (c[1]?.method ?? "GET") === "GET")).toBe(true);
+  });
+
+  /** Serve the row, the accounts, and a per-action answer for the POSTs. */
+  function serveActivate(answers: Record<string, { status: number; body: unknown }> = {}) {
+    const posts: { action: string; body: unknown }[] = [];
+    serveRowAndAccounts(SUMMARY_FIXTURES.M31);
+    const inner = fetchMock.getMockImplementation()!;
+    fetchMock.mockImplementation(async (input, init) => {
+      const url = new URL(String(input));
+      const action = url.pathname.split("/").pop() ?? "";
+      if (init?.method === "POST") {
+        posts.push({ action, body: JSON.parse(String(init.body ?? "{}")) });
+        const said = answers[action];
+        return reply(said?.status ?? 200, said?.body ?? { ok: true });
+      }
+      return inner(input, init);
+    });
+    return posts;
+  }
+
+  /** Press Activate on a ticked row, confirm its modal, and pick the account. */
+  async function activateThroughSheet(
+    result: { current: ReturnType<typeof useSubscriptionsList> },
+    e: PortalEntity,
+  ) {
+    const change = result.current.summary.view!.pendingChange!;
+    act(() => result.current.activateChange(e, change));
+    await waitFor(() => expect(result.current.changePrompt).toBeTruthy());
+    await act(async () => {
+      await result.current.applyChangePrompt();
+    });
+    await waitFor(() => expect(result.current.accountStep).toBeTruthy());
+    await act(async () => {
+      await result.current.confirmAccount("acc-company-a");
+    });
+  }
+
+  it("activating applies the ticks in the same pass, on the account just picked", async () => {
+    // The user, 2026-10-08: the modal said "you've chosen X", so X happens. M31's Petty Cash
+    // trial has expired, so the tick is the `subscribe` seam - which CHARGES.
+    const posts = serveActivate();
+    const e = { ...ENTITIES[0], subscriber: null, has_subscriber: false };
+    const { result } = renderHook(
+      () =>
+        useSubscriptionsList({ focusEntityId: e.entity_id, tickCode: "PETTY_CASH", today: TODAY }),
+      { wrapper },
+    );
+    await waitFor(() => expect(result.current.summary.view?.pendingChange).toBeTruthy());
+
+    await activateThroughSheet(result, e);
+
+    expect(posts.map((p) => p.action)).toEqual(["activate-subscription", "restart-billing"]);
+    // NO `codes` on the activation: naming them is its own way to buy a lapsed module back,
+    // and restart-billing below already owns that path. One charging path, charged once.
+    expect(posts[0].body).toEqual({ account: "acc-company-a" });
+    expect(posts[1].body).toEqual({ codes: ["PETTY_CASH"] });
+    await waitFor(() => expect(result.current.result).toBeTruthy());
+  });
+
+  it("a refused activation applies nothing", async () => {
+    // The guard on the fall-through: nothing below the activation runs when it fails, so the
+    // apply pass can never charge a company that never got a subscriber.
+    const said = "Choose a billing account for this company.";
+    const posts = serveActivate({
+      "activate-subscription": { status: 402, body: { error: said } },
+    });
+    const e = { ...ENTITIES[0], subscriber: null, has_subscriber: false };
+    const { result } = renderHook(
+      () =>
+        useSubscriptionsList({ focusEntityId: e.entity_id, tickCode: "PETTY_CASH", today: TODAY }),
+      { wrapper },
+    );
+    await waitFor(() => expect(result.current.summary.view?.pendingChange).toBeTruthy());
+
+    await activateThroughSheet(result, e);
+
+    expect(posts.map((p) => p.action)).toEqual(["activate-subscription"]);
+    expect(result.current.accountStep?.error).toBe(said);
+    expect(result.current.result).toBeNull();
+    // The ticks are untouched, so pressing again is the same act.
+    expect(result.current.summary.view?.pendingChange).toBeTruthy();
+  });
+
+  it("a decline on the apply pass keeps the subscriber and the ticks; Try again never re-activates", async () => {
+    const posts = serveActivate({
+      "restart-billing": { status: 402, body: { error: "Your card was declined." } },
+    });
+    const e = { ...ENTITIES[0], subscriber: null, has_subscriber: false };
+    const { result } = renderHook(
+      () =>
+        useSubscriptionsList({ focusEntityId: e.entity_id, tickCode: "PETTY_CASH", today: TODAY }),
+      { wrapper },
+    );
+    await waitFor(() => expect(result.current.summary.view?.pendingChange).toBeTruthy());
+
+    await activateThroughSheet(result, e);
+
+    await waitFor(() => expect(result.current.declined).toBeTruthy());
+    expect(result.current.result).toBeNull();
+    expect(result.current.summary.view?.pendingChange).toBeTruthy();
+
+    // 06.B's Try again re-runs ONLY the charge: activation lives in confirmAccount, not apply,
+    // so the company is not activated a second time.
+    await act(async () => {
+      await result.current.retryDeclined();
+    });
+    expect(posts.map((p) => p.action)).toEqual([
+      "activate-subscription",
+      "restart-billing",
+      "restart-billing",
+    ]);
   });
 
   it("Activate Subscription still opens the sheet when the change has no modal to show", async () => {

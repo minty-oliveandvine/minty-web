@@ -230,14 +230,21 @@ describe("ModuleSettingsScreen", () => {
     expect(screen.getByRole("dialog")).toHaveAccessibleName("Start Free Trial for Payment Request");
     expect(fetchMock).toHaveBeenCalledTimes(1); // nothing posted yet
 
+    serve(FIXTURES.B); // the after-model: the trial now shows on Payment Request
     await userEvent.click(dialog.getByRole("button", { name: "Confirm" }));
 
-    // The news is told on the list, in that company's row (RV11) - this page is left behind.
-    await waitFor(() =>
-      expect(push).toHaveBeenCalledWith(
-        "/subscription/subscriptions?entity=e1&started=PAYMENT_REQUEST",
-      ),
-    );
+    // The news is told HERE, in the cards' place (the user, 2026-10-08) - the page is not left
+    // for the list any more, so there is no "Back to Manage Subscriptions" at the end of a
+    // journey that began on this page.
+    const landed = await waitFor(() => {
+      const el = document.querySelector("[data-result]");
+      expect(el).not.toBeNull();
+      return el as HTMLElement;
+    });
+    expect(within(landed).getByText("Congratulations!")).toBeVisible();
+    expect(within(landed).getByText(/free trial has started/)).toBeVisible();
+    expect(within(landed).getByRole("button", { name: "Back to Company" })).toBeVisible();
+    expect(push).not.toHaveBeenCalled();
     expect(screen.queryByRole("dialog")).toBeNull();
     const [url, init] = fetchMock.mock.calls[1];
     expect(String(url)).toBe(`${env.SUBSCRIPTION_API_URL}/api/entities/e1/modules/start-trial`);
@@ -263,6 +270,49 @@ describe("ModuleSettingsScreen", () => {
       expect(card("Petty Cash").getByText("3 days remaining")).toBeVisible();
     });
 
+    it("both trials unconfirmed draw ONE button, not one per card", async () => {
+      // The act is per COMPANY - confirming billing stamps every module row at once - so two
+      // buttons would be the same button twice (the user, 2026-10-08).
+      await show({ ...FIXTURES.B, has_subscriber: false });
+
+      expect(screen.getAllByRole("button", { name: "Activate Subscription" })).toHaveLength(1);
+      // Drawn once between the cards, as the shared Manage Subscription is, not under either.
+      expect(under("Petty Cash").queryByRole("button", { name: "Activate Subscription" })).toBeNull();
+    });
+
+    /** The AFTER-model: the trial now converts, so `needs_card` is false and it reads confirmed. */
+    const confirmed: ModulePage = {
+      ...FIXTURES.A,
+      has_subscriber: true,
+      cards: FIXTURES.A.cards.map((c) =>
+        c.code === "PETTY_CASH" ? { ...c, needs_card: false, needs_consent_only: false } : c,
+      ),
+    };
+
+    /** Press Activate, confirm the modal, pick the account, confirm - and land. */
+    async function activate(after: ModulePage) {
+      fetchMock.mockResolvedValueOnce(
+        new Response(JSON.stringify(ACCOUNTS), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      );
+      await userEvent.click(screen.getByRole("button", { name: "Activate Subscription" }));
+      await userEvent.click(
+        within(await screen.findByRole("dialog")).getByRole("button", { name: /^Confirm/ }),
+      );
+      const sheet = within(await screen.findByRole("dialog", { name: "Billing Accounts" }));
+      fetchMock.mockResolvedValueOnce(
+        new Response(JSON.stringify({ ok: true, charged: false }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      );
+      serve(after);
+      await userEvent.click(sheet.getByRole("button", { name: "Confirm" }));
+      await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    }
+
     it("asks which account pays, then confirms billing in one request", async () => {
       await show(unactivated);
       fetchMock.mockResolvedValueOnce(
@@ -274,6 +324,12 @@ describe("ModuleSettingsScreen", () => {
 
       await userEvent.click(screen.getByRole("button", { name: "Activate Subscription" }));
 
+      // It asks in the section-06 modal FIRST, built from the modules being confirmed, and
+      // reads nothing about accounts until its Confirm.
+      const modal = within(await screen.findByRole("dialog"));
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      await userEvent.click(modal.getByRole("button", { name: /^Confirm/ }));
+
       const sheet = within(await screen.findByRole("dialog", { name: "Billing Accounts" }));
       expect(sheet.getByText("Choose the account that pays for Olive & Vine Ltd.")).toBeVisible();
       expect(fetchMock).toHaveBeenCalledTimes(2); // read the accounts, posted nothing
@@ -284,7 +340,7 @@ describe("ModuleSettingsScreen", () => {
           headers: { "Content-Type": "application/json" },
         }),
       );
-      serve({ ...FIXTURES.A, has_subscriber: true }); // the reload after it lands
+      serve(confirmed); // the AFTER-model the result is diffed against
       await userEvent.click(sheet.getByRole("button", { name: "Confirm" }));
 
       await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
@@ -295,10 +351,51 @@ describe("ModuleSettingsScreen", () => {
       // NO `codes`: naming them is how a lapsed module is bought back, and confirming a
       // running trial must charge nothing.
       expect(JSON.parse(String(init?.body))).toEqual({ account: "acc-company-a" });
-      // Confirmed, so the page now offers Manage Subscription again.
-      await waitFor(() =>
-        expect(screen.getByRole("button", { name: "Manage Subscription" })).toBeVisible(),
+
+      // It LANDS ON ITS RESULT, in the cards' place - not a toast (the user, 2026-10-08).
+      const landed = await waitFor(() => {
+        const el = document.querySelector("[data-result]");
+        expect(el).not.toBeNull();
+        return el as HTMLElement;
+      });
+      expect(landed).toHaveAttribute("data-result", "celebrate");
+      expect(within(landed).getByText("Congratulations!")).toBeVisible();
+      expect(within(landed).getByText(/is confirmed\./)).toBeVisible();
+      expect(landed.querySelector("[data-money]")).not.toBeNull();
+      expect(screen.queryByRole("heading", { level: 2, name: "Modules" })).toBeNull();
+      expect(screen.queryByRole("article", { name: "Petty Cash" })).toBeNull();
+      expect(screen.queryByRole("status")).toBeNull(); // no toast beside it
+    });
+
+    it("the result's button goes back to the company, and the chrome stays", async () => {
+      await show(unactivated);
+      await activate(confirmed);
+
+      // The settings chrome is still there - the person is inside Settings, and the tabs are
+      // their way out.
+      expect(screen.getByRole("heading", { level: 1, name: "Settings" })).toBeVisible();
+      expect(screen.getByText("Modules")).toHaveAttribute("aria-current", "page");
+
+      await userEvent.click(screen.getByRole("button", { name: "Back to Company" }));
+      // The COMPANY's own page, not the payer's portal: that is where this journey began.
+      expect(push).toHaveBeenCalledWith("/entity/e1/olive-and-vine-ltd");
+    });
+
+    it("the single shared button activates - it must not navigate to the list", async () => {
+      // Both trials unconfirmed draw ONE button; it was wired to `manage` and silently took
+      // the person to Manage Subscriptions instead of activating.
+      await show({ ...FIXTURES.B, has_subscriber: false });
+      fetchMock.mockResolvedValueOnce(
+        new Response(JSON.stringify(ACCOUNTS), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
       );
+
+      await userEvent.click(screen.getByRole("button", { name: "Activate Subscription" }));
+
+      expect(await screen.findByRole("dialog")).toBeVisible();
+      expect(push).not.toHaveBeenCalled();
     });
 
     it("a 402 asks the sheet again in the API's own words", async () => {
@@ -311,6 +408,9 @@ describe("ModuleSettingsScreen", () => {
       );
 
       await userEvent.click(screen.getByRole("button", { name: "Activate Subscription" }));
+      await userEvent.click(
+        within(await screen.findByRole("dialog")).getByRole("button", { name: /^Confirm/ }),
+      );
       const sheet = within(await screen.findByRole("dialog", { name: "Billing Accounts" }));
 
       fetchMock.mockResolvedValueOnce(

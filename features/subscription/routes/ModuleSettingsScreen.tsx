@@ -18,6 +18,12 @@ import { getModuleClaims, type ModuleClaims } from "@/lib/moduleClaims";
 import { settingsBackLink, settingsTabs } from "@/lib/settingsTabs";
 
 import { AccountPickerDialog } from "@/features/subscription/components/BillingAccountDialogs";
+import { ChangeDialog } from "@/features/subscription/components/ChangeDialog";
+import {
+  ChangeResultPage,
+  ChangeResultRow,
+} from "@/features/subscription/components/ChangeResultView";
+import { BACK_TO_COMPANY } from "@/features/subscription/lib/changeResult";
 import { ManagedByNotice } from "@/features/subscription/components/ManagedByNotice";
 import { ModuleCardGrid } from "@/features/subscription/components/ModuleCardGrid";
 import { PaymentFailedBanner } from "@/features/subscription/components/PaymentFailedBanner";
@@ -42,10 +48,17 @@ const readClaims = (): ModuleClaims | null => {
 };
 const serverClaims = (): ModuleClaims | null => null;
 
+/** The result views take a menu; this page has no row behind them, so there is nothing in it. */
+const noMenu = () => {};
+
 export function ModuleSettingsScreen(args: ModuleSettingsScreenProps) {
   const m = useModulePage(args);
   const { entityId } = args;
   const entityName = useSyncExternalStore(noSubscribe, readEntityName, serverEntityName);
+
+  // The result views want only these two of a PortalEntity, which is as well: this page has no
+  // portal row to hand them, and inventing one would be inventing its country and its payer.
+  const resultEntity = { entity_id: entityId, entity_name: m.page?.entity_name ?? entityName };
 
   const claims = useSyncExternalStore(noSubscribe, readClaims, serverClaims);
 
@@ -76,64 +89,109 @@ export function ModuleSettingsScreen(args: ModuleSettingsScreenProps) {
       <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto overflow-x-hidden pb-[env(safe-area-inset-bottom,0px)]">
         <div className="mx-auto w-full max-w-[1024px] px-4 sm:px-6">
           <div className="sticky top-0 z-10 bg-white pt-3 pb-3 sm:pt-4 sm:pb-4">
-            <SettingsTabs tabs={settingsTabs({ id: entityId, name: entityName }, access, "modules")} />
+            <SettingsTabs
+              tabs={settingsTabs({ id: entityId, name: entityName }, access, "modules")}
+            />
           </div>
 
           <section className="pb-16 pt-6">
-            <h2 className="text-[25px] font-bold">Modules</h2>
-            <p className="mt-2 text-[15px] text-ink-soft">
-              View the modules available to this entity, start free trials and manage active
-              subscriptions.
-            </p>
-            {m.page && !m.page.can_manage_modules && (
-              <div className="mt-2">
-                <ManagedByNotice payer={m.page.payer} />
-              </div>
-            )}
-
-            {m.status === "loading" && (
-              <p className="mt-10 text-center text-sm text-muted" role="status">
-                Loading…
-              </p>
-            )}
-
-            {m.status === "error" && (
-              <div className="mt-10 text-center" role="alert">
-                <p className="text-sm text-danger">{m.error}</p>
-                <button type="button" className="mt-3 text-sm underline" onClick={m.reload}>
-                  Try again
-                </button>
-              </div>
-            )}
-
-            {m.status === "ready" && m.page && (
-              <div className="mt-6 flex flex-col gap-8">
-                {m.paymentFailed && (
-                  <PaymentFailedBanner onUpdatePaymentMethod={m.updatePaymentMethod} />
-                )}
-                <ModuleCardGrid
-                  views={m.views}
-                  shared={m.shared}
-                  canManage={m.page.can_manage_modules}
-                  busyCode={m.busyCode}
-                  on={{
-                    startTrial: m.askStartTrial,
-                    manage: m.manage,
-                    activate: m.activate,
-                    activateTrial: () => void m.activateTrial(),
-                    resume: m.resume,
-                    reactivate: m.reactivate,
-                  }}
+            {/* The activation landed: its result takes the cards' place, the way Manage
+                Subscriptions' page result takes the list's. The chrome stays - the person is
+                still inside Settings and the tabs are their way out. */}
+            {m.result ? (
+              m.result.layout === "page" ? (
+                <ChangeResultPage
+                  entity={resultEntity}
+                  result={m.result}
+                  menu={[]}
+                  onMenu={noMenu}
+                  onBack={m.dismissResult}
+                  backLabel={BACK_TO_COMPANY}
                 />
-              </div>
+              ) : (
+                // A one-item list: ChangeResultRow is an <li>, and it is the only result view
+                // that draws `lines` and `money` - which for a congratulation are all there is.
+                <ul>
+                  <ChangeResultRow
+                    entity={resultEntity}
+                    result={m.result}
+                    menu={[]}
+                    onMenu={noMenu}
+                    onBack={m.dismissResult}
+                    backLabel={BACK_TO_COMPANY}
+                  />
+                </ul>
+              )
+            ) : (
+              <>
+                <h2 className="text-[25px] font-bold">Modules</h2>
+                <p className="mt-2 text-[15px] text-ink-soft">
+                  View the modules available to this entity, start free trials and manage active
+                  subscriptions.
+                </p>
+                {m.page && !m.page.can_manage_modules && (
+                  <div className="mt-2">
+                    <ManagedByNotice payer={m.page.payer} />
+                  </div>
+                )}
+
+                {m.status === "loading" && (
+                  <p className="mt-10 text-center text-sm text-muted" role="status">
+                    Loading…
+                  </p>
+                )}
+
+                {m.status === "error" && (
+                  <div className="mt-10 text-center" role="alert">
+                    <p className="text-sm text-danger">{m.error}</p>
+                    <button type="button" className="mt-3 text-sm underline" onClick={m.reload}>
+                      Try again
+                    </button>
+                  </div>
+                )}
+
+                {m.status === "ready" && m.page && (
+                  <div className="mt-6 flex flex-col gap-8">
+                    {m.paymentFailed && (
+                      <PaymentFailedBanner onUpdatePaymentMethod={m.updatePaymentMethod} />
+                    )}
+                    <ModuleCardGrid
+                      views={m.views}
+                      shared={m.shared}
+                      canManage={m.page.can_manage_modules}
+                      busyCode={m.busyCode}
+                      on={{
+                        startTrial: m.askStartTrial,
+                        manage: m.manage,
+                        activate: m.activate,
+                        activateTrial: () => void m.activateTrial(),
+                        resume: m.resume,
+                        reactivate: m.reactivate,
+                      }}
+                    />
+                  </div>
+                )}
+              </>
             )}
           </section>
         </div>
       </main>
 
-      {/* Activate Subscription: the same Billing Accounts sheet Manage Subscriptions asks
-          with, over this page, because a company with no subscriber is not in anybody's
-          billing relationship yet and the act is one request. */}
+      {/* Activate Subscription asks in the SAME section-06 modal Manage Subscriptions asks a
+          change in (the user, 2026-10-08) - the person is confirming the same modules and
+          should read the same words - and only its Confirm opens the sheet. */}
+      {m.activatePrompt && (
+        <ChangeDialog
+          modal={m.activatePrompt}
+          entityName={entityName}
+          busy={m.activateBusy}
+          onConfirm={() => void m.confirmActivatePrompt()}
+          onBack={m.dismissActivatePrompt}
+        />
+      )}
+
+      {/* Then the same Billing Accounts sheet, over this page, because a company with no
+          subscriber is not in anybody's billing relationship yet and the act is one request. */}
       {m.accountAsk && (
         <AccountPickerDialog
           key={m.accountAsk.key}

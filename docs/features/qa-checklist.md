@@ -132,8 +132,11 @@ run" below).
 - [ ] _Start Free Trial_ always opens `StartTrialDialog` first; only _Confirm_ posts
       `start-trial`; _Go back_/Escape/backdrop post nothing.
 - [ ] A refused trial start shows a toast and leaves the dialog open (don't lose the state).
-- [ ] Confirming a trial leaves this page for the Manage Subscriptions list
-      (`?started=<code>`) — it must NOT refresh in place.
+- [ ] Confirming a trial lands on its **Congratulations result in the cards' place**
+      (2026-10-08) — "<Module> free trial has started — 30 days, free." — with the Settings
+      chrome and tabs still there, and **Back to Company** leaving for `/entity/<shortid>/<name>`.
+      It must NOT navigate to the Manage Subscriptions list any more, and must not just refresh
+      the cards.
 - [ ] Clicking Resume / Reactivate / the failed-module's Activate lands on the Manage
       Subscriptions list with that company's row open and the module **ticked but nothing
       posted yet** — no modal should appear immediately.
@@ -157,8 +160,29 @@ run" below).
       (not Confirm), in _Confirm Subscription Change_'s place.
 - [ ] Pressing it opens the SAME section-06 modal a change opens ("You have unlocked Super
       Minty" etc.) naming the company and the modules chosen, and posts nothing. Its Confirm
-      opens Billing Accounts; that Confirm activates. Nothing is charged, and afterwards the
-      company has a subscriber with Confirm Subscription Change back in the slot.
+      opens Billing Accounts; that Confirm posts **two** requests in order —
+      `activate-subscription` with `{account}` and **no `codes`**, then the ticked change's own
+      action — and the row lands on its 05·C result, whose button still reads *Back to Manage
+      Subscriptions*.
+- [ ] **It charges when the tick does.** Tick a LAPSED module and activate: the card is charged
+      (`restart-billing`), which is what the modal said. Tick a running trial instead and
+      nothing is charged (`authorize-billing`).
+- [ ] **DB:** after activating with a lapsed tick there is **exactly one** new
+      `pettycashv3.subscription_invoice` row for that module, not two — the activation sends no
+      `codes`, so only the apply pass buys it back.
+- [ ] Force a decline on the apply pass (Stripe test card): the company is left **with** its
+      subscriber and the ticks still pending, and 06·B's *Try again now* posts only the charging
+      action — never `activate-subscription` a second time.
+- [ ] Make the activation itself fail (402): **nothing** else is posted, no result appears, and
+      the ticks are untouched.
+- [ ] Module settings: activating lands on the **Congratulations result in the cards' place**,
+      not a toast — one line per confirmed module, the money line — with the Settings chrome and
+      tabs still there. Its button reads **Back to Company** and leaves for
+      `/entity/<shortid>/<name>` (which itself redirects on into the app when the company has
+      only one module enabled — expected).
+- [ ] On a company where **both** trials are unconfirmed the page draws **one** Activate
+      Subscription button, centred between the cards, and pressing it **activates** — it must
+      not navigate to the Manage Subscriptions list.
 - [ ] On a company whose trial is unconfirmed, the card's button reads **Activate Subscription**
       (the trial line itself unchanged) while a module with no trial still offers **Start Free
       Trial**; a SECOND admin sees the same buttons, because nobody is being billed yet.

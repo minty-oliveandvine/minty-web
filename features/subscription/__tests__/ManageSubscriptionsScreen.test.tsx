@@ -141,7 +141,8 @@ describe("ManageSubscriptionsScreen", { timeout: 30_000 }, () => {
         return reply(200, { ok: true, charged: false });
       }
       if (/^\/api\/entities\/[^/]+\/modules$/.test(url.pathname))
-        return reply(200, SUMMARY_FIXTURES.M44);
+        // M22: two running trials, so ticking one is the `confirm_trial` seam.
+        return reply(200, SUMMARY_FIXTURES.M22);
       if (url.pathname === "/api/me/billing/entity-payment-method") return reply(200, WALLET);
       return reply(200, subscriptionsPage([unactivated, ...rest]));
     });
@@ -190,17 +191,32 @@ describe("ManageSubscriptionsScreen", { timeout: 30_000 }, () => {
     // It asks in the SAME section-06 modal a change asks in (the user, 2026-10-08) - the person
     // chose the same modules and reads the same words - and only then opens Billing Accounts.
     const modal = within(await screen.findByRole("dialog"));
-    expect(modal.getByRole("button", { name: /^Confirm Change/ })).toBeVisible();
-    await userEvent.click(modal.getByRole("button", { name: /^Confirm Change/ }));
+    // The confirm label varies with what was chosen ("Confirm", "Confirm Change", ...).
+    expect(modal.getByRole("button", { name: /^Confirm/ })).toBeVisible();
+    await userEvent.click(modal.getByRole("button", { name: /^Confirm/ }));
 
     const sheet = within(await screen.findByRole("dialog", { name: "Billing Accounts" }));
     await userEvent.click(sheet.getByRole("button", { name: "Confirm" }));
 
-    await waitFor(() => expect(posts).toHaveLength(1));
-    // ONE request: it places the company, records consent and makes the viewer its
-    // subscriber. No `codes`, so nothing is charged.
+    // TWO requests, in order (the user, 2026-10-08: the modal said "you've chosen X", so X
+    // happens). First the activation - no `codes`, because naming them is its own way to buy a
+    // lapsed module back and `applyChange` already owns that path. Then the tick.
+    await waitFor(() => expect(posts).toHaveLength(2));
     expect(posts[0][0]).toBe(`/api/entities/${unactivated.entity_id}/modules/activate-subscription`);
     expect(posts[0][1]).toEqual({ account: "acc-company-a" });
+    expect(posts[0][1]).not.toHaveProperty("codes");
+    expect(posts[1][0]).toBe(`/api/entities/${unactivated.entity_id}/modules/authorize-billing`);
+
+    // And it lands on its result, as every other confirm on this screen does.
+    const landed = await waitFor(() => {
+      const el = document.querySelector("[data-result]");
+      expect(el).not.toBeNull();
+      return el as HTMLElement;
+    });
+    // The default label survived the parameterisation: this journey began in the portal.
+    expect(
+      within(landed).getByRole("button", { name: "Back to Manage Subscriptions" }),
+    ).toBeVisible();
   });
 
   it("04-A: the banner, the transfer card, the sections and their counts", async () => {

@@ -56,6 +56,12 @@ export function RowMenu({
     setOpen((o) => !o);
   };
 
+  // Nothing to offer, no affordance: a bare kebab that opens an empty popover is worse than
+  // no kebab at all. After the hooks, never before them - an early return above `useEffect`
+  // would change the hook order between renders. The result screens pass [] when there is no
+  // row behind them to act on.
+  if (items.length === 0) return null;
+
   return (
     <div ref={root} className="relative flex shrink-0 items-center">
       <button

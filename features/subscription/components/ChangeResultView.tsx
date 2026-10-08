@@ -38,14 +38,14 @@ export const PLAN_TONE: Record<PlanTone, string> = {
   none: "text-[#161f2e]",
 };
 
-function BackButton({ onBack }: { onBack: () => void }) {
+function BackButton({ label = BACK_TO_LIST, onBack }: { label?: string; onBack: () => void }) {
   return (
     <button
       type="button"
       onClick={onBack}
       className="h-[66px] w-[368px] max-w-full rounded-[24px] bg-[#54d3da] text-xl font-bold text-white hover:opacity-90"
     >
-      {BACK_TO_LIST}
+      {label}
     </button>
   );
 }
@@ -64,12 +64,15 @@ export function ChangeResultRow({
   menu,
   onMenu,
   onBack,
+  backLabel,
 }: {
-  entity: PortalEntity;
+  entity: Pick<PortalEntity, "entity_id" | "entity_name">;
   result: ChangeResult;
   menu: MenuItem[];
   onMenu: (item: MenuItem) => void;
   onBack: () => void;
+  /** Overrides the button's words; the default is "Back to Manage Subscriptions". */
+  backLabel?: string;
 }) {
   const celebrate = result.kind === "celebrate" || result.kind === "transferred";
   // The news is what the person is waiting for: bring it into view where it lands, rather than
@@ -123,7 +126,7 @@ export function ChangeResultRow({
               </p>
             )}
           </div>
-          <BackButton onBack={onBack} />
+          <BackButton label={backLabel} onBack={onBack} />
         </div>
         {/* FLIPPED to face the words. The art is drawn facing right, which on this layout
             turned the cat away from the message it is celebrating; mirroring is the whole
@@ -159,12 +162,15 @@ export function ChangeResultPage({
   menu,
   onMenu,
   onBack,
+  backLabel,
 }: {
-  entity: PortalEntity;
+  entity: Pick<PortalEntity, "entity_id" | "entity_name">;
   result: ChangeResult;
   menu: MenuItem[];
   onMenu: (item: MenuItem) => void;
   onBack: () => void;
+  /** Overrides the button's words; the default is "Back to Manage Subscriptions". */
+  backLabel?: string;
 }) {
   return (
     <section
@@ -198,7 +204,7 @@ export function ChangeResultPage({
               </p>
             ))}
           </div>
-          <BackButton onBack={onBack} />
+          <BackButton label={backLabel} onBack={onBack} />
         </div>
         <Image
           src="/portal/minty-heart.png"

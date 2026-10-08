@@ -245,13 +245,24 @@ test.describe("manage subscriptions", () => {
     await expect(sheet).toBeVisible();
     await sheet.getByRole("button", { name: "Confirm" }).click();
 
-    await expect.poll(() => posts.length).toBe(1);
+    // TWO posts, in order: the activation, then the tick it was asked about (the user,
+    // 2026-10-08). M45's Payment Request is cancelling, so restoring it is `renew`.
+    await expect.poll(() => posts.length).toBe(2);
     expect(posts[0].url).toContain(
       `/api/entities/${unactivated.entity_id}/modules/activate-subscription`,
     );
-    // No `codes`: naming them is how a lapsed module is bought back, and confirming a running
-    // trial must charge nothing.
+    // No `codes` on the activation: naming them is its own way to buy a lapsed module back,
+    // and the apply pass already owns that path. One charging path, charged once.
     expect(posts[0].body).toEqual({ account: "acc-company-a" });
+    expect(posts[1].url).toContain(`/api/entities/${unactivated.entity_id}/modules/renew`);
+
+    // And it lands on its result, as every other confirm on this screen does. The stub serves
+    // one model for every read, so before === after - assert the frame, not the sentence.
+    const landed = body(page).locator("[data-result]");
+    await expect(landed).toBeVisible();
+    await expect(
+      landed.getByRole("button", { name: "Back to Manage Subscriptions" }),
+    ).toBeVisible();
   });
 
   // 360 / 768 / 1440 - the three widths the Responsive UI rules name.

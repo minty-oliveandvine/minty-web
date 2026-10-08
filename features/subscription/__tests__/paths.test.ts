@@ -73,7 +73,8 @@ describe("subscription paths", () => {
       "/subscription/subscriptions?entity=abc-123&tick=PAYMENT_REQUEST",
     );
     // The open row's Change is a sheet, not a route: nothing else is named here.
-    expect(Object.keys(r).sort()).toEqual(["activate", "manage", "reactivate", "resume", "started"]);
+    // `started` went with the module page's landing in place (2026-10-08).
+    expect(Object.keys(r).sort()).toEqual(["activate", "manage", "reactivate", "resume"]);
   });
 });
 
