@@ -53,13 +53,13 @@ export function BillingPageScreen(args: UseBillingPageArgs) {
       {b.status === "error" ? (
         <div
           role="alert"
-          className="flex flex-col items-start gap-3 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800"
+          className="flex flex-col items-start gap-3 rounded-xl border border-danger bg-danger-bg px-4 py-3 text-sm text-danger"
         >
           {b.error}
           <button
             type="button"
             onClick={b.reload}
-            className="rounded-lg border border-rose-300 bg-white px-4 py-1.5 font-semibold"
+            className="min-h-11 rounded-xl border border-danger bg-card px-4 py-1.5 font-semibold"
           >
             Try again
           </button>

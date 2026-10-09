@@ -23,7 +23,7 @@ import { HUB_PATHS } from "@/lib/hubPaths";
 import { useViewer, type Viewer } from "@/lib/viewer";
 
 const BADGE =
-  "inline-flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-full bg-[var(--avatar-bg)] text-[12px] font-semibold text-[var(--avatar-fg)] transition-shadow hover:ring-2 hover:ring-primary/30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary";
+  "inline-flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-full bg-[var(--avatar-bg)] text-label font-semibold text-[var(--avatar-fg)] transition-shadow hover:ring-2 hover:ring-line-selected/25 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--mv2-border-focus)]";
 
 export function ViewerBadge({ viewer }: { viewer?: Viewer | null }) {
   const person = useViewer(viewer);

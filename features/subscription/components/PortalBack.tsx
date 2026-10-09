@@ -39,7 +39,7 @@ export function PortalBackSlot() {
   );
 }
 
-export const BACK_LINE_CLASS = "min-w-0 truncate text-base text-[var(--ink-soft)] hover:underline";
+export const BACK_LINE_CLASS = "min-w-0 truncate text-base text-ink-2 hover:underline";
 
 export function PortalBack({ children }: { children: ReactNode }) {
   const slot = useContext(SlotContext);

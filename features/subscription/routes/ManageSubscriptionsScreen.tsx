@@ -70,7 +70,7 @@ export function ManageSubscriptionsScreen(args: UseSubscriptionsListArgs) {
 
       {m.transfers.length > 0 && (
         <section aria-label="Transfer requests" className="flex flex-col gap-4">
-          <h2 className="px-3 text-[25px] font-bold text-ink">Transfer Request Received</h2>
+          <h2 className="px-3 text-display-m font-bold text-ink">Transfer Request Received</h2>
           {m.transfers.map((t) => (
             <TransferRequestCard key={t.id} transfer={t} onReview={m.reviewTransfer} />
           ))}
@@ -83,7 +83,7 @@ export function ManageSubscriptionsScreen(args: UseSubscriptionsListArgs) {
         // Sticks under the sticky header (the user, 2026-09-29). The white band (py-3, taken back
         // by -my-3 so the gap is unchanged) hides the rows scrolling past its rounded corners; z
         // above a row's ⋮ menu (z-30), below the header (z-40).
-        <div className="sticky top-[var(--app-header-h)] z-[35] -my-3 bg-white py-3">
+        <div className="sticky top-[var(--app-header-h)] z-[35] -my-3 bg-canvas py-3">
           <SearchField value={m.searchInput} onChange={m.setSearchInput} />
         </div>
       )}

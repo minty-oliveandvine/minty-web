@@ -23,10 +23,10 @@ export function RowFooter({
   renewalOn: string | null;
 }) {
   return (
-    <div className="flex flex-col gap-3 text-[15px] text-quiet">
+    <div className="flex flex-col gap-3 text-body-l text-ink-muted">
       {createdOn && (
         <p>
-          Minty for <span className="text-[#219994]">{entityName}</span> was originally created{" "}
+          Minty for <span className="text-link">{entityName}</span> was originally created{" "}
           {createdOn}.
         </p>
       )}

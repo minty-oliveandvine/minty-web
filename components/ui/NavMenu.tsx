@@ -43,7 +43,7 @@ export function NavMenu({ modules, viewer }: NavMenuProps) {
         ref={trigger}
         type="button"
         onClick={() => (sidebar ? sidebar.openMenu(trigger.current) : setLocalOpen(true))}
-        className="inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-md transition-colors hover:bg-primary/10"
+        className="inline-flex h-11 w-11 cursor-pointer items-center justify-center rounded-xl transition-colors hover:bg-hover"
         aria-expanded={expanded}
         aria-controls={sidebar ? sidebar.panelId : localPanelId}
         aria-label="Open navigation menu"

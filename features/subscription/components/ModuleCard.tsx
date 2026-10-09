@@ -20,8 +20,8 @@ import type { ModuleStatusLine, ModuleView } from "@/features/subscription/lib/m
  * `width`/`height` are the PNG's own pixels, not the drawn size.
  */
 export const MODULE_ART: Record<ModuleCode, { src: string; width: number; height: number; accent: string }> = {
-  PETTY_CASH: { src: "/modules/petty-cash.png", width: 556, height: 384, accent: "#f5b945" },
-  PAYMENT_REQUEST: { src: "/modules/payment-request.png", width: 556, height: 384, accent: "#3aa6f5" },
+  PETTY_CASH: { src: "/modules/petty-cash.png", width: 556, height: 384, accent: "var(--mv2-module-petty)" },
+  PAYMENT_REQUEST: { src: "/modules/payment-request.png", width: 556, height: 384, accent: "var(--mv2-module-payment)" },
 };
 
 /** The card's frame and its inner card, outer edge to outer edge: 360 + 2 x 3px. */
@@ -51,20 +51,20 @@ export function ModuleCardShell({
 }) {
   const art = MODULE_ART[code];
   const frame = selected
-    ? "bg-[linear-gradient(90deg,#00cbc6_0%,#00d5bf_100%)] shadow-[0_12px_32px_rgba(0,203,198,0.28)]"
-    : "bg-[#ececea]";
+    ? "bg-line-selected"
+    : "bg-line";
   const lift = onClick
-    ? "cursor-pointer hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(15,20,25,0.08)]"
+    ? "cursor-pointer hover:-translate-y-0.5"
     : "";
   return (
     <article
       aria-label={name}
       {...data}
       onClick={onClick}
-      className={`group relative w-full rounded-[23px] p-[3px] transition-[background,transform,box-shadow] duration-200 motion-reduce:transform-none motion-reduce:transition-none ${frame} ${lift}`}
+      className={`group relative w-full rounded-xl p-[3px] transition-[background,transform,box-shadow] duration-200 motion-reduce:transform-none motion-reduce:transition-none ${frame} ${lift}`}
     >
       <div
-        className="relative flex h-[360px] w-full flex-col items-center overflow-hidden rounded-[20px]"
+        className="relative flex h-[360px] w-full flex-col items-center overflow-hidden rounded-lg"
         style={{
           background: `linear-gradient(150deg, color-mix(in oklab, ${art.accent} 12%, white), white 65%)`,
         }}
@@ -85,7 +85,7 @@ export function ModuleCardShell({
         {/* Inset so a long name balances over two lines; the margin is the room the pinned
             status (and the chip, when there is one) takes at the bottom. */}
         <h3
-          className={`mt-2 px-[34px] text-center text-[26px] font-bold leading-tight tracking-[-0.015em] text-balance text-[#16202e] ${
+          className={`mt-2 px-[34px] text-center text-[26px] font-bold leading-tight tracking-[-0.015em] text-balance text-ink ${
             footer === undefined ? "mb-[86px]" : "mb-[118px]"
           }`}
         >
@@ -95,18 +95,18 @@ export function ModuleCardShell({
             names wrap. */}
         <div
           className={`absolute inset-x-0 bottom-[26px] flex flex-col items-center gap-0.5 text-center text-xl font-bold leading-[1.2] ${
-            selected ? "text-[#18c4c7]" : "text-[#8a8d8b]"
+            selected ? "text-[#18c4c7]" : "text-ink-muted"
           }`}
         >
           {status}
           {footer !== undefined && <div className="mt-2 flex h-[26px] items-center">{footer}</div>}
         </div>
         {/* The description, over the whole card on hover. Inert, so a click lands on the card. */}
-        <div className="pointer-events-none absolute inset-0 z-[2] flex translate-y-2 flex-col justify-center gap-2.5 bg-white/95 p-7 text-center opacity-0 transition-[opacity,transform] duration-200 group-hover:translate-y-0 group-hover:opacity-100 motion-reduce:transition-none">
-          <p aria-hidden className="text-xl font-bold tracking-[-0.01em] text-[#16202e]">
+        <div className="pointer-events-none absolute inset-0 z-[2] flex translate-y-2 flex-col justify-center gap-2.5 bg-card/95 p-7 text-center opacity-0 transition-[opacity,transform] duration-200 group-hover:translate-y-0 group-hover:opacity-100 motion-reduce:transition-none">
+          <p aria-hidden className="text-xl font-bold tracking-[-0.01em] text-ink">
             {name}
           </p>
-          <p className="whitespace-pre-line text-[15px] leading-[1.55] text-[#4a4d4b]">{description}</p>
+          <p className="whitespace-pre-line text-body-l leading-[1.55] text-ink-2">{description}</p>
         </div>
       </div>
     </article>
@@ -134,11 +134,11 @@ export function ModuleStatus({
 }
 
 const TONE: Record<ModuleStatusLine["tone"], string> = {
-  accent: "text-accent",
+  accent: "text-warning",
   teal: "",
   muted: "",
   info: "text-info",
-  plain: "text-black",
+  plain: "text-ink",
 };
 
 /** The module settings page's card (Figma 03); its CTA is drawn under it by the grid. */

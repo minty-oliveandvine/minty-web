@@ -265,18 +265,18 @@ function PageForm(props: FormProps) {
       />
       <AddressElement options={ADDRESS_ELEMENT_OPTIONS} onChange={form.onAddressChange} />
       {props.firstCard && (
-        <p className="text-[13px] text-[#6b7380]">
+        <p className="text-body-s text-ink-2">
           This is the first payment method on your billing account, so it is the one card pickers
           will offer first.
         </p>
       )}
-      <p className="text-[13px] leading-relaxed text-[#8b93a0]">
+      <p className="text-body-s leading-relaxed text-ink-muted">
         {CARD_MANDATE}
       </p>
       {form.error && (
         <p
           role="alert"
-          className="rounded-lg border border-[#f3c2c2] bg-[#fdf3f3] px-4 py-3 text-[13px] text-[#b42318]"
+          className="rounded-xl border border-danger bg-danger-bg px-4 py-3 text-body-s text-danger"
         >
           {form.error}
         </p>
@@ -286,14 +286,14 @@ function PageForm(props: FormProps) {
           type="button"
           onClick={props.onCancel}
           disabled={form.busy}
-          className="h-[44px] w-[104px] rounded-lg border border-[#d8dee4] bg-white text-[15px] font-semibold text-[#292e38] hover:bg-[#f5f7fa] disabled:opacity-60"
+          className="h-11 w-[104px] rounded-xl border border-line bg-card text-body-m font-semibold text-ink hover:bg-hover disabled:opacity-60"
         >
           Cancel
         </button>
         <button
           type="submit"
           disabled={!form.canSubmit}
-          className="h-[44px] w-[114px] rounded-lg bg-[#4fc7c7] text-[15px] font-semibold text-white hover:opacity-90 disabled:opacity-60"
+          className="h-11 w-[114px] rounded-xl bg-action text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed disabled:bg-action-disabled disabled:text-ink-disabled"
         >
           {form.busy ? "Saving…" : "Save"}
         </button>
@@ -318,7 +318,7 @@ function SheetForm(props: FormProps) {
             Payment method
             <RequiredMark />
           </span>
-        <div className="rounded-[10px] border border-[#d7dee2] p-4">
+        <div className="rounded-xl border border-line p-4">
           <PaymentElement
             onReady={form.onReady}
             onLoadError={form.onLoadError}
@@ -329,7 +329,7 @@ function SheetForm(props: FormProps) {
           </div>
         </div>
       </div>
-      <p className="mt-6 text-[12.5px] leading-normal text-[#6b7a80] [overflow-wrap:anywhere]">
+      <p className="mt-6 text-label leading-normal text-ink-muted [overflow-wrap:anywhere]">
         {CARD_MANDATE}
       </p>
       {form.error && (
@@ -391,7 +391,7 @@ export function CardCaptureForm({
     return (
       <p
         role="status"
-        className={look === "sheet" ? SHEET_LOADING : "text-[15px] text-[#8b93a0]"}
+        className={look === "sheet" ? SHEET_LOADING : "text-body-l text-ink-muted"}
       >
         {STRIPE_NOTE}
       </p>
@@ -460,21 +460,21 @@ export function CardCapturePanel({
     }
     return (
       <div className="flex flex-col items-start gap-3">
-        <p role="alert" className="text-[15px] text-[#b42318]">
+        <p role="alert" className="text-body-l text-danger">
           {setup.error}
         </p>
         <div className="flex gap-3">
           <button
             type="button"
             onClick={onCancel}
-            className="h-[44px] w-[104px] rounded-lg border border-[#d8dee4] bg-white text-[15px] font-semibold text-[#292e38]"
+            className="h-11 w-[104px] rounded-xl border border-line bg-card text-body-m font-semibold text-ink hover:bg-hover"
           >
             Cancel
           </button>
           <button
             type="button"
             onClick={setup.retry}
-            className="h-[44px] w-[114px] rounded-lg bg-[#4fc7c7] text-[15px] font-semibold text-white"
+            className="h-11 w-[114px] rounded-xl bg-action text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed"
           >
             Try again
           </button>
@@ -488,7 +488,7 @@ export function CardCapturePanel({
       <p
         role="status"
         className={
-          look === "sheet" ? SHEET_LOADING : "py-6 text-center text-[15px] text-[#8b93a0]"
+          look === "sheet" ? SHEET_LOADING : "py-6 text-center text-body-l text-ink-muted"
         }
       >
         {OPENING_CARD_FORM}

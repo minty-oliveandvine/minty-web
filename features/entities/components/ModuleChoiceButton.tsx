@@ -42,7 +42,7 @@ export function ModuleChoiceButton({
       <a
         href={href}
         aria-label={label}
-        className="relative z-10 flex h-full w-full items-center justify-center overflow-hidden rounded-xl border-[6px] border-gray-100 bg-white transition-colors hover:border-secondary hover:bg-gray-50 focus-visible:border-secondary focus-visible:outline-none"
+        className="relative z-10 flex h-full w-full items-center justify-center overflow-hidden rounded-xl border-[6px] border-line bg-card transition-colors hover:border-line-selected hover:bg-hover focus-visible:border-line-selected focus-visible:outline-none"
       >
         <span className={`relative ${art.scale}`}>
           <Image src={art.icon} alt="" fill sizes="390px" className="object-contain" />

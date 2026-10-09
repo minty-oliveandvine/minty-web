@@ -38,7 +38,7 @@ export function MintySelect({
         value={value}
         disabled={disabled}
         onChange={(e) => onChange(e.target.value)}
-        className="rounded border border-[var(--border)] bg-[var(--background)] px-2 py-1.5"
+        className="min-h-11 rounded-xl border border-line-input bg-card px-2 py-1.5"
       >
         {placeholder !== undefined && (
           <option value="" disabled>

@@ -29,7 +29,7 @@ export function ProfileScreen({ subscriptions, ...args }: ProfileScreenProps) {
   const p = useProfile(args);
 
   return (
-    <div className="flex min-h-dvh flex-col bg-[#f9fafb]">
+    <div className="flex min-h-dvh flex-col bg-sunk">
       <ProfileTitlebar back={backHref(p.entityId)} />
       <main className="mx-auto flex w-full max-w-[560px] flex-col px-4 pb-10">
         <ProfileBody model={p} subscriptions={subscriptions} />

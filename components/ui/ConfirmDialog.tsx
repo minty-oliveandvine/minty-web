@@ -50,16 +50,16 @@ export const MODAL_IMAGE: Record<ModalImage, { src: string; width: number; heigh
 };
 
 const CONFIRM_TONE: Record<ConfirmTone, string> = {
-  teal: "bg-[#4fc7c7]",
-  orange: "bg-[#ea9713]",
-  red: "bg-[#dc5a5a]",
+  teal: "bg-action hover:bg-action-hover active:bg-action-pressed",
+  orange: "bg-[#ea9713] hover:opacity-90",
+  red: "bg-danger-action hover:bg-[var(--mv2-action-danger-hover)]",
 };
 
 export type BackTone = "grey" | "teal";
 
 const BACK_TONE: Record<BackTone, string> = {
-  grey: "border-[#737a87]/30 font-bold text-black hover:bg-gray-50",
-  teal: "border-[#18c4c7] text-[#4fc7c7] hover:bg-[#f5ffff]",
+  grey: "border-line font-bold text-ink hover:bg-hover",
+  teal: "border-line-selected text-link hover:bg-selected",
 };
 
 export function ConfirmDialog({
@@ -106,7 +106,7 @@ export function ConfirmDialog({
       labelledBy={titleId}
       busy={busy}
       onDismiss={dismiss}
-      className="max-w-[435px] rounded-[24px] border border-white/40 bg-white p-12 max-[560px]:p-6 shadow-[0px_4px_8px_0px_rgba(15,23,42,0.08),0px_12px_32px_0px_rgba(0,0,0,0.1)]"
+      className="max-w-[435px] rounded-2xl border border-white/40 bg-card p-12 max-[560px]:p-6 shadow-modal"
     >
       {/*
           The company sits in the TITLE's column, tight under the last line of it and no wider
@@ -118,7 +118,7 @@ export function ConfirmDialog({
         */}
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
-          <h2 id={titleId} className="text-[26px] font-bold leading-tight text-black">
+          <h2 id={titleId} className="text-[26px] font-bold leading-tight text-ink">
             {title}
           </h2>
           {/*
@@ -127,9 +127,9 @@ export function ConfirmDialog({
               and a company name reads as part of the sentence without one.
             */}
           {lead !== undefined ? (
-            <div className="mt-4 text-[15px] leading-snug break-words">{lead}</div>
+            <div className="mt-4 text-body-l leading-snug break-words">{lead}</div>
           ) : entityName ? (
-            <p className="mt-4 text-[15px] leading-snug break-words text-[#737a87]">
+            <p className="mt-4 text-body-l leading-snug break-words text-ink-2">
               Entity
               <br />
               {/* The COMPANY is coloured, the label above it is not: "Entity" is furniture,
@@ -150,7 +150,7 @@ export function ConfirmDialog({
           className="-mr-3 -mt-2 w-auto shrink-0"
         />
       </div>
-      <div className="mt-6 flex flex-col gap-4 text-[15px] leading-snug text-[var(--ink-soft)]">
+      <div className="mt-6 flex flex-col gap-4 text-body-l leading-snug text-ink-2">
         {children}
       </div>
       {/*
@@ -173,7 +173,7 @@ export function ConfirmDialog({
             onClick={onBack}
             disabled={busy}
             data-tone={backTone}
-            className={`h-[66px] flex-1 rounded-[14px] max-[560px]:h-14 max-[560px]:w-full max-[560px]:flex-none border bg-white text-lg leading-tight disabled:opacity-60 ${BACK_TONE[backTone]}`}
+            className={`h-[66px] flex-1 rounded-xl max-[560px]:h-14 max-[560px]:w-full max-[560px]:flex-none border bg-card text-lg leading-tight disabled:opacity-60 ${BACK_TONE[backTone]}`}
           >
             {backLabel}
           </button>
@@ -186,7 +186,7 @@ export function ConfirmDialog({
           data-tone={confirmTone}
           // the transparent border matters: with `flex-1` the bordered button beside it would
           // otherwise end up 2px wider, both being basis-0 under border-box
-          className={`h-[66px] rounded-[14px] border border-transparent text-lg font-bold leading-tight text-white hover:opacity-90 disabled:cursor-wait disabled:opacity-60 ${
+          className={`h-[66px] rounded-xl border border-transparent text-lg font-bold leading-tight text-white disabled:cursor-wait disabled:bg-action-disabled disabled:text-ink-disabled ${
             hideBack
               ? "w-[169px]"
               : "flex-1 max-[560px]:h-14 max-[560px]:w-full max-[560px]:flex-none"

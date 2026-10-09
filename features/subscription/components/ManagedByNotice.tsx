@@ -6,7 +6,7 @@
 
 export function ManagedByNotice({ payer }: { payer: { name: string; email: string } | null }) {
   return (
-    <p className="text-sm text-[var(--ink-soft)]">
+    <p className="text-sm text-ink-2">
       {payer ? (
         <>
           Billing for this company is managed by {payer.name}{" "}

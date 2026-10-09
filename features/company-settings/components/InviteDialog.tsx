@@ -53,11 +53,11 @@ export function InviteDialog({
   };
 
   return (
-    <ModalFrame labelledBy={titleId} busy={busy} onDismiss={onClose} dismissLabel="Close" className="max-w-[440px] rounded-[20px] bg-white p-6 shadow-xl sm:p-8">
+    <ModalFrame labelledBy={titleId} busy={busy} onDismiss={onClose} dismissLabel="Close" className="max-w-[440px] rounded-2xl bg-card p-6 shadow-modal sm:p-8">
       <h2 id={titleId} className="text-[22px] font-bold text-ink">
         Invite someone
       </h2>
-      <p className="mt-1 text-sm text-ink-soft">They get an email with a link to join this company.</p>
+      <p className="mt-1 text-sm text-ink-2">They get an email with a link to join this company.</p>
       <form className="mt-5" onSubmit={(e) => void send(e)} noValidate>
         <div className={SHEET_FIELD}>
           <label htmlFor={`${titleId}-email`} className={SHEET_LABEL}>
@@ -65,7 +65,7 @@ export function InviteDialog({
             <RequiredMark />
           </label>
           <input id={`${titleId}-email`} {...emailInput.props} aria-required="true" className={`${SHEET_INPUT} ${SHEET_INPUT_OK}`} value={email} placeholder="jane@example.com" />
-          {emailInput.rejected ? <p className="mt-1.5 text-[12.5px] text-danger">{EMAIL_ASCII_HINT}</p> : null}
+          {emailInput.rejected ? <p className="mt-1.5 text-label text-danger">{EMAIL_ASCII_HINT}</p> : null}
         </div>
         <div className={SHEET_FIELD}>
           <label htmlFor={`${titleId}-role`} className={SHEET_LABEL}>

@@ -64,7 +64,7 @@ export function AppHeader({
       // portal) keeps it in view; one that scrolls its own <main> under it never moves it anyway.
       // Above the page's own layers (row menus z-30), below the dialogs (150) and sidebar (200).
       // Its row has a fixed height so a bar sticking under it can use `--app-header-h`.
-      className={`sticky top-0 z-40 bg-white ${noBorder ? "" : "border-b border-gray-200"} pt-[env(safe-area-inset-top,0px)]`}
+      className={`sticky top-0 z-40 bg-card ${noBorder ? "" : "border-b border-line"} pt-[env(safe-area-inset-top,0px)]`}
     >
       <div className={`relative mx-auto flex w-full max-w-[1920px] ${lead ? "@container" : ""} flex h-16 flex-row items-center justify-between gap-2 px-4 sm:h-18 sm:gap-3 sm:px-6`}>
         <div className="flex min-w-0 min-h-10 flex-1 items-center sm:min-h-0">
@@ -73,10 +73,10 @@ export function AppHeader({
             {!lead && back ? (
               <BackLink
                 href={back.href}
-                className="inline-flex shrink-0 items-center gap-0.5 text-sm font-medium text-primary transition-colors hover:text-secondary sm:text-base"
+                className="inline-flex shrink-0 items-center gap-0.5 text-sm font-medium text-ink-2 transition-colors hover:text-link sm:text-base"
               >
                 <span
-                  className="material-symbols-outlined text-[22px] leading-none sm:text-[24px]"
+                  className="material-symbols-rounded text-[22px] leading-none sm:text-[24px]"
                   aria-hidden
                 >
                   chevron_left
@@ -96,14 +96,14 @@ export function AppHeader({
               />
             ) : null}
             {lead || centerTitle || !title ? null : (
-              <h1 className="min-w-0 cursor-default truncate text-base font-semibold text-black sm:text-lg">
+              <h1 className="min-w-0 cursor-default truncate text-base font-semibold text-ink sm:text-lg">
                 {title}
               </h1>
             )}
           </div>
         </div>
         {!lead && centerTitle && title ? (
-          <h1 className="absolute left-1/2 top-1/2 max-w-[45%] -translate-x-1/2 -translate-y-1/2 cursor-default truncate text-base font-semibold text-black sm:text-lg">
+          <h1 className="absolute left-1/2 top-1/2 max-w-[45%] -translate-x-1/2 -translate-y-1/2 cursor-default truncate text-base font-semibold text-ink sm:text-lg">
             {title}
           </h1>
         ) : null}
@@ -111,7 +111,7 @@ export function AppHeader({
           {companyName ? (
             <>
               <span
-                className="material-symbols-outlined text-[22px] leading-none text-primary sm:text-[26px]"
+                className="material-symbols-rounded text-[22px] leading-none text-ink-2 sm:text-[26px]"
                 aria-hidden
               >
                 corporate_fare
@@ -119,7 +119,7 @@ export function AppHeader({
               {/* A plain 6.5rem, not min(100%,6.5rem): a percentage cap counts as no cap while
                   the shrink-0 block around it is sized, so on a phone a long name made it cover
                   the way back (fixed in minty-payment-request-web's Header and Flask's port too). */}
-              <span className="min-w-0 max-w-[6.5rem] truncate text-sm font-medium text-primary sm:max-w-[9rem] sm:text-base md:max-w-[14rem] lg:max-w-md">
+              <span className="min-w-0 max-w-[6.5rem] truncate text-sm font-medium text-ink-2 sm:max-w-[9rem] sm:text-base md:max-w-[14rem] lg:max-w-md">
                 {companyName}
               </span>
             </>

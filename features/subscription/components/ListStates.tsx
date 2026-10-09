@@ -15,10 +15,10 @@ import {
 } from "@/features/subscription/components/listGrid";
 
 const CARD =
-  "flex flex-col items-center rounded-xl border border-[#e5ebed] bg-white px-6 text-center shadow-[0px_2px_8px_0px_rgba(0,0,0,0.1)]";
-const TITLE = "text-[25px] font-bold leading-[42px] text-ink";
-const BODY = "max-w-[640px] text-base leading-[26px] text-[var(--ink-soft)]";
-const BUTTON = "rounded-xl bg-[#4fc7c7] text-[17px] font-semibold text-white hover:opacity-90";
+  "flex flex-col items-center rounded-xl border border-line bg-card px-6 text-center";
+const TITLE = "text-display-m font-bold leading-[42px] text-ink";
+const BODY = "max-w-[640px] text-base leading-[26px] text-ink-2";
+const BUTTON = "rounded-xl bg-action hover:bg-action-hover active:bg-action-pressed text-title-m font-semibold text-white";
 
 export function ListEmpty({ entityListHref }: { entityListHref: string }) {
   return (
@@ -56,7 +56,7 @@ export function ListError({ message, onRetry }: { message: string; onRetry: () =
     <div className={`${CARD} min-h-[400px] justify-center gap-4 py-8`} role="alert">
       <span
         aria-hidden
-        className="flex size-[78px] items-center justify-center rounded-full bg-[#ffecec] text-[40px] font-bold leading-none text-[#dc5a5a]"
+        className="flex size-[78px] items-center justify-center rounded-full bg-danger-bg text-[40px] font-bold leading-none text-danger"
       >
         !
       </span>
@@ -75,13 +75,13 @@ export function ListSkeleton({ rows = 3 }: { rows?: number }) {
       {Array.from({ length: rows }).map((_, i) => (
         <li
           key={i}
-          className={`${LIST_GRID} ${LIST_ROW} animate-pulse bg-white shadow-[0px_2px_8px_0px_rgba(0,0,0,0.1)]`}
+          className={`${LIST_GRID} ${LIST_ROW} animate-pulse bg-card`}
         >
-          <span className="h-5 w-[300px] max-w-full rounded bg-gray-200" />
+          <span className="h-5 w-[300px] max-w-full rounded bg-neutral-bg" />
           {[0, 1].map((cell) => (
             <span key={cell} className={`flex items-center gap-4 lg:gap-6 ${LIST_CELL}`}>
-              <span className="size-14 shrink-0 rounded-full bg-gray-100 lg:size-[76px]" />
-              <span className="h-[18px] w-[130px] rounded bg-gray-200" />
+              <span className="size-14 shrink-0 rounded-full bg-sunk lg:size-[76px]" />
+              <span className="h-[18px] w-[130px] rounded bg-neutral-bg" />
             </span>
           ))}
           <span className={`w-10 lg:w-[88px] ${LIST_ACTIONS}`} />

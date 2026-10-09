@@ -52,7 +52,7 @@ export function DetailsForm({
           disabled={!page.can_rename || busy}
           onChange={(e) => draft.setName(e.target.value)}
         />
-        {!page.can_rename && page.can_edit ? <p className="mt-1.5 text-[12.5px] text-gray-500">Only an admin can rename the company.</p> : null}
+        {!page.can_rename && page.can_edit ? <p className="mt-1.5 text-label text-ink-2">Only an admin can rename the company.</p> : null}
       </div>
       <div className="min-w-0">
         <label htmlFor="company-country" className={SHEET_LABEL}>

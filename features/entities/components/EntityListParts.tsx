@@ -57,7 +57,7 @@ export function CompanySearch({
   onChange: (v: string) => void;
 }) {
   return (
-    <div className="sticky top-0 z-30 bg-gray-50 py-2">
+    <div className="sticky top-0 z-30 bg-sunk py-2">
       <div className="relative">
         <input
           type="text"
@@ -66,9 +66,9 @@ export function CompanySearch({
           placeholder={SEARCH_PLACEHOLDER}
           aria-label={SEARCH_PLACEHOLDER}
           autoComplete="off"
-          className="w-full rounded-2xl border border-gray-300 bg-white py-3 pl-3 pr-10 text-gray-700 placeholder:text-gray-700 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#54D3DA]"
+          className="w-full rounded-xl border border-line-input bg-card py-3 pl-3 pr-10 text-ink-2 placeholder:text-ink-muted focus:border-line-selected focus:outline-none focus:ring-2 focus:ring-line-selected/25"
         />
-        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500">
+        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-ink-2">
           <svg viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5" aria-hidden>
             <path
               fillRule="evenodd"
@@ -92,7 +92,7 @@ export function AddEntityButton() {
       href={createEntityHref()}
       aria-label={ADD_ENTITY}
       title={ADD_ENTITY}
-      className="fixed bottom-[max(1.5rem,env(safe-area-inset-bottom,0px))] right-6 z-10 flex h-14 w-14 items-center justify-center rounded-full bg-[#54D3DA] shadow-xl transition-[background-color,transform] hover:-translate-y-0.5 hover:bg-[#54D3DA]/80 sm:right-8 lg:right-10"
+      className="fixed bottom-[max(1.5rem,env(safe-area-inset-bottom,0px))] right-6 z-10 flex h-14 w-14 items-center justify-center rounded-full bg-action shadow-overlay transition-[background-color,transform] hover:-translate-y-0.5 hover:bg-action-hover active:bg-action-pressed sm:right-8 lg:right-10"
     >
       <svg width="34" height="34" viewBox="0 0 34 34" fill="none" aria-hidden>
         <path
@@ -108,7 +108,7 @@ export function EntityListLoading() {
   return (
     <div className="flex flex-col gap-4" role="status" aria-label="Loading your companies">
       {[0, 1, 2].map((i) => (
-        <div key={i} className="h-[56px] animate-pulse rounded-[12px] bg-white shadow-md" />
+        <div key={i} className="h-[56px] animate-pulse rounded-xl bg-card" />
       ))}
     </div>
   );
@@ -117,11 +117,11 @@ export function EntityListLoading() {
 export function EntityListError({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
     <div className="flex flex-col items-center gap-3 py-6 text-center" role="alert">
-      <p className="text-sm text-gray-600">{message}</p>
+      <p className="text-sm text-ink-2">{message}</p>
       <button
         type="button"
         onClick={onRetry}
-        className="cursor-pointer rounded-xl bg-[#54D3DA] px-5 py-2 text-sm font-medium text-white hover:bg-[#54D3DA]/80"
+        className="min-h-11 cursor-pointer rounded-xl bg-action px-5 py-2 text-sm font-medium text-white hover:bg-action-hover active:bg-action-pressed"
       >
         Try again
       </button>
@@ -130,7 +130,7 @@ export function EntityListError({ message, onRetry }: { message: string; onRetry
 }
 
 export function EntityListNoMatch() {
-  return <p className="py-4 text-center text-sm text-gray-400">{NO_MATCH}</p>;
+  return <p className="py-4 text-center text-sm text-ink-muted">{NO_MATCH}</p>;
 }
 
 /**
@@ -155,7 +155,7 @@ export function EntityListEmpty() {
       <div className="mb-6 mt-6 w-full max-w-md px-6">
         <a
           href={createEntityHref()}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#54D3DA] py-3 font-medium text-white shadow-md transition-colors hover:bg-[#54D3DA]/80"
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-action py-3 font-medium text-white transition-colors hover:bg-action-hover active:bg-action-pressed"
         >
           <svg width="13" height="14" viewBox="0 0 13 14" fill="none" aria-hidden>
             <path

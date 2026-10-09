@@ -48,9 +48,9 @@ import {
 import { stripeFor } from "@/features/subscription/lib/stripe";
 import { EMAIL_ASCII_HINT, useEmailInput } from "@/lib/emailInput";
 
-const LABEL = "text-[13px] font-semibold text-[#464e5a]";
+const LABEL = "text-body-s font-semibold text-ink-2";
 const INPUT =
-  "h-[46px] w-full rounded-[10px] border-[1.5px] border-[#d6dae0] bg-white px-[14px] text-[15px] text-[#282e38] outline-none placeholder:text-[#ccc] focus:border-[#4fc7c7] disabled:bg-[#f2f4f7] disabled:text-[#8b93a0] aria-[invalid=true]:border-[#dc5a5a]";
+  "h-[46px] w-full rounded-xl border-[1.5px] border-line-input bg-card px-[14px] text-body-m text-ink outline-none placeholder:text-ink-muted focus:border-line-selected disabled:bg-sunk disabled:text-ink-disabled aria-[invalid=true]:border-danger";
 
 /**
  * Stripe's fields in 08-C's look - the same numbers as `INPUT` and `LABEL` above, because they
@@ -102,7 +102,7 @@ function Field({
       </label>
       {children}
       {error && (
-        <p id={`${id}-error`} className="text-[13px] text-[#b42318]">
+        <p id={`${id}-error`} className="text-body-s text-danger">
           {error}
         </p>
       )}
@@ -232,7 +232,7 @@ export function BillingDetailsForm({
         e.preventDefault();
         onSave(async () => (addressRef.current ? addressRef.current.read() : null));
       }}
-      className="mx-auto flex w-full max-w-[720px] flex-col gap-[18px] rounded-[16px] border border-[#e9ecf0] bg-white px-8 pb-6 pt-7"
+      className="mx-auto flex w-full max-w-[720px] flex-col gap-[18px] rounded-xl border border-line bg-card px-8 pb-6 pt-7"
     >
       <Field id="billing-company" label="Billing Company" error={errors.company}>
         <input {...input("company", "(e.g. Vine Consulting Limited)")} autoComplete="organization" />
@@ -245,10 +245,10 @@ export function BillingDetailsForm({
         />
       </Field>
 
-      <div className="h-px w-full bg-[#e5ebed]" />
-      <p className="text-[12px] font-bold tracking-[0.48px] text-[#828a96]">Address</p>
+      <div className="h-px w-full bg-line-subtle" />
+      <p className="text-label font-bold tracking-[0.48px] text-ink-muted">Address</p>
       {addressLocked ? (
-        <p className="text-[13px] text-[#6b7380]">{NO_CARD_FOR_ADDRESS}</p>
+        <p className="text-body-s text-ink-2">{NO_CARD_FOR_ADDRESS}</p>
       ) : drawn ? (
         // Its own region, because everything in it is Stripe's: an iframe from js.stripe.com
         // that this page cannot read until Save asks.
@@ -266,13 +266,13 @@ export function BillingDetailsForm({
           </Elements>
         </section>
       ) : (
-        <p role="status" className="text-[13px] text-[#6b7380]">
+        <p role="status" className="text-body-s text-ink-2">
           {ADDRESS_UNAVAILABLE}
         </p>
       )}
 
       {saveError && (
-        <p role="alert" className="text-[13px] text-[#b42318]">
+        <p role="alert" className="text-body-s text-danger">
           {saveError}
         </p>
       )}
@@ -281,7 +281,7 @@ export function BillingDetailsForm({
           type="button"
           onClick={onBack}
           disabled={busy}
-          className="rounded-[10px] border-[1.5px] border-[#d6dae0] bg-white px-[22px] py-3 text-[15px] font-semibold text-[#282e38] hover:bg-[#f5f7fa] disabled:opacity-60"
+          className="min-h-11 rounded-xl border-[1.5px] border-line bg-card px-[22px] py-3 text-body-m font-semibold text-ink hover:bg-hover disabled:opacity-60"
         >
           Go Back
         </button>
@@ -289,7 +289,7 @@ export function BillingDetailsForm({
           type="submit"
           disabled={busy || !dirty}
           aria-busy={busy || undefined}
-          className="rounded-[10px] bg-[#4fc7c7] px-[22px] py-3 text-[15px] font-semibold text-white hover:opacity-90 disabled:opacity-60"
+          className="min-h-11 rounded-xl bg-action px-[22px] py-3 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed disabled:bg-action-disabled disabled:text-ink-disabled"
         >
           {busy ? "Saving…" : SAVE_BILLING_ACCOUNT}
         </button>

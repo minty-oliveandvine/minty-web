@@ -71,17 +71,17 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             key={t.id}
             role={t.type === "error" ? "alert" : "status"}
             data-toast-type={t.type}
-            className="pointer-events-auto flex items-start gap-3 rounded border border-[var(--border)] bg-[var(--background)] p-3 text-sm shadow"
+            className="pointer-events-auto flex items-start gap-3 rounded-xl border border-line bg-card p-3 text-sm shadow-overlay"
           >
             <div className="flex-1">
               <p className="font-semibold">{LABEL[t.type]}</p>
-              <p className="text-muted">{t.message}</p>
+              <p className="text-ink-2">{t.message}</p>
             </div>
             <button
               type="button"
               onClick={() => dismiss(t.id)}
               aria-label="Dismiss"
-              className="text-muted hover:text-[var(--foreground)]"
+              className="text-ink-2 hover:text-ink"
             >
               ×
             </button>

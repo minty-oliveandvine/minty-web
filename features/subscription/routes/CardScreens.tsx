@@ -28,10 +28,10 @@ import {
 import { EXPIRY_INVALID, useAddCard, useEditCard } from "@/features/subscription/hooks/useCardForm";
 
 const SHEET =
-  "mx-auto flex w-full max-w-[490px] flex-col gap-4 rounded-xl border border-[#eef1f4] bg-white px-7 py-6 shadow-[0px_2px_8px_0px_rgba(0,0,0,0.1)]";
+  "mx-auto flex w-full max-w-[490px] flex-col gap-4 rounded-xl border border-line bg-card px-7 py-6";
 const FIELD =
-  "h-11 w-full rounded-lg border border-[#d8dee4] px-3.5 text-[15px] text-[#16202e] outline-none focus:border-[#2e9b9b]";
-const LABEL = "text-[13px] font-semibold text-[#16202e]";
+  "h-11 w-full rounded-xl border border-line-input bg-card px-3.5 text-body-m text-ink outline-none focus:border-line-selected";
+const LABEL = "text-body-s font-semibold text-ink";
 
 function MintyWithCards() {
   return (
@@ -59,8 +59,8 @@ export function AddCardScreen({
       <PortalHero title={ADD_CARD_TITLE} />
       <section aria-label={ADD_CARD_HEADING} className={SHEET}>
         <div>
-          <h2 className="text-[17px] font-bold text-[#16202e]">{ADD_CARD_HEADING}</h2>
-          <p className="mt-1.5 text-[13px] text-[#8b93a0]">{STRIPE_NOTE}</p>
+          <h2 className="text-title-m font-bold text-ink">{ADD_CARD_HEADING}</h2>
+          <p className="mt-1.5 text-body-s text-ink-muted">{STRIPE_NOTE}</p>
         </div>
         <CardCapturePanel
           setup={add}
@@ -92,16 +92,16 @@ export function EditCardScreen({
       <PortalHero title={EDIT_CARD_TITLE} />
       <section aria-label={EDIT_CARD_HEADING} className={SHEET}>
         <div>
-          <h2 className="text-[17px] font-bold text-[#16202e]">{EDIT_CARD_HEADING}</h2>
-          <p className="mt-1.5 text-[13px] text-[#8b93a0]">{EDIT_CARD_NOTE}</p>
+          <h2 className="text-title-m font-bold text-ink">{EDIT_CARD_HEADING}</h2>
+          <p className="mt-1.5 text-body-s text-ink-muted">{EDIT_CARD_NOTE}</p>
         </div>
 
         {edit.status === "error" ? (
-          <p role="alert" className="text-[15px] text-[#b42318]">
+          <p role="alert" className="text-body-l text-danger">
             {edit.error}
           </p>
         ) : edit.status === "loading" || !edit.card ? (
-          <p role="status" className="py-6 text-center text-[15px] text-[#8b93a0]">
+          <p role="status" className="py-6 text-center text-body-l text-ink-muted">
             Loading…
           </p>
         ) : (
@@ -118,7 +118,7 @@ export function EditCardScreen({
               </label>
               <input
                 id="card-number"
-                className={`${FIELD} mt-1.5 bg-[#f2f4f7] text-[#8b93a0]`}
+                className={`${FIELD} mt-1.5 bg-sunk text-ink-disabled`}
                 value={`•••• •••• •••• ${edit.card.last4 ?? "••••"}`}
                 disabled
                 readOnly
@@ -137,7 +137,7 @@ export function EditCardScreen({
                   aria-invalid={edit.saveError === EXPIRY_INVALID ? true : undefined}
                   className={`${FIELD} w-20 text-center ${edit.saveError === EXPIRY_INVALID ? "border-[#b4231f]" : ""}`}
                 />
-                <span className="text-[#8b93a0]">/</span>
+                <span className="text-ink-muted">/</span>
                 <input
                   aria-label="Expiry year"
                   inputMode="numeric"
@@ -161,9 +161,9 @@ export function EditCardScreen({
                 onChange={(e) => edit.setField("name", e.target.value)}
               />
             </div>
-            <p className="text-[13px] leading-relaxed text-[#8b93a0]">{EDIT_CARD_FOOT}</p>
+            <p className="text-body-s leading-relaxed text-ink-muted">{EDIT_CARD_FOOT}</p>
             {edit.saveError && (
-              <p role="alert" className="text-[13px] text-[#b42318]">
+              <p role="alert" className="text-body-s text-danger">
                 {edit.saveError}
               </p>
             )}
@@ -172,14 +172,14 @@ export function EditCardScreen({
                 type="button"
                 onClick={edit.cancel}
                 disabled={edit.busy}
-                className="h-[44px] w-[104px] rounded-lg border border-[#d8dee4] bg-white text-[15px] font-semibold text-[#292e38] hover:bg-[#f5f7fa] disabled:opacity-60"
+                className="h-11 w-[104px] rounded-xl border border-line bg-card text-body-m font-semibold text-ink hover:bg-hover disabled:opacity-60"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={edit.busy || !edit.dirty}
-                className="h-[44px] w-[150px] rounded-lg bg-[#4fc7c7] text-[15px] font-semibold text-white hover:opacity-90 disabled:opacity-60"
+                className="h-11 w-[150px] rounded-xl bg-action hover:bg-action-hover active:bg-action-pressed text-body-m font-semibold text-white disabled:bg-action-disabled disabled:text-ink-disabled"
               >
                 {edit.busy ? "Saving…" : "Save changes"}
               </button>

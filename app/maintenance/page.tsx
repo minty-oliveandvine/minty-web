@@ -7,7 +7,7 @@ export default function Maintenance() {
   return (
     <main className="mx-auto max-w-lg p-8">
       <h1 className="text-xl font-semibold">Minty is being updated</h1>
-      <p className="mt-2 text-muted">
+      <p className="mt-2 text-ink-2">
         We&apos;re doing some maintenance. Please try again in a few minutes.
       </p>
     </main>

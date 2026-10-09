@@ -15,11 +15,11 @@ import type { ModuleCta as ModuleCtaModel } from "@/features/subscription/lib/mo
 
 const LOOK: Record<ModuleCtaModel["variant"], string> = {
   filled:
-    "h-[66px] w-[248px] rounded-[24px] bg-secondary text-lg font-bold text-white hover:opacity-90",
+    "h-[66px] w-[248px] rounded-xl bg-action hover:bg-action-hover active:bg-action-pressed text-lg font-bold text-white disabled:bg-action-disabled disabled:text-ink-disabled",
   outline:
-    "h-[66px] w-[248px] rounded-[24px] border border-secondary bg-white text-lg font-bold text-teal-strong hover:bg-[var(--card-live)]",
+    "h-[66px] w-[248px] rounded-xl border border-line-selected bg-card text-lg font-bold text-link hover:bg-selected disabled:opacity-60",
   // Same row height as the buttons, so a link beside one (03-D) centres on it.
-  link: "inline-flex h-[66px] items-center gap-2 text-base font-bold text-teal-strong hover:underline",
+  link: "inline-flex h-[66px] items-center gap-2 text-base font-bold text-link hover:underline disabled:opacity-60",
 };
 
 export function ModuleCta({
@@ -37,7 +37,7 @@ export function ModuleCta({
       onClick={onClick}
       disabled={busy}
       aria-busy={busy || undefined}
-      className={`${LOOK[cta.variant]} disabled:cursor-wait disabled:opacity-60`}
+      className={`${LOOK[cta.variant]} disabled:cursor-wait`}
     >
       {cta.label}
       {cta.variant === "link" && <Icon name="chevron-right" size={16} />}

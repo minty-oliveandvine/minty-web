@@ -7,9 +7,9 @@
 
 import type { Member, RoleOption } from "@/features/company-settings/api/companySettings";
 
-const TAG = "inline-flex shrink-0 items-center rounded-full bg-[#eefbfb] px-2 py-0.5 text-xs font-medium text-[#1b9aa0]";
+const TAG = "inline-flex shrink-0 items-center rounded-full bg-selected px-2 py-0.5 text-label font-medium text-link";
 export const ROLE_SELECT =
-  "h-11 min-w-0 rounded-lg border border-gray-300 bg-white px-3 text-sm text-ink focus:border-secondary focus:outline-none focus:ring-2 focus:ring-secondary/25 disabled:bg-gray-50";
+  "h-11 min-w-0 rounded-xl border border-line-input bg-card px-3 text-sm text-ink focus:border-line-selected focus:outline-none focus:ring-2 focus:ring-line-selected/25 disabled:bg-sunk";
 
 export function MemberRow({
   member,
@@ -33,14 +33,14 @@ export function MemberRow({
     <li className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex min-w-0 items-center gap-3">
         <span
-          className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-secondary text-sm font-medium text-white"
+          className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--avatar-bg)] text-sm font-medium text-[var(--avatar-fg)]"
           aria-hidden
         >
           {member.initials}
         </span>
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="truncate font-semibold text-gray-900">{name}</span>
+            <span className="truncate font-semibold text-ink">{name}</span>
             {member.is_you ? <span className={TAG}>You</span> : null}
             {member.subscriber ? (
               <span
@@ -51,7 +51,7 @@ export function MemberRow({
               </span>
             ) : null}
           </div>
-          <p className="truncate text-sm text-gray-500">{member.email}</p>
+          <p className="truncate text-sm text-ink-2">{member.email}</p>
         </div>
       </div>
       <div className="flex shrink-0 items-center gap-2 pl-[52px] sm:pl-0">
@@ -78,7 +78,7 @@ export function MemberRow({
             onClick={onRemove}
             disabled={busy}
             aria-label={`Remove ${name}`}
-            className="inline-flex h-11 w-11 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-strong disabled:opacity-50"
+            className="inline-flex h-11 w-11 items-center justify-center rounded-xl text-ink-muted transition-colors hover:bg-danger-bg hover:text-danger focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--mv2-border-focus)] disabled:opacity-50"
           >
             {/* Flask's Users tab's trash icon, as it was */}
             <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" aria-hidden>

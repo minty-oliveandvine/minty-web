@@ -34,19 +34,19 @@ export function BillingDetailsScreen({
       {d.status === "error" ? (
         <div
           role="alert"
-          className="mx-auto flex w-full max-w-[720px] flex-col items-start gap-3 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800"
+          className="mx-auto flex w-full max-w-[720px] flex-col items-start gap-3 rounded-xl border border-danger bg-danger-bg px-4 py-3 text-sm text-danger"
         >
           {d.error}
           <button
             type="button"
             onClick={d.back}
-            className="rounded-lg border border-rose-300 bg-white px-4 py-1.5 font-semibold"
+            className="min-h-11 rounded-xl border border-danger bg-card px-4 py-1.5 font-semibold"
           >
             Go Back
           </button>
         </div>
       ) : d.status === "loading" ? (
-        <p role="status" className="py-6 text-center text-[15px] text-[#8b93a0]">
+        <p role="status" className="py-6 text-center text-body-l text-ink-muted">
           Loading…
         </p>
       ) : (

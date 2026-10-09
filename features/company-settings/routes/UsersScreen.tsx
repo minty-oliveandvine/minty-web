@@ -54,9 +54,9 @@ export function UsersScreen({ company, flash }: { company: { id: string; name: s
                 <button
                   type="button"
                   onClick={() => setInviting(true)}
-                  className="inline-flex min-h-11 items-center gap-1.5 rounded-lg bg-secondary px-4 text-sm font-semibold text-white transition-colors hover:bg-teal-strong focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-strong"
+                  className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-action px-4 text-sm font-semibold text-white transition-colors hover:bg-action-hover active:bg-action-pressed focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--mv2-border-focus)]"
                 >
-                  <span className="material-symbols-outlined text-[20px]" aria-hidden>
+                  <span className="material-symbols-rounded text-[20px]" aria-hidden>
                     person_add
                   </span>
                   {USERS_COPY.invite}
@@ -64,7 +64,7 @@ export function UsersScreen({ company, flash }: { company: { id: string; name: s
               ) : null
             }
           >
-            <ul className="divide-y divide-gray-100" aria-label="Members">
+            <ul className="divide-y divide-line-subtle" aria-label="Members">
               {page.members.map((m) => (
                 <MemberRow
                   key={m.id}
@@ -106,7 +106,7 @@ export function UsersScreen({ company, flash }: { company: { id: string; name: s
           onConfirm={() => void tab.remove(removing.id).then(() => setRemoving(null))}
           onBack={() => setRemoving(null)}
         >
-          <p className="mt-6 text-[15px] leading-snug">They lose access to this company straight away. Their account and their other companies stay as they are.</p>
+          <p className="mt-6 text-body-l leading-snug">They lose access to this company straight away. Their account and their other companies stay as they are.</p>
         </ConfirmDialog>
       ) : null}
       {cancelling ? (
@@ -120,7 +120,7 @@ export function UsersScreen({ company, flash }: { company: { id: string; name: s
           onConfirm={() => void tab.cancel(cancelling.id).then((done) => done && setCancelling(null))}
           onBack={() => setCancelling(null)}
         >
-          <p className="mt-6 text-[15px] leading-snug">The link in their email stops working. You can invite them again later.</p>
+          <p className="mt-6 text-body-l leading-snug">The link in their email stops working. You can invite them again later.</p>
         </ConfirmDialog>
       ) : null}
     </SettingsShell>

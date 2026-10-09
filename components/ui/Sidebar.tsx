@@ -139,7 +139,7 @@ export function SidebarDrawer({
       {/* Figma "Rectangle 398": the page behind washes out; a click on it closes the sidebar */}
       <button
         type="button"
-        className={`absolute inset-0 cursor-pointer bg-[#d9d9d9]/70 transition-opacity duration-300 ease-out ${open ? "opacity-100" : "opacity-0"}`}
+        className={`absolute inset-0 cursor-pointer bg-[var(--mv2-scrim)] transition-opacity duration-300 ease-out ${open ? "opacity-100" : "opacity-0"}`}
         onClick={onClose}
         tabIndex={open ? 0 : -1}
         aria-label={profile ? "Close My Profile" : "Close menu"}
@@ -147,7 +147,7 @@ export function SidebarDrawer({
       <div
         id={panelId}
         ref={panel}
-        className={`absolute right-0 top-0 h-full overflow-y-auto overscroll-contain border border-[#ededed] shadow-[-6px_4px_18px_0px_rgba(15,23,42,0.1)] transition-[transform,width] duration-300 ease-out ${profile ? "w-full bg-[#f9fafb] sm:w-[440px]" : "w-[min(100%,353px)] bg-white"} ${open ? "translate-x-0" : "translate-x-full"}`}
+        className={`absolute right-0 top-0 h-full overflow-y-auto overscroll-contain border border-line shadow-modal transition-[transform,width] duration-300 ease-out ${profile ? "w-full bg-sunk sm:w-[440px]" : "w-[min(100%,353px)] bg-card"} ${open ? "translate-x-0" : "translate-x-full"}`}
       >
         {children}
       </div>

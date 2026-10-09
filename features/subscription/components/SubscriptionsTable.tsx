@@ -96,15 +96,15 @@ function SortHead({
       aria-label={`Sort by ${label}`}
       aria-pressed={active}
       data-direction={direction ?? "none"}
-      className={`flex items-center gap-1.5 ${
-        strong ? "text-lg font-bold text-ink lg:text-[25px]" : "text-base text-[#6b7380] lg:text-lg"
+      className={`flex min-h-11 items-center gap-1.5 ${
+        strong ? "text-lg font-bold text-ink lg:text-display-m" : "text-base text-ink-2 lg:text-lg"
       }`}
     >
       {label}
       <Icon
         name={direction === "asc" ? "chevron-up" : "chevron-down"}
         size={24}
-        className={active ? "text-[#2e9b9b]" : "text-[#6b7380]"}
+        className={active ? "text-link" : "text-ink-2"}
       />
     </button>
   );
@@ -127,14 +127,14 @@ function Row({ row, focused, on }: { row: SubscriptionRow; focused: boolean; on:
       onClick={(e) => {
         if (!fromControl(e)) on.onToggle(row.entity);
       }}
-      className={`${LIST_GRID} ${LIST_ROW} cursor-pointer shadow-[0px_2px_8px_0px_rgba(0,0,0,0.1)] ${
-        suspended ? "bg-[#f5f5f5]" : "bg-white"
-      } ${focused ? "ring-2 ring-secondary" : ""}`}
+      className={`${LIST_GRID} ${LIST_ROW} cursor-pointer ${
+        suspended ? "bg-sunk" : "bg-card"
+      } ${focused ? "ring-2 ring-line-selected" : ""}`}
     >
       {/* The closed row carries no Activate button (the user, 2026-10-08): activating is asked
           inside the OPEN row, where Confirm Subscription Change sits - see
           SubscriptionSummaryRow. */}
-      <p className="min-w-0 truncate text-xl font-bold text-black sm:text-[25px]">
+      <p className="min-w-0 truncate text-xl font-bold text-ink sm:text-display-m">
         {row.entity.entity_name}
       </p>
       {row.cells.map((cell) => (
@@ -153,7 +153,7 @@ function Row({ row, focused, on }: { row: SubscriptionRow; focused: boolean; on:
           onClick={() => on.onToggle(row.entity)}
           aria-label={`Open ${row.entity.entity_name}`}
           aria-expanded={false}
-          className="flex size-10 items-center justify-center rounded-md text-[#8c949e] hover:bg-gray-100"
+          className="flex size-11 items-center justify-center rounded-xl text-ink-muted hover:bg-hover"
         >
           <Icon name="chevron-down" size={24} />
         </button>
@@ -251,7 +251,7 @@ export function SubscriptionsTable({
   return (
     <div className="flex flex-col gap-10">
       <section aria-label="Active subscriptions" className="flex flex-col gap-4">
-        <h2 className="px-3 text-xl font-bold text-ink sm:text-[25px]">
+        <h2 className="px-3 text-xl font-bold text-ink sm:text-display-m">
           Active Subscriptions ({pluralEntities(active.length)})
         </h2>
         {/* Below `lg` the rows have no columns to head: the sort buttons wrap on one line. */}
@@ -282,7 +282,7 @@ export function SubscriptionsTable({
       </section>
       {suspended.length > 0 && (
         <section aria-label="Suspended subscriptions" className="flex flex-col gap-4">
-          <h2 className="px-3 text-xl font-bold text-[var(--ink-soft)] sm:text-[25px]">
+          <h2 className="px-3 text-xl font-bold text-ink-2 sm:text-display-m">
             Suspended Subscriptions ({pluralEntities(suspended.length)})
           </h2>
           <ul className="flex flex-col gap-[29px]">

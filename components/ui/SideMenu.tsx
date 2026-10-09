@@ -69,9 +69,9 @@ export function currentOf(pathname: string): Current {
 // technology only (aria-current). The one tinted row is Bills, which the design draws as a
 // button ("Bill Button").
 const ROW =
-  "flex w-full items-center rounded-[12px] text-[18px] font-medium leading-[22px] transition-colors";
-const IDLE = "text-[#8f8f8f] hover:bg-[#f5f5f5]";
-const BUTTON = "bg-[rgba(202,241,244,0.5)] text-[#54d3da] hover:bg-[rgba(202,241,244,0.8)]";
+  "flex w-full items-center rounded-lg text-[18px] font-medium leading-[22px] transition-colors";
+const IDLE = "text-ink-muted hover:bg-hover";
+const BUTTON = "bg-[rgba(202,241,244,0.5)] text-link hover:bg-[rgba(202,241,244,0.8)]";
 
 function MenuLink({
   href,
@@ -99,7 +99,7 @@ function MenuLink({
 }
 
 function Separator() {
-  return <div className="h-px w-full shrink-0 bg-[#ededed]" role="presentation" />;
+  return <div className="h-px w-full shrink-0 bg-line-subtle" role="presentation" />;
 }
 
 /** Figma "Manage subscriptions": four outlined rings, placed as the design places them. */
@@ -167,7 +167,7 @@ function ModuleHeading({
 }
 
 const PERSON =
-  "mt-[30px] flex w-full cursor-pointer items-center gap-[40px] rounded-[12px] py-[3px] pl-[35px] text-left hover:bg-[#f5f5f5]";
+  "mt-[30px] flex w-full cursor-pointer items-center gap-[40px] rounded-lg py-[3px] pl-[35px] text-left hover:bg-hover";
 
 /** Rendered only in the browser (inside the sidebar's portal), so the cookie and the URL exist. */
 export function SideMenu({ modules, viewer, onClose, onProfile }: SideMenuProps) {
@@ -194,13 +194,13 @@ export function SideMenu({ modules, viewer, onClose, onProfile }: SideMenuProps)
   const who = (
     <>
       <span
-        className="flex h-[57px] w-[56px] shrink-0 items-center justify-center rounded-[91px] bg-[var(--avatar-bg)] text-[30px] font-medium text-[var(--avatar-fg)]"
+        className="flex h-[57px] w-[56px] shrink-0 items-center justify-center rounded-full bg-[var(--avatar-bg)] text-[30px] font-medium text-[var(--avatar-fg)]"
         aria-hidden
       >
         {person?.initials ?? ""}
       </span>
       <span
-        className="max-w-[130px] break-words text-[18px] leading-[22px] text-[#1f2937]"
+        className="max-w-[130px] break-words text-[18px] leading-[22px] text-ink"
         aria-hidden
       >
         {person?.name ?? "My Profile"}
@@ -280,9 +280,9 @@ export function SideMenu({ modules, viewer, onClose, onProfile }: SideMenuProps)
             <div className="mt-[25px] flex flex-col" role="group" aria-label="Petty Cash">
               <ModuleHeading
                 title="Petty Cash"
-                tone="text-[#16202e]"
+                tone="text-ink"
                 icon={{ src: "/menu/petty-cash.svg", width: 42, height: 45 }}
-                iconBox="bg-[#f7efd9]"
+                iconBox="bg-warning-bg"
               />
               <MenuLink
                 href={mintyEntryUrl()}
@@ -332,14 +332,14 @@ export function SideMenu({ modules, viewer, onClose, onProfile }: SideMenuProps)
                     <br aria-hidden /> Request
                   </>
                 }
-                tone="text-[#2374f2]"
+                tone="text-info"
                 icon={{ src: "/menu/payment-request.svg", width: 76, height: 76 }}
                 iconBox=""
               />
               <a
                 href={`${env.PAYMENT_REQUEST_WEB_URL}/`}
                 onClick={onClose}
-                className={`${ROW} ${BUTTON} mt-[28px] min-h-[41px] gap-[25px] pl-[17px]`}
+                className={`${ROW} ${BUTTON} mt-[28px] min-h-11 gap-[25px] pl-[17px]`}
               >
                 <Image
                   src="/menu/bills.svg"

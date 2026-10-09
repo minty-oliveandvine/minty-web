@@ -41,7 +41,7 @@ export function SubscriptionRequestsScreen(args: UseSubscriptionRequestsArgs) {
       {r.status === "error" && (
         <div
           role="alert"
-          className="flex items-center gap-4 rounded-lg border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-sm text-rose-800"
+          className="flex items-center gap-4 rounded-xl border border-danger bg-danger-bg px-3.5 py-2.5 text-sm text-danger"
         >
           <p>{r.error}</p>
           <button type="button" onClick={r.reload} className="font-bold">
@@ -50,7 +50,7 @@ export function SubscriptionRequestsScreen(args: UseSubscriptionRequestsArgs) {
         </div>
       )}
       {r.status === "loading" && (
-        <div className="h-[132px] animate-pulse rounded-xl bg-[#f7f9fa]" role="status">
+        <div className="h-[132px] animate-pulse rounded-xl bg-sunk" role="status">
           <span className="sr-only">Loading…</span>
         </div>
       )}
@@ -62,10 +62,10 @@ export function SubscriptionRequestsScreen(args: UseSubscriptionRequestsArgs) {
       )}
 
       {r.status === "ready" && r.reviewed && (
-        <section className="flex flex-col gap-6 rounded-xl bg-white px-8 pb-8 pt-10 shadow-[0px_2px_8px_0px_rgba(0,0,0,0.1)]">
+        <section className="flex flex-col gap-6 rounded-xl border border-line bg-card px-8 pb-8 pt-10">
           {picking ? (
             <>
-              <h2 className="text-[25px] font-bold text-black">{r.reviewed.row.entity_name}</h2>
+              <h2 className="text-display-m font-bold text-ink">{r.reviewed.row.entity_name}</h2>
               <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-[minmax(0,1fr)_auto]">
                 <div className="flex justify-center">
                   <TransferAccountPicker

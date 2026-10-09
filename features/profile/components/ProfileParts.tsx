@@ -16,11 +16,11 @@ import { LOG_OUT, PAGE_TITLE, planLabel } from "@/features/profile/lib/profileVi
 
 export function ProfileTitlebar({ back }: { back: string }) {
   return (
-    <header className="sticky top-0 z-40 flex h-14 shrink-0 items-center justify-between bg-[#f9fafb] px-4 py-1.5">
+    <header className="sticky top-0 z-40 flex h-14 shrink-0 items-center justify-between bg-sunk px-4 py-1.5">
       <BackLink
         href={back}
         ariaLabel="Back"
-        className="flex size-10 items-center justify-center rounded-md hover:bg-primary/10"
+        className="flex size-11 items-center justify-center rounded-xl hover:bg-hover"
       >
         <Image
           className="-scale-x-100"
@@ -31,7 +31,7 @@ export function ProfileTitlebar({ back }: { back: string }) {
           unoptimized
         />
       </BackLink>
-      <h1 className="p-2.5 text-center text-base font-semibold whitespace-nowrap text-[#767676]">
+      <h1 className="p-2.5 text-center text-base font-semibold whitespace-nowrap text-ink-2">
         {PAGE_TITLE}
       </h1>
       <NavMenu />
@@ -52,12 +52,12 @@ export function ProfilePanelTitlebar({
   onClose?: () => void;
 }) {
   return (
-    <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center justify-between bg-[#f9fafb] px-4 py-1.5">
+    <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center justify-between bg-sunk px-4 py-1.5">
       <button
         type="button"
         onClick={onBack}
         aria-label="Back to the menu"
-        className="flex size-10 cursor-pointer items-center justify-center rounded-md hover:bg-primary/10"
+        className="flex size-11 cursor-pointer items-center justify-center rounded-xl hover:bg-hover"
       >
         <Image
           className="-scale-x-100"
@@ -68,16 +68,16 @@ export function ProfilePanelTitlebar({
           unoptimized
         />
       </button>
-      <h2 className="p-2.5 text-center text-base font-semibold whitespace-nowrap text-[#767676]">
+      <h2 className="p-2.5 text-center text-base font-semibold whitespace-nowrap text-ink-2">
         {PAGE_TITLE}
       </h2>
       <button
         type="button"
         onClick={onClose}
         aria-label="Close My Profile"
-        className="flex size-10 cursor-pointer items-center justify-center rounded-md text-[#767676] hover:bg-primary/10"
+        className="flex size-11 cursor-pointer items-center justify-center rounded-xl text-ink-2 hover:bg-hover"
       >
-        <span className="material-symbols-outlined text-[24px] leading-none" aria-hidden>
+        <span className="material-symbols-rounded text-[24px] leading-none" aria-hidden>
           close
         </span>
       </button>
@@ -97,8 +97,8 @@ export function ProfileHero({ profile }: { profile: Profile }) {
         <div
           className={`relative mt-[21px] flex flex-col items-center ${plan?.cat ? "max-w-[calc(100%-148px)]" : "max-w-full"}`}
         >
-          <p className="text-sm leading-5 text-[#6b7280]">{company.name}</p>
-          {plan ? <p className={`mt-2.5 text-[10px] leading-3 ${plan.tone}`}>{plan.text}</p> : null}
+          <p className="text-sm leading-5 text-ink-2">{company.name}</p>
+          {plan ? <p className={`mt-2.5 text-label leading-3 ${plan.tone}`}>{plan.text}</p> : null}
           {plan?.cat ? (
             <Image
               className="absolute -right-[74px] -top-[16px] h-[56px] w-[60px] object-contain"
@@ -112,16 +112,16 @@ export function ProfileHero({ profile }: { profile: Profile }) {
         </div>
       ) : null}
       <span
-        className={`${company ? "mt-[23px]" : "mt-[42px]"} flex h-[75px] w-[74px] items-center justify-center rounded-[91px] bg-[var(--avatar-bg)] text-[30px] font-medium text-[var(--avatar-fg)]`}
+        className={`${company ? "mt-[23px]" : "mt-[42px]"} flex h-[75px] w-[74px] items-center justify-center rounded-full bg-[var(--avatar-bg)] text-[30px] font-medium text-[var(--avatar-fg)]`}
         aria-hidden
       >
         {profile.user.initials}
       </span>
-      <h2 className="mt-[15px] text-[30px] leading-9 font-bold text-[#1f2937]">
+      <h2 className="mt-[15px] text-[30px] leading-9 font-bold text-ink">
         {profile.user.name}
       </h2>
       {company?.role_label ? (
-        <p className="mt-[9px] rounded-[25px] bg-[#e9f8f8] px-[15px] text-[10px] leading-5 text-[#757575]">
+        <p className="mt-[9px] rounded-full bg-selected px-[15px] text-label leading-5 text-ink-2">
           {company.role_label}
         </p>
       ) : null}
@@ -134,7 +134,7 @@ export function LogOutButton() {
     <button
       type="button"
       onClick={logOut}
-      className="mx-auto mt-[74px] flex cursor-pointer items-center gap-[10px] rounded-md px-3 py-1 text-xs leading-[21px] text-[#737a87] hover:bg-[#eef0f3]"
+      className="mx-auto mt-[74px] flex cursor-pointer items-center gap-[10px] min-h-11 rounded-xl px-3 py-1 text-label leading-[21px] text-ink-2 hover:bg-hover"
     >
       <Image src="/profile/logout.svg" alt="" width={13} height={13} unoptimized aria-hidden />
       {LOG_OUT}
@@ -149,9 +149,9 @@ export function ProfileLoading() {
       role="status"
       aria-label="Loading your profile"
     >
-      <span className="h-[75px] w-[74px] animate-pulse rounded-full bg-[#eef0f3]" />
-      <span className="h-8 w-56 animate-pulse rounded-lg bg-[#eef0f3]" />
-      <span className="mt-6 h-[184px] w-full animate-pulse rounded-xl bg-white" />
+      <span className="h-[75px] w-[74px] animate-pulse rounded-full bg-neutral-bg" />
+      <span className="h-8 w-56 animate-pulse rounded-lg bg-neutral-bg" />
+      <span className="mt-6 h-[184px] w-full animate-pulse rounded-xl bg-card" />
     </div>
   );
 }
@@ -159,11 +159,11 @@ export function ProfileLoading() {
 export function ProfileError({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
     <div className="mt-[42px] flex flex-col items-center gap-3 text-center" role="alert">
-      <p className="text-sm text-[#4b5563]">{message}</p>
+      <p className="text-sm text-ink-2">{message}</p>
       <button
         type="button"
         onClick={onRetry}
-        className="cursor-pointer rounded-xl bg-[#54d3da] px-5 py-2 text-sm font-medium text-white hover:bg-[#54d3da]/80"
+        className="min-h-11 cursor-pointer rounded-xl bg-action px-5 py-2 text-sm font-medium text-white hover:bg-action-hover active:bg-action-pressed"
       >
         Try again
       </button>

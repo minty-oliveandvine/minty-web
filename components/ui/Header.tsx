@@ -22,10 +22,10 @@ export function Header({ title = "Minty" }: { title?: string }) {
   const entityName = useSyncExternalStore(noSubscribe, readEntityName, serverEntityName);
 
   return (
-    <header className="flex items-center justify-between gap-4 border-b border-[var(--border)] px-4 py-3">
+    <header className="flex items-center justify-between gap-4 border-b border-line px-4 py-3">
       <div className="flex items-baseline gap-3">
         <span className="text-lg font-semibold">{title}</span>
-        {entityName && <span className="text-sm text-muted">{entityName}</span>}
+        {entityName && <span className="text-sm text-ink-2">{entityName}</span>}
       </div>
       <nav aria-label="Primary">
         <a className="text-sm underline" href={env.PETTY_CASH_URL}>

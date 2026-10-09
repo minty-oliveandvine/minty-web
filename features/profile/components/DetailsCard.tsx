@@ -22,14 +22,14 @@ import {
 } from "@/features/profile/lib/profileView";
 import { EMAIL_ASCII_HINT, useEmailInput } from "@/lib/emailInput";
 
-const LABEL = "text-[10px] leading-5 text-[#4b5563]";
-const VALUE = "text-sm leading-5 text-[#6b7280]";
+const LABEL = "text-label leading-5 text-ink-2";
+const VALUE = "text-sm leading-5 text-ink-2";
 const FIELD =
-  "mt-0.5 w-full rounded-md border border-[#d9dde3] bg-white px-2 py-1 text-sm leading-5 text-[#374151] focus:border-[#54d3da] focus:outline-none focus:ring-1 focus:ring-[#54d3da]";
+  "mt-0.5 min-h-11 w-full rounded-xl border border-line-input bg-card px-2 py-1 text-sm leading-5 text-ink-2 focus:border-line-selected focus:outline-none focus:ring-1 focus:ring-line-selected/25";
 
 function Tile({ src, width, height }: { src: string; width: number; height: number }) {
   return (
-    <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-[rgba(84,211,218,0.1)]" aria-hidden>
+    <span className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-selected" aria-hidden>
       <Image src={src} alt="" width={width} height={height} unoptimized />
     </span>
   );
@@ -59,12 +59,12 @@ export function DetailsCard({ user, draft, saving, error, onEdit, onCancel, onCh
   const editing = draft !== null;
   const emailInput = useEmailInput((value) => onChange("email", value));
   return (
-    <section className="relative mt-8 rounded-xl bg-white px-[19px] pb-[15px] pt-[35px]" aria-label="Your details">
+    <section className="relative mt-8 rounded-xl bg-card px-[19px] pb-[15px] pt-[35px]" aria-label="Your details">
       <button
         type="button"
         onClick={editing ? onCancel : onEdit}
         disabled={saving}
-        className="absolute right-3 top-1 cursor-pointer text-[10px] leading-5 text-[#54d3da] hover:underline disabled:cursor-default"
+        className="absolute right-3 top-1 cursor-pointer text-label leading-5 text-link hover:underline disabled:cursor-default"
       >
         {editing ? CANCEL : EDIT}
       </button>
@@ -128,7 +128,7 @@ export function DetailsCard({ user, draft, saving, error, onEdit, onCancel, onCh
                   maxLength={255}
                 />
                 {emailInput.rejected && (
-                  <p id="profile-email-hint" className="mt-1 text-[12px] text-[#b42318]" role="status">
+                  <p id="profile-email-hint" className="mt-1 text-label text-danger" role="status">
                     {EMAIL_ASCII_HINT}
                   </p>
                 )}
@@ -150,7 +150,7 @@ export function DetailsCard({ user, draft, saving, error, onEdit, onCancel, onCh
                 href={CHANGE_PASSWORD_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-[#54d3da] hover:underline"
+                className="text-link hover:underline"
                 aria-label="Change password (opens your Xero account)"
               >
                 {CHANGE}
@@ -162,14 +162,14 @@ export function DetailsCard({ user, draft, saving, error, onEdit, onCancel, onCh
         {editing ? (
           <div className="mt-4 flex flex-col items-end gap-2">
             {error ? (
-              <p className="w-full text-xs text-[#b42318]" role="alert">
+              <p className="w-full text-label text-danger" role="alert">
                 {error}
               </p>
             ) : null}
             <button
               type="submit"
               disabled={saving}
-              className="cursor-pointer rounded-xl bg-[#54d3da] px-6 py-2 text-sm font-medium text-white hover:bg-[#54d3da]/80 disabled:cursor-default disabled:opacity-60"
+              className="min-h-11 cursor-pointer rounded-xl bg-action px-6 py-2 text-sm font-medium text-white hover:bg-action-hover active:bg-action-pressed disabled:cursor-default disabled:bg-action-disabled disabled:text-ink-disabled"
             >
               {saving ? "Saving…" : SAVE}
             </button>

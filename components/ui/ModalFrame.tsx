@@ -47,7 +47,7 @@ export function ModalFrame({
         aria-label={dismissLabel}
         onClick={onDismiss}
         disabled={busy}
-        className="absolute inset-0 cursor-default bg-white/60 backdrop-blur-[3px]"
+        className="absolute inset-0 cursor-default bg-[var(--mv2-scrim)] backdrop-blur-[3px]"
       />
       <div
         role="dialog"
