@@ -66,7 +66,7 @@ describe("LoginScreen", () => {
     expect(screen.getByRole("heading", { name: LOGIN_COPY.loginTitle })).toBeInTheDocument();
     const send = screen.getByRole("button", { name: LOGIN_COPY.sendLogin });
     expect(send).toBeDisabled();
-    await userEvent.type(screen.getByLabelText("Email"), "jane@example.com{Enter}");
+    await userEvent.type(screen.getByLabelText(/^Email\s*\*?$/), "jane@example.com{Enter}");
 
     await waitFor(() => expect(push).toHaveBeenCalledWith("/login/confirm"));
     expect(calls("/auth/email/request-code")).toEqual([{ email: "jane@example.com", mode: "login" }]);
@@ -77,7 +77,7 @@ describe("LoginScreen", () => {
     flask({ "/auth/email/request-code": () => json({ status: "error", message: "Please sign up first" }, 404) });
     show();
 
-    await userEvent.type(screen.getByLabelText("Email"), "nobody@example.com");
+    await userEvent.type(screen.getByLabelText(/^Email\s*\*?$/), "nobody@example.com");
     await userEvent.click(screen.getByRole("button", { name: LOGIN_COPY.sendLogin }));
 
     const alert = await screen.findByRole("alert");
@@ -94,9 +94,9 @@ describe("LoginScreen", () => {
     show("mode=signup");
 
     expect(screen.getByRole("heading", { name: LOGIN_COPY.signupTitle })).toBeInTheDocument();
-    await userEvent.type(screen.getByLabelText("First name"), "Jane");
-    await userEvent.type(screen.getByLabelText("Last name"), "Doe");
-    await userEvent.type(screen.getByLabelText("Email"), "jane@example.com");
+    await userEvent.type(screen.getByLabelText(/^First name\s*\*?$/), "Jane");
+    await userEvent.type(screen.getByLabelText(/^Last name\s*\*?$/), "Doe");
+    await userEvent.type(screen.getByLabelText(/^Email\s*\*?$/), "jane@example.com");
     const send = screen.getByRole("button", { name: LOGIN_COPY.sendSignup });
     expect(send).toBeDisabled(); // the Terms are owed
 
@@ -139,7 +139,7 @@ describe("LoginScreen", () => {
     // the secret leaves the address bar at once
     expect(window.location.search).toBe("");
     expect(screen.getByRole("status")).toHaveTextContent("This invitation was sent to ivy@example.com");
-    expect(screen.getByLabelText("Email")).toHaveAttribute("readonly");
+    expect(screen.getByLabelText(/^Email\s*\*?$/)).toHaveAttribute("readonly");
     await waitFor(() => expect(screen.queryByRole("checkbox")).toBeNull());
     expect(calls("/legal/invite-terms-status")).toEqual([{ invite: "secret" }]);
 

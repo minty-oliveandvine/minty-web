@@ -142,12 +142,12 @@ describe("UsersScreen", () => {
 
     await userEvent.click(await screen.findByRole("button", { name: "Invite" }));
     const dialog = within(screen.getByRole("dialog"));
-    await userEvent.selectOptions(dialog.getByLabelText("Role"), "shop_manager");
-    await userEvent.type(dialog.getByLabelText("Email"), "new@test.com");
-    await userEvent.type(dialog.getByLabelText("First name"), "New");
+    await userEvent.selectOptions(dialog.getByLabelText(/^Role\s*\*?$/), "shop_manager");
+    await userEvent.type(dialog.getByLabelText(/^Email\s*\*?$/), "new@test.com");
+    await userEvent.type(dialog.getByLabelText(/^First name\s*\*?$/), "New");
     // no last name yet: nothing can be sent
     expect(dialog.getByRole("button", { name: "Send invitation" })).toBeDisabled();
-    await userEvent.type(dialog.getByLabelText("Last name"), "Person{Enter}");
+    await userEvent.type(dialog.getByLabelText(/^Last name\s*\*?$/), "Person{Enter}");
 
     expect(await screen.findByText("Invitation sent.")).toBeInTheDocument();
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
@@ -221,12 +221,12 @@ describe("IntegrationScreen", () => {
 
     const save = await screen.findByRole("button", { name: "Save Changes" });
     expect(save).toBeDisabled(); // nothing changed yet
-    await userEvent.selectOptions(screen.getByLabelText("Country"), "SG");
+    await userEvent.selectOptions(screen.getByLabelText(/^Country\s*\*?$/), "SG");
     await userEvent.click(save);
     expect(await screen.findByText("Settings saved!")).toBeInTheDocument();
     expect(sent("PATCH /api/me/company/integration")).toEqual([{ country_code: "SG" }]);
 
-    const name = screen.getByLabelText("Company name");
+    const name = screen.getByLabelText(/^Company name\s*\*?$/);
     await userEvent.clear(name);
     await userEvent.type(name, "Other Co{Enter}");
     expect(await screen.findByRole("alert")).toHaveTextContent("someone got there first");
@@ -237,7 +237,7 @@ describe("IntegrationScreen", () => {
     showIntegration();
 
     expect(await screen.findByText(/view-only access/)).toBeInTheDocument();
-    expect(screen.getByLabelText("Country")).toBeDisabled();
+    expect(screen.getByLabelText(/^Country\s*\*?$/)).toBeDisabled();
     expect(screen.queryByRole("button", { name: "Save Changes" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Disconnect" })).toBeNull();
   });

@@ -998,15 +998,15 @@ describe("08-A, the portal's landing", () => {
     expect(within(sheet).getByRole("heading", { name: "New billing account" })).toBeVisible();
     expect(sheet).toHaveTextContent("never stored by Minty");
     // English only: a text field with the email keyboard (lib/emailInput.ts), not type=email.
-    expect(within(sheet).getByLabelText("Billing Email")).toHaveAttribute("inputmode", "email");
-    expect(within(sheet).getByLabelText("Billing company")).toBeRequired();
+    expect(within(sheet).getByLabelText(/^Billing Email\s*\*?$/)).toHaveAttribute("inputmode", "email");
+    expect(within(sheet).getByLabelText(/^Billing company\s*\*?$/)).toBeRequired();
     expect(push).not.toHaveBeenCalled();
 
     // Nothing reaches Stripe without both - in onboarding's words.
     await user.click(within(sheet).getByRole("button", { name: "Save billing account" }));
     expect(within(sheet).getByText("Enter the email address invoices should go to.")).toBeVisible();
     expect(within(sheet).getByText("Enter the company name to invoice.")).toBeVisible();
-    expect(within(sheet).getByLabelText("Billing Email")).toHaveAttribute("aria-invalid", "true");
+    expect(within(sheet).getByLabelText(/^Billing Email\s*\*?$/)).toHaveAttribute("aria-invalid", "true");
     expect(fetchMock).not.toHaveBeenCalled();
 
     // Cancel is 01-D's arrow back to the list.
@@ -1028,8 +1028,8 @@ describe("08-A, the portal's landing", () => {
     await user.click(within(card).getByText("Next Billing Date"));
     const sheet = await screen.findByRole("dialog", { name: "Billing Accounts" });
     await user.click(within(sheet).getByRole("button", { name: "New billing account" }));
-    await user.type(within(sheet).getByLabelText("Billing Email"), "ap@acme.test");
-    await user.type(within(sheet).getByLabelText("Billing company"), "Acme Ltd");
+    await user.type(within(sheet).getByLabelText(/^Billing Email\s*\*?$/), "ap@acme.test");
+    await user.type(within(sheet).getByLabelText(/^Billing company\s*\*?$/), "Acme Ltd");
     await user.click(within(sheet).getByRole("button", { name: "Save billing account" }));
 
     await waitFor(() => expect(sheet).toHaveAccessibleName("Card added"));
@@ -1097,8 +1097,8 @@ describe("08-A, the portal's landing", () => {
     expect(sheet).toHaveAccessibleName("Move Nexora Health Limited to");
 
     await user.click(within(sheet).getByRole("button", { name: "New billing account" }));
-    await user.type(within(sheet).getByLabelText("Billing Email"), "ap@acme.test");
-    await user.type(within(sheet).getByLabelText("Billing company"), "Acme Ltd");
+    await user.type(within(sheet).getByLabelText(/^Billing Email\s*\*?$/), "ap@acme.test");
+    await user.type(within(sheet).getByLabelText(/^Billing company\s*\*?$/), "Acme Ltd");
     await user.click(within(sheet).getByRole("button", { name: "Save billing account" }));
 
     await waitFor(() => expect(sheet).toHaveAccessibleName("Card added"));
@@ -1132,8 +1132,8 @@ describe("08-A, the portal's landing", () => {
     await user.click(within(sheet).getByText("Nexora Health Limited"));
     await user.click(within(sheet).getByRole("button", { name: "Next" }));
     await user.click(within(sheet).getByRole("button", { name: "New billing account" }));
-    await user.type(within(sheet).getByLabelText("Billing Email"), "ap@acme.test");
-    await user.type(within(sheet).getByLabelText("Billing company"), "Acme Ltd");
+    await user.type(within(sheet).getByLabelText(/^Billing Email\s*\*?$/), "ap@acme.test");
+    await user.type(within(sheet).getByLabelText(/^Billing company\s*\*?$/), "Acme Ltd");
     await user.click(within(sheet).getByRole("button", { name: "Save billing account" }));
     await user.click(await within(sheet).findByRole("button", { name: "Done" }));
 
@@ -1163,7 +1163,7 @@ describe("08-A, the portal's landing", () => {
 
     // No list to pick from: the sheet opens on the form, as onboarding's does on an empty wallet.
     const sheet = await screen.findByRole("dialog", { name: "New billing account" });
-    expect(await within(sheet).findByLabelText("Billing company")).toBeInTheDocument();
+    expect(await within(sheet).findByLabelText(/^Billing company\s*\*?$/)).toBeInTheDocument();
     await user.click(within(sheet).getByRole("button", { name: "Cancel" }));
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(push).not.toHaveBeenCalled();

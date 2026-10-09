@@ -16,6 +16,7 @@ import {
 } from "@/features/subscription/__fixtures__/billing";
 import {
   CARD_NOT_FOUND,
+  EXPIRY_INVALID,
   SETUP_FAILED,
   useAddCard,
   useEditCard,
@@ -339,14 +340,46 @@ describe("useEditCard", () => {
     expect(push).toHaveBeenCalledWith("/subscription/billing");
   });
 
-  it("keeps digits out of the name's way and a bad month out of the request", async () => {
+  it("keeps letters out of the expiry", async () => {
     serve();
     const { result } = renderHook(() => useEditCard({ cardId: "pm_visa4121" }));
     await waitFor(() => expect(result.current.status).toBe("ready"));
+
     act(() => result.current.setField("expMonth", "1x3"));
+
     expect(result.current.fields.expMonth).toBe("13");
+  });
+
+  // This test used to assert the opposite - that a bad month was simply left OUT of the
+  // request - and nothing checked that the person was told. So typing 13 saved the name,
+  // reported success and navigated away while the expiry silently went nowhere. An expiry
+  // we cannot use is now refused (CLAUDE.md: fail loudly).
+  it("refuses an unusable expiry instead of dropping it and claiming success", async () => {
+    serve();
+    const { result } = renderHook(() => useEditCard({ cardId: "pm_visa4121" }));
+    await waitFor(() => expect(result.current.status).toBe("ready"));
+    act(() => result.current.setField("expMonth", "13"));
+
     await act(async () => result.current.save());
+
+    expect(result.current.saveError).toBe(EXPIRY_INVALID);
+    expect(posts).toHaveLength(0);
+    expect(push).not.toHaveBeenCalled();
+    expect(result.current.busy).toBe(false);
+  });
+
+  it("still saves the name alone when the expiry is left untouched", async () => {
+    serve();
+    const { result } = renderHook(() => useEditCard({ cardId: "pm_visa4121" }));
+    await waitFor(() => expect(result.current.status).toBe("ready"));
+    act(() => result.current.setField("expMonth", ""));
+    act(() => result.current.setField("expYear", ""));
+
+    await act(async () => result.current.save());
+
+    expect(result.current.saveError).toBeNull();
     expect(posts[0].body).toEqual({ payment_method: "pm_visa4121", name: "Rebecca Park" });
+    expect(push).toHaveBeenCalled();
   });
 
   it("a refused save says why and keeps the screen", async () => {

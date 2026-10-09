@@ -119,6 +119,10 @@ export function DetailsCard({ user, draft, saving, error, onEdit, onCancel, onCh
                   className={FIELD}
                   {...emailInput.props}
                   aria-label="Email"
+                  // Mandatory (profileView refuses a blank one), but this card shows no visible
+                  // label for it - only a mail tile - so there is nowhere to hang the asterisk.
+                  // Announced here; a visible label is a layout decision, not a code one.
+                  aria-required="true"
                   aria-describedby={emailInput.rejected ? "profile-email-hint" : undefined}
                   value={draft.email}
                   maxLength={255}

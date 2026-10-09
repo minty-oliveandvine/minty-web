@@ -11,6 +11,14 @@
 
 /** `.billing-label` */
 export const SHEET_LABEL = "mb-1.5 block text-[13px] font-semibold text-[#16202e]";
+/**
+ * `.billing-label .req` - the red asterisk on a mandatory field's label.
+ *
+ * Always paired with `aria-required` (or the native `required`) on the CONTROL: an asterisk
+ * read aloud is "star", so the mark is for the eye and the attribute for everyone else.
+ * Mirrored in `minty-onboarding-web/app/globals.css`, per the note at the top of this file.
+ */
+export const SHEET_REQUIRED = "text-[#b4231f]";
 /** `.billing-field` */
 export const SHEET_FIELD = "mb-3.5";
 /** `.billing-input` - matched to the Stripe fields below it (`STRIPE_APPEARANCE`). */

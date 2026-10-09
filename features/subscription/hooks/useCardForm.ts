@@ -57,6 +57,7 @@ import { BILLING } from "@/features/subscription/lib/paths";
 export const SETUP_FAILED = "The card form didn’t open. Mind trying again?";
 export const CARD_NOT_FOUND = "That card isn’t on your billing account.";
 export const SAVE_FAILED = "That didn’t save. Mind trying again?";
+export const EXPIRY_INVALID = "That expiry date doesn’t look right - month 1-12, and a year.";
 
 function sentence(err: unknown, fallback: string): string {
   return err instanceof ApiError ? err.message : fallback;
@@ -398,13 +399,23 @@ export function useEditCard({
     if (!card || busy) return;
     setBusy(true);
     setSaveError(null);
+    const month = Number(fields.expMonth);
+    const year = Number(fields.expYear);
+    // An expiry we cannot use is REFUSED, not quietly dropped. It used to fall out of the
+    // payload here and the save then reported success and navigated away, so typing 13/99
+    // looked like it had worked while nothing changed (CLAUDE.md: fail loudly).
+    const expiryUsable = month >= 1 && month <= 12 && year > 0;
+    const expiryGiven = fields.expMonth.trim() !== "" || fields.expYear.trim() !== "";
+    if (expiryGiven && !expiryUsable) {
+      setSaveError(EXPIRY_INVALID);
+      setBusy(false);
+      return;
+    }
     try {
-      const month = Number(fields.expMonth);
-      const year = Number(fields.expYear);
       await updatePaymentMethod(card.id, {
         name: fields.name,
         // A two-digit year is this century's: Stripe wants the full one.
-        ...(month >= 1 && month <= 12 && year > 0
+        ...(expiryUsable
           ? { exp_month: month, exp_year: year < 100 ? 2000 + year : year }
           : {}),
       });

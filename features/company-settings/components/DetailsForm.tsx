@@ -7,6 +7,7 @@
  * Enter saves.
  */
 
+import { RequiredMark } from "@/components/ui/RequiredMark";
 import { useState, type FormEvent } from "react";
 
 import { SHEET_INPUT, SHEET_INPUT_OK, SHEET_LABEL, SHEET_PRIMARY } from "@/components/ui/sheetClasses";
@@ -44,6 +45,7 @@ export function DetailsForm({
       <div className="md:col-span-2">
         <label htmlFor="company-name" className={SHEET_LABEL}>
           Company name
+          <RequiredMark />
         </label>
         <input
           id="company-name"
@@ -59,6 +61,7 @@ export function DetailsForm({
       <div className="min-w-0">
         <label htmlFor="company-country" className={SHEET_LABEL}>
           Country
+          <RequiredMark />
         </label>
         <select
           id="company-country"
@@ -78,6 +81,7 @@ export function DetailsForm({
       <div className="min-w-0">
         <label htmlFor="company-currency" className={SHEET_LABEL}>
           Currency
+          <RequiredMark />
         </label>
         <select
           id="company-currency"

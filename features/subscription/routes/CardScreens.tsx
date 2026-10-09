@@ -21,7 +21,7 @@ import {
   EDIT_CARD_TITLE,
   STRIPE_NOTE,
 } from "@/features/subscription/lib/billing";
-import { useAddCard, useEditCard } from "@/features/subscription/hooks/useCardForm";
+import { EXPIRY_INVALID, useAddCard, useEditCard } from "@/features/subscription/hooks/useCardForm";
 
 const SHEET =
   "mx-auto flex w-full max-w-[490px] flex-col gap-4 rounded-xl border border-[#eef1f4] bg-white px-7 py-6 shadow-[0px_2px_8px_0px_rgba(0,0,0,0.1)]";
@@ -127,7 +127,8 @@ export function EditCardScreen({
                   placeholder="MM"
                   value={edit.fields.expMonth}
                   onChange={(e) => edit.setField("expMonth", e.target.value)}
-                  className={`${FIELD} w-20 text-center`}
+                  aria-invalid={edit.saveError === EXPIRY_INVALID ? true : undefined}
+                  className={`${FIELD} w-20 text-center ${edit.saveError === EXPIRY_INVALID ? "border-[#b4231f]" : ""}`}
                 />
                 <span className="text-[#8b93a0]">/</span>
                 <input
@@ -137,7 +138,8 @@ export function EditCardScreen({
                   placeholder="YY"
                   value={edit.fields.expYear}
                   onChange={(e) => edit.setField("expYear", e.target.value)}
-                  className={`${FIELD} w-20 text-center`}
+                  aria-invalid={edit.saveError === EXPIRY_INVALID ? true : undefined}
+                  className={`${FIELD} w-20 text-center ${edit.saveError === EXPIRY_INVALID ? "border-[#b4231f]" : ""}`}
                 />
               </div>
             </div>

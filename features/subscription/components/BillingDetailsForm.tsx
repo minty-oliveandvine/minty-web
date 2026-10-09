@@ -2,6 +2,12 @@
 
 /**
  * 08-C "Update Billing Information", the form card (Figma `2278:3455`): the billing company and
+ * NO required asterisks here, deliberately (2026-10-09): Billing email accepts a blank, and
+ * Billing Company is refused only when the account already HAD one - a condition that lives in
+ * `validateDetails(fields, initial)`, and `initial` never reaches this component. Marking it
+ * unconditionally would lie on a fresh account. The invalid half already works: `errors.company`
+ * reddens the field and prints the message when it really is required.
+ *
  * email in our own fields, and below a rule the address, in STRIPE'S own address form - styled
  * as drawn where we draw (the 720px card, 46px fields with a 1.5px edge, the grey "Address"
  * caption, *Go Back* and *Save billing account* at the foot) and themed to match where Stripe

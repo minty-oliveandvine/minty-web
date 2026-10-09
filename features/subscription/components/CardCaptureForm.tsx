@@ -37,6 +37,7 @@ import type {
   StripeAddressElementOptions,
   StripePaymentElementOptions,
 } from "@stripe/stripe-js";
+import { RequiredMark } from "@/components/ui/RequiredMark";
 import { useMemo, useState, type FormEvent, type ReactNode } from "react";
 
 import { ApiError } from "@/lib/apiClient";
@@ -313,7 +314,10 @@ function SheetForm(props: FormProps) {
       {/* The card fields in their own bordered block: the honest boundary - everything in it
           is rendered by Stripe, in Stripe's iframe, and never reaches this app. */}
       <div className={SHEET_FIELD}>
-        <span className={SHEET_LABEL}>Payment method</span>
+        <span className={SHEET_LABEL}>
+            Payment method
+            <RequiredMark />
+          </span>
         <div className="rounded-[10px] border border-[#d7dee2] p-4">
           <PaymentElement
             onReady={form.onReady}

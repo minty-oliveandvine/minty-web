@@ -339,6 +339,12 @@ run" below).
 - [ ] Every confirm/leave dialog in this app renders through the shared `ConfirmDialog`/
       `ModalFrame` shell — compare visually against minty-payment-request-web's and Flask's
       copies of the same dialog family; a visible drift here is a drift in all three.
+- [ ] **Mandatory fields show a red `*` on open**, and nothing is red until a submit is
+      refused. Check Invite someone, Company details, sign-in/sign-up and a new billing
+      account. A screen reader says "Email, required", not "Email star".
+- [ ] Editing a card: an expiry of `13`/`99` is **refused with a message** and the pair turns
+      red. It must not report success and navigate away (it used to, dropping the expiry).
+      Leaving both boxes blank still saves the name and keeps the card's current expiry.
 - [ ] Toasts render as plain white cards with no colour or icon, matching the system-wide rule.
 - [ ] In a company-named modal (e.g. a change confirmation), the entity name renders teal while
       the "Entity" label above it stays the default grey — a specific, easy-to-miss distinction.

@@ -37,6 +37,7 @@ import {
 
 import type { BillingAccount, SavedPaymentMethod } from "@/features/subscription/api/payerPortal";
 import { CardBrand } from "@/features/subscription/components/CardBrand";
+import { RequiredMark } from "@/components/ui/RequiredMark";
 import { CardCapturePanel } from "@/features/subscription/components/CardCaptureForm";
 import { shortCardName } from "@/features/subscription/components/CardDialogs";
 import {
@@ -368,6 +369,7 @@ function IdentityField({
     <div className={SHEET_FIELD}>
       <label className={SHEET_LABEL} htmlFor={id}>
         {label}
+        <RequiredMark />
       </label>
       <input
         id={id}

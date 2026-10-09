@@ -242,7 +242,7 @@ describe("CardCaptureForm", () => {
 
     await save(user);
     // In flight: what was checked is what is sent - the fields cannot change under it.
-    expect(screen.getByLabelText("Email")).toBeDisabled();
+    expect(screen.getByLabelText(/^Email\s*\*?$/)).toBeDisabled();
     expect(screen.getByRole("button", { name: "Saving…" })).toBeDisabled();
     release({ setupIntent: { id: "seti_1", payment_method: "pm_visa4242" } });
     await waitFor(() => expect(onSaved).toHaveBeenCalled());

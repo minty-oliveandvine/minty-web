@@ -44,7 +44,12 @@ export function CodeInput({
   };
 
   return (
-    <div className="flex justify-between gap-2" role="group" aria-label="Your 6-digit code">
+    <div
+      className="flex justify-between gap-2"
+      role="group"
+      aria-label="Your 6-digit code"
+      aria-required="true"
+    >
       {digits.map((d, i) => (
         <input
           key={i}

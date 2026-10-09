@@ -17,6 +17,7 @@ the sibling repos' `docs/features/` folders are linked, not repeated.
 | A company's Users and Entity & Integration tabs (phase 2): members, roles, invitations, the company's details and its Xero connection | [company-settings.md](company-settings.md) — `features/company-settings/README.md` holds the extraction recipe |
 | Toasts - `components/ui/Toast.tsx` is the reference every app copies | `Minty/docs/features/toasts.md` - the system-wide rule and the other three apps' copies |
 | Manual QA checklist - a hand-run checklist over every feature above, to run before a release | [qa-checklist.md](qa-checklist.md) |
+| Required fields: the red `*`, the `aria-required` half, where it deliberately does not appear, and the card-expiry bug fixed with it | [required-fields.md](required-fields.md) |
 
 Running it: `npm run dev` on 3000 with `.env.local` (the three URLs in
 `.env.example`); tests `npm test` (Vitest, 29 on 2026-09-21) and `npm run test:e2e` (Playwright,

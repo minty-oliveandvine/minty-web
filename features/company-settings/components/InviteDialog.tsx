@@ -10,6 +10,7 @@
 import { useId, useState, type FormEvent } from "react";
 
 import { ModalFrame } from "@/components/ui/ModalFrame";
+import { RequiredMark } from "@/components/ui/RequiredMark";
 import {
   SHEET_FIELD,
   SHEET_GHOST,
@@ -61,15 +62,17 @@ export function InviteDialog({
         <div className={SHEET_FIELD}>
           <label htmlFor={`${titleId}-email`} className={SHEET_LABEL}>
             Email
+            <RequiredMark />
           </label>
-          <input id={`${titleId}-email`} {...emailInput.props} className={`${SHEET_INPUT} ${SHEET_INPUT_OK}`} value={email} placeholder="jane@example.com" />
+          <input id={`${titleId}-email`} {...emailInput.props} aria-required="true" className={`${SHEET_INPUT} ${SHEET_INPUT_OK}`} value={email} placeholder="jane@example.com" />
           {emailInput.rejected ? <p className="mt-1.5 text-[12.5px] text-danger">{EMAIL_ASCII_HINT}</p> : null}
         </div>
         <div className={SHEET_FIELD}>
           <label htmlFor={`${titleId}-role`} className={SHEET_LABEL}>
             Role
+            <RequiredMark />
           </label>
-          <select id={`${titleId}-role`} className={`${SHEET_INPUT} ${SHEET_INPUT_OK}`} value={role} onChange={(e) => setRole(e.target.value)}>
+          <select id={`${titleId}-role`} aria-required="true" className={`${SHEET_INPUT} ${SHEET_INPUT_OK}`} value={role} onChange={(e) => setRole(e.target.value)}>
             {roles.map((r) => (
               <option key={r.value} value={r.value}>
                 {r.label}
@@ -81,12 +84,14 @@ export function InviteDialog({
           <div className={SHEET_FIELD}>
             <label htmlFor={`${titleId}-first`} className={SHEET_LABEL}>
               First name
+              <RequiredMark />
             </label>
             <input id={`${titleId}-first`} type="text" aria-required="true" autoComplete="off" maxLength={100} className={`${SHEET_INPUT} ${SHEET_INPUT_OK}`} value={firstName} onChange={(e) => setFirstName(e.target.value)} />
           </div>
           <div className={SHEET_FIELD}>
             <label htmlFor={`${titleId}-last`} className={SHEET_LABEL}>
               Last name
+              <RequiredMark />
             </label>
             <input id={`${titleId}-last`} type="text" aria-required="true" autoComplete="off" maxLength={100} className={`${SHEET_INPUT} ${SHEET_INPUT_OK}`} value={lastName} onChange={(e) => setLastName(e.target.value)} />
           </div>

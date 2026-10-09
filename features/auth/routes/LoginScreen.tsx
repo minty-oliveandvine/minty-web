@@ -17,6 +17,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 
+import { RequiredMark } from "@/components/ui/RequiredMark";
 import { TermsModal } from "@/components/ui/TermsModal";
 import { ApiError } from "@/lib/apiClient";
 import { EMAIL_ASCII_HINT, isEmail, useEmailInput } from "@/lib/emailInput";
@@ -160,6 +161,7 @@ export function LoginScreen({ arrival }: { arrival: Arrival }) {
             <div>
               <label htmlFor="signin-first-name" className={AUTH_LABEL}>
                 First name
+                <RequiredMark />
               </label>
               <input
                 id="signin-first-name"
@@ -174,6 +176,7 @@ export function LoginScreen({ arrival }: { arrival: Arrival }) {
             <div>
               <label htmlFor="signin-last-name" className={AUTH_LABEL}>
                 Last name
+                <RequiredMark />
               </label>
               <input
                 id="signin-last-name"
@@ -191,7 +194,8 @@ export function LoginScreen({ arrival }: { arrival: Arrival }) {
         <div>
           <label htmlFor="signin-email" className={AUTH_LABEL}>
             Email
-          </label>
+                <RequiredMark />
+              </label>
           <input
             id="signin-email"
             {...emailInput.props}
