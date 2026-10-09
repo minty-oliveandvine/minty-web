@@ -192,6 +192,7 @@ const INTEGRATION: IntegrationPage = {
   can_edit: true,
   can_rename: true,
   notices: [],
+  xero_conflict: null,
 };
 
 /**
@@ -214,10 +215,10 @@ function navigationRecorder(): string[] {
 }
 const recorders: (() => void)[] = [];
 
-function showIntegration() {
+function showIntegration(xeroConflict: string | null = null) {
   render(
     <ToastProvider>
-      <IntegrationScreen company={COMPANY} flash={null} />
+      <IntegrationScreen company={COMPANY} flash={null} xeroConflict={xeroConflict} />
     </ToastProvider>,
   );
 }
@@ -350,6 +351,79 @@ describe("IntegrationScreen", () => {
     await userEvent.click(screen.getByRole("link", { name: "Users" }));
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(went).toEqual([expect.stringContaining("/settings/users")]);
+  });
+
+  // A refused Connect: the organisation the person picked on Xero is in use elsewhere. Flask
+  // signs the holder into the address, the tab reads it once and offers the move. Before
+  // 2026-10-09 this case connected anyway and silently unlinked the other company.
+  const HELD = {
+    entity_id: "e2",
+    entity_name: "Vine Cafe",
+    organisation: "Vine Cafe Ltd",
+    can_move: true,
+  };
+  const REFUSED = { ...INTEGRATION, xero: { ...INTEGRATION.xero, status: "disconnected", connected: false, organisation: null } };
+
+  it("a refused connect says which company holds the organisation, and moves it on asking", async () => {
+    flask({
+      "GET /api/me/company/integration": (url) =>
+        json({
+          ...REFUSED,
+          notices: [{ category: "error", message: 'This Xero organisation is already connected to "Vine Cafe".' }],
+          xero_conflict: url.searchParams.get("xero_conflict") ? HELD : null,
+        }),
+      "POST /api/me/company/xero/release": () => json({ message: '"Vine Cafe" is disconnected from Xero.' }),
+    });
+    showIntegration("signed-conflict");
+
+    // The message AND a dialog that can do something about it - not a toast on its own.
+    expect(await screen.findByText(/already connected to "Vine Cafe"/)).toBeInTheDocument();
+    const dialog = within(await screen.findByRole("dialog"));
+    expect(screen.getByRole("dialog")).toHaveAccessibleName("That Xero organisation is taken");
+    expect(dialog.getByText("Vine Cafe Ltd")).toBeInTheDocument();
+
+    await userEvent.click(dialog.getByRole("button", { name: "Move it here" }));
+
+    // The company freed is the OTHER one, named in the body - never the one being viewed.
+    await waitFor(() => expect(sent("POST /api/me/company/xero/release")).toEqual([{ entity_id: "e2" }]));
+  });
+
+  it("the move's refusal stays in the dialog, so it can be tried again", async () => {
+    flask({
+      "GET /api/me/company/integration": (url) => json({ ...REFUSED, xero_conflict: url.searchParams.get("xero_conflict") ? HELD : null }),
+      "POST /api/me/company/xero/release": () => json({ error: "I couldn't disconnect \"Vine Cafe\" from Xero." }, 502),
+    });
+    showIntegration("signed-conflict");
+
+    const dialog = within(await screen.findByRole("dialog"));
+    await userEvent.click(dialog.getByRole("button", { name: "Move it here" }));
+
+    expect(await dialog.findByRole("alert")).toHaveTextContent(/couldn't disconnect "Vine Cafe"/);
+    // Still open, and still offering the move: a navigation would have outrun a toast.
+    expect(dialog.getByRole("button", { name: "Move it here" })).toBeEnabled();
+  });
+
+  it("no permission on the other company offers no move, only who to ask", async () => {
+    flask({
+      "GET /api/me/company/integration": (url) =>
+        json({ ...REFUSED, xero_conflict: url.searchParams.get("xero_conflict") ? { ...HELD, can_move: false } : null }),
+    });
+    showIntegration("signed-conflict");
+
+    const dialog = within(await screen.findByRole("dialog"));
+    expect(dialog.getByText(/Ask an accountant or admin of Vine Cafe/)).toBeInTheDocument();
+    expect(dialog.queryByRole("button", { name: "Move it here" })).toBeNull();
+
+    await userEvent.click(dialog.getByRole("button", { name: "Close" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  });
+
+  it("without the hand-over there is no dialog", async () => {
+    flask({ "GET /api/me/company/integration": (url) => json({ ...REFUSED, xero_conflict: url.searchParams.get("xero_conflict") ? HELD : null }) });
+    showIntegration();
+
+    await screen.findByRole("link", { name: "Connect to Xero" });
+    expect(screen.queryByRole("dialog")).toBeNull();
   });
 
   it("a viewer who may change nothing is never asked", async () => {

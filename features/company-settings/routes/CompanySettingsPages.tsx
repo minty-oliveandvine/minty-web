@@ -26,10 +26,14 @@ function UsersContent() {
 }
 
 function IntegrationContent() {
-  const flash = useSearchParams().get("flash");
+  const params = useSearchParams();
+  const flash = params.get("flash");
+  // The other half of a refused Xero connect: the notice says what happened, this says which
+  // company holds the organisation, so the tab can offer to move it.
+  const xeroConflict = params.get("xero_conflict");
   return (
     <CompanyFromAddress pathOf={integrationPath} label="entity & integration">
-      {(company) => <IntegrationScreen company={company} flash={flash} />}
+      {(company) => <IntegrationScreen company={company} flash={flash} xeroConflict={xeroConflict} />}
     </CompanyFromAddress>
   );
 }

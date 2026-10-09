@@ -17,7 +17,8 @@ import { useLeaveGuard } from "@/lib/leaveGuard";
 
 import { DetailsForm } from "@/features/company-settings/components/DetailsForm";
 import { LoadState, ReadOnlyNotice, SettingsCard, SettingsShell } from "@/features/company-settings/components/SettingsShell";
-import { XeroCard } from "@/features/company-settings/components/XeroCard";
+import { XeroCard, xeroConnectUrl } from "@/features/company-settings/components/XeroCard";
+import { XeroConflictDialog } from "@/features/company-settings/components/XeroConflictDialog";
 import { useDetailsDraft } from "@/features/company-settings/hooks/useDetailsDraft";
 import { useIntegrationTab } from "@/features/company-settings/hooks/useIntegrationTab";
 
@@ -31,8 +32,17 @@ export const INTEGRATION_COPY = {
   readOnly: "You have view-only access to these settings. Ask an Accountant or Admin to make changes.",
 } as const;
 
-export function IntegrationScreen({ company, flash }: { company: { id: string; name: string }; flash: string | null }) {
-  const tab = useIntegrationTab(company.id, flash);
+export function IntegrationScreen({
+  company,
+  flash,
+  xeroConflict,
+}: {
+  company: { id: string; name: string };
+  flash: string | null;
+  /** Flask's hand-over for a Connect it refused: another company holds the organisation. */
+  xeroConflict: string | null;
+}) {
+  const tab = useIntegrationTab(company.id, flash, xeroConflict);
   const [confirming, setConfirming] = useState(false);
   const page = tab.page;
   const shown = page ? { id: page.company.id, name: page.company.name } : company;
@@ -62,6 +72,24 @@ export function IntegrationScreen({ company, flash }: { company: { id: string; n
           </SettingsCard>
         </>
       )}
+
+      {/* A refused Connect: the organisation is in use, and this is where it can be moved.
+          On a successful release the browser leaves for Xero's consent screen, so the dialog
+          stays as it is - replacing it with a "done" state nobody would see. */}
+      {tab.conflict ? (
+        <XeroConflictDialog
+          conflict={tab.conflict}
+          companyName={shown.name}
+          busy={tab.busy === "move"}
+          error={tab.moveError}
+          onMove={() =>
+            void tab.move(tab.conflict!.entity_id).then((freed) => {
+              if (freed) window.location.href = xeroConnectUrl(shown.id);
+            })
+          }
+          onClose={tab.dismissConflict}
+        />
+      ) : null}
 
       {confirming && page ? (
         <ConfirmDialog

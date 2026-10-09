@@ -10,14 +10,16 @@ Cash Settings and Payment Request Settings stay in their own apps.
 index.ts        THE public surface: CompanyUsersPage, CompanyIntegrationPage
 api/            companySettings.ts - every call, ?entity= on each (mintyFetch); the page shapes
 hooks/          useUsersTab (the page, invite / resend with Flask's cooldown / cancel / role / remove),
-                useIntegrationTab (the page, save only what changed, disconnect),
+                useIntegrationTab (the page, save only what changed, disconnect, and the move a
+                refused Xero connect offers),
                 useDetailsDraft (the details form's draft, what changed, and the reset the leave
                 guard discards with - held by the screen, not the form)
 lib/            paths.ts (usersPath, integrationPath - the shell's companySettingsPath)
 components/     SettingsShell (the Module tab's chrome: AppHeader, the pill row, Payment Request Settings' card,
                 the read-only line, loading / failed), MemberRow, InviteDialog, PendingInvitations,
-                DetailsForm, XeroCard
-routes/         CompanySettingsPages (the company from the address, ?flash= read once) ->
+                DetailsForm, XeroCard, XeroConflictDialog (the organisation is in use elsewhere)
+routes/         CompanySettingsPages (the company from the address, ?flash= and ?xero_conflict=
+                read once) ->
                 UsersScreen, IntegrationScreen
 __tests__/      the re-export guard, both screens
 e2e/            12_company_settings.spec.ts, over a stubbed Flask

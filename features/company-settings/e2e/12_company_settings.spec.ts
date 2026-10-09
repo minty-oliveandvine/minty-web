@@ -43,6 +43,11 @@ const INTEGRATION = {
   notices: [],
 };
 
+/** The same company with no Xero connection - what a refused connect leaves behind. */
+const FREE = { ...INTEGRATION, xero: { status: "disconnected", connected: false, needs_reconnect: false, organisation: null, last_connected_at: null } };
+/** The company already holding the organisation, as `?xero_conflict=` resolves to. */
+const HELD = { entity_id: "e-vine", entity_name: "Vine Cafe", organisation: "Vine Cafe Ltd", can_move: true };
+
 async function stubFlask(page: Page) {
   const asked: { method: string; path: string; body: unknown }[] = [];
   const answer = (path: string, handler: (method: string, body: unknown) => [number, unknown]) =>
@@ -57,10 +62,23 @@ async function stubFlask(page: Page) {
     });
   await answer("/api/me/company/users", () => [200, USERS]);
   await answer("/api/me/company/invitations", () => [201, { invitation_id: "i9", email_sent: true, message: "Invitation sent." }]);
-  await answer("/api/me/company/integration", (method, body) =>
-    method === "PATCH" ? [200, { ...INTEGRATION, company: { ...INTEGRATION.company, ...(body as object) }, message: "Settings saved!" }] : [200, INTEGRATION],
-  );
+  // `?xero_conflict=` on the read is Flask saying the connect was refused: another company holds
+  // the organisation. Signed in reality; the stub only has to answer it.
+  await page.route(`${PETTY_CASH_URL}/api/me/company/integration**`, (route) => {
+    const req = route.request();
+    if (req.method() === "OPTIONS") return route.fulfill({ status: 204 });
+    const raw = req.postData();
+    const body = raw ? JSON.parse(raw) : null;
+    asked.push({ method: req.method(), path: "/api/me/company/integration", body });
+    const refused = new URL(req.url()).searchParams.get("xero_conflict");
+    const out =
+      req.method() === "PATCH"
+        ? { ...INTEGRATION, company: { ...INTEGRATION.company, ...(body as object) }, message: "Settings saved!" }
+        : { ...FREE, xero_conflict: refused ? HELD : null };
+    return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(out) });
+  });
   await answer("/api/me/company/xero/disconnect", () => [200, { ...INTEGRATION, xero: { ...INTEGRATION.xero, connected: false, status: "disconnected", organisation: null }, message: "You're disconnected from Xero." }]);
+  await answer("/api/me/company/xero/release", () => [200, { message: '"Vine Cafe" is disconnected from Xero.' }]);
   await page.route(`${PETTY_CASH_URL}/api/me/profile**`, (route) =>
     route.fulfill({
       status: 200,
@@ -182,6 +200,51 @@ test.describe("company settings", () => {
     await expect(dialog).toBeHidden();
   });
 
+  // A refused Xero connect. The toast said what happened and nothing more; what the person
+  // needs is the way on, which is a real disconnect of another company - so it is asked for.
+  test("Entity & Integration: a refused connect offers to move the organisation", async ({ page }) => {
+    const asked = await stubFlask(page);
+    await handoff(page, creds(), `${BASE}/integration?xero_conflict=signed`);
+
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByRole("heading", { name: "That Xero organisation is taken" })).toBeVisible();
+    await expect(dialog.getByText("Vine Cafe Ltd")).toBeVisible();
+
+    // Go back changes nothing, and the card is left as it was - not connected.
+    await dialog.getByRole("button", { name: "Go back" }).click();
+    await expect(dialog).toBeHidden();
+    await expect(page.getByText("Not connected")).toBeVisible();
+    expect(asked.filter((a) => a.path === "/api/me/company/xero/release")).toEqual([]);
+
+    // A reload does not raise it again: the hand-over is spent on the first read.
+    await page.reload();
+    await expect(page.getByRole("heading", { level: 2, name: "Entity & Integration" })).toBeVisible();
+    await expect(dialog).toBeHidden();
+  });
+
+  test("Entity & Integration: Move it here frees the other company, then leaves for Xero", async ({ page }) => {
+    const asked = await stubFlask(page);
+    // The second half is a navigation to Flask's OAuth start, which this stub does not answer:
+    // catch it instead, so the test can see where the browser was sent.
+    let wentTo = "";
+    await page.route(`${PETTY_CASH_URL}/entity/**`, (route) => {
+      wentTo = route.request().url();
+      return route.fulfill({ status: 200, contentType: "text/html", body: "<html><body>Xero</body></html>" });
+    });
+    await handoff(page, creds(), `${BASE}/integration?xero_conflict=signed`);
+
+    await page.getByRole("dialog").getByRole("button", { name: "Move it here" }).click();
+
+    // The company freed is the OTHER one, named in the body - never the one being viewed.
+    await expect
+      .poll(() => asked.filter((a) => a.path === "/api/me/company/xero/release").map((a) => a.body))
+      .toEqual([{ entity_id: "e-vine" }]);
+    // Then on to Xero for this company, through Flask's /enter so the session owns the token.
+    // `next` is URL-encoded in there, hence the decode.
+    await expect.poll(() => decodeURIComponent(wentTo)).toContain("next=/xero_reconnect?entity_id=");
+  });
+
   for (const width of [360, 768, 1440]) {
     test(`nothing is wider than the screen at ${width}px`, async ({ page }) => {
       await page.setViewportSize({ width, height: 900 });
@@ -203,6 +266,16 @@ test.describe("company settings", () => {
       await expect(dialog.getByRole("button", { name: "Go Back" })).toBeVisible();
       const asked = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
       expect(asked, `leave dialog at ${width}`).toBeLessThanOrEqual(0);
+
+      // The refused-connect dialog at this width too: its sentences carry two company names and
+      // an organisation's, which is the longest text any of these cards holds.
+      await page.getByRole("button", { name: "Discard changes" }).click();
+      await handoff(page, creds(), `${BASE}/integration?xero_conflict=signed`);
+      const taken = page.getByRole("dialog");
+      await expect(taken.getByRole("button", { name: "Move it here" })).toBeVisible();
+      await expect(taken.getByRole("button", { name: "Go back" })).toBeVisible();
+      const over = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+      expect(over, `conflict dialog at ${width}`).toBeLessThanOrEqual(0);
     });
   }
 });

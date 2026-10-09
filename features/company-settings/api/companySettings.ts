@@ -50,6 +50,18 @@ export type UsersPage = {
   notices: Notice[];
 };
 
+/**
+ * The company already holding the Xero organisation a connect from here was refused for
+ * (Flask's `?xero_conflict=`). One organisation belongs to one company, so the way on is to
+ * free it there first - `can_move` is whether this person may, on THAT company.
+ */
+export type XeroConflict = {
+  entity_id: string;
+  entity_name: string;
+  organisation: string | null;
+  can_move: boolean;
+};
+
 export type IntegrationPage = {
   company: { id: string; name: string; country_code: string | null; currency_id: string | null };
   modules: string[];
@@ -65,6 +77,8 @@ export type IntegrationPage = {
   can_edit: boolean;
   can_rename: boolean;
   notices: Notice[];
+  /** Only on a read that carried a refused connect; null the rest of the time. */
+  xero_conflict: XeroConflict | null;
   message?: string;
 };
 
@@ -108,9 +122,14 @@ export function removeMember(entityId: string, memberId: string): Promise<{ mess
   return mintyFetch(`/api/me/company/users/${encodeURIComponent(memberId)}`, { method: "DELETE", query: q(entityId) });
 }
 
-export function fetchIntegration(entityId: string, flash?: string | null, signal?: AbortSignal): Promise<IntegrationPage> {
+export function fetchIntegration(
+  entityId: string,
+  flash?: string | null,
+  conflict?: string | null,
+  signal?: AbortSignal,
+): Promise<IntegrationPage> {
   return mintyFetch<IntegrationPage>("/api/me/company/integration", {
-    query: q(entityId, { flash: flash || undefined }),
+    query: q(entityId, { flash: flash || undefined, xero_conflict: conflict || undefined }),
     signal,
   });
 }
@@ -124,4 +143,18 @@ export function saveIntegration(
 
 export function disconnectXero(entityId: string): Promise<IntegrationPage> {
   return mintyFetch<IntegrationPage>("/api/me/company/xero/disconnect", { method: "POST", query: q(entityId) });
+}
+
+/**
+ * Disconnect the OTHER company (`holderId`), freeing its Xero organisation for `entityId` -
+ * the first half of the move; the caller then sends the person through Xero's consent screen
+ * for `entityId`. Flask authorizes `holderId` on its own and refuses (403) when this person
+ * may not disconnect it, whatever the dialog drew.
+ */
+export function releaseXero(entityId: string, holderId: string): Promise<{ message: string }> {
+  return mintyFetch("/api/me/company/xero/release", {
+    method: "POST",
+    query: q(entityId),
+    json: { entity_id: holderId },
+  });
 }

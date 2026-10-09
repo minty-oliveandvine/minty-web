@@ -14,7 +14,8 @@ rules) until `minty-accounts-api` exists.
   hand over here with a token scoped to the company (Flask `routes/settings.py::_to_hub_tab`).
   Whatever Flask flashed on the way travels signed in `?flash=` and is shown once as a toast - how
   a Xero reconnect's outcome arrives (Connect / Reconnect leave for Flask's OAuth and come back
-  through that address).
+  through that address). `?xero_conflict=` rides along the same way when that connect was refused
+  because another company holds the organisation.
 - The company comes from the address (`components/ui/CompanyFromAddress`); every call names it
   with `?entity=`, and Flask checks it is one of the person's.
 
@@ -39,6 +40,29 @@ Xero card: Connected / Reconnect needed (a grant revoked at Xero, or no token) /
 organisation and when it was connected; Connect / Reconnect navigate to Flask's
 `/entity/<id>/enter?…&next=/xero_reconnect?entity_id=<id>`; Disconnect asks first (it was one
 click) and shows the new state.
+
+### The organisation is already in use (2026-10-09)
+
+One Xero organisation belongs to one company, so Flask refuses a connect that picks one another
+company holds — the person's **own** other company included, which until 2026-10-09 connected
+anyway and silently unlinked it (a plain success message, no error, and the other company lost
+Xero with nobody told).
+
+The refusal comes back with a toast AND `?xero_conflict=`, signed like `?flash=` and read once;
+`/api/me/company/integration` answers it as `xero_conflict` (which company, the organisation's
+name, and whether this person may free it). That raises **"That Xero organisation is taken"**
+(`XeroConflictDialog`, the `ConfirmDialog` frame) — a dialog, not a toast alone, because the way
+on is a real disconnect of another company and that is asked for:
+
+- ***Move it here*** (orange) → `POST /api/me/company/xero/release` with the **other** company's
+  id, which Flask authorizes on that company (`XERO_SETTINGS_UPDATE` there) and leaves
+  `disconnected`; then the browser goes back through `/xero_reconnect` for this one. Two steps,
+  because the refused attempt's grant was handed back to Xero.
+- **No permission there** → no *Move it here*, only the company to ask and *Close*.
+- ***Go back***, Escape and the backdrop change nothing, on either company.
+
+A refused release stays **in** the dialog (`role="alert"`) and it stays open to retry — the
+success case leaves the page, so a toast would not outlive it.
 
 ### Leaving with changes not saved
 
