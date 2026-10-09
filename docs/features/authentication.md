@@ -5,9 +5,10 @@ the person in — email OTP or Xero, on THIS app's sign-in page since phase 2 (b
 and hands it over in the launch URL; the system-wide picture is `Minty/docs/features/authentication.md`,
 the verifying half `minty-subscription-api/docs/features/authentication.md`.
 
-## The sign-in page (`/login`, `features/auth`, phase 2 - 2026-10-05)
+## The sign-in page (`/login` + `/signup`, `features/auth`, phase 2 - 2026-10-05)
 
-Log in, sign up (`?mode=signup`) and invitations (`?invite=&email=&fn=&ln=`) on `/login`, the code
+Log in and invitations (`?invite=&email=&fn=&ln=`) on `/login`, sign up on **`/signup`** (its own
+route since 2026-10-09, like log in; `/login?mode=signup` 307s there in `proxy.ts`), the code
 on `/login/confirm` - Flask's `/` + `/register` and minty-onboarding-web's `/auth` pages until
 2026-10-05; those forward here (Flask's `hub_login_url`, onboarding's `next.config.ts`). The page
 is a client of Flask's identity, nothing more: `POST /auth/email/request-code` (log-in mode asks
@@ -15,11 +16,12 @@ Flask to refuse an address with no account), `POST /auth/email/verify-code` (a n
 account is made there, with the names and the Terms version agreed), and the verify's answer is
 a one-shot hand-off URL on Flask's origin - followed only there - that sets Flask's session and
 goes on to `next` (kept from Flask's `login_required` redirect, a path on Flask only) or the
-list. Xero is a navigation to Flask's `/xero_auth`. Flask's flashes from the way here arrive
-signed in `?flash=` and are read back from `GET /auth/notices`, shown as toasts. Sign-up and a
-new invitee agree to the Terms on the gate's own panel (`components/ui/TermsModal`, `agree` =
-keep the version shown, which then rides with verify). `/login` is an open path: no cookie, no
-Terms gate. The invite token leaves the address bar on arrival; the handover to the code's page
+list. Xero is a navigation to Flask's `/xero_auth`. `/signup` is the same screen, told by its
+address that it is making an account (`readArrival`'s `signup` option) - the one difference.
+Flask's flashes from the way here arrive signed in `?flash=` and are read back from
+`GET /auth/notices`, shown as toasts. Sign-up and a new invitee agree to the Terms on the gate's
+own panel (`components/ui/TermsModal`, `agree` = keep the version shown, which then rides with
+verify). `/login` and `/signup` are open paths: no cookie, no Terms gate. The invite token leaves the address bar on arrival; the handover to the code's page
 is sessionStorage (`features/auth/lib/handover.ts`). Recipe: `features/auth/README.md`.
 
 ## The landing

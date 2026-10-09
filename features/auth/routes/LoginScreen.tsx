@@ -1,9 +1,10 @@
 "use client";
 
 /**
- * `/login` - THE sign-in page since phase 2 (2026-10-05): log in, sign up (`?mode=signup`) and an
- * invitation (`?invite=&email=`), which were Flask's `/` + `/register` and minty-onboarding-web's
- * `/auth` until then. Flask stays the identity behind it (features/auth/api/signIn.ts).
+ * THE sign-in page since phase 2 (2026-10-05): log in (`/login`), sign up (`/signup`, its own
+ * route since 2026-10-09) and an invitation (`/login?invite=&email=`), which were Flask's `/` +
+ * `/register` and minty-onboarding-web's `/auth` until then. Flask stays the identity behind it
+ * (features/auth/api/signIn.ts).
  *
  * - Email: a code is emailed (`requestCode`) and `/login/confirm` takes it. Log-in mode asks
  *   Flask to refuse an address with no account before anything is sent.
@@ -75,7 +76,6 @@ export function LoginScreen({ arrival }: { arrival: Arrival }) {
   const [lastName, setLastName] = useState(arrival.lastName);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
-  const [needsSignUp, setNeedsSignUp] = useState(false);
 
   // The Terms: owed on sign-up always; on an invitation unless Flask says this invitee agreed.
   const [termsOwed, setTermsOwed] = useState(signup || invited);
@@ -112,14 +112,12 @@ export function LoginScreen({ arrival }: { arrival: Arrival }) {
     e.preventDefault();
     if (!canSend) return;
     setError("");
-    setNeedsSignUp(false);
     setSending(true);
     const login = !signup && !invited;
     try {
       await requestCode({ email, login, invite: arrival.invite });
     } catch (err) {
       setSending(false);
-      setNeedsSignUp(login && err instanceof ApiError && err.status === 404);
       setError(err instanceof ApiError ? err.message : String(err));
       return;
     }
@@ -246,14 +244,6 @@ export function LoginScreen({ arrival }: { arrival: Arrival }) {
         {error ? (
           <p className={AUTH_ERROR} role="alert">
             {error}
-            {needsSignUp ? (
-              <>
-                {" "}
-                <a className={AUTH_LINK} href={AUTH_PATHS.signup}>
-                  Sign up
-                </a>
-              </>
-            ) : null}
           </p>
         ) : null}
       </form>

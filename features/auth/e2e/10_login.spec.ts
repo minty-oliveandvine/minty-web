@@ -67,7 +67,7 @@ test.describe("sign-in", () => {
 
   test("sign-up: the Terms open from the box and unlock only at the end of the document", async ({ page }) => {
     const asked = await stubFlask(page);
-    await page.goto("/login?mode=signup");
+    await page.goto("/signup");
 
     await page.getByLabel("First name").fill("Jane");
     await page.getByLabel("Last name").fill("Doe");
@@ -115,11 +115,19 @@ test.describe("sign-in", () => {
     );
   });
 
+  test("the old sign-up address redirects to /signup", async ({ page }) => {
+    await stubFlask(page);
+    await page.goto("/login?mode=signup&next=%2Fprofile");
+
+    await expect(page).toHaveURL(/\/signup\?next=%2Fprofile$/);
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Create your account");
+  });
+
   for (const width of [360, 768, 1440]) {
     test(`nothing is wider than the screen at ${width}px`, async ({ page }) => {
       await stubFlask(page);
       await page.setViewportSize({ width, height: 900 });
-      for (const path of ["/login", "/login?mode=signup", "/login/confirm?email=a%40b.com"]) {
+      for (const path of ["/login", "/signup", "/login/confirm?email=a%40b.com"]) {
         await page.goto(path);
         await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
         const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);

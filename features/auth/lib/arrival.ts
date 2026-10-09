@@ -2,7 +2,10 @@
  * What the sign-in page is opened with - Flask's `hub_login_url` (Minty
  * `blueprints/auth/services/hub_login.py`) spells it:
  *
- * - `mode=signup` - make an account (names and the Terms first);
+ * - `mode=signup` - make an account (names and the Terms first). Sign-up has its own route
+ *   since 2026-10-09 (`/signup`), which says so through `readArrival`'s `signup` option; the
+ *   query is still read so proxy.ts's redirect of the old address cannot be the only thing
+ *   holding it up;
  * - `invite` + `email` (+ `fn`, `ln`) - an invitation: the address is the invited one and
  *   cannot be changed; a new invitee's account is made from the inviter's names;
  * - `next` - the Flask page the person was on its way to (sign-in returns there);
@@ -33,10 +36,12 @@ export function sitePath(value: string | null): string {
   return control ? "" : v;
 }
 
-export function readArrival(params: URLSearchParams): Arrival {
+/** `signup` is the route saying so (`/signup`); an invitation still wins, it is its own mode. */
+export function readArrival(params: URLSearchParams, opts: { signup?: boolean } = {}): Arrival {
   const invite = (params.get("invite") ?? "").trim();
+  const signup = opts.signup || params.get("mode") === "signup";
   return {
-    mode: invite ? "invite" : params.get("mode") === "signup" ? "signup" : "login",
+    mode: invite ? "invite" : signup ? "signup" : "login",
     invite,
     email: (params.get("email") ?? "").trim(),
     firstName: (params.get("fn") ?? "").trim(),

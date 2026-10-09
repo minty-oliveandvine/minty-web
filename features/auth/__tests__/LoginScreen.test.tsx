@@ -1,7 +1,8 @@
-// /login as a person meets it: log in by code (Flask refusing an address with no account), sign
-// up (names and the Terms first - the box ticked only by agreeing at the document's end), an
-// invitation (its address fixed, the Terms skipped when Flask says they were agreed), Xero as a
-// navigation that keeps `next`, and Flask's messages from the way here.
+// The sign-in page as a person meets it: log in by code on `/login` (Flask refusing an address
+// with no account), sign up on `/signup` (names and the Terms first - the box ticked only by
+// agreeing at the document's end), an invitation (its address fixed, the Terms skipped when
+// Flask says they were agreed), Xero as a navigation that keeps `next`, and Flask's messages
+// from the way here.
 
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -38,10 +39,11 @@ const calls = (path: string) =>
     .filter(([input]) => new URL(String(input)).pathname === path)
     .map(([, init]) => JSON.parse(String((init as RequestInit).body ?? "null")));
 
-function show(query = "") {
+/** `signup` is what the `/signup` route tells `readArrival`, as app/signup does. */
+function show(query = "", opts: { signup?: boolean } = {}) {
   render(
     <ToastProvider>
-      <LoginScreen arrival={readArrival(new URLSearchParams(query))} />
+      <LoginScreen arrival={readArrival(new URLSearchParams(query), opts)} />
     </ToastProvider>,
   );
 }
@@ -73,7 +75,7 @@ describe("LoginScreen", () => {
     expect(readConfirmContext()).toMatchObject({ email: "jane@example.com", login: true, next: "/profile" });
   });
 
-  it("an address with no account is told so in Flask's words, with the way to sign up", async () => {
+  it("an address with no account is told so in Flask's words - and ONCE: the alert carries no link", async () => {
     flask({ "/auth/email/request-code": () => json({ status: "error", message: "Please sign up first" }, 404) });
     show();
 
@@ -82,7 +84,9 @@ describe("LoginScreen", () => {
 
     const alert = await screen.findByRole("alert");
     expect(alert).toHaveTextContent("Please sign up first");
-    expect(alert.querySelector("a")).toHaveAttribute("href", "/login?mode=signup");
+    // The page's ONE way to sign up is its own link, below Xero - the alert used to repeat it.
+    expect(alert.querySelector("a")).toBeNull();
+    expect(screen.getByRole("link", { name: "Sign up" })).toHaveAttribute("href", "/signup");
     expect(push).not.toHaveBeenCalled();
   });
 
@@ -91,7 +95,7 @@ describe("LoginScreen", () => {
       "/legal/content/terms": () => json(TERMS_DOC),
       "/auth/email/request-code": () => json({ status: "success" }),
     });
-    show("mode=signup");
+    show("", { signup: true });
 
     expect(screen.getByRole("heading", { name: LOGIN_COPY.signupTitle })).toBeInTheDocument();
     await userEvent.type(screen.getByLabelText(/^First name\s*\*?$/), "Jane");

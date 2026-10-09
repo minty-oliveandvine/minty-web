@@ -1,6 +1,7 @@
 // Boundary rule 3 for sign-in (eslint.config.mjs cannot express "only"): every route file under
-// app/login is a one-line re-export from "@/features/auth". And rule 2 from the other side:
-// nothing outside the feature reaches past its index. Plus the shell's spelling of the mount.
+// app/login and app/signup is a one-line re-export from "@/features/auth". And rule 2 from the
+// other side: nothing outside the feature reaches past its index. Plus the shell's spelling of
+// the two mounts.
 
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
@@ -10,7 +11,7 @@ import { describe, expect, it } from "vitest";
 
 import { OPEN_PATHS } from "@/lib/hubPaths";
 
-import { AUTH_BASE_PATH } from "@/features/auth";
+import { AUTH_BASE_PATH, AUTH_SIGNUP_PATH } from "@/features/auth";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
@@ -30,11 +31,15 @@ function walk(dir: string, out: string[] = []): string[] {
 const rel = (f: string) => relative(ROOT, f).replace(/\\/g, "/");
 const REEXPORT = /^export \{ \w+ as default \} from "@\/features\/auth";\n?$/;
 
-describe("app/login is re-exports only", () => {
-  const files = walk(join(ROOT, "app", "login"));
+describe("app/login and app/signup are re-exports only", () => {
+  const files = [...walk(join(ROOT, "app", "login")), ...walk(join(ROOT, "app", "signup"))];
 
-  it("has the sign-in page and the code's page", () => {
-    expect(files.map(rel).sort()).toEqual(["app/login/confirm/page.tsx", "app/login/page.tsx"]);
+  it("has the sign-in page, the code's page and sign-up", () => {
+    expect(files.map(rel).sort()).toEqual([
+      "app/login/confirm/page.tsx",
+      "app/login/page.tsx",
+      "app/signup/page.tsx",
+    ]);
   });
 
   it.each(files.map((f) => [rel(f), f]))("%s is a single re-export from the feature index", (_n, file) => {
@@ -47,9 +52,10 @@ describe("app/login is re-exports only", () => {
   });
 });
 
-describe("the shell's spelling of the mount", () => {
-  it("lets sign-in through without a person", () => {
+describe("the shell's spelling of the mounts", () => {
+  it("lets log in and sign up through without a person", () => {
     expect(OPEN_PATHS).toContain(AUTH_BASE_PATH);
+    expect(OPEN_PATHS).toContain(AUTH_SIGNUP_PATH);
   });
 });
 

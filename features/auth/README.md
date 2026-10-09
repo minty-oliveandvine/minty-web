@@ -1,13 +1,15 @@
 # features/auth — sign-in
 
-The sign-in page (phase 2, 2026-10-05): `/login` (log in, `?mode=signup`, `?invite=&email=&fn=&ln=`)
-and `/login/confirm` (the emailed code). Until then Flask's `/` + `/register` and
+The sign-in page (phase 2, 2026-10-05): `/login` (log in, `?invite=&email=&fn=&ln=`), `/signup`
+(make an account - its own route since 2026-10-09; `proxy.ts` 307s the old `/login?mode=signup`
+there) and `/login/confirm` (the emailed code). Until then Flask's `/` + `/register` and
 minty-onboarding-web's `/auth` + `/auth/confirm`; those forward here now. Flask stays the identity
 behind it - this feature only talks to Flask's `/auth/email/*`, `/legal/*`, `/auth/notices` and
 navigates to `/xero_auth`. The system-wide picture: `Minty/docs/features/authentication.md` §2.
 
 ```
-index.ts        THE public surface: LoginPage, LoginConfirmPage, AUTH_BASE_PATH
+index.ts        THE public surface: LoginPage, SignUpPage, LoginConfirmPage, AUTH_BASE_PATH,
+                AUTH_SIGNUP_PATH
 api/            signIn.ts - every Flask call (no bearer, no re-handoff; ApiError with Flask's sentence),
                 flaskDestination (a verify's hand-off is followed only on Flask's origin), xeroSignInUrl,
                 readNotices, inviteOwesTerms, signUpTerms (the live Terms for the read-to-agree panel)

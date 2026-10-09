@@ -25,6 +25,11 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL(moved + search, request.url), 307);
   }
 
+  const signUp = movedSignUpPage(request.nextUrl);
+  if (signUp) {
+    return NextResponse.redirect(new URL(signUp, request.url), 307);
+  }
+
   if (isOpenPath(pathname)) {
     return NextResponse.next();
   }
@@ -35,6 +40,20 @@ export function proxy(request: NextRequest) {
   }
 
   return NextResponse.next();
+}
+
+/**
+ * Sign-up was `/login?mode=signup` until 2026-10-09; it has its own route now, like log in
+ * (features/auth `lib/paths.ts`). An old link keeps its other params and drops `mode`. An
+ * invitation is NOT sign-up - it stays on `/login`, where the invited address is locked.
+ */
+export function movedSignUpPage(url: URL): string | null {
+  if (url.pathname !== "/login" || url.searchParams.get("mode") !== "signup") return null;
+  if (url.searchParams.get("invite")) return null;
+  const params = new URLSearchParams(url.searchParams);
+  params.delete("mode");
+  const query = params.toString();
+  return query ? `/signup?${query}` : "/signup";
 }
 
 /**
