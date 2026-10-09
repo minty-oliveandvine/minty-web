@@ -66,7 +66,7 @@ export function AppHeader({
       // Its row has a fixed height so a bar sticking under it can use `--app-header-h`.
       className={`sticky top-0 z-40 bg-card ${noBorder ? "" : "border-b border-line"} pt-[env(safe-area-inset-top,0px)]`}
     >
-      <div className={`relative mx-auto flex w-full max-w-[1920px] ${lead ? "@container" : ""} flex h-16 flex-row items-center justify-between gap-2 px-4 sm:h-18 sm:gap-3 sm:px-6`}>
+      <div className={`relative mx-auto flex w-full max-w-[1920px] ${lead ? "@container" : ""} flex h-14 flex-row items-center justify-between gap-2 px-4 sm:h-15 sm:gap-3 sm:px-6 lg:px-8`}>
         <div className="flex min-w-0 min-h-10 flex-1 items-center sm:min-h-0">
           <div className="flex min-w-0 flex-1 flex-nowrap items-center gap-2 sm:gap-3">
             {lead}
@@ -96,14 +96,14 @@ export function AppHeader({
               />
             ) : null}
             {lead || centerTitle || !title ? null : (
-              <h1 className="min-w-0 cursor-default truncate text-base font-semibold text-ink sm:text-lg">
+              <h1 className="min-w-0 cursor-default truncate text-base font-semibold text-ink sm:text-title-l">
                 {title}
               </h1>
             )}
           </div>
         </div>
         {!lead && centerTitle && title ? (
-          <h1 className="absolute left-1/2 top-1/2 max-w-[45%] -translate-x-1/2 -translate-y-1/2 cursor-default truncate text-base font-semibold text-ink sm:text-lg">
+          <h1 className="absolute left-1/2 top-1/2 max-w-[45%] -translate-x-1/2 -translate-y-1/2 cursor-default truncate text-base font-semibold text-ink sm:text-title-l">
             {title}
           </h1>
         ) : null}

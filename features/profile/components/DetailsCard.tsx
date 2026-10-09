@@ -22,10 +22,10 @@ import {
 } from "@/features/profile/lib/profileView";
 import { EMAIL_ASCII_HINT, useEmailInput } from "@/lib/emailInput";
 
-const LABEL = "text-label leading-5 text-ink-2";
-const VALUE = "text-sm leading-5 text-ink-2";
+const LABEL = "text-body-s text-ink-2";
+const VALUE = "text-body-m text-ink";
 const FIELD =
-  "mt-0.5 min-h-11 w-full rounded-xl border border-line-input bg-card px-2 py-1 text-sm leading-5 text-ink-2 focus:border-line-selected focus:outline-none focus:ring-1 focus:ring-line-selected/25";
+  "mt-0.5 h-11 w-full rounded-xl border border-line-input bg-card px-3 text-body-m text-ink focus:border-line-selected focus:outline-none focus:ring-1 focus:ring-line-selected/25";
 
 function Tile({ src, width, height }: { src: string; width: number; height: number }) {
   return (
@@ -37,7 +37,7 @@ function Tile({ src, width, height }: { src: string; width: number; height: numb
 
 function Row({ tile, children }: { tile: ReactNode; children: ReactNode }) {
   return (
-    <div className="flex items-center gap-[18px]">
+    <div className="flex items-center gap-4">
       {tile}
       <div className="min-w-0 flex-1">{children}</div>
     </div>
@@ -59,15 +59,17 @@ export function DetailsCard({ user, draft, saving, error, onEdit, onCancel, onCh
   const editing = draft !== null;
   const emailInput = useEmailInput((value) => onChange("email", value));
   return (
-    <section className="relative mt-8 rounded-xl bg-card px-[19px] pb-[15px] pt-[35px]" aria-label="Your details">
-      <button
-        type="button"
-        onClick={editing ? onCancel : onEdit}
-        disabled={saving}
-        className="absolute right-3 top-1 cursor-pointer text-label leading-5 text-link hover:underline disabled:cursor-default"
-      >
-        {editing ? CANCEL : EDIT}
-      </button>
+    <section className="mt-8 rounded-xl border border-line bg-card px-4 pb-4 pt-2 sm:px-5 sm:pb-5" aria-label="Your details">
+      <div className="-mr-2 flex justify-end sm:-mr-3">
+        <button
+          type="button"
+          onClick={editing ? onCancel : onEdit}
+          disabled={saving}
+          className="min-h-11 cursor-pointer rounded-xl px-2 text-body-s font-semibold text-link hover:bg-hover hover:underline disabled:cursor-default"
+        >
+          {editing ? CANCEL : EDIT}
+        </button>
+      </div>
 
       <form
         className="flex flex-col"
@@ -162,14 +164,14 @@ export function DetailsCard({ user, draft, saving, error, onEdit, onCancel, onCh
         {editing ? (
           <div className="mt-4 flex flex-col items-end gap-2">
             {error ? (
-              <p className="w-full text-label text-danger" role="alert">
+              <p className="w-full text-body-s text-danger" role="alert">
                 {error}
               </p>
             ) : null}
             <button
               type="submit"
               disabled={saving}
-              className="min-h-11 cursor-pointer rounded-xl bg-action px-6 py-2 text-sm font-medium text-white hover:bg-action-hover active:bg-action-pressed disabled:cursor-default disabled:bg-action-disabled disabled:text-ink-disabled"
+              className="h-11 cursor-pointer rounded-xl bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed disabled:cursor-default disabled:bg-action-disabled disabled:text-ink-disabled"
             >
               {saving ? "Saving…" : SAVE}
             </button>

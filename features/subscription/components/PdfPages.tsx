@@ -38,7 +38,7 @@ const TRUE_SIZE = 96 / 72;
 const MAX_PAGE_WIDTH = 794;
 const MAX_PIXEL_RATIO = 2;
 
-const PAGE_CLASS = "block h-auto w-full bg-white shadow-[0px_2px_8px_0px_rgba(0,0,0,0.06)]";
+const PAGE_CLASS = "block h-auto w-full border border-line bg-white";
 
 export function PdfPages({
   bytes,

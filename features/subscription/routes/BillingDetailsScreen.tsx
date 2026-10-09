@@ -28,13 +28,14 @@ export function BillingDetailsScreen({
   const leave = useLeaveGuard(d.dirty, d.reset);
 
   return (
-    <div className="flex flex-col gap-8 pb-16">
+    // Minty v2 record form: one 720 column (`data-portal-col` lines the header's back link up).
+    <div data-portal-col="720" className="mx-auto flex w-full max-w-[720px] flex-col gap-8 pb-16">
       <PortalHero title={DETAILS_TITLE} />
 
       {d.status === "error" ? (
         <div
           role="alert"
-          className="mx-auto flex w-full max-w-[720px] flex-col items-start gap-3 rounded-xl border border-danger bg-danger-bg px-4 py-3 text-sm text-danger"
+          className="flex w-full flex-col items-start gap-3 rounded-xl border border-transparent bg-danger-bg px-4 py-3 text-body-m text-danger"
         >
           {d.error}
           <button
@@ -70,15 +71,15 @@ export function BillingDetailsScreen({
         />
       )}
 
-      {/* The file is twice the drawn size (1448x708) for sharp screens; the design draws it at
-          724x354, 73px under the card. */}
+      {/* The file is twice the drawn size (1448x708) for sharp screens; drawn the column's width
+          under the card. */}
       <Image
         src="/portal/minty-filling-form.png"
         alt=""
         width={1448}
         height={708}
         unoptimized
-        className="mx-auto mt-10 w-full max-w-[724px]"
+        className="mx-auto mt-2 w-full"
       />
 
       {/* Over the drawer and any other modal - see IntegrationScreen's note. */}

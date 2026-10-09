@@ -16,7 +16,7 @@ const BADGE: Record<"connected" | "reconnect" | "off", { text: string; className
 };
 
 const ACTION =
-  "inline-flex min-h-11 items-center justify-center rounded-xl px-4 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--mv2-border-focus)]";
+  "inline-flex h-11 items-center justify-center rounded-xl px-4 text-body-m font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--mv2-border-focus)]";
 
 export function xeroConnectUrl(entityId: string): string {
   return mintyEntryUrl(`/xero_reconnect?entity_id=${encodeURIComponent(entityId)}`, entityId);
@@ -44,7 +44,7 @@ export function XeroCard({
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0">
-        <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-label font-semibold ${badge.className}`}>{badge.text}</span>
+        <span className={`inline-flex h-6 items-center rounded-full px-2.5 text-label font-semibold ${badge.className}`}>{badge.text}</span>
         {xero.organisation ? <p className="mt-2 truncate font-medium text-ink">{xero.organisation}</p> : null}
         {since && state !== "off" ? <p className="text-sm text-ink-2">Connected {since}</p> : null}
         {state === "reconnect" ? (
@@ -59,7 +59,7 @@ export function XeroCard({
             </a>
           )}
           {state === "off" ? null : (
-            <button type="button" onClick={onDisconnect} disabled={busy} className={`${ACTION} border border-line text-danger hover:bg-danger-bg disabled:opacity-50`}>
+            <button type="button" onClick={onDisconnect} disabled={busy} className={`${ACTION} border border-line-selected bg-card text-danger hover:bg-danger-bg disabled:opacity-60`}>
               Disconnect
             </button>
           )}

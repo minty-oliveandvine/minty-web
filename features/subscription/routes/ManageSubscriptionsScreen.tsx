@@ -51,7 +51,7 @@ export function ManageSubscriptionsScreen(args: UseSubscriptionsListArgs) {
     const { entity, result } = m.result;
     const row = [...m.active, ...m.suspended].find((r) => r.entity.entity_id === entity.entity_id);
     return (
-      <div className="flex flex-col gap-8 pb-16">
+      <div data-portal-col="960" className="mx-auto flex w-full max-w-[960px] flex-col gap-8 pb-16">
         <PortalHero title={result.hero ?? "Manage Subscriptions"} />
         <ChangeResultPage
           entity={entity}
@@ -65,12 +65,12 @@ export function ManageSubscriptionsScreen(args: UseSubscriptionsListArgs) {
   }
 
   return (
-    <div className="flex flex-col gap-8 pb-16">
+    <div data-portal-col="960" className="mx-auto flex w-full max-w-[960px] flex-col gap-8 pb-16">
       <PortalHero title="Manage Subscriptions" onBack={m.back} />
 
       {m.transfers.length > 0 && (
-        <section aria-label="Transfer requests" className="flex flex-col gap-4">
-          <h2 className="px-3 text-display-m font-bold text-ink">Transfer Request Received</h2>
+        <section aria-label="Transfer requests" className="flex flex-col gap-2">
+          <h2 className="mb-1 text-title-m font-semibold text-ink">Transfer Request Received</h2>
           {m.transfers.map((t) => (
             <TransferRequestCard key={t.id} transfer={t} onReview={m.reviewTransfer} />
           ))}

@@ -48,26 +48,28 @@ import {
 import { stripeFor } from "@/features/subscription/lib/stripe";
 import { EMAIL_ASCII_HINT, useEmailInput } from "@/lib/emailInput";
 
-const LABEL = "text-body-s font-semibold text-ink-2";
+const LABEL = "text-label font-semibold text-ink";
 const INPUT =
-  "h-[46px] w-full rounded-xl border-[1.5px] border-line-input bg-card px-[14px] text-body-m text-ink outline-none placeholder:text-ink-muted focus:border-line-selected disabled:bg-sunk disabled:text-ink-disabled aria-[invalid=true]:border-danger";
+  "h-[46px] w-full rounded-xl border-[1.5px] border-line-input bg-card px-3.5 text-body-m text-ink outline-none placeholder:text-ink-muted focus:border-line-selected disabled:bg-sunk disabled:text-ink-disabled aria-[invalid=true]:border-danger";
 
 /**
  * Stripe's fields in 08-C's look - the same numbers as `INPUT` and `LABEL` above, because they
  * live in a cross-origin iframe no stylesheet of ours reaches. Frozen at module scope: a new
  * object on every render is a changed prop to Stripe.
  */
+// Literals that mirror the --mv2-* tokens in app/globals.css (text-primary, text-muted,
+// danger-ink, border-input, border-focus): the iframe cannot read our CSS variables.
 const DETAILS_APPEARANCE: Appearance = {
   theme: "stripe",
   labels: "above",
   variables: {
     fontFamily: "Inter, system-ui, -apple-system, sans-serif",
     fontSizeBase: "15px",
-    colorText: "#282e38",
-    colorTextPlaceholder: "#cccccc",
-    colorPrimary: "#4fc7c7",
-    colorDanger: "#b42318",
-    borderRadius: "10px",
+    colorText: "#242828",
+    colorTextPlaceholder: "#676F6F",
+    colorPrimary: "#19676B",
+    colorDanger: "#A82A2F",
+    borderRadius: "12px",
     spacingUnit: "4px",
     // The form's own `gap-[18px]` between fields, so Stripe's rows keep our rhythm.
     gridRowSpacing: "18px",
@@ -75,9 +77,9 @@ const DETAILS_APPEARANCE: Appearance = {
   rules: {
     // 13.5px + a 15px line + 13.5px + two 1.5px edges = the 46px of `INPUT` (measured live:
     // Stripe's default padding drew 43px beside ours).
-    ".Input": { border: "1.5px solid #d6dae0", boxShadow: "none", padding: "13.5px 14px" },
-    ".Input:focus": { border: "1.5px solid #4fc7c7", boxShadow: "none", outline: "none" },
-    ".Label": { fontSize: "13px", fontWeight: "600", color: "#464e5a", marginBottom: "7px" },
+    ".Input": { border: "1.5px solid #848C8C", boxShadow: "none", padding: "13.5px 14px" },
+    ".Input:focus": { border: "1.5px solid #19676B", boxShadow: "0 0 0 2px #19676B", outline: "none" },
+    ".Label": { fontSize: "14px", fontWeight: "500", color: "#242828", marginBottom: "7px" },
   },
 };
 const ELEMENTS_OPTIONS = { appearance: DETAILS_APPEARANCE };
@@ -232,7 +234,7 @@ export function BillingDetailsForm({
         e.preventDefault();
         onSave(async () => (addressRef.current ? addressRef.current.read() : null));
       }}
-      className="mx-auto flex w-full max-w-[720px] flex-col gap-[18px] rounded-xl border border-line bg-card px-8 pb-6 pt-7"
+      className="flex w-full flex-col gap-4 rounded-xl border border-line bg-card p-4 sm:p-5"
     >
       <Field id="billing-company" label="Billing Company" error={errors.company}>
         <input {...input("company", "(e.g. Vine Consulting Limited)")} autoComplete="organization" />
@@ -276,12 +278,12 @@ export function BillingDetailsForm({
           {saveError}
         </p>
       )}
-      <div className="flex w-full items-center justify-end gap-3 pt-2">
+      <div className="flex w-full items-center justify-end gap-3 pt-2 max-sm:flex-col-reverse max-sm:items-stretch max-sm:[&>*]:w-full">
         <button
           type="button"
           onClick={onBack}
           disabled={busy}
-          className="min-h-11 rounded-xl border-[1.5px] border-line bg-card px-[22px] py-3 text-body-m font-semibold text-ink hover:bg-hover disabled:opacity-60"
+          className="h-11 rounded-xl border border-line-selected bg-card px-4 text-body-m font-semibold text-link hover:bg-selected disabled:opacity-60"
         >
           Go Back
         </button>
@@ -289,7 +291,7 @@ export function BillingDetailsForm({
           type="submit"
           disabled={busy || !dirty}
           aria-busy={busy || undefined}
-          className="min-h-11 rounded-xl bg-action px-[22px] py-3 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed disabled:bg-action-disabled disabled:text-ink-disabled"
+          className="h-11 rounded-xl bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed disabled:bg-action-disabled disabled:text-ink-disabled"
         >
           {busy ? "Saving…" : SAVE_BILLING_ACCOUNT}
         </button>

@@ -1,7 +1,8 @@
 "use client";
 
 /**
- * "Subscription & Billing" - the portal's landing, composed (Figma 08-A): the way back into
+ * "Subscription & Billing" - the portal's landing, composed (Figma 08-A; Minty v2: a 1200px
+ * column, the two cards side by side from `lg`): the way back into
  * Minty (in the header bar, `PortalBack`), the banner, the billing-account card and the Subscription Overview, and the two
  * account dialogs the card opens - which account to show, and "Change billing account" - each
  * of which can open a new account in place (onboarding's sheet, `BillingAccountDialogs`).
@@ -46,33 +47,33 @@ export function SubscriptionOverviewScreen(args: UseBillingOverviewArgs) {
   const entityId = useSyncExternalStore(noSubscribe, readEntityId, serverEmpty);
 
   return (
-    <div className="flex flex-col gap-6 pb-16">
+    <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-8 pb-16" data-portal-col="1200">
       <PortalBack>
         <a href={mintyModulesUrl(entityId)} className={BACK_LINE_CLASS}>
           {BACK_TO_ENTITIES}
         </a>
       </PortalBack>
-      <div className="rounded-[32px] bg-gradient-to-r from-[#18c4c7] via-[#42ccc5] via-[74%] to-[#78d7c5] px-[54px] py-10">
-        <h1 className="text-[40px] font-bold leading-none text-white">{OVERVIEW_TITLE}</h1>
+      <div className="rounded-2xl bg-selected p-5 sm:p-8">
+        <h1 className="text-display-m font-bold text-ink sm:text-display-l">{OVERVIEW_TITLE}</h1>
       </div>
 
       {o.status === "error" ? (
         <div
           role="alert"
-          className="flex flex-col items-start gap-3 rounded-xl border border-danger bg-danger-bg px-4 py-3 text-sm text-danger"
+          className="flex w-full flex-col items-start gap-3 rounded-xl border border-transparent bg-danger-bg px-4 py-3 text-body-m text-danger"
         >
           {o.error}
           <button
             type="button"
             onClick={o.reload}
-            className="min-h-11 rounded-xl border border-danger bg-card px-4 py-1.5 font-semibold"
+            className="h-11 rounded-xl border border-line-selected bg-card px-4 text-body-m font-semibold text-link hover:bg-selected"
           >
             Try again
           </button>
         </div>
       ) : (
         <div
-          className="mx-auto flex w-full max-w-[720px] flex-col gap-8"
+          className="grid w-full gap-6 lg:grid-cols-2 lg:items-start"
           aria-busy={o.status === "loading"}
         >
           <BillingAccountCard

@@ -43,7 +43,7 @@ function Figure({ label, value, tone }: { label: string; value: number; tone: st
   return (
     <div className="flex flex-col items-center text-center">
       <p className="text-label leading-5 text-ink-2">{label}</p>
-      <p className={`mt-2.5 text-xl leading-5 font-bold ${tone}`}>{value}</p>
+      <p className={`mt-2.5 text-title-l font-bold ${tone}`}>{value}</p>
       <p className="text-label leading-5 text-ink-2">{entityUnit(value)}</p>
     </div>
   );
@@ -75,11 +75,11 @@ export function SubscriptionsOverviewCard({ today }: { today?: Date } = {}) {
   const retry = useCallback(() => setAttempt((n) => n + 1), []);
 
   return (
-    <section className="mt-[27px] flex flex-col" aria-labelledby="profile-subscriptions-overview">
-      <h2 id="profile-subscriptions-overview" className="pl-[9px] text-label leading-5 font-bold text-ink-2">
+    <section className="mt-7 flex flex-col" aria-labelledby="profile-subscriptions-overview">
+      <h2 id="profile-subscriptions-overview" className="pl-2 text-label leading-5 font-bold text-ink-2">
         {PROFILE_OVERVIEW_TITLE}
       </h2>
-      <div className="mt-2.5 flex min-h-[165px] flex-col items-center justify-center rounded-xl bg-card px-4 py-[18px]">
+      <div className="mt-2.5 flex min-h-[165px] flex-col items-center justify-center rounded-xl border border-line bg-card p-4">
         {status === "loading" ? (
           <div className="h-[120px] w-full animate-pulse rounded-lg bg-sunk" role="status" aria-label="Loading your subscriptions" />
         ) : null}
@@ -89,7 +89,7 @@ export function SubscriptionsOverviewCard({ today }: { today?: Date } = {}) {
             <button
               type="button"
               onClick={retry}
-              className="min-h-11 cursor-pointer rounded-xl bg-action hover:bg-action-hover active:bg-action-pressed px-5 py-1.5 text-sm font-medium text-white"
+              className="h-11 cursor-pointer rounded-xl bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed"
             >
               Try again
             </button>
@@ -100,13 +100,13 @@ export function SubscriptionsOverviewCard({ today }: { today?: Date } = {}) {
         ) : null}
         {list && list.entities.length > 0 && figures ? (
           <>
-            <div className="flex justify-center gap-[39px]">
+            <div className="flex justify-center gap-10">
               <Figure label={ACTIVE_SUBSCRIPTIONS} value={figures.active} tone="text-ink-2" />
               <Figure label={TRIAL_ENDING} value={figures.trialEnding} tone="text-warning" />
             </div>
             <Link
               href={PORTAL.index}
-              className="mt-[19px] flex h-11 w-[242px] items-center justify-center rounded-xl bg-action hover:bg-action-hover active:bg-action-pressed text-sm leading-[21px] font-medium text-white"
+              className="mt-5 flex h-11 w-full items-center justify-center rounded-xl bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed"
             >
               {MANAGE_SUBSCRIPTION}
             </Link>

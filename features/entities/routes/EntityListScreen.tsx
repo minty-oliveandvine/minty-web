@@ -31,10 +31,10 @@ export function EntityListScreen(args: UseEntityListArgs) {
   const empty = list.status === "ready" && !list.hasEntities;
 
   return (
-    <div className="flex h-dvh flex-col bg-sunk">
+    <div className="flex h-dvh flex-col bg-canvas">
       <SelectCompanyHeader />
-      <div className="min-h-0 flex-1 overflow-y-auto">
-        <main className="mx-auto flex min-h-full w-full flex-col p-6 pb-40 min-[640px]:w-[640px] min-[1024px]:w-[768px] min-[1200px]:w-[1024px]">
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8">
+        <main className="mx-auto flex min-h-full w-full max-w-[640px] flex-col pb-40 pt-6">
           {empty ? (
             <EntityListEmpty />
           ) : (
@@ -46,7 +46,7 @@ export function EntityListScreen(args: UseEntityListArgs) {
                 <EntityListError message={list.error ?? ""} onRetry={list.retry} />
               ) : null}
               {list.status === "ready" ? (
-                <ul className="flex flex-col gap-4" aria-label="Your companies">
+                <ul className="flex flex-col gap-2" aria-label="Your companies">
                   {list.rows.map((row) => (
                     <EntityCard key={row.id} row={row} />
                   ))}

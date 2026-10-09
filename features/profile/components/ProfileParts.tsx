@@ -16,7 +16,7 @@ import { LOG_OUT, PAGE_TITLE, planLabel } from "@/features/profile/lib/profileVi
 
 export function ProfileTitlebar({ back }: { back: string }) {
   return (
-    <header className="sticky top-0 z-40 flex h-14 shrink-0 items-center justify-between bg-sunk px-4 py-1.5">
+    <header className="sticky top-0 z-40 flex h-14 shrink-0 items-center justify-between bg-canvas px-4 py-1.5 sm:h-15 sm:px-6 lg:px-8">
       <BackLink
         href={back}
         ariaLabel="Back"
@@ -52,7 +52,7 @@ export function ProfilePanelTitlebar({
   onClose?: () => void;
 }) {
   return (
-    <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center justify-between bg-sunk px-4 py-1.5">
+    <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center justify-between bg-canvas px-4 py-1.5">
       <button
         type="button"
         onClick={onBack}
@@ -95,7 +95,7 @@ export function ProfileHero({ profile }: { profile: Profile }) {
         // clear on BOTH sides - still centred, and wrapping before the cat can reach past the
         // edge (a long company name put a sideways scrollbar under the sidebar's profile).
         <div
-          className={`relative mt-[21px] flex flex-col items-center ${plan?.cat ? "max-w-[calc(100%-148px)]" : "max-w-full"}`}
+          className={`relative mt-5 flex flex-col items-center ${plan?.cat ? "max-w-[calc(100%-148px)]" : "max-w-full"}`}
         >
           <p className="text-sm leading-5 text-ink-2">{company.name}</p>
           {plan ? <p className={`mt-2.5 text-label leading-3 ${plan.tone}`}>{plan.text}</p> : null}
@@ -112,16 +112,16 @@ export function ProfileHero({ profile }: { profile: Profile }) {
         </div>
       ) : null}
       <span
-        className={`${company ? "mt-[23px]" : "mt-[42px]"} flex h-[75px] w-[74px] items-center justify-center rounded-full bg-[var(--avatar-bg)] text-[30px] font-medium text-[var(--avatar-fg)]`}
+        className={`${company ? "mt-6" : "mt-10"} flex h-[75px] w-[74px] items-center justify-center rounded-full bg-[var(--avatar-bg)] text-display-l font-medium text-[var(--avatar-fg)]`}
         aria-hidden
       >
         {profile.user.initials}
       </span>
-      <h2 className="mt-[15px] text-[30px] leading-9 font-bold text-ink">
+      <h2 className="mt-4 text-display-l font-bold text-ink">
         {profile.user.name}
       </h2>
       {company?.role_label ? (
-        <p className="mt-[9px] rounded-full bg-selected px-[15px] text-label leading-5 text-ink-2">
+        <p className="mt-2 inline-flex h-6 items-center rounded-full bg-neutral-bg px-2.5 text-label font-semibold text-neutral">
           {company.role_label}
         </p>
       ) : null}
@@ -134,7 +134,7 @@ export function LogOutButton() {
     <button
       type="button"
       onClick={logOut}
-      className="mx-auto mt-[74px] flex cursor-pointer items-center gap-[10px] min-h-11 rounded-xl px-3 py-1 text-label leading-[21px] text-ink-2 hover:bg-hover"
+      className="mx-auto mt-18 flex min-h-11 cursor-pointer items-center gap-2 rounded-xl px-3 text-body-m font-semibold text-link hover:bg-hover"
     >
       <Image src="/profile/logout.svg" alt="" width={13} height={13} unoptimized aria-hidden />
       {LOG_OUT}
@@ -145,25 +145,25 @@ export function LogOutButton() {
 export function ProfileLoading() {
   return (
     <div
-      className="mt-[42px] flex flex-col items-center gap-4"
+      className="mt-10 flex flex-col items-center gap-4"
       role="status"
       aria-label="Loading your profile"
     >
       <span className="h-[75px] w-[74px] animate-pulse rounded-full bg-neutral-bg" />
       <span className="h-8 w-56 animate-pulse rounded-lg bg-neutral-bg" />
-      <span className="mt-6 h-[184px] w-full animate-pulse rounded-xl bg-card" />
+      <span className="mt-6 h-[184px] w-full animate-pulse rounded-xl border border-line bg-sunk" />
     </div>
   );
 }
 
 export function ProfileError({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
-    <div className="mt-[42px] flex flex-col items-center gap-3 text-center" role="alert">
+    <div className="mt-10 flex flex-col items-center gap-3 text-center" role="alert">
       <p className="text-sm text-ink-2">{message}</p>
       <button
         type="button"
         onClick={onRetry}
-        className="min-h-11 cursor-pointer rounded-xl bg-action px-5 py-2 text-sm font-medium text-white hover:bg-action-hover active:bg-action-pressed"
+        className="h-11 cursor-pointer rounded-xl bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed"
       >
         Try again
       </button>

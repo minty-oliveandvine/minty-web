@@ -35,16 +35,16 @@ export function SubscriptionRequestsScreen(args: UseSubscriptionRequestsArgs) {
       : "Subscription requests";
 
   return (
-    <div className="flex flex-col gap-8 pb-16">
+    <div data-portal-col="960" className="mx-auto flex w-full max-w-[960px] flex-col gap-8 pb-16">
       <PortalHero title={title} />
 
       {r.status === "error" && (
         <div
           role="alert"
-          className="flex items-center gap-4 rounded-xl border border-danger bg-danger-bg px-3.5 py-2.5 text-sm text-danger"
+          className="flex items-center gap-4 rounded-xl border border-transparent bg-danger-bg px-4 py-3 text-body-m text-danger"
         >
           <p>{r.error}</p>
-          <button type="button" onClick={r.reload} className="font-bold">
+          <button type="button" onClick={r.reload} className="min-h-11 px-2 font-semibold underline">
             Try again
           </button>
         </div>
@@ -62,7 +62,7 @@ export function SubscriptionRequestsScreen(args: UseSubscriptionRequestsArgs) {
       )}
 
       {r.status === "ready" && r.reviewed && (
-        <section className="flex flex-col gap-6 rounded-xl border border-line bg-card px-8 pb-8 pt-10">
+        <section className="flex flex-col gap-6 rounded-xl border border-line bg-card p-4 sm:p-5">
           {picking ? (
             <>
               <h2 className="text-display-m font-bold text-ink">{r.reviewed.row.entity_name}</h2>
@@ -84,7 +84,7 @@ export function SubscriptionRequestsScreen(args: UseSubscriptionRequestsArgs) {
                   width={433}
                   height={270}
                   unoptimized
-                  className="justify-self-center lg:mt-16"
+                  className="h-auto w-[260px] justify-self-center lg:mt-16 lg:w-[300px]"
                 />
               </div>
             </>

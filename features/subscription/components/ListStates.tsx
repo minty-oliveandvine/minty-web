@@ -16,9 +16,10 @@ import {
 
 const CARD =
   "flex flex-col items-center rounded-xl border border-line bg-card px-6 text-center";
-const TITLE = "text-display-m font-bold leading-[42px] text-ink";
-const BODY = "max-w-[640px] text-base leading-[26px] text-ink-2";
-const BUTTON = "rounded-xl bg-action hover:bg-action-hover active:bg-action-pressed text-title-m font-semibold text-white";
+const TITLE = "text-display-m font-bold text-ink";
+const BODY = "max-w-[640px] text-body-l text-ink-2";
+const BUTTON =
+  "h-11 rounded-xl bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed";
 
 export function ListEmpty({ entityListHref }: { entityListHref: string }) {
   return (
@@ -33,7 +34,7 @@ export function ListEmpty({ entityListHref }: { entityListHref: string }) {
       </p>
       <a
         href={entityListHref}
-        className={`${BUTTON} mt-2 flex h-14 w-[260px] items-center justify-center`}
+        className={`${BUTTON} mt-2 inline-flex items-center justify-center`}
       >
         Go to entity list
       </a>
@@ -62,7 +63,7 @@ export function ListError({ message, onRetry }: { message: string; onRetry: () =
       </span>
       <p className={TITLE}>We couldn’t load your subscriptions.</p>
       <p className={BODY}>{message}</p>
-      <button type="button" onClick={onRetry} className={`${BUTTON} h-[54px] w-[210px]`}>
+      <button type="button" onClick={onRetry} className={BUTTON}>
         Try again
       </button>
     </div>
@@ -71,7 +72,7 @@ export function ListError({ message, onRetry }: { message: string; onRetry: () =
 
 export function ListSkeleton({ rows = 3 }: { rows?: number }) {
   return (
-    <ul className="flex flex-col gap-[29px]" role="status" aria-label="Loading your subscriptions">
+    <ul className="flex flex-col gap-2" role="status" aria-label="Loading your subscriptions">
       {Array.from({ length: rows }).map((_, i) => (
         <li
           key={i}
@@ -84,7 +85,7 @@ export function ListSkeleton({ rows = 3 }: { rows?: number }) {
               <span className="h-[18px] w-[130px] rounded bg-neutral-bg" />
             </span>
           ))}
-          <span className={`w-10 lg:w-[88px] ${LIST_ACTIONS}`} />
+          <span className={`w-10 lg:w-[92px] ${LIST_ACTIONS}`} />
         </li>
       ))}
     </ul>

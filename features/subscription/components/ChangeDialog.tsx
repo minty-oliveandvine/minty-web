@@ -49,7 +49,7 @@ export function ChangeDialog({
             <>
               {/* the space keeps the accessible name "Remove Petty Cash?" across the line break */}{" "}
               <br />
-              <span className={bundle ? "text-[#18c4c7]" : PLAN_TONE[title.module.tone]}>
+              <span className={bundle ? "text-ink" : PLAN_TONE[title.module.tone]}>
                 {title.module.name}
               </span>
             </>
@@ -62,6 +62,8 @@ export function ChangeDialog({
       busy={busy}
       confirmLabel={modal.confirmLabel}
       confirmTone={modal.confirmTone}
+      // Removing a module cannot be undone from here: Danger. Every other change is Primary.
+      confirmVariant={modal.kind === "remove" ? "danger" : undefined}
       onConfirm={onConfirm}
       onBack={onBack}
     >

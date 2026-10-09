@@ -75,7 +75,7 @@ export function ModuleCellView({
           type="button"
           onClick={() => onStartTrial(cell.code)}
           aria-label={`Start Trial · ${label}`}
-          className="h-11 rounded-xl bg-action hover:bg-action-hover active:bg-action-pressed px-5 text-base font-bold text-white lg:h-[54px] lg:px-6 lg:text-xl"
+          className="h-11 shrink-0 rounded-xl bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed"
         >
           Start Trial
         </button>
@@ -86,7 +86,7 @@ export function ModuleCellView({
             type="button"
             onClick={() => onSubscribe(cell.code)}
             aria-label={`Subscribe · ${label}`}
-            className={`text-xl ${TONE.teal} hover:underline`}
+            className={`-mx-2 inline-flex min-h-11 items-center rounded-xl px-2 text-body-m font-semibold ${TONE.teal} hover:bg-hover`}
           >
             Subscribe
           </button>

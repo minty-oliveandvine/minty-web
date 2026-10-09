@@ -78,9 +78,12 @@
   --font-sans:
     var(--font-inter), ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
   --font-mono: ui-monospace, monospace;
-  /* AppHeader's height (its row is h-16 / sm:h-18, plus the 1px border and the notch): what a
+  /* AppHeader's height (its row is h-14 / sm:h-15, plus the 1px border and the notch): what a
      bar that sticks UNDER the sticky header uses as its top. Change the two together. */
-  --app-header-h: calc(4rem + 1px + env(safe-area-inset-top, 0px));
+  --app-header-h: calc(3.5rem + 1px + env(safe-area-inset-top, 0px));
+  /* The portal page's content width (Part 15.G). Each page's column says its own width with
+     `data-portal-col`; the header's back line (PortalBackSlot) reads this to line up with it. */
+  --portal-col: 1200px;
   /* Manage Subscriptions' search band, sticking under the header: SearchField's 62px plus the
      band's py-3. A row scrolled to the top clears both (`--list-sticky-top`). Change together. */
   --list-search-h: calc(62px + 1.5rem);
@@ -89,8 +92,18 @@
 
 @media (width >= 40rem) {
   :root {
-    --app-header-h: calc(4.5rem + 1px + env(safe-area-inset-top, 0px));
+    --app-header-h: calc(3.75rem + 1px + env(safe-area-inset-top, 0px));
   }
+}
+
+:root:has([data-portal-col="960"]) {
+  --portal-col: 960px;
+}
+:root:has([data-portal-col="720"]) {
+  --portal-col: 720px;
+}
+:root:has([data-portal-col="640"]) {
+  --portal-col: 640px;
 }
 
 @theme {
@@ -135,6 +148,10 @@
   --color-neutral-bg: var(--mv2-neutral-bg);
   --shadow-overlay: var(--mv2-elevation-overlay);
   --shadow-modal: var(--mv2-elevation-modal);
+  --text-display-xl: 40px;
+  --text-display-xl--line-height: 1.1;
+  --text-display-l: 32px;
+  --text-display-l--line-height: 1.15;
   --text-display-m: 24px;
   --text-display-m--line-height: 1.25;
   --text-title-l: 20px;

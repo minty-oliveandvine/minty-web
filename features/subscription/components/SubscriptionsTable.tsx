@@ -97,7 +97,7 @@ function SortHead({
       aria-pressed={active}
       data-direction={direction ?? "none"}
       className={`flex min-h-11 items-center gap-1.5 ${
-        strong ? "text-lg font-bold text-ink lg:text-display-m" : "text-base text-ink-2 lg:text-lg"
+        strong ? "text-body-m font-semibold text-ink" : "text-body-m text-ink-2"
       }`}
     >
       {label}
@@ -134,7 +134,7 @@ function Row({ row, focused, on }: { row: SubscriptionRow; focused: boolean; on:
       {/* The closed row carries no Activate button (the user, 2026-10-08): activating is asked
           inside the OPEN row, where Confirm Subscription Change sits - see
           SubscriptionSummaryRow. */}
-      <p className="min-w-0 truncate text-xl font-bold text-ink sm:text-display-m">
+      <p className="min-w-0 truncate text-title-l font-semibold text-ink">
         {row.entity.entity_name}
       </p>
       {row.cells.map((cell) => (
@@ -147,7 +147,7 @@ function Row({ row, focused, on }: { row: SubscriptionRow; focused: boolean; on:
           onSubscribe={(code) => on.onSubscribe(row.entity, code)}
         />
       ))}
-      <div className={`flex items-center gap-2 sm:gap-4 ${LIST_ACTIONS}`}>
+      <div className={`flex items-center gap-1 ${LIST_ACTIONS}`}>
         <button
           type="button"
           onClick={() => on.onToggle(row.entity)}
@@ -249,14 +249,14 @@ export function SubscriptionsTable({
   on: RowHandlers;
 }) {
   return (
-    <div className="flex flex-col gap-10">
-      <section aria-label="Active subscriptions" className="flex flex-col gap-4">
-        <h2 className="px-3 text-xl font-bold text-ink sm:text-display-m">
+    <div className="flex flex-col gap-8">
+      <section aria-label="Active subscriptions" className="flex flex-col gap-3">
+        <h2 className="text-title-m font-semibold text-ink">
           Active Subscriptions ({pluralEntities(active.length)})
         </h2>
         {/* Below `lg` the rows have no columns to head: the sort buttons wrap on one line. */}
         <div
-          className={`flex flex-wrap items-center gap-x-5 gap-y-1 px-4 sm:px-6 ${LIST_LG_COLUMNS}`}
+          className={`flex flex-wrap items-center gap-x-5 gap-y-1 px-5 ${LIST_LG_COLUMNS}`}
           role="presentation"
         >
           <SortHead column="entity" label="Entity Name" sort={sort} onToggle={onToggleSort} />
@@ -274,18 +274,18 @@ export function SubscriptionsTable({
             onToggle={onToggleSort}
             strong
           />
-          <span aria-hidden className="hidden w-[88px] lg:block" />
+          <span aria-hidden className="hidden w-[92px] lg:block" />
         </div>
-        <ul className="flex flex-col gap-[29px]">
+        <ul className="flex flex-col gap-2">
           <Rows rows={active} focusEntityId={focusEntityId} open={open} result={result} on={on} />
         </ul>
       </section>
       {suspended.length > 0 && (
-        <section aria-label="Suspended subscriptions" className="flex flex-col gap-4">
-          <h2 className="px-3 text-xl font-bold text-ink-2 sm:text-display-m">
+        <section aria-label="Suspended subscriptions" className="flex flex-col gap-3">
+          <h2 className="text-title-m font-semibold text-ink-2">
             Suspended Subscriptions ({pluralEntities(suspended.length)})
           </h2>
-          <ul className="flex flex-col gap-[29px]">
+          <ul className="flex flex-col gap-2">
             <Rows
               rows={suspended}
               focusEntityId={focusEntityId}

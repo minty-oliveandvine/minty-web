@@ -25,16 +25,17 @@ export function PortalBackProvider({ children }: { children: ReactNode }) {
 
 /**
  * The header's slot. The row it sits in is a size container (`AppHeader`'s `lead`), so `cqw` is
- * that row's content box: the padding puts the line where `SubscriptionLayout`'s column
- * (`max-w-[1346px]`, px-4 / sm:px-6 - the same as the header row's) starts the banner, i.e.
- * half of what the row has beyond the column's content width. Keep the two in step.
+ * that row's content box. `SubscriptionLayout` pads its column as the header row is padded
+ * (px-4 / sm:px-6 / lg:px-8) and each page centres its content at its own width
+ * (`data-portal-col`, read into `--portal-col` by globals.css), so the content's left edge is
+ * half of what the row has beyond that width. Keep the paddings in step.
  */
 export function PortalBackSlot() {
   const slot = useContext(SlotContext);
   return (
     <div
       ref={slot?.setEl}
-      className="flex min-w-0 items-center pl-[max(0px,calc(50cqw-657px))] sm:pl-[max(0px,calc(50cqw-649px))]"
+      className="flex min-w-0 items-center pl-[max(0px,calc(50cqw-var(--portal-col)/2))]"
     />
   );
 }

@@ -81,25 +81,28 @@ export type CardFormLook = "page" | "sheet";
  * cross-origin iframe no stylesheet of ours reaches. Frozen at module scope, as are the options
  * below - a new object identity on every render is a changed prop to Stripe.
  */
+// Literals that mirror the --mv2-* tokens in app/globals.css (text-primary, text-muted,
+// danger-ink, border-input, border-focus): the iframe cannot read our CSS variables.
 const SHEET_APPEARANCE: Appearance = {
   theme: "stripe",
   variables: {
     fontFamily: "Inter, system-ui, -apple-system, sans-serif",
     fontSizeBase: "14px",
-    colorText: "#16202E",
-    colorTextPlaceholder: "#9AA6AC",
-    colorDanger: "#b4231f",
-    borderRadius: "8px",
+    colorText: "#242828",
+    colorTextPlaceholder: "#676F6F",
+    colorPrimary: "#19676B",
+    colorDanger: "#A82A2F",
+    borderRadius: "12px",
     spacingUnit: "4px",
   },
   rules: {
-    ".Input": { border: "1px solid #D7DEE2", boxShadow: "none", padding: "12px 14px" },
+    ".Input": { border: "1px solid #848C8C", boxShadow: "none", padding: "12px 14px" },
     ".Input:focus": {
-      border: "1px solid #4FC7C7",
-      boxShadow: "0 0 0 3px rgba(79, 199, 199, 0.18)",
+      border: "1px solid #19676B",
+      boxShadow: "0 0 0 2px #19676B",
       outline: "none",
     },
-    ".Label": { fontWeight: "600", fontSize: "13px", color: "#16202E" },
+    ".Label": { fontWeight: "500", fontSize: "14px", color: "#242828" },
   },
 };
 
@@ -270,30 +273,30 @@ function PageForm(props: FormProps) {
           will offer first.
         </p>
       )}
-      <p className="text-body-s leading-relaxed text-ink-muted">
+      <p className="text-body-s leading-relaxed text-ink-2">
         {CARD_MANDATE}
       </p>
       {form.error && (
         <p
           role="alert"
-          className="rounded-xl border border-danger bg-danger-bg px-4 py-3 text-body-s text-danger"
+          className="rounded-xl border border-transparent bg-danger-bg px-4 py-3 text-body-s text-danger"
         >
           {form.error}
         </p>
       )}
-      <div className="flex justify-end gap-3">
+      <div className="flex justify-end gap-3 max-sm:flex-col-reverse max-sm:[&>*]:w-full">
         <button
           type="button"
           onClick={props.onCancel}
           disabled={form.busy}
-          className="h-11 w-[104px] rounded-xl border border-line bg-card text-body-m font-semibold text-ink hover:bg-hover disabled:opacity-60"
+          className="h-11 rounded-xl border border-line-selected bg-card px-4 text-body-m font-semibold text-link hover:bg-selected disabled:opacity-60"
         >
           Cancel
         </button>
         <button
           type="submit"
           disabled={!form.canSubmit}
-          className="h-11 w-[114px] rounded-xl bg-action text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed disabled:bg-action-disabled disabled:text-ink-disabled"
+          className="h-11 rounded-xl bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed disabled:bg-action-disabled disabled:text-ink-disabled"
         >
           {form.busy ? "Saving…" : "Save"}
         </button>
@@ -467,14 +470,14 @@ export function CardCapturePanel({
           <button
             type="button"
             onClick={onCancel}
-            className="h-11 w-[104px] rounded-xl border border-line bg-card text-body-m font-semibold text-ink hover:bg-hover"
+            className="h-11 rounded-xl border border-line-selected bg-card px-4 text-body-m font-semibold text-link hover:bg-selected"
           >
             Cancel
           </button>
           <button
             type="button"
             onClick={setup.retry}
-            className="h-11 w-[114px] rounded-xl bg-action text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed"
+            className="h-11 rounded-xl bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed"
           >
             Try again
           </button>

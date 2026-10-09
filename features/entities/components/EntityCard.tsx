@@ -71,7 +71,7 @@ function LastOpened({ row }: { row: EntityRow }) {
   return (
     <span className="group relative inline-flex">
       <span
-        className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-gray-500 text-white"
+        className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-brand text-white"
         role="img"
         aria-label={lastOpenedLabel(when, row.last_accessed_by)}
       >
@@ -104,7 +104,7 @@ export function EntityCard({ row }: { row: EntityRow }) {
       ) : null}
       <a
         href={enterHref(row)}
-        className="flex min-h-[56px] w-full items-center justify-between gap-2 rounded-xl border border-line bg-card px-4 py-3 font-semibold text-ink transition-[background-color,transform,box-shadow] hover:-translate-y-0.5 hover:bg-hover"
+        className="flex min-h-11 w-full items-center justify-between gap-2 rounded-xl border border-line bg-card px-5 py-4 font-semibold text-ink transition-[background-color,transform] hover:-translate-y-0.5 hover:bg-hover"
       >
         <span className="min-w-0 flex-1 truncate text-title-m font-semibold">{row.name}</span>
         <span className="flex shrink-0 items-center gap-1.5">
@@ -139,10 +139,10 @@ export function EntityCard({ row }: { row: EntityRow }) {
             </span>
           ) : null}
           <LastOpened row={row} />
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden>
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" className="text-ink" aria-hidden>
             <path
               d="M10.8234 9.99945L6.98561 13.8395L8.07324 14.9434L13.0142 9.99945L8.07324 5.05555L6.98561 6.15938L10.8234 9.99945Z"
-              fill="#1F2937"
+              fill="currentColor"
             />
           </svg>
         </span>

@@ -42,15 +42,17 @@ export function SettingsShell({
   return (
     <div className="flex h-dvh h-screen min-w-0 max-w-full flex-col overflow-hidden bg-canvas">
       <AppHeader title="Settings" back={settingsBackLink(company.id)} companyName={company.name} nav={{ modules: access }} noBorder />
-      <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto overflow-x-hidden pb-[env(safe-area-inset-bottom,0px)]">
-        <div className="mx-auto w-full max-w-[1024px] px-4 sm:px-6">
+      <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto overflow-x-hidden px-4 pb-[env(safe-area-inset-bottom,0px)] sm:px-6 lg:px-8">
+        {/* Part 15.G: Users is a list (960), the others are record pages (720). The whole column
+            narrows, so the pills, heading and cards stay on one left edge. */}
+        <div className={`mx-auto w-full ${tab === "users" ? "max-w-[960px]" : "max-w-[720px]"}`}>
           <div className="sticky top-0 z-10 bg-canvas pt-3 pb-3 sm:pt-4 sm:pb-4">
             <SettingsTabs tabs={settingsTabs(company, access, tab)} />
           </div>
           <section className="pb-16 pt-6">
             <h2 className="text-display-m font-bold">{title}</h2>
             <p className="mt-2 text-body-l text-ink-2">{lead}</p>
-            <div className="mt-6 flex flex-col gap-6">{children}</div>
+            <div className="mt-8 flex flex-col gap-8">{children}</div>
           </section>
         </div>
       </main>
@@ -75,10 +77,10 @@ export function SettingsCard({
 }) {
   return (
     <div className={`min-w-0 overflow-hidden rounded-xl border border-line ${readOnly ? "bg-sunk" : "bg-card"}`}>
-      <div className="flex flex-wrap items-start justify-between gap-3 px-4 pt-4 sm:px-5">
+      <div className="flex flex-wrap items-start justify-between gap-3 px-4 pt-4 sm:px-5 sm:pt-5">
         <div className="min-w-0 flex-1">
-          <h3 className="text-base font-semibold text-ink sm:text-lg">{title}</h3>
-          {lead ? <p className="text-sm text-ink-2">{lead}</p> : null}
+          <h3 className="text-title-m font-semibold text-ink">{title}</h3>
+          {lead ? <p className="mt-0.5 text-body-s text-ink-2">{lead}</p> : null}
         </div>
         {action}
       </div>
@@ -107,7 +109,7 @@ export function LoadState({ status, error, onRetry }: { status: "loading" | "err
   ) : (
     <div className="mt-6 text-center" role="alert">
       <p className="text-sm text-danger">{error}</p>
-      <button type="button" className="mt-2 min-h-11 text-sm underline" onClick={onRetry}>
+      <button type="button" className="mt-2 min-h-11 rounded-xl px-2 text-body-m font-semibold text-link underline hover:bg-hover" onClick={onRetry}>
         Try again
       </button>
     </div>

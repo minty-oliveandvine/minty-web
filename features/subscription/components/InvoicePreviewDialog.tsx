@@ -59,10 +59,10 @@ export function InvoicePreviewDialog({
       busy={false}
       onDismiss={onClose}
       dismissLabel="Close preview"
-      className="flex max-h-[min(92dvh,1180px)] w-full max-w-[860px] flex-col overflow-hidden rounded-2xl bg-card shadow-modal"
+      className="flex max-h-[min(92dvh,1180px)] w-full max-w-[860px] flex-col overflow-hidden rounded-2xl border border-line bg-card shadow-modal max-[480px]:max-w-none max-[480px]:rounded-b-none"
     >
       <div className="flex shrink-0 items-center justify-between gap-4 border-b border-line-subtle px-6 py-4">
-        <h2 id={titleId} className="min-w-0 truncate text-title-m font-bold text-ink">
+        <h2 id={titleId} className="min-w-0 truncate text-title-m font-semibold text-ink">
           {title}
         </h2>
         <button

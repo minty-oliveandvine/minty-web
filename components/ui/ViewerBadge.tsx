@@ -22,8 +22,12 @@ import { useSidebar } from "@/components/ui/Sidebar";
 import { HUB_PATHS } from "@/lib/hubPaths";
 import { useViewer, type Viewer } from "@/lib/viewer";
 
+// The visible circle is 28px (the inner span); the button around it is a 44px hit area that
+// takes no extra room in the header (`-m-2`).
 const BADGE =
-  "inline-flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-full bg-[var(--avatar-bg)] text-label font-semibold text-[var(--avatar-fg)] transition-shadow hover:ring-2 hover:ring-line-selected/25 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--mv2-border-focus)]";
+  "group -m-2 inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-full focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-[var(--mv2-border-focus)]";
+const CIRCLE =
+  "inline-flex size-7 items-center justify-center rounded-full bg-[var(--avatar-bg)] text-label font-semibold text-[var(--avatar-fg)] transition-shadow group-hover:ring-2 group-hover:ring-line-selected/25";
 
 export function ViewerBadge({ viewer }: { viewer?: Viewer | null }) {
   const person = useViewer(viewer);
@@ -44,13 +48,17 @@ export function ViewerBadge({ viewer }: { viewer?: Viewer | null }) {
         aria-controls={sidebar.panelId}
         title={person.name}
       >
-        <span aria-hidden>{person.initials}</span>
+        <span aria-hidden className={CIRCLE}>
+          {person.initials}
+        </span>
       </button>
     );
   }
   return (
     <a href={HUB_PATHS.profile} className={BADGE} aria-label={label} title={person.name}>
-      <span aria-hidden>{person.initials}</span>
+      <span aria-hidden className={CIRCLE}>
+        {person.initials}
+      </span>
     </a>
   );
 }

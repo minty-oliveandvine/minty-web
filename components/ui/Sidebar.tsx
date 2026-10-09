@@ -147,7 +147,7 @@ export function SidebarDrawer({
       <div
         id={panelId}
         ref={panel}
-        className={`absolute right-0 top-0 h-full overflow-y-auto overscroll-contain border border-line shadow-modal transition-[transform,width] duration-300 ease-out ${profile ? "w-full bg-sunk sm:w-[440px]" : "w-[min(100%,353px)] bg-card"} ${open ? "translate-x-0" : "translate-x-full"}`}
+        className={`absolute right-0 top-0 h-full overflow-y-auto overscroll-contain border-l border-line shadow-overlay sm:rounded-l-2xl transition-[transform,width] duration-300 ease-out ${profile ? "w-full bg-sunk sm:w-[440px]" : "w-[min(100%,353px)] bg-card"} ${open ? "translate-x-0" : "translate-x-full"}`}
       >
         {children}
       </div>

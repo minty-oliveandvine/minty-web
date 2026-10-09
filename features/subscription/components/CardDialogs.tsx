@@ -27,7 +27,7 @@ import type { AddedCard, CardPrompt } from "@/features/subscription/hooks/useBil
 export { shortCardName };
 
 function CardName({ text }: { text: string }) {
-  return <span className="text-[#ea9713]">{text}</span>;
+  return <span className="font-semibold text-ink">{text}</span>;
 }
 
 /** 08-N / 08-S: the card is saved; the only question left is whether it becomes the default. */

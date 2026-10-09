@@ -43,8 +43,8 @@ import { RowMenu } from "@/features/subscription/components/RowMenu";
 
 export const CALCULATING = "Calculating....";
 
-/** The summary panel's place in the opened row's grid: below both cards until `lg`. */
-const PANEL_PLACE = "sm:col-span-2 lg:col-span-1";
+/** The summary panel's place in the opened row's grid: below both cards (the row is 960 wide). */
+const PANEL_PLACE = "sm:col-span-2";
 
 export type SummaryRowHandlers = {
   onClose: () => void;
@@ -66,8 +66,8 @@ export type SummaryRowHandlers = {
 };
 
 const CHIP: Record<Chip, string> = {
-  Adding: "bg-selected text-[#18c4c7]",
-  Restoring: "bg-selected text-[#18c4c7]",
+  Adding: "bg-selected text-link",
+  Restoring: "bg-selected text-link",
   Removing: "bg-warning-bg text-warning",
 };
 
@@ -82,10 +82,10 @@ const TONE: Record<ModuleStatusLine["tone"], string> = {
 
 /** The module colours the plan lines are set in; the transfer summary draws its own rows. */
 export const PLAN_TONE: Record<PlanLine["tone"], string> = {
-  petty: "text-[#ea9713]",
-  payment: "text-[#2e6ff2]",
-  bundle: "text-[#161f2e]",
-  none: "text-[#161f2e]",
+  petty: "text-ink",
+  payment: "text-ink",
+  bundle: "text-ink",
+  none: "text-ink",
 };
 
 /**
@@ -125,7 +125,7 @@ export function SummaryModuleCard({
         module.chip ? (
           <span
             data-chip={module.chip}
-            className={`rounded-lg px-6 py-1 text-sm font-bold ${CHIP[module.chip]}`}
+            className={`inline-flex h-6 items-center rounded-full px-2.5 text-label font-semibold ${CHIP[module.chip]}`}
           >
             {module.chip}
           </span>
@@ -158,7 +158,7 @@ function UnderCard({
         onClick={() => on.onStartTrial(module.code)}
         disabled={disabled}
         aria-label={`Start Free Trial · ${module.name}`}
-        className="h-[50px] w-full max-w-[195px] rounded-xl bg-action text-xl font-bold text-white hover:bg-action-hover active:bg-action-pressed disabled:bg-action-disabled disabled:text-ink-disabled"
+        className="h-11 w-full max-w-[195px] rounded-xl bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed disabled:bg-action-disabled disabled:text-ink-disabled"
       >
         Start Free Trial
       </button>
@@ -174,18 +174,21 @@ function UnderCard({
       data-changed={module.changed}
       disabled={disabled}
       onClick={() => on.onTick(module.code)}
-      className={
-        ticked
-          ? "flex size-10 items-center justify-center rounded-lg bg-action text-white"
-          : "size-[34px] rounded-lg border-2 border-line-input bg-card"
-      }
+      className="flex size-11 items-center justify-center rounded-xl hover:bg-hover"
     >
-      {ticked && <Icon name="check" size={24} strokeWidth={3} />}
+      <span
+        aria-hidden
+        className={`flex size-6 items-center justify-center rounded-md ${
+          ticked ? "bg-action text-white" : "border-2 border-line-input bg-card"
+        }`}
+      >
+        {ticked && <Icon name="check" size={16} strokeWidth={3} />}
+      </span>
     </button>
   );
 }
 
-export function PlanLines({ lines, size = "text-xl" }: { lines: PlanLine[]; size?: string }) {
+export function PlanLines({ lines, size = "text-title-l" }: { lines: PlanLine[]; size?: string }) {
   return (
     <ul className="flex flex-col gap-1">
       {lines.map((line) => (
@@ -231,14 +234,14 @@ export function PriceBox({
       {struck && (
         <s
           // Its own line height: a 22px line box reached down onto "/month".
-          className="absolute right-5 top-2.5 text-base leading-none text-ink-muted sm:right-8 sm:top-3 sm:text-[22px]"
+          className="absolute right-5 top-2.5 text-base leading-none text-ink-muted sm:right-8 sm:top-3 sm:text-title-l"
           aria-label={`was ${struck}`}
         >
           {struck}
         </s>
       )}
-      <span className="text-[28px] font-bold text-link sm:text-[35px]">{price}</span>
-      <span className="text-base text-ink-2 sm:text-xl">/month</span>
+      <span className="text-display-m font-bold text-link sm:text-display-l">{price}</span>
+      <span className="text-base text-ink-2 sm:text-title-l">/month</span>
     </div>
   );
 }
@@ -267,9 +270,9 @@ function CalculatingPanel() {
       aria-label="Subscription Summary"
       aria-busy
       data-calculating
-      className={`${PANEL_PLACE} flex min-h-[300px] w-full flex-col items-center justify-center gap-6 rounded-xl border border-line bg-card p-5 sm:p-8 lg:min-h-[469px]`}
+      className={`${PANEL_PLACE} flex min-h-[300px] w-full flex-col items-center justify-center gap-6 rounded-xl border border-line bg-card p-4 sm:p-5`}
     >
-      <p role="status" className="text-xl font-bold text-link">
+      <p role="status" className="text-title-l font-bold text-link">
         {CALCULATING}
       </p>
       <Image src="/portal/minty-counting.png" alt="" width={157} height={136} unoptimized />
@@ -295,11 +298,11 @@ function SummaryPanel({
   return (
     <section
       aria-label="Subscription Summary"
-      className={`${PANEL_PLACE} flex w-full min-w-0 flex-col gap-6 rounded-xl border border-line p-5 sm:p-8 ${
+      className={`${PANEL_PLACE} flex w-full min-w-0 flex-col gap-6 rounded-xl border border-line p-4 sm:p-5 ${
         changing ? "bg-sunk" : "bg-card"
       }`}
     >
-      <h3 className="text-xl font-bold text-ink">Subscription Summary</h3>
+      <h3 className="text-title-l font-semibold text-ink">Subscription Summary</h3>
 
       {view.panel.kind === "simple" ? (
         <>
@@ -320,13 +323,13 @@ function SummaryPanel({
                   fit="mark"
                   className={`mt-[19px] ${SUMMARY_MARK}`}
                 />
-                <p className="text-xl font-bold text-ink" data-payment-method>
+                <p className="text-title-l font-bold text-ink" data-payment-method>
                   {view.paymentMethod.label}
                 </p>
                 <button
                   type="button"
                   onClick={onChangePaymentMethod}
-                  className="min-h-11 text-body-m text-ink-muted hover:underline"
+                  className="-mr-2 min-h-11 rounded-xl px-2 text-body-m text-link hover:bg-hover"
                 >
                   Change
                 </button>
@@ -334,7 +337,7 @@ function SummaryPanel({
             )}
           </div>
           <PriceBox price={view.panel.price} struck={null} greyed={view.panel.greyed} />
-          <p className="text-center text-xl font-bold text-ink-muted">No pending changes</p>
+          <p className="text-center text-title-l font-bold text-ink-muted">No pending changes</p>
         </>
       ) : (
         <>
@@ -363,7 +366,7 @@ function SummaryPanel({
           <button
             type="button"
             onClick={() => onActivate(view.pendingChange!)}
-            className="h-14 rounded-xl bg-action text-lg font-bold sm:h-[66px] sm:text-xl text-white hover:bg-action-hover active:bg-action-pressed"
+            className="h-11 rounded-xl bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed"
           >
             {ACTIVATE_SUBSCRIPTION}
           </button>
@@ -371,7 +374,7 @@ function SummaryPanel({
           <button
             type="button"
             onClick={() => onConfirmChange(view.pendingChange!)}
-            className="h-14 rounded-xl bg-action text-lg font-bold sm:h-[66px] sm:text-xl text-white hover:bg-action-hover active:bg-action-pressed"
+            className="h-11 rounded-xl bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed"
           >
             {CONFIRM_CHANGE}
           </button>
@@ -418,7 +421,7 @@ export function SubscriptionSummaryRow({
       ref={ref}
       data-entity={entity.entity_id}
       data-open
-      className="scroll-mt-[var(--list-sticky-top)] flex flex-col gap-6 rounded-xl border border-line bg-card px-4 pb-6 pt-6 sm:gap-8 sm:px-8 sm:pb-8 sm:pt-10"
+      className="scroll-mt-[var(--list-sticky-top)] flex flex-col gap-6 rounded-xl border border-line bg-card p-4 sm:p-5"
     >
       {/*
         The strip is the click target, not the whole `<li>`: the panel below holds the cards and
@@ -430,10 +433,10 @@ export function SubscriptionSummaryRow({
         }}
         className="flex cursor-pointer items-center justify-between gap-4"
       >
-        <h3 className="min-w-0 truncate text-xl font-bold text-ink sm:text-display-m">
+        <h3 className="min-w-0 truncate text-title-l font-semibold text-ink">
           {entity.entity_name}
         </h3>
-        <div className="flex shrink-0 items-center gap-2 sm:gap-4">
+        <div className="flex shrink-0 items-center gap-1">
           <button
             ref={chevron}
             type="button"
@@ -456,7 +459,11 @@ export function SubscriptionSummaryRow({
       {status === "error" && (
         <div role="alert" className="flex items-center gap-4 text-ink-2">
           <p>{error}</p>
-          <button type="button" onClick={on.onRetry} className="min-h-11 font-bold text-link">
+          <button
+            type="button"
+            onClick={on.onRetry}
+            className="min-h-11 rounded-xl px-2 text-body-m font-semibold text-link hover:bg-hover"
+          >
             Try again
           </button>
         </div>
@@ -477,12 +484,12 @@ export function SubscriptionSummaryRow({
           )}
 
           {/* One column on a phone, the two cards side by side from `sm` with the panel below
-              them, and the panel beside them from `lg` (it needs 360px of its own). */}
-          <div className="grid grid-cols-1 items-start gap-6 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_minmax(360px,1.45fr)]">
+              them - always below: the list is 960 wide (Minty v2 Part 15.4a). */}
+          <div className="grid grid-cols-1 items-start gap-6 sm:grid-cols-2">
             {view.modules.map((module) => (
               <div
                 key={module.code}
-                className="flex min-w-0 flex-col items-center gap-5 lg:gap-[46px]"
+                className="flex min-w-0 flex-col items-center gap-5"
               >
                 <SummaryModuleCard
                   module={module}

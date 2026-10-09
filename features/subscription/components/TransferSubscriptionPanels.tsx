@@ -82,7 +82,7 @@ function CandidateRow({
         </span>
       </span>
       {current && (
-        <span className="shrink-0 rounded-lg bg-sunk px-2.5 py-1 text-label font-semibold text-ink-2">
+        <span className="shrink-0 inline-flex h-6 items-center rounded-full px-2.5 text-label font-semibold bg-neutral-bg text-neutral">
           Current
         </span>
       )}
@@ -129,7 +129,7 @@ export function SubscriberPicker({
   return (
     <section
       aria-label="Select new subscriber"
-      className="flex w-full max-w-[720px] flex-col gap-4 rounded-xl border border-line bg-card p-8"
+      className="flex w-full max-w-[720px] flex-col gap-4 rounded-xl border border-line bg-card p-4 sm:p-5"
     >
       <p className="text-body-s font-semibold uppercase tracking-[0.06em] text-ink-muted">
         {PICK_HEADING}
@@ -138,7 +138,7 @@ export function SubscriberPicker({
       {blockers.length > 0 && (
         <div
           role="status"
-          className="rounded-xl border border-line bg-warning-bg px-4 py-3 text-sm text-warning"
+          className="rounded-xl border border-transparent bg-warning-bg px-4 py-3 text-body-m text-warning"
         >
           {blockers.map((reason) => (
             <p key={reason}>{reason}</p>
@@ -173,7 +173,7 @@ export function SubscriberPicker({
       <hr className="border-line-subtle" />
 
       <div className="flex flex-col gap-2">
-        <label htmlFor="inviteEmail" className="text-sm font-semibold text-ink-2">
+        <label htmlFor="inviteEmail" className="text-label font-semibold text-ink">
           {INVITE_HEADING}
         </label>
         <div className="flex items-center gap-2 rounded-xl border border-line-input bg-card pr-2 focus-within:border-line-selected focus-within:ring-2 focus-within:ring-line-selected/25">
@@ -183,13 +183,13 @@ export function SubscriberPicker({
             value={invite}
             placeholder={INVITE_PLACEHOLDER}
             aria-describedby={inviteEmail.rejected ? "inviteEmail-hint" : undefined}
-            className="min-w-0 flex-1 bg-transparent px-4 py-3 text-body-m text-ink placeholder:text-ink-muted focus:outline-none"
+            className="h-11 min-w-0 flex-1 bg-transparent px-3 text-body-m text-ink placeholder:text-ink-muted focus:outline-none"
           />
           <button
             type="button"
             onClick={on.onSendInvite}
             disabled={inviting || !invite.trim()}
-            className="min-h-11 shrink-0 rounded-xl px-3 py-1.5 text-body-m font-semibold text-link hover:opacity-80 disabled:cursor-not-allowed disabled:text-ink-disabled"
+            className="min-h-11 shrink-0 rounded-xl px-2 text-body-m font-semibold text-link hover:bg-hover disabled:cursor-not-allowed disabled:text-ink-disabled"
           >
             {inviting ? "Sending…" : "Send invite"}
           </button>
@@ -211,11 +211,11 @@ export function SubscriberPicker({
         )}
       </div>
 
-      <div className="flex flex-wrap items-center justify-end gap-3 pt-2">
+      <div className="flex justify-end gap-3 pt-2 max-sm:flex-col-reverse max-sm:[&>*]:w-full">
         <button
           type="button"
           onClick={on.onCancel}
-          className="min-h-11 rounded-xl border border-line bg-card px-6 py-2.5 text-body-m font-semibold text-ink hover:bg-hover"
+          className="h-11 rounded-xl border border-line-selected bg-card px-4 text-body-m font-semibold text-link hover:bg-selected disabled:opacity-60"
         >
           Cancel
         </button>
@@ -223,7 +223,7 @@ export function SubscriberPicker({
           type="button"
           onClick={on.onRequest}
           disabled={!canRequest}
-          className="min-h-11 rounded-xl bg-action px-6 py-2.5 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed disabled:cursor-not-allowed disabled:bg-action-disabled disabled:text-ink-disabled"
+          className="h-11 rounded-xl bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed disabled:cursor-not-allowed disabled:bg-action-disabled disabled:text-ink-disabled"
         >
           {busy ? "Sending…" : REQUEST_TRANSFER}
         </button>
@@ -251,30 +251,30 @@ export function PendingRequestPanel({
   onWithdraw: () => void;
 }) {
   return (
-    <section aria-label="Request pending" className="flex w-full max-w-[760px] flex-col gap-6">
+    <section aria-label="Request pending" className="flex w-full max-w-[720px] flex-col gap-6">
       <div
         role="status"
-        className="rounded-xl border border-line bg-warning-bg px-5 py-4 text-body-l text-warning"
+        className="rounded-xl border border-transparent bg-warning-bg px-4 py-3 text-body-m text-warning"
       >
         <p className="font-bold">{REQUEST_WAITING}</p>
         <p className="mt-1">{pendingSentence(recipient)}</p>
       </div>
-      <div className="flex items-center justify-between gap-4 rounded-xl border border-line bg-card px-8 py-5">
+      <div className="flex items-center justify-between gap-4 rounded-xl border border-line bg-card px-5 py-4">
         <div className="min-w-0">
           <p className="truncate text-title-m font-semibold text-ink">
             {recipient.name || recipient.email}
           </p>
           <p className="truncate text-body-m text-ink-2">{recipient.email}</p>
         </div>
-        <span className="shrink-0 rounded-lg bg-sunk px-5 py-2 text-sm font-semibold text-ink-2">
+        <span className="shrink-0 inline-flex h-6 items-center rounded-full px-2.5 text-label font-semibold bg-neutral-bg text-neutral">
           Pending
         </span>
       </div>
-      <div className="flex flex-wrap items-center justify-end gap-4">
+      <div className="flex justify-end gap-3 max-sm:flex-col-reverse max-sm:[&>*]:w-full">
         <button
           type="button"
           onClick={onBack}
-          className="h-[52px] w-[150px] rounded-xl border border-line bg-card text-title-m font-semibold text-ink hover:bg-hover"
+          className="h-11 rounded-xl border border-line-selected bg-card px-4 text-body-m font-semibold text-link hover:bg-selected disabled:opacity-60"
         >
           Back
         </button>
@@ -282,7 +282,7 @@ export function PendingRequestPanel({
           type="button"
           onClick={onWithdraw}
           disabled={busy}
-          className="h-[52px] w-[240px] rounded-xl border border-danger bg-card text-title-m font-semibold text-danger hover:bg-danger-bg disabled:opacity-60"
+          className="h-11 rounded-xl bg-danger-action px-4 text-body-m font-semibold text-white hover:bg-[var(--mv2-action-danger-hover)] disabled:opacity-60"
         >
           {busy ? "Withdrawing…" : WITHDRAW_REQUEST}
         </button>
@@ -313,7 +313,7 @@ export function TransferRequested({
       className="grid grid-cols-1 items-center gap-8 md:grid-cols-[minmax(0,1fr)_auto] md:px-6"
     >
       <div className="flex flex-col gap-6">
-        <h2 className="text-[40px] font-bold leading-tight text-link">Transfer requested</h2>
+        <h2 className="text-display-l font-bold text-link">Transfer requested</h2>
         <div className="flex flex-col gap-3 pl-5">
           <p className="text-body-l text-ink-muted">
             Request has been sent to <span className="text-link">{email}</span>.
@@ -326,7 +326,7 @@ export function TransferRequested({
         <button
           type="button"
           onClick={onBack}
-          className="h-[66px] w-[368px] max-w-full rounded-xl bg-action text-xl font-bold text-white hover:bg-action-hover active:bg-action-pressed"
+          className="h-11 rounded-xl bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed w-full sm:w-auto sm:self-start"
         >
           Back to Manage Subscription
         </button>

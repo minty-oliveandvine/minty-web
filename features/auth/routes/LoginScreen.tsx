@@ -212,7 +212,7 @@ export function LoginScreen({ arrival }: { arrival: Arrival }) {
         </div>
 
         {termsOwed ? (
-          <label className="flex cursor-pointer items-start gap-2 text-body-s leading-normal text-ink">
+          <label className="flex min-h-11 cursor-pointer items-start gap-2 text-body-s leading-normal text-ink">
             {/* Never ticked directly - a box ticked without reading is not agreement. Clicking
                 opens the document; agreeing at its end ticks it. Unticking is always allowed. */}
             <input

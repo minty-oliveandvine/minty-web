@@ -75,11 +75,15 @@ import { EMAIL_ASCII_HINT, useEmailInput } from "@/lib/emailInput";
 
 export type SheetSize = "list" | "form" | "done";
 
-/** `.billing-sheet` and its three modifiers - and 01-L's width again for the form on a small screen. */
+/**
+ * `.billing-sheet` and its three widths - and 01-L's width again for the form on a small screen.
+ * Minty v2's modal: p-6 throughout; 01-J (a confirmation) takes the modal's 440. The list and the
+ * form keep onboarding's widths (a picker of wide rows, a form beside Minty).
+ */
 const SIZE: Record<SheetSize, string> = {
-  list: "max-w-[481px] p-[30px] max-[560px]:px-[18px] max-[560px]:py-[22px]",
-  form: "max-w-[880px] px-7 pb-7 pt-[26px] max-[900px]:max-w-[481px] max-[560px]:px-[18px] max-[560px]:py-[22px]",
-  done: "max-w-[435px] px-12 pb-10 pt-[67px] max-[560px]:px-[22px] max-[560px]:pb-8 max-[560px]:pt-[30px]",
+  list: "max-w-[481px]",
+  form: "max-w-[880px] max-[900px]:max-w-[481px]",
+  done: "max-w-[440px]",
 };
 
 export type SheetFrameProps = {
@@ -131,7 +135,7 @@ export function SheetFrame({
       onClick={(e) => {
         if (e.target === e.currentTarget && !busy) onDismiss();
       }}
-      className="fixed inset-0 z-[150] flex items-center justify-center overflow-y-auto overscroll-contain bg-[var(--mv2-scrim)] p-5 backdrop-blur-[6px] transition-opacity duration-150 ease-out starting:opacity-0 motion-reduce:transition-none"
+      className="fixed inset-0 z-[150] flex items-center justify-center overflow-y-auto overscroll-contain bg-[var(--mv2-scrim)] p-5 max-[480px]:items-end max-[480px]:p-0 max-[480px]:pt-5 backdrop-blur-[6px] transition-opacity duration-150 ease-out starting:opacity-0 motion-reduce:transition-none"
     >
       <div
         role="dialog"
@@ -139,23 +143,20 @@ export function SheetFrame({
         aria-label={label}
         // `m-auto`, not only the overlay's centring: a sheet taller than the window then scrolls
         // from its top instead of being cut off above it. Translate only, never scale - Stripe
-        // measures the box it mounts into.
-        className={`relative m-auto w-full rounded-2xl bg-card shadow-modal transition-[opacity,translate] duration-[180ms] ease-[cubic-bezier(0.16,1,0.3,1)] starting:translate-y-2 starting:opacity-0 motion-reduce:transition-none ${SIZE[size]}`}
+        // measures the box it mounts into. Below 480px it is a bottom sheet: full width, flat
+        // along the bottom edge.
+        className={`relative m-auto w-full rounded-2xl border border-line bg-card p-6 shadow-modal max-[480px]:mx-0 max-[480px]:mb-0 max-[480px]:max-w-none max-[480px]:rounded-b-none transition-[opacity,translate] duration-[180ms] ease-[cubic-bezier(0.16,1,0.3,1)] starting:translate-y-2 starting:opacity-0 motion-reduce:transition-none ${SIZE[size]}`}
       >
         {(title || onClose) && (
-          <div className="mb-[22px] flex items-start gap-3">
+          <div className="mb-5 flex items-start gap-3">
             <div className="min-w-0">
               {title && (
-                <h2
-                  className={`mb-1.5 leading-[normal] tracking-[-0.01em] text-ink ${
-                    size === "list" ? "text-title-m font-semibold" : "text-title-l font-bold"
-                  }`}
-                >
+                <h2 className="mb-1.5 text-title-l font-semibold text-ink">
                   {title}
                 </h2>
               )}
               {sub && (
-                <p className="max-w-[434px] text-body-s leading-[normal] text-ink-muted">{sub}</p>
+                <p className="max-w-[434px] text-body-m text-ink-2">{sub}</p>
               )}
             </div>
             {onClose && (
@@ -165,7 +166,7 @@ export function SheetFrame({
                 aria-label="Close"
                 onClick={onClose}
                 disabled={busy}
-                className="ml-auto min-h-11 min-w-11 flex-none rounded-xl p-1 leading-none text-ink-muted hover:bg-hover hover:text-ink-2 disabled:cursor-not-allowed disabled:opacity-50"
+                className="-mr-2 -mt-2 ml-auto inline-flex size-11 flex-none items-center justify-center rounded-xl leading-none text-ink-muted hover:bg-hover hover:text-ink-2 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <svg
                   width="14"
@@ -498,10 +499,10 @@ function AccountAdded({
     <div className="relative">
       {/* Heading and cat are one row, centred against each other; a column, cat on top, on a phone. */}
       <div className="flex items-center justify-between gap-3 max-[560px]:flex-col-reverse max-[560px]:gap-1.5">
-        <h2 className="text-[26px] font-bold leading-[1.2] tracking-[-0.02em] text-ink max-[560px]:text-center max-[560px]:text-display-m">
+        <h2 className="text-title-l font-semibold text-ink max-[560px]:text-center">
           {CARD_ADDED}
           <br />
-          <span className="text-[#18c4c7]">{CARD_ADDED_TAIL}</span>
+          <span className="text-success">{CARD_ADDED_TAIL}</span>
         </h2>
         <Image
           src="/portal/billing-cat-celebrate.png"
@@ -513,19 +514,19 @@ function AccountAdded({
           className="pointer-events-none h-auto w-[106px] flex-none max-[560px]:w-[120px]"
         />
       </div>
-      <p className="pt-12 text-body-l leading-[1.2] text-ink-2">
-        <span className="text-[#ea9713]">{shortCardName(card.brand_label, card.last4)}</span> is
+      <p className="pt-6 text-body-m text-ink-2">
+        <span className="font-semibold text-ink">{shortCardName(card.brand_label, card.last4)}</span> is
         added successfully.
       </p>
       {isDefault && (
-        <p className="pt-[18px] text-body-l leading-[1.2] text-ink-2">{CARD_ADDED_DEFAULT}</p>
+        <p className="pt-3 text-body-m text-ink-2">{CARD_ADDED_DEFAULT}</p>
       )}
-      <div className="mt-12 flex justify-center max-[560px]:mt-8">
+      <div className="mt-6 flex justify-end max-[480px]:flex-col">
         <button
           ref={doneRef}
           type="button"
           onClick={onDone}
-          className={`${SHEET_DONE} max-[560px]:w-full`}
+          className={`${SHEET_DONE} max-[480px]:w-full`}
         >
           Done
         </button>

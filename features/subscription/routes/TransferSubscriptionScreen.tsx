@@ -27,14 +27,14 @@ export function TransferSubscriptionScreen(args: UseTransferSubscriptionArgs) {
   const t = useTransferSubscription(args);
 
   return (
-    <div className="flex flex-col gap-8 pb-16">
+    <div data-portal-col="960" className="mx-auto flex w-full max-w-[960px] flex-col gap-8 pb-16">
       <PortalHero title="Transfer Subscription" />
 
-      <section className="flex flex-col gap-6 rounded-xl border border-line bg-card px-8 pb-8 pt-10">
+      <section className="flex flex-col gap-6 rounded-xl border border-line bg-card p-4 sm:p-5">
         {t.status === "error" ? (
           <div
             role="alert"
-            className="rounded-xl border border-danger bg-danger-bg px-3.5 py-2.5 text-sm text-danger"
+            className="rounded-xl border border-transparent bg-danger-bg px-4 py-3 text-body-m text-danger"
           >
             {t.error}
           </div>
@@ -90,7 +90,7 @@ export function TransferSubscriptionScreen(args: UseTransferSubscriptionArgs) {
                 width={t.pending ? 330 : 433}
                 height={t.pending ? 277 : 270}
                 unoptimized
-                className="justify-self-center lg:mt-16"
+                className="h-auto w-[260px] justify-self-center lg:mt-16 lg:w-[300px]"
               />
             </div>
             {!t.pending && t.status === "ready" && (

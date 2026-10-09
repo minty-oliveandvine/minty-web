@@ -64,14 +64,14 @@ export function currentOf(pathname: string): Current {
   return null;
 }
 
-// Figma: Inter 500 18px #8f8f8f. The page being shown is NOT drawn differently - 02-A opens the
-// menu over the entity list and Select Entity stays grey - so it is marked for assistive
-// technology only (aria-current). The one tinted row is Bills, which the design draws as a
-// button ("Bill Button").
+// Minty v2: rows are 44 high at least, grey until hovered; the page being shown (aria-current)
+// is tinted as the selected row. The one tinted row otherwise is Bills, which the design draws as
+// a button ("Bill Button").
 const ROW =
-  "flex w-full items-center rounded-lg text-[18px] font-medium leading-[22px] transition-colors";
-const IDLE = "text-ink-muted hover:bg-hover";
-const BUTTON = "bg-[rgba(202,241,244,0.5)] text-link hover:bg-[rgba(202,241,244,0.8)]";
+  "flex min-h-11 w-full items-center rounded-lg text-title-l font-medium transition-colors";
+const IDLE =
+  "text-ink-muted hover:bg-hover aria-[current=page]:bg-selected aria-[current=page]:text-link";
+const BUTTON = "bg-selected text-link hover:bg-hover";
 
 function MenuLink({
   href,
@@ -154,8 +154,8 @@ function ModuleHeading({
   iconBox: string;
 }) {
   return (
-    <div className="flex items-center justify-between pl-[19px]">
-      <p className={`text-[18px] font-bold leading-[22px] ${tone}`}>{title}</p>
+    <div className="flex items-center justify-between pl-5">
+      <p className={`text-title-l font-semibold ${tone}`}>{title}</p>
       <span
         className={`flex size-[76px] shrink-0 items-center justify-center rounded-full ${iconBox}`}
         aria-hidden
@@ -167,7 +167,7 @@ function ModuleHeading({
 }
 
 const PERSON =
-  "mt-[30px] flex w-full cursor-pointer items-center gap-[40px] rounded-lg py-[3px] pl-[35px] text-left hover:bg-hover";
+  "mt-8 flex min-h-11 w-full cursor-pointer items-center gap-10 rounded-lg py-1 pl-9 text-left hover:bg-hover aria-[current=page]:bg-selected";
 
 /** Rendered only in the browser (inside the sidebar's portal), so the cookie and the URL exist. */
 export function SideMenu({ modules, viewer, onClose, onProfile }: SideMenuProps) {
@@ -194,13 +194,13 @@ export function SideMenu({ modules, viewer, onClose, onProfile }: SideMenuProps)
   const who = (
     <>
       <span
-        className="flex h-[57px] w-[56px] shrink-0 items-center justify-center rounded-full bg-[var(--avatar-bg)] text-[30px] font-medium text-[var(--avatar-fg)]"
+        className="flex h-[57px] w-[56px] shrink-0 items-center justify-center rounded-full bg-[var(--avatar-bg)] text-display-l font-medium text-[var(--avatar-fg)]"
         aria-hidden
       >
         {person?.initials ?? ""}
       </span>
       <span
-        className="max-w-[130px] break-words text-[18px] leading-[22px] text-ink"
+        className="max-w-[130px] break-words text-title-l text-ink"
         aria-hidden
       >
         {person?.name ?? "My Profile"}
@@ -211,11 +211,11 @@ export function SideMenu({ modules, viewer, onClose, onProfile }: SideMenuProps)
 
   return (
     <nav
-      className="flex min-h-full flex-col pl-[49px] pr-[53px] pt-[max(49px,env(safe-area-inset-top,0px))] pb-[max(42px,env(safe-area-inset-bottom,0px))]"
+      className="flex min-h-full flex-col px-12 pt-[max(48px,env(safe-area-inset-top,0px))] pb-[max(40px,env(safe-area-inset-bottom,0px))]"
       aria-label="Main navigation"
     >
       <Image
-        className="ml-[89px] h-auto w-[99px] shrink-0"
+        className="ml-22 h-auto w-[99px] shrink-0"
         src="/menu/minty-logo.svg"
         alt="Minty"
         width={99}
@@ -245,15 +245,15 @@ export function SideMenu({ modules, viewer, onClose, onProfile }: SideMenuProps)
         </a>
       )}
 
-      <div className="mt-[32px]">
+      <div className="mt-8">
         <Separator />
       </div>
-      <div className="mt-[15px] flex flex-col gap-[3px]">
+      <div className="mt-4 flex flex-col gap-1">
         <MenuLink
           href={HUB_PATHS.entities}
           current={current === "entities"}
           onNavigate={onClose}
-          className="min-h-[52px] gap-[21px] pl-[32px]"
+          className="gap-5 pl-8"
         >
           <span className="flex w-[28px] shrink-0 justify-center" aria-hidden>
             <Image src="/menu/select-entity.svg" alt="" width={22} height={20} unoptimized />
@@ -264,20 +264,20 @@ export function SideMenu({ modules, viewer, onClose, onProfile }: SideMenuProps)
           href={HUB_PATHS.subscription}
           current={current === "subscriptions"}
           onNavigate={onClose}
-          className="min-h-[66px] gap-[21px] pl-[32px]"
+          className="gap-5 py-2 pl-8"
         >
           <SubscriptionsIcon />
           <span className="max-w-[130px]">Manage subscriptions</span>
         </MenuLink>
       </div>
-      <div className="mt-[16px]">
+      <div className="mt-4">
         <Separator />
       </div>
 
       {inCompany && (access.pettyCash || access.billing) ? (
         <div className="flex flex-col">
           {access.pettyCash ? (
-            <div className="mt-[25px] flex flex-col" role="group" aria-label="Petty Cash">
+            <div className="mt-6 flex flex-col" role="group" aria-label="Petty Cash">
               <ModuleHeading
                 title="Petty Cash"
                 tone="text-ink"
@@ -288,7 +288,7 @@ export function SideMenu({ modules, viewer, onClose, onProfile }: SideMenuProps)
                 href={mintyEntryUrl()}
                 current={false}
                 onNavigate={onClose}
-                className="mt-[14px] min-h-[44px] gap-[24px] pl-[19px]"
+                className="mt-4 gap-6 pl-5"
               >
                 <Image
                   src="/menu/dashboard.svg"
@@ -304,7 +304,7 @@ export function SideMenu({ modules, viewer, onClose, onProfile }: SideMenuProps)
                 href={mintyEntryUrl(reports)}
                 current={false}
                 onNavigate={onClose}
-                className="min-h-[44px] gap-[24px] pl-[19px]"
+                className="gap-6 pl-5"
               >
                 <Image
                   src="/menu/reports.svg"
@@ -319,12 +319,12 @@ export function SideMenu({ modules, viewer, onClose, onProfile }: SideMenuProps)
             </div>
           ) : null}
           {access.pettyCash && access.billing ? (
-            <div className="mt-[26px]">
+            <div className="mt-6">
               <Separator />
             </div>
           ) : null}
           {access.billing ? (
-            <div className="mt-[30px] flex flex-col" role="group" aria-label="Payment Request">
+            <div className="mt-6 flex flex-col" role="group" aria-label="Payment Request">
               <ModuleHeading
                 title={
                   <>
@@ -339,7 +339,7 @@ export function SideMenu({ modules, viewer, onClose, onProfile }: SideMenuProps)
               <a
                 href={`${env.PAYMENT_REQUEST_WEB_URL}/`}
                 onClick={onClose}
-                className={`${ROW} ${BUTTON} mt-[28px] min-h-11 gap-[25px] pl-[17px]`}
+                className={`${ROW} ${BUTTON} mt-7 gap-6 pl-4`}
               >
                 <Image
                   src="/menu/bills.svg"
@@ -356,10 +356,10 @@ export function SideMenu({ modules, viewer, onClose, onProfile }: SideMenuProps)
         </div>
       ) : null}
 
-      <div className="min-h-[24px] flex-1" aria-hidden />
+      <div className="min-h-6 flex-1" aria-hidden />
       {/* The cat sits above Settings and Logout on every page (the user's rule, 2026-09-29) -
           decoration, not navigation. Flask's own side panel draws the same one. */}
-      <div className="flex shrink-0 justify-center pb-[16px]">
+      <div className="flex shrink-0 justify-center pb-4">
         <Image
           src="/menu/sidepanel_cat.webp"
           alt=""
@@ -371,13 +371,13 @@ export function SideMenu({ modules, viewer, onClose, onProfile }: SideMenuProps)
         />
       </div>
       <Separator />
-      <div className="mt-[14px] flex flex-col gap-[3px]">
+      <div className="mt-4 flex flex-col gap-1">
         {inCompany ? (
           <MenuLink
             href={companySettingsPath(entityId, getAuth()?.entityName ?? "")}
             current={current === "settings"}
             onNavigate={onClose}
-            className="min-h-[52px] gap-[16px] pl-[14px]"
+            className="gap-4 pl-4"
           >
             <span className="flex size-[31px] shrink-0 items-center justify-center" aria-hidden>
               <Image
@@ -395,7 +395,7 @@ export function SideMenu({ modules, viewer, onClose, onProfile }: SideMenuProps)
         <button
           type="button"
           onClick={logout}
-          className={`${ROW} ${IDLE} min-h-[44px] cursor-pointer gap-[16px] pl-[14px] text-left`}
+          className={`${ROW} ${IDLE} cursor-pointer gap-4 pl-4 text-left`}
         >
           <span className="flex size-[31px] shrink-0 items-center justify-center" aria-hidden>
             <Image src="/menu/logout.svg" alt="" width={23} height={23} unoptimized />

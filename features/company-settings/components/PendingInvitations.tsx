@@ -7,7 +7,7 @@
 import type { Invitation } from "@/features/company-settings/api/companySettings";
 
 const BUTTON =
-  "inline-flex min-h-11 items-center justify-center rounded-xl px-3 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--mv2-border-focus)] disabled:cursor-not-allowed disabled:opacity-50";
+  "inline-flex h-11 items-center justify-center rounded-xl px-4 text-body-m font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--mv2-border-focus)] disabled:cursor-not-allowed disabled:opacity-50";
 
 export function PendingInvitations({
   invitations,
@@ -26,12 +26,12 @@ export function PendingInvitations({
     return <p className="text-sm text-ink-2">No invitations waiting.</p>;
   }
   return (
-    <ul className="divide-y divide-line-subtle" aria-label="Pending invitations">
+    <ul className="flex flex-col gap-2" aria-label="Pending invitations">
       {invitations.map((inv) => {
         const wait = cooldowns[inv.id] ?? 0;
         const name = `${inv.first_name} ${inv.last_name}`.trim();
         return (
-          <li key={inv.id} className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <li key={inv.id} className="flex flex-col gap-2 rounded-xl border border-line bg-card px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5 sm:py-4">
             <div className="min-w-0">
               <p className="truncate font-medium text-ink">{inv.email}</p>
               <p className="truncate text-sm text-ink-2">
@@ -42,7 +42,7 @@ export function PendingInvitations({
               <div className="flex shrink-0 gap-2">
                 <button
                   type="button"
-                  className={`${BUTTON} border border-line text-ink hover:bg-hover`}
+                  className={`${BUTTON} border border-line-selected bg-card text-link hover:bg-selected`}
                   disabled={busy === inv.id || wait > 0}
                   onClick={() => onResend(inv.id)}
                 >

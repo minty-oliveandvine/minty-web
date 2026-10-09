@@ -7,9 +7,9 @@
 
 import type { Member, RoleOption } from "@/features/company-settings/api/companySettings";
 
-const TAG = "inline-flex shrink-0 items-center rounded-full bg-selected px-2 py-0.5 text-label font-medium text-link";
+const TAG = "inline-flex h-6 shrink-0 items-center rounded-full bg-neutral-bg px-2.5 text-label font-semibold text-neutral";
 export const ROLE_SELECT =
-  "h-11 min-w-0 rounded-xl border border-line-input bg-card px-3 text-sm text-ink focus:border-line-selected focus:outline-none focus:ring-2 focus:ring-line-selected/25 disabled:bg-sunk";
+  "h-11 min-w-0 rounded-xl border border-line-input bg-card px-3 text-body-m text-ink focus:border-line-selected focus:outline-none focus:ring-2 focus:ring-line-selected/25 disabled:bg-sunk";
 
 export function MemberRow({
   member,
@@ -30,7 +30,7 @@ export function MemberRow({
     ? roles
     : [{ value: member.role, label: member.role_label ?? member.role }, ...roles];
   return (
-    <li className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between">
+    <li className="flex flex-col gap-3 rounded-xl border border-line bg-card px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5 sm:py-4">
       <div className="flex min-w-0 items-center gap-3">
         <span
           className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--avatar-bg)] text-sm font-medium text-[var(--avatar-fg)]"

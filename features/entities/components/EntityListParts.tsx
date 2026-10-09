@@ -57,7 +57,7 @@ export function CompanySearch({
   onChange: (v: string) => void;
 }) {
   return (
-    <div className="sticky top-0 z-30 bg-sunk py-2">
+    <div className="sticky top-0 z-30 bg-canvas py-2">
       <div className="relative">
         <input
           type="text"
@@ -66,7 +66,7 @@ export function CompanySearch({
           placeholder={SEARCH_PLACEHOLDER}
           aria-label={SEARCH_PLACEHOLDER}
           autoComplete="off"
-          className="w-full rounded-xl border border-line-input bg-card py-3 pl-3 pr-10 text-ink-2 placeholder:text-ink-muted focus:border-line-selected focus:outline-none focus:ring-2 focus:ring-line-selected/25"
+          className="h-11 w-full rounded-xl border border-line-input bg-card pl-3 pr-10 text-body-m text-ink-2 placeholder:text-ink-muted focus:border-line-selected focus:outline-none focus:ring-2 focus:ring-line-selected/25"
         />
         <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-ink-2">
           <svg viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5" aria-hidden>
@@ -106,9 +106,9 @@ export function AddEntityButton() {
 
 export function EntityListLoading() {
   return (
-    <div className="flex flex-col gap-4" role="status" aria-label="Loading your companies">
+    <div className="flex flex-col gap-2" role="status" aria-label="Loading your companies">
       {[0, 1, 2].map((i) => (
-        <div key={i} className="h-[56px] animate-pulse rounded-xl bg-card" />
+        <div key={i} className="h-[60px] animate-pulse rounded-xl border border-line bg-sunk" />
       ))}
     </div>
   );
@@ -121,7 +121,7 @@ export function EntityListError({ message, onRetry }: { message: string; onRetry
       <button
         type="button"
         onClick={onRetry}
-        className="min-h-11 cursor-pointer rounded-xl bg-action px-5 py-2 text-sm font-medium text-white hover:bg-action-hover active:bg-action-pressed"
+        className="h-11 cursor-pointer rounded-xl bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed"
       >
         Try again
       </button>
@@ -149,13 +149,13 @@ export function EntityListEmpty() {
           height={729}
           unoptimized
         />
-        <h2 className="text-2xl font-bold">{EMPTY_TITLE}</h2>
+        <h2 className="text-display-m font-bold">{EMPTY_TITLE}</h2>
         <p className="max-w-md text-center">{EMPTY_TEXT}</p>
       </div>
       <div className="mb-6 mt-6 w-full max-w-md px-6">
         <a
           href={createEntityHref()}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-action py-3 font-medium text-white transition-colors hover:bg-action-hover active:bg-action-pressed"
+          className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-action px-4 text-body-m font-semibold text-white transition-colors hover:bg-action-hover active:bg-action-pressed"
         >
           <svg width="13" height="14" viewBox="0 0 13 14" fill="none" aria-hidden>
             <path
