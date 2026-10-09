@@ -173,6 +173,7 @@ export function BillingDetailsForm({
   publishableKey,
   addressLocked,
   addressUnavailable,
+  resetNonce,
   dirty,
   busy,
   saveError,
@@ -192,6 +193,8 @@ export function BillingDetailsForm({
   addressLocked: boolean;
   /** Stripe's form cannot be drawn here. */
   addressUnavailable: boolean;
+  /** Changes when the details are discarded: Stripe's fields are drawn again (see the hook). */
+  resetNonce: number;
   dirty: boolean;
   busy: boolean;
   saveError: string | null;
@@ -250,7 +253,9 @@ export function BillingDetailsForm({
         // Its own region, because everything in it is Stripe's: an iframe from js.stripe.com
         // that this page cannot read until Save asks.
         <section aria-label="Address (Stripe)" aria-busy={busy || undefined}>
-          <Elements stripe={stripe} options={ELEMENTS_OPTIONS}>
+          {/* Keyed on the discard counter: Stripe reads `defaultValues` at mount only, so this
+              is the one way to put its fields back. */}
+          <Elements key={resetNonce} stripe={stripe} options={ELEMENTS_OPTIONS}>
             <StripeAddress
               ref={addressRef}
               defaults={drawn}

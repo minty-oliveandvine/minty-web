@@ -6,6 +6,7 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { DISCARD_CHANGES, GO_BACK_UPPER, LEAVE_TITLE } from "@/components/ui/LeaveDialog";
 import { ToastProvider } from "@/components/ui/Toast";
 import { setAuth } from "@/lib/auth";
 import { env } from "@/lib/env";
@@ -193,6 +194,26 @@ const INTEGRATION: IntegrationPage = {
   notices: [],
 };
 
+/**
+ * jsdom will not follow a link, so the test does the following: a BUBBLE listener, which the
+ * guard's capture-phase one runs before, recording where the click would have gone. Returns the
+ * list - empty while the guard is holding the page.
+ */
+function navigationRecorder(): string[] {
+  const went: string[] = [];
+  const onClick = (event: MouseEvent) => {
+    const anchor = event.target instanceof Element ? event.target.closest("a[href]") : null;
+    if (anchor instanceof HTMLAnchorElement) {
+      event.preventDefault();
+      went.push(anchor.getAttribute("href") ?? "");
+    }
+  };
+  window.addEventListener("click", onClick);
+  recorders.push(() => window.removeEventListener("click", onClick));
+  return went;
+}
+const recorders: (() => void)[] = [];
+
 function showIntegration() {
   render(
     <ToastProvider>
@@ -207,7 +228,10 @@ describe("IntegrationScreen", () => {
     setAuth("h.eyJ1c2VyX2lkIjoidTEifQ.s", ID, "Olive Shop");
     fetchMock.mockReset();
   });
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    while (recorders.length) recorders.pop()?.();
+  });
 
   it("saves only what changed; a refusal stays under the form", async () => {
     flask({
@@ -272,5 +296,70 @@ describe("IntegrationScreen", () => {
 
     expect(await screen.findByText("Reconnect needed")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Reconnect to Xero" })).toBeInTheDocument();
+  });
+
+  // The guard itself is lib/__tests__/leaveGuard.test.tsx; these are this page's exits.
+  it("leaving with changes asks first: Go Back stays, Discard changes puts the saved value back and goes", async () => {
+    flask({ "GET /api/me/company/integration": () => json(INTEGRATION) });
+    const went = navigationRecorder();
+    showIntegration();
+
+    const country = await screen.findByLabelText(/^Country\s*\*?$/);
+    await userEvent.selectOptions(country, "SG");
+
+    // The Users pill is a plain anchor - the guard catches it before the browser follows it.
+    await userEvent.click(screen.getByRole("link", { name: "Users" }));
+    const asked = screen.getByRole("dialog");
+    expect(asked).toHaveAccessibleName(LEAVE_TITLE);
+    expect(within(asked).getByText("You have unsaved changes.")).toBeInTheDocument();
+    expect(within(asked).getByText("Your changes will be lost if you leave this page.")).toBeInTheDocument();
+    expect(went).toEqual([]);
+
+    await userEvent.click(within(asked).getByRole("button", { name: GO_BACK_UPPER }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(went).toEqual([]);
+    expect(country).toHaveValue("SG"); // still being edited
+
+    await userEvent.click(screen.getByRole("link", { name: "Users" }));
+    await userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: DISCARD_CHANGES }));
+    expect(country).toHaveValue("HK"); // the saved value back
+    expect(went).toEqual([expect.stringContaining("/settings/users")]);
+  });
+
+  it("the Xero link asks too, and after a save nothing is asked", async () => {
+    // Not connected, so the Xero card offers the link out to Flask's OAuth - the exit that would
+    // otherwise drop a typed name on the way there and back.
+    const loose = { ...INTEGRATION, xero: { ...INTEGRATION.xero, status: "disconnected", connected: false, organisation: null } };
+    flask({
+      "GET /api/me/company/integration": () => json(loose),
+      "PATCH /api/me/company/integration": () =>
+        json({ ...loose, company: { ...loose.company, country_code: "SG" }, message: "Settings saved!" }),
+    });
+    const went = navigationRecorder();
+    showIntegration();
+
+    await userEvent.selectOptions(await screen.findByLabelText(/^Country\s*\*?$/), "SG");
+    await userEvent.click(screen.getByRole("link", { name: "Connect to Xero" }));
+    expect(screen.getByRole("dialog")).toHaveAccessibleName(LEAVE_TITLE);
+    await userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: GO_BACK_UPPER }));
+
+    await userEvent.click(screen.getByRole("button", { name: "Save Changes" }));
+    expect(await screen.findByText("Settings saved!")).toBeInTheDocument();
+
+    // Saved: the page is clean, so every link goes at once.
+    await userEvent.click(screen.getByRole("link", { name: "Users" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(went).toEqual([expect.stringContaining("/settings/users")]);
+  });
+
+  it("a viewer who may change nothing is never asked", async () => {
+    flask({ "GET /api/me/company/integration": () => json({ ...INTEGRATION, can_edit: false, can_rename: false }) });
+    const went = navigationRecorder();
+    showIntegration();
+
+    await screen.findByText(/view-only access/);
+    await userEvent.click(screen.getByRole("link", { name: "Users" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(went).toEqual([expect.stringContaining("/settings/users")]);
   });
 });

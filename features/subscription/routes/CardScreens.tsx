@@ -9,6 +9,10 @@
  */
 
 import Image from "next/image";
+import { createPortal } from "react-dom";
+
+import { LeaveDialog } from "@/components/ui/LeaveDialog";
+import { useLeaveGuard } from "@/lib/leaveGuard";
 
 import { CardCapturePanel } from "@/features/subscription/components/CardCaptureForm";
 import { PortalHero } from "@/features/subscription/components/PortalHero";
@@ -80,6 +84,9 @@ export function EditCardScreen({
   fixture?: string | null;
 }) {
   const edit = useEditCard({ cardId, accountId, fixture });
+  // 08-Y (adding) arms no guard: the number, CVC and address are Stripe's own fields, in its
+  // iframe - nothing of them is ours to see or to put back. Editing is all our own state.
+  const leave = useLeaveGuard(edit.dirty, edit.reset);
   return (
     <div className="flex flex-col gap-8 pb-16">
       <PortalHero title={EDIT_CARD_TITLE} />
@@ -181,6 +188,16 @@ export function EditCardScreen({
         )}
       </section>
       <MintyWithCards />
+
+      {/* Over the drawer and any other modal - see IntegrationScreen's note. */}
+      {leave.open
+        ? createPortal(
+            <div data-leave-dialog="" className="relative z-[250]">
+              <LeaveDialog onDiscard={leave.discard} onStay={leave.stay} />
+            </div>,
+            document.body,
+          )
+        : null}
     </div>
   );
 }

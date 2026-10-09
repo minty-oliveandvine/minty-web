@@ -7,6 +7,10 @@
  */
 
 import Image from "next/image";
+import { createPortal } from "react-dom";
+
+import { LeaveDialog } from "@/components/ui/LeaveDialog";
+import { useLeaveGuard } from "@/lib/leaveGuard";
 
 import { BillingDetailsForm } from "@/features/subscription/components/BillingDetailsForm";
 import { PortalHero } from "@/features/subscription/components/PortalHero";
@@ -21,6 +25,7 @@ export function BillingDetailsScreen({
   fixture?: string | null;
 }) {
   const d = useBillingDetails({ accountId, fixture });
+  const leave = useLeaveGuard(d.dirty, d.reset);
 
   return (
     <div className="flex flex-col gap-8 pb-16">
@@ -53,6 +58,7 @@ export function BillingDetailsScreen({
           publishableKey={d.publishableKey}
           addressLocked={d.addressLocked}
           addressUnavailable={d.addressUnavailable}
+          resetNonce={d.resetNonce}
           dirty={d.dirty}
           busy={d.busy}
           saveError={d.saveError}
@@ -74,6 +80,16 @@ export function BillingDetailsScreen({
         unoptimized
         className="mx-auto mt-10 w-full max-w-[724px]"
       />
+
+      {/* Over the drawer and any other modal - see IntegrationScreen's note. */}
+      {leave.open
+        ? createPortal(
+            <div data-leave-dialog="" className="relative z-[250]">
+              <LeaveDialog onDiscard={leave.discard} onStay={leave.stay} />
+            </div>,
+            document.body,
+          )
+        : null}
     </div>
   );
 }

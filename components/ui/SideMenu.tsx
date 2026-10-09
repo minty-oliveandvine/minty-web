@@ -24,6 +24,7 @@ import type { ReactNode } from "react";
 import { getAuth } from "@/lib/auth";
 import { env } from "@/lib/env";
 import { COMPANY_SETTINGS_PATTERN, companySettingsPath, HUB_PATHS } from "@/lib/hubPaths";
+import { guardLeave } from "@/lib/leaveGuard";
 import { logOut } from "@/lib/logout";
 import { mintyEntryUrl } from "@/lib/mintyEntry";
 import { getModuleClaims, type ModuleClaims } from "@/lib/moduleClaims";
@@ -179,10 +180,15 @@ export function SideMenu({ modules, viewer, onClose, onProfile }: SideMenuProps)
   // stores a token after it has mounted - so a value kept from mount would describe no one.
   const access = modules ?? getModuleClaims();
 
-  const logout = () => {
-    onClose();
-    logOut();
-  };
+  // A page with unsaved changes asks first (`lib/leaveGuard.ts`), and this is the one exit that
+  // needs saying so: it is a button, so the guard's click rule never sees it, and `logOut` clears
+  // the token BEFORE it navigates - a browser prompt answered with "stay" would leave the person
+  // on the page signed out. `guardLeave` does nothing on a page that arms no guard.
+  const logout = () =>
+    guardLeave(() => {
+      onClose();
+      logOut();
+    });
 
   const reports = entityId ? `/entity/${entityId}/petty-cash/reports` : undefined;
   const who = (

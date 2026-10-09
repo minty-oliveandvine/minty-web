@@ -1,17 +1,13 @@
 // When it fails or gets interrupted (Figma 06·B), rendered: the declined card named, the retry
-// sentence only where a scheduled retry follows, Try again now / Done; Leave without saving?
-// with Discard changes / Go Back - Escape takes the safe way out of each.
+// sentence only where a scheduled retry follows, Try again now / Done. A-11's "Leave without
+// saving?" moved with its component - components/ui/__tests__/LeaveDialog.test.tsx.
 
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
 import {
-  DISCARD_CHANGES,
   DONE,
-  GO_BACK_UPPER,
-  LEAVE_TITLE,
-  LeaveDialog,
   PAYMENT_FAILED_RETRY,
   PAYMENT_FAILED_TITLE,
   PaymentFailedDialog,
@@ -63,27 +59,5 @@ describe("PaymentFailedDialog (A-05)", () => {
     const dialog = screen.getByRole("dialog");
     expect(within(dialog).queryByText(PAYMENT_FAILED_RETRY)).toBeNull();
     expect(within(dialog).getByText(/feel free to try again/)).toBeInTheDocument();
-  });
-});
-
-describe("LeaveDialog (A-11)", () => {
-  it("asks, and Escape stays", async () => {
-    const onDiscard = vi.fn();
-    const onStay = vi.fn();
-    render(<LeaveDialog onDiscard={onDiscard} onStay={onStay} />);
-    const dialog = screen.getByRole("dialog");
-    expect(dialog).toHaveAccessibleName(LEAVE_TITLE);
-    expect(within(dialog).getByText("You have unsaved changes.")).toBeInTheDocument();
-    expect(
-      within(dialog).getByText("Your changes will be lost if you leave this page."),
-    ).toBeInTheDocument();
-    expect(dialog.querySelector("img")).toHaveAttribute("data-image", "dont");
-    await userEvent.click(within(dialog).getByRole("button", { name: DISCARD_CHANGES }));
-    expect(onDiscard).toHaveBeenCalledTimes(1);
-    await userEvent.click(within(dialog).getByRole("button", { name: GO_BACK_UPPER }));
-    expect(onStay).toHaveBeenCalledTimes(1);
-    await userEvent.keyboard("{Escape}");
-    expect(onStay).toHaveBeenCalledTimes(2);
-    expect(onDiscard).toHaveBeenCalledTimes(1);
   });
 });

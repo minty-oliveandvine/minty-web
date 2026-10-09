@@ -10,7 +10,9 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { AppHeader } from "@/components/ui/AppHeader";
 import { NavMenu } from "@/components/ui/NavMenu";
-import { setAuth } from "@/lib/auth";
+import { getAuth, setAuth } from "@/lib/auth";
+import { DISCARD_CHANGES, GO_BACK_UPPER, LEAVE_TITLE } from "@/components/ui/LeaveDialog";
+import { useLeaveGuard } from "@/lib/leaveGuard";
 import { env } from "@/lib/env";
 import { _setViewerLoaderForTests } from "@/lib/viewer";
 
@@ -131,5 +133,39 @@ describe("the header's avatar, without a sidebar around it", () => {
     expect(badge).toHaveTextContent("OV");
     expect(badge).toHaveAttribute("title", "Olive Vine");
     expect(badge).toHaveAttribute("href", "/profile");
+  });
+
+  // Logout is a BUTTON, so the leave guard's click rule never sees it - SideMenu asks through
+  // `guardLeave` instead. It has to: `logOut` clears the token before it navigates, so a browser
+  // prompt answered with "stay" would leave the person on the page already signed out.
+  it("Logout asks while a page has unsaved changes, and Go Back leaves the person signed in", async () => {
+    setAuth(TOKEN, "e1", "Olive Shop");
+    at("/entity/e1/olive-shop/settings/integration");
+
+    function Guarded() {
+      const leave = useLeaveGuard(true, () => {});
+      return (
+        <>
+          <NavMenu />
+          {leave.open ? (
+            <div data-leave-dialog="">
+              <button type="button" onClick={leave.stay}>{GO_BACK_UPPER}</button>
+              <button type="button" onClick={leave.discard}>{DISCARD_CHANGES}</button>
+              <p>{LEAVE_TITLE}</p>
+            </div>
+          ) : null}
+        </>
+      );
+    }
+    render(<Guarded />);
+
+    const menu = await openMenu();
+    await userEvent.click(menu.getByRole("button", { name: "Logout" }));
+    expect(screen.getByText(LEAVE_TITLE)).toBeInTheDocument();
+    expect(getAuth()?.token).toBe(TOKEN); // still signed in
+
+    await userEvent.click(screen.getByRole("button", { name: GO_BACK_UPPER }));
+    expect(screen.queryByText(LEAVE_TITLE)).toBeNull();
+    expect(getAuth()?.token).toBe(TOKEN);
   });
 });

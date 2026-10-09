@@ -114,6 +114,16 @@ run" below).
       organisation name and connect date when connected.
 - [ ] Connect / Reconnect navigate out to Flask's OAuth flow and land back on this tab.
 - [ ] Disconnect asks for confirmation before it fires (it used to be a single click).
+- [ ] Change the country, then click another pill, the header's Back, or Connect to Xero - the
+      in-app "Leave without saving?" (A-11) appears every time; _Go Back_ stays on the tab with
+      the change intact, _Discard changes_ puts the saved value back and then goes.
+- [ ] Change the country, then press the browser's Back - it asks too (nothing was clicked, so
+      this is the history sentinel); _Discard changes_ then lands where Back was going, once.
+- [ ] Change the country, then reload - the browser's own warning, NOT the app's dialog.
+- [ ] Save, then leave - nothing is asked. A REFUSED save still asks (the values are still there).
+- [ ] As a viewer (read-only), leaving never asks.
+- [ ] Change something, then Logout from the menu - it asks (a button, so the guard is explicit
+      there); _Go Back_ must leave you signed IN, still on the page.
 - [ ] **DB:** `SELECT name, country_code, currency_id, status, xero_org_id,
       connected_by_user_id FROM pettycashv3.entities WHERE id = '<id>';` — a details save
       touches only `name`/`country_code`/`currency_id` (plus `currency_format`, derived);

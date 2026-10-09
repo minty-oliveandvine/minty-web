@@ -12,14 +12,12 @@
  * directly with fixtures.
  */
 
+import { LeaveDialog } from "@/components/ui/LeaveDialog";
 import { HUB_PATHS } from "@/lib/hubPaths";
 
 import { AccountPickerDialog } from "@/features/subscription/components/BillingAccountDialogs";
 import { ChangeDialog } from "@/features/subscription/components/ChangeDialog";
-import {
-  LeaveDialog,
-  PaymentFailedDialog,
-} from "@/features/subscription/components/InterruptedDialogs";
+import { PaymentFailedDialog } from "@/features/subscription/components/InterruptedDialogs";
 import { ChangeResultPage } from "@/features/subscription/components/ChangeResultView";
 import {
   ListEmpty,

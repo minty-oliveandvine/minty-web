@@ -26,6 +26,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { ApiError } from "@/lib/apiClient";
+import { guardLeave } from "@/lib/leaveGuard";
 
 import {
   fetchBillingAccounts,
@@ -71,6 +72,13 @@ export type UseBillingDetailsResult = {
   /** Stripe's form cannot be drawn here: no key, or Stripe.js would not load. */
   addressUnavailable: boolean;
   dirty: boolean;
+  /**
+   * Bumped by `reset`: the number the Stripe address subtree is keyed on, so discarding puts
+   * its fields back too. Its `defaultValues` are read at mount and nowhere else, so remounting
+   * is the only way - otherwise the form would say it is clean with the typed address still on
+   * the screen.
+   */
+  resetNonce: number;
   busy: boolean;
   saveError: string | null;
   setField: (field: keyof DetailsFields, value: string) => void;
@@ -79,6 +87,9 @@ export type UseBillingDetailsResult = {
   /** Stripe's form could not load. */
   addressFailed: () => void;
   save: (readAddress?: ReadAddress) => Promise<void>;
+  /** "Discard changes" (the leave guard): the saved details and address back. */
+  reset: () => void;
+  /** Leaving without saving asks first (`lib/leaveGuard.ts`). */
   back: () => void;
 };
 
@@ -113,6 +124,7 @@ export function useBillingDetails({
   const [stripeFailed, setStripeFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [resetNonce, setResetNonce] = useState(0);
 
   // No account in the URL is not a failed read - it is a form opened without a subject, which
   // the effect below never runs for (derived here so nothing is set during a render).
@@ -221,12 +233,23 @@ export function useBillingDetails({
     addressLocked: Boolean(account && !account.card),
     addressUnavailable: !publishableKey || stripeFailed,
     dirty: Object.keys(changes).length > 0,
+    resetNonce,
     busy,
     saveError,
     setField,
     setAddress: setAddressState,
     addressFailed: useCallback(() => setStripeFailed(true), []),
     save,
-    back: useCallback(() => router.push(BILLING.account({ id: accountId })), [router, accountId]),
+    reset: useCallback(() => {
+      setFields(initial);
+      setErrors({});
+      // null: the address falls back to the card's own, which is also what the remount draws.
+      setAddressState(null);
+      setResetNonce((n) => n + 1);
+    }, [initial]),
+    back: useCallback(
+      () => guardLeave(() => router.push(BILLING.account({ id: accountId }))),
+      [router, accountId],
+    ),
   };
 }

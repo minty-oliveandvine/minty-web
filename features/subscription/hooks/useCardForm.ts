@@ -33,6 +33,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { ApiError } from "@/lib/apiClient";
+import { guardLeave } from "@/lib/leaveGuard";
 
 import {
   fetchBillingAccounts,
@@ -298,6 +299,15 @@ export function useNewAccount({
 
 export type CardFields = { name: string; expMonth: string; expYear: string };
 
+/** What is saved on the card, in the boxes' own shape - what the form opens on and goes back to. */
+function savedCardFields(card: SavedPaymentMethod | null): CardFields {
+  return {
+    name: card?.cardholder ?? "",
+    expMonth: card?.exp_month ? String(card.exp_month).padStart(2, "0") : "",
+    expYear: card?.exp_year ? String(card.exp_year).slice(-2) : "",
+  };
+}
+
 export type UseEditCardResult = {
   status: "loading" | "ready" | "error";
   error: string | null;
@@ -308,6 +318,9 @@ export type UseEditCardResult = {
   busy: boolean;
   saveError: string | null;
   save: () => Promise<void>;
+  /** "Discard changes" (the leave guard): the card's saved values back. */
+  reset: () => void;
+  /** Leaving without saving asks first (`lib/leaveGuard.ts`). */
   cancel: () => void;
 };
 
@@ -359,11 +372,7 @@ export function useEditCard({
           return;
         }
         setCard(found);
-        setFields({
-          name: found.cardholder ?? "",
-          expMonth: found.exp_month ? String(found.exp_month).padStart(2, "0") : "",
-          expYear: found.exp_year ? String(found.exp_year).slice(-2) : "",
-        });
+        setFields(savedCardFields(found));
         setLoadError(null);
         setLoaded("ready");
       } catch (err) {
@@ -386,12 +395,11 @@ export function useEditCard({
 
   const dirty = useMemo(() => {
     if (!card) return false;
-    const month = card.exp_month ? String(card.exp_month).padStart(2, "0") : "";
-    const year = card.exp_year ? String(card.exp_year).slice(-2) : "";
+    const saved = savedCardFields(card);
     return (
-      fields.name !== (card.cardholder ?? "") ||
-      fields.expMonth !== month ||
-      fields.expYear !== year
+      fields.name !== saved.name ||
+      fields.expMonth !== saved.expMonth ||
+      fields.expYear !== saved.expYear
     );
   }, [card, fields]);
 
@@ -436,6 +444,13 @@ export function useEditCard({
     busy,
     saveError,
     save,
-    cancel: useCallback(() => router.push(BILLING.account({ id: accountId })), [router, accountId]),
+    reset: useCallback(() => {
+      setFields(savedCardFields(card));
+      setSaveError(null);
+    }, [card]),
+    cancel: useCallback(
+      () => guardLeave(() => router.push(BILLING.account({ id: accountId }))),
+      [router, accountId],
+    ),
   };
 }

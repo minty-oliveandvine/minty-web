@@ -10,6 +10,7 @@ import type { ReactNode } from "react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { DISCARD_CHANGES, GO_BACK_UPPER, LEAVE_TITLE } from "@/components/ui/LeaveDialog";
 import { setAuth } from "@/lib/auth";
 import { env } from "@/lib/env";
 
@@ -629,7 +630,23 @@ describe("the card screens", () => {
     expect(save).toBeDisabled(); // nothing changed yet
     await user.type(within(form).getByLabelText("Billing Company"), " Holdings");
     expect(save).toBeEnabled();
+
+    // Changed and leaving: asked first (A-11), and "Go Back" in the dialog stays put.
     await user.click(within(form).getByRole("button", { name: "Go Back" }));
+    const asked = screen.getByRole("dialog");
+    expect(asked).toHaveAccessibleName(LEAVE_TITLE);
+    expect(push).not.toHaveBeenCalled();
+    await user.click(within(asked).getByRole("button", { name: GO_BACK_UPPER }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(push).not.toHaveBeenCalled();
+    expect(within(form).getByLabelText("Billing Company")).toHaveValue("Company A Limited Holdings");
+
+    // Discarding puts the saved value back and then goes.
+    await user.click(within(form).getByRole("button", { name: "Go Back" }));
+    await user.click(
+      within(screen.getByRole("dialog")).getByRole("button", { name: DISCARD_CHANGES }),
+    );
+    expect(within(form).getByLabelText("Billing Company")).toHaveValue("Company A Limited");
     expect(push).toHaveBeenCalledWith("/subscription/billing?account=acc-company-a");
   });
 
@@ -732,7 +749,30 @@ describe("the card screens", () => {
     await user.clear(screen.getByLabelText("Expiry year"));
     await user.type(screen.getByLabelText("Expiry year"), "30");
     expect(save).toBeEnabled();
+
+    // Changed and leaving: asked first (A-11); discarding puts the card's own expiry back.
     await user.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(screen.getByRole("dialog")).toHaveAccessibleName(LEAVE_TITLE);
+    expect(push).not.toHaveBeenCalled();
+    await user.click(
+      within(screen.getByRole("dialog")).getByRole("button", { name: GO_BACK_UPPER }),
+    );
+    expect(push).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+    await user.click(
+      within(screen.getByRole("dialog")).getByRole("button", { name: DISCARD_CHANGES }),
+    );
+    expect(screen.getByLabelText("Expiry year")).toHaveValue("26");
+    expect(push).toHaveBeenCalledWith("/subscription/billing");
+  });
+
+  it("08-D: nothing changed, so Cancel just goes", async () => {
+    const user = userEvent.setup();
+    render(<EditCardScreen cardId="pm_visa4121" fixture="B" />);
+    await screen.findByLabelText("Card number");
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
     expect(push).toHaveBeenCalledWith("/subscription/billing");
   });
 });

@@ -1,6 +1,8 @@
 // A company's Users and Entity & Integration tabs (phase 2) over a STUBBED Flask: the roster and
 // an invitation sent from a phone, the pills moving between the tabs, a save, Disconnect asking
-// first, and nothing wider than the screen at 360 / 768 / 1440.
+// first, "Leave without saving?" on every way out of a changed form - including Back and the
+// browser's own Back, which only a real browser can test - and nothing wider than the screen at
+// 360 / 768 / 1440.
 
 import { expect, test, type Page } from "@playwright/test";
 
@@ -120,6 +122,66 @@ test.describe("company settings", () => {
     await expect(page.getByText("Not connected")).toBeVisible();
   });
 
+  // The guard's link rules are lib/__tests__/leaveGuard.test.tsx; what needs a REAL browser is
+  // the history sentinel (the Navigation API, which jsdom has not) and the header's Back link,
+  // which goes through history.go - no `beforeunload` could hold that one.
+  test("Entity & Integration: leaving a changed form asks - the pills, Back, and the browser's Back", async ({ page }) => {
+    const asked = await stubFlask(page);
+    await handoff(page, creds(), `${BASE}/integration`);
+    const pills = page.getByRole("navigation", { name: "Settings sections" });
+    const dialog = page.getByRole("dialog");
+
+    // nothing changed yet: the pill just goes
+    await pills.getByRole("link", { name: "Users" }).click();
+    await expect(page).toHaveURL(new RegExp(`${BASE}/users$`));
+    await pills.getByRole("link", { name: "Entity & Integration" }).click();
+    await expect(page.getByLabel("Country")).toBeVisible();
+
+    // changed: the pill asks, and Go Back keeps both the page and what was typed
+    await page.getByLabel("Country").selectOption("SG");
+    await pills.getByRole("link", { name: "Users" }).click();
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByText("You have unsaved changes.")).toBeVisible();
+    await dialog.getByRole("button", { name: "Go Back" }).click();
+    await expect(dialog).toBeHidden();
+    await expect(page).toHaveURL(new RegExp(`${BASE}/integration$`));
+    await expect(page.getByLabel("Country")).toHaveValue("SG");
+
+    // the browser's own Back: held by the sentinel, with nothing clicked at all
+    await page.goBack();
+    await expect(dialog).toBeVisible();
+    await dialog.getByRole("button", { name: "Go Back" }).click();
+    await expect(page).toHaveURL(new RegExp(`${BASE}/integration$`));
+    await expect(page.getByLabel("Country")).toHaveValue("SG");
+
+    // Discard changes puts the saved value back and then goes, and nothing was ever sent
+    await pills.getByRole("link", { name: "Users" }).click();
+    await dialog.getByRole("button", { name: "Discard changes" }).click();
+    await expect(page).toHaveURL(new RegExp(`${BASE}/users$`));
+    expect(asked.filter((a) => a.method === "PATCH")).toEqual([]);
+  });
+
+  test("Entity & Integration: the header's Back link asks too, and a save clears the guard", async ({ page }) => {
+    await stubFlask(page);
+    await handoff(page, creds(), `${BASE}/integration`);
+    const dialog = page.getByRole("dialog");
+
+    await page.getByLabel("Country").selectOption("SG");
+    // Back is history.go, not an address - the click rule is what holds it
+    await page.getByRole("link", { name: /Back/ }).first().click();
+    await expect(dialog).toBeVisible();
+    await dialog.getByRole("button", { name: "Go Back" }).click();
+
+    await page.getByRole("button", { name: "Save Changes" }).click();
+    await expect(page.getByText("Settings saved!")).toBeVisible();
+
+    // saved: clean again, so every exit goes at once - and a reload raises no in-app dialog
+    // (a reload's own warning is the browser's, which Playwright always dismisses)
+    await page.getByRole("navigation", { name: "Settings sections" }).getByRole("link", { name: "Users" }).click();
+    await expect(page).toHaveURL(new RegExp(`${BASE}/users$`));
+    await expect(dialog).toBeHidden();
+  });
+
   for (const width of [360, 768, 1440]) {
     test(`nothing is wider than the screen at ${width}px`, async ({ page }) => {
       await page.setViewportSize({ width, height: 900 });
@@ -131,6 +193,16 @@ test.describe("company settings", () => {
         const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
         expect(overflow, tab).toBeLessThanOrEqual(0);
       }
+
+      // The leave dialog at this width too: at 360 it crosses ConfirmDialog's stacked branch,
+      // where the two answers sit one above the other.
+      await page.getByLabel("Country").selectOption("SG");
+      await page.getByRole("navigation", { name: "Settings sections" }).getByRole("link", { name: "Users" }).click();
+      const dialog = page.getByRole("dialog");
+      await expect(dialog.getByRole("button", { name: "Discard changes" })).toBeVisible();
+      await expect(dialog.getByRole("button", { name: "Go Back" })).toBeVisible();
+      const asked = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+      expect(asked, `leave dialog at ${width}`).toBeLessThanOrEqual(0);
     });
   }
 });

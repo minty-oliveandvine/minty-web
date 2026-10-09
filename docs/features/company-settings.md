@@ -40,6 +40,25 @@ organisation and when it was connected; Connect / Reconnect navigate to Flask's
 `/entity/<id>/enter?…&next=/xero_reconnect?entity_id=<id>`; Disconnect asks first (it was one
 click) and shows the new state.
 
+### Leaving with changes not saved
+
+An unsaved name, country or currency (and only where the viewer may change them) arms the leave
+guard, `lib/leaveGuard.ts`: every way out asks "Leave without saving?" first
+(`components/ui/LeaveDialog.tsx`, Figma A-11) - *Discard changes* puts the saved values back and
+goes on, *Go Back*, Escape and the backdrop stay.
+
+What it holds: the pill row, the header's Back, Connect / Reconnect to Xero and the sidebar's
+links - all anchors, caught on `window` in the capture phase, so before their own handlers run -
+and Back / Forward, which are soft navigations no `beforeunload` could catch (the guard keeps a
+history sentinel for them). A reload, a typed address and a closed tab get the browser's own
+prompt. Logout is a button rather than a link, so `components/ui/SideMenu.tsx` asks through
+`guardLeave` instead; it has to, because `logOut` clears the token before it navigates.
+
+A SUCCESSFUL save or disconnect leaves the page clean, so nothing is asked after it. A refused one
+does not: the typed values are still there, and still guarded. The draft and the dirty test live in
+`hooks/useDetailsDraft.ts` - the form used to hold them and be remounted by a `key`, which the
+guard could not see.
+
 ## Layout and look
 
 The Module tab's chrome (`components/SettingsShell.tsx`): `AppHeader` (Back, "Settings", the
@@ -58,7 +77,12 @@ the tab says only the page while the address names another (the hand-off is on i
 
 `features/company-settings/__tests__/screens.test.tsx` (each row's offers, the address as text, a
 role change, a refused removal keeping its dialog, the invite, the cooldown, the flashed notice; a
-save of only what changed, read-only, the Xero card's states and Disconnect),
-`__tests__/reexports.test.ts`, `e2e/12_company_settings.spec.ts`. Flask's side: Minty
+save of only what changed, read-only, the Xero card's states and Disconnect; the leave guard's
+three cases - a pill and the Xero link asking, Go Back keeping what was typed, Discard changes
+putting the saved value back, nothing asked after a save or of a viewer),
+`__tests__/reexports.test.ts`, `e2e/12_company_settings.spec.ts` (and there what only a real
+browser shows: the browser's own Back held by the sentinel, the header's Back link, and the dialog
+at 360 / 768 / 1440). The guard itself: `lib/__tests__/leaveGuard.test.tsx` (which links are held,
+which go straight through). Flask's side: Minty
 `tests/test_hub_company_settings.py` (the company from one source, the four roles, addresses,
 rank, the guards, the hand-overs).

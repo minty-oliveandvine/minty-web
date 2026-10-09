@@ -952,11 +952,20 @@ The dialog family (`components/ui/ModalFrame`, `components/ui/ConfirmDialog`, `L
   interruption to your service.", then _Try again now_ (the same change applied again, from the
   page model it was read against; the dialog stays up, busy, until the retry answers, as the
   billing page's does) or _Done_ (the ticks stay pending on the row; Escape and the
-  backdrop are Done). **A-11 "Leave without saving?"** when the open row has ticks pending and
+  backdrop are Done). **A-11 "Leave without saving?"** (the component moved to
+  `components/ui/LeaveDialog.tsx` on 2026-10-09, when the Entity & Integration tab needed it too -
+  a feature may not reach another feature) when the open row has ticks pending and
   the person closes it, opens another company, goes back, or takes another company's ⋮ —
   "You have unsaved changes." / "Your changes will be lost if you leave this page.", _Discard
   changes_ (drops the ticks and goes) or _Go Back_ (stays; Escape and the backdrop stay); a
-  reload or a closed tab gets the browser's own warning (`beforeunload`). **A-07 / A-08** (a
+  reload or a closed tab gets the browser's own warning (`beforeunload`). The same dialog now asks
+  on **08-C** (billing details) and **08-D** (edit card) when they are left with changes not
+  saved, through the shared guard `lib/leaveGuard.ts` (what each exit does is its header). **08-Y**
+  (adding a card) deliberately does NOT ask: the number, CVC and address are Stripe's own fields
+  inside its iframe, so a half-typed card is nothing this app can see or put back. This page keeps
+  its own `guardLeave`/`discardAndLeave` in `hooks/useSubscriptionsList.ts` - the one second
+  implementation left, kept because its dirtiness is pending ticks and its exits are rows, not
+  links. **A-07 / A-08** (a
   transfer declined or expired) are two of `TransferOutcomeDialog`'s four kinds (§14) with
   nothing to open them yet: the API tells the payer by email and no read here reports it.
 - **Readings**: "another 30 days" is the design's fixed figure, and the prorated rule's floor

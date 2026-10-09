@@ -9,12 +9,16 @@
  */
 
 import { useState } from "react";
+import { createPortal } from "react-dom";
 
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { LeaveDialog } from "@/components/ui/LeaveDialog";
+import { useLeaveGuard } from "@/lib/leaveGuard";
 
 import { DetailsForm } from "@/features/company-settings/components/DetailsForm";
 import { LoadState, ReadOnlyNotice, SettingsCard, SettingsShell } from "@/features/company-settings/components/SettingsShell";
 import { XeroCard } from "@/features/company-settings/components/XeroCard";
+import { useDetailsDraft } from "@/features/company-settings/hooks/useDetailsDraft";
 import { useIntegrationTab } from "@/features/company-settings/hooks/useIntegrationTab";
 
 export const INTEGRATION_COPY = {
@@ -32,6 +36,9 @@ export function IntegrationScreen({ company, flash }: { company: { id: string; n
   const [confirming, setConfirming] = useState(false);
   const page = tab.page;
   const shown = page ? { id: page.company.id, name: page.company.name } : company;
+  // Above the load branch: both hooks are called on every render, whatever the page is doing.
+  const draft = useDetailsDraft(page);
+  const leave = useLeaveGuard(Boolean(page?.can_edit) && draft.dirty, draft.reset);
 
   return (
     <SettingsShell company={shown} modules={page?.modules ?? null} tab="integration" title={INTEGRATION_COPY.title} lead={INTEGRATION_COPY.lead}>
@@ -41,10 +48,10 @@ export function IntegrationScreen({ company, flash }: { company: { id: string; n
         <>
           {page.can_edit ? null : <ReadOnlyNotice>{INTEGRATION_COPY.readOnly}</ReadOnlyNotice>}
           <SettingsCard title={INTEGRATION_COPY.details} lead={INTEGRATION_COPY.detailsLead} readOnly={!page.can_edit}>
-            {/* Keyed on what Flask holds: a save or a disconnect resets the form to it. */}
+            {/* The draft follows what Flask holds: a save or a disconnect resets the form to it. */}
             <DetailsForm
-              key={`${page.company.name}|${page.company.country_code}|${page.company.currency_id}`}
               page={page}
+              draft={draft}
               busy={tab.busy === "save"}
               error={tab.saveError}
               onSave={(changes) => void tab.save(changes)}
@@ -73,6 +80,18 @@ export function IntegrationScreen({ company, flash }: { company: { id: string; n
           </p>
         </ConfirmDialog>
       ) : null}
+
+      {/* Over the sidebar drawer (z-200) and any other modal (z-150): a link in the drawer asks
+          too, and the answer must not be painted under what raised it. `data-leave-dialog` is
+          what the guard reads to leave a link inside the dialog alone. */}
+      {leave.open
+        ? createPortal(
+            <div data-leave-dialog="" className="relative z-[250]">
+              <LeaveDialog onDiscard={leave.discard} onStay={leave.stay} />
+            </div>,
+            document.body,
+          )
+        : null}
     </SettingsShell>
   );
 }
