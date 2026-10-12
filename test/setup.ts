@@ -7,12 +7,19 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup, configure } from "@testing-library/react";
 import { afterEach, beforeEach } from "vitest";
 
-import { _setViewerLoaderForTests } from "@/lib/viewer";
-
-// The header's badge and the side menu read the viewer from Flask on mount (lib/viewer.ts).
-// A screen test queues its fetch answers in order and counts the calls - a read it never
-// asked for would take one of them. So nobody is looking unless a test says who.
-beforeEach(() => {
+// The header's badge and the side menu read the viewer from Flask on mount (@minty/shared/viewer,
+// through lib/viewer.ts). A screen test queues its fetch answers in order and counts the calls -
+// a read it never asked for would take one of them. So nobody is looking unless a test says who.
+//
+// Imported INSIDE the hook, never at the top of this file, and that is load-bearing: since
+// 2026-10-12 `@/lib/viewer` pulls in components/ui/sidebarHost (it registers the host), and with
+// it lib/auth, lib/env, lib/hubPaths, lib/mintyEntry, lib/moduleClaims, lib/apiClient and
+// next/navigation - all of them evaluated before any test file's `vi.mock` is registered, which
+// binds their imports to the real modules for good. A test would then mock next/navigation and
+// watch the sidebar ignore it (it did: the menu stopped closing on a move between pages).
+// minty-payment-request-web's test/setup.dom.ts does the same, for the same reason.
+beforeEach(async () => {
+  const { _setViewerLoaderForTests } = await import("@/lib/viewer");
   _setViewerLoaderForTests(() => Promise.resolve(null));
 });
 

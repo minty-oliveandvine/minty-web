@@ -46,7 +46,7 @@ import {
   type ReadAddress,
 } from "@/features/subscription/lib/billingAccounts";
 import { STRIPE_FONTS, stripeFor } from "@/features/subscription/lib/stripe";
-import { EMAIL_ASCII_HINT, useEmailInput } from "@/lib/emailInput";
+import { EMAIL_ASCII_HINT, useEmailInput } from "@minty/shared/emailInput";
 
 const LABEL = "text-[13px] font-semibold text-[#464e5a]";
 const INPUT =

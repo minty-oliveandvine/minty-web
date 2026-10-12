@@ -10,9 +10,16 @@
  * page model's `has_access`) prefers that over the claims, which can be up to 30 minutes stale.
  */
 
+import type { ModuleAccess } from "@minty/shared/sidebar";
+
 import { decodeJwtPayload, getAuth } from "@/lib/auth";
 
-export type ModuleClaims = { pettyCash: boolean; billing: boolean };
+/**
+ * The same shape under the packaged sidebar's name for it (`ModuleAccess`, src/host.ts), which is
+ * what the two apps' hosts both answer with. An alias rather than a rename: this app's own
+ * importers keep reading `ModuleClaims`, which is what the token calls them.
+ */
+export type ModuleClaims = ModuleAccess;
 
 const ALL_ON: ModuleClaims = { pettyCash: true, billing: true };
 

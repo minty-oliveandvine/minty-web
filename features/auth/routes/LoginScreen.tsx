@@ -21,7 +21,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { RequiredMark } from "@/components/ui/RequiredMark";
 import { TermsModal } from "@/components/ui/TermsModal";
 import { ApiError } from "@/lib/apiClient";
-import { EMAIL_ASCII_HINT, isEmail, useEmailInput } from "@/lib/emailInput";
+import { EMAIL_ASCII_HINT, isEmail, useEmailInput } from "@minty/shared/emailInput";
 import type { LegalDocumentBody } from "@/lib/legal/document";
 import { LEGAL_PATHS } from "@/lib/legal/paths";
 

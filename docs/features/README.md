@@ -18,6 +18,7 @@ the sibling repos' `docs/features/` folders are linked, not repeated.
 | My Profile: the Figma 10-A/10-B page, editing in place, the subscription feature's card in its slot | [profile.md](profile.md) — `features/profile/README.md` holds the extraction recipe |
 | A company's Users and Entity & Integration tabs (phase 2): members, roles, invitations, the company's details and its Xero connection | [company-settings.md](company-settings.md) — `features/company-settings/README.md` holds the extraction recipe |
 | Toasts - `components/ui/Toast.tsx` is the reference every app copies | `Minty/docs/features/toasts.md` - the system-wide rule and the other three apps' copies |
+| `@minty/shared`: what left this repo for the shared package, the host the packaged sidebar reads, the two config lines (one of which fails silently) and how to bump the pin | [shared-package.md](shared-package.md) — `Minty/docs/features/ci.md` holds its CI exception |
 | Manual QA checklist - a hand-run checklist over every feature above, to run before a release | [qa-checklist.md](qa-checklist.md) |
 | Required fields: the red `*`, the `aria-required` half, where it deliberately does not appear, and the card-expiry bug fixed with it | [required-fields.md](required-fields.md) |
 | The legal documents: the Terms of Use and Privacy Policy, their versions and pinned fingerprints, the renderer, the public pages, and the split with Flask | [legal.md](legal.md) — Minty's `docs/features/legal-terms.md` holds the consent record's half |

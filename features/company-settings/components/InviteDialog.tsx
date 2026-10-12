@@ -22,7 +22,7 @@ import {
   SHEET_PAIR_MAIN,
   SHEET_PRIMARY,
 } from "@/components/ui/sheetClasses";
-import { EMAIL_ASCII_HINT, isEmail, useEmailInput } from "@/lib/emailInput";
+import { EMAIL_ASCII_HINT, isEmail, useEmailInput } from "@minty/shared/emailInput";
 
 import type { RoleOption } from "@/features/company-settings/api/companySettings";
 

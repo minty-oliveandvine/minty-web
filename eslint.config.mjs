@@ -19,8 +19,20 @@
 //      cannot see "only".
 //
 // Extraction later = `git mv features/<name> app/<folder>` into the new repo and point @/lib and
-// @/components/ui at @minty/shared (Part 3 step 4). Nothing else has to move because nothing
-// else is allowed to reach in.
+// @/components/ui at @minty/shared. Nothing else has to move because nothing else is allowed to
+// reach in - and that held when the first half of it happened on 2026-10-12: the sidebar
+// (Sidebar / SideMenu / NavMenu / ViewerBadge), lib/viewer and four modules every app had a copy
+// of (safeNext, companyRef, leaveGuard, emailInput) went into @minty/shared, and not one feature
+// folder had to change. The paths they left behind are shims re-exporting the package, so every
+// call site kept its import. What is app-specific lives in ONE new file,
+// components/ui/sidebarHost.ts, which the packaged sidebar reads.
+//
+// Still local, and still this element: lib/{auth,env,apiClient,handoff,hubPaths,moduleClaims,
+// logout,mintyEntry,settingsTabs,terms,backLink,companyFromAddress,companyTitle,
+// legal} and the rest of components/ui (Toast, Icon, MintySelect, ConfirmDialog, ModalFrame,
+// AppHeader, Header, TermsGate/TermsModal, Wordmark, Pagination, RequiredMark, SettingsTabs,
+// sheetClasses). No rule changed for any of this: a package is a package, which the rules already
+// allow a feature to import.
 import { defineConfig, globalIgnores } from "eslint/config";
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
@@ -62,7 +74,9 @@ const eslintConfig = defineConfig([
         { type: "app", pattern: "app/**/*", mode: "full" },
         // one element per feature folder; `name` captures the folder so a feature may import itself
         { type: "feature", pattern: "features/*", mode: "folder", capture: ["name"] },
-        // the shell's plumbing and UI seed - Part 3's @minty/shared
+        // the shell's plumbing and its UI. Since 2026-10-12 this also holds the thin shims over
+        // @minty/shared and the one file the packaged sidebar reads of this app
+        // (components/ui/sidebarHost.ts) - see the note at the top.
         { type: "shared", pattern: ["lib/**/*", "components/ui/**/*"], mode: "full" },
         { type: "proxy", pattern: "proxy.ts", mode: "full" },
       ],

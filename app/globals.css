@@ -1,6 +1,14 @@
 @import "tailwindcss";
+/* The faces, shared: @minty/shared/theme.css (--font-sans, --font-brand). Plain CSS resolved by
+   the bundler, like the icon font below - misspell it and the build fails. */
+@import "@minty/shared/theme.css";
 /* minty-payment-request-web's icon font (its Header, NavMenu and pills use these glyphs) */
 @import "material-symbols/outlined.css";
+/* Tailwind v4 NEVER scans node_modules, so without this every utility class inside a packaged
+   component (the sidebar) is dropped from the generated CSS - unstyled, with no error anywhere.
+   Relative to this file, not the package name: Tailwind reads it as a path.
+   Guarded by app/__tests__/packagedStyles.test.ts - do not delete either. */
+@source "../node_modules/@minty/shared/src";
 
 /* Skeletal by decision (2026-09-21): a new frontend design replaces this. Only the tokens
    minty-payment-request-web also carries, so the two apps read the same until then. Nothing pixel-level
@@ -56,28 +64,6 @@
   --color-ink: var(--ink);
   --color-ink-soft: var(--ink-soft);
   --color-quiet: var(--quiet);
-  /* The faces. These live here and not in :root above: --font-* IS Tailwind's theme namespace,
-     so a :root declaration of the same name cannot be referenced from here the way the colours
-     are, and a token declared only in :root generates no utility - font-sans would silently fall
-     back to Tailwind's own stack instead of Inter. @theme still emits them onto :root, so the
-     html/body rule below reads them unchanged.
-     Inter from next/font (--font-inter on <html className>), as minty-payment-request-web.
-     TWO tokens, and the canonical copy: minty-payment-request-web and minty-onboarding-web carry
-     this block byte for byte, and minty-www carries the same stacks through its Tailwind v3
-     `tailwind.config.ts` - change them together, until @minty/shared at Part 3 step 4.
-     No --font-mono: nothing uses the mono utility in any of the four apps (2026-10-12), and
-     Tailwind's own default keeps it monospace, so `code, kbd, samp, pre` stay right too -
-     declaring ours as the sans stack would have made the first <pre> anyone adds silently
-     non-monospace. (Write "the mono utility", never the bare class name: Tailwind v4 scans CSS
-     files for class candidates too, so naming it here is enough to generate it.)
-     No emoji tail either: no app has an emoji in its source. Emoji CAN still arrive in user data
-     (entity names, notes, descriptions) and browsers find an emoji font by their own last-resort
-     fallback, so this is safe; `"Apple Color Emoji", "Segoe UI Emoji"` is the line to put back if
-     emoji ever render wrong on some platform. */
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-  /* Plus Jakarta Sans, for the "Minty" name alone - the brand lockup, never body text
-     (the rule, 2026-10-12). Only components/ui/Wordmark.tsx uses it. */
-  --font-brand: var(--font-jakarta), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 }
 
 @media (prefers-color-scheme: dark) {

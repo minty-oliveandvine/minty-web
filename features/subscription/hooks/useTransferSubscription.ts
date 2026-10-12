@@ -22,7 +22,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 import { ApiError } from "@/lib/apiClient";
-import { isEmail } from "@/lib/emailInput";
+import { isEmail } from "@minty/shared/emailInput";
 
 import {
   cancelTransfer,
