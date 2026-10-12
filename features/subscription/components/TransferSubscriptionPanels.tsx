@@ -22,7 +22,7 @@ import {
   WITHDRAW_REQUEST,
   pendingSentence,
 } from "@/features/subscription/lib/transfer";
-import { EMAIL_ASCII_HINT, useEmailInput } from "@/lib/emailInput";
+import { EMAIL_ASCII_HINT, useEmailInput } from "@minty/shared/emailInput";
 
 /** "Send request to take over … paid up until <date> …", the company teal and the date bold. */
 export function ResponsibilityNote({ note, entityName }: { note: string; entityName: string }) {

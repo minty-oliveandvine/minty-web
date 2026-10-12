@@ -7,7 +7,7 @@
  * list - asks here. Each feature's guard test asserts its own base path equals its entry, so
  * the two spellings cannot drift. Extracting a feature deletes its line.
  */
-import { companyRef } from "@/lib/companyRef";
+import { companyRef } from "@minty/shared/companyRef";
 
 export const HUB_PATHS = {
   entities: "/entities",

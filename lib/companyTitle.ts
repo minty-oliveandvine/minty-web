@@ -11,7 +11,7 @@ import type { Metadata } from "next";
 import { cookies } from "next/headers";
 
 import { ENTITY_ID_COOKIE_NAME, ENTITY_NAME_COOKIE_NAME } from "@/lib/auth";
-import { shortIdOf } from "@/lib/companyRef";
+import { shortIdOf } from "@minty/shared/companyRef";
 
 type CompanyPageProps = { params: Promise<{ ref: string }> };
 

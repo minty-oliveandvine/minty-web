@@ -4,7 +4,7 @@
  * refuses before anything is sent.
  */
 
-import { EMAIL_ASCII_HINT, hasNonAsciiEmailChar } from "@/lib/emailInput";
+import { EMAIL_ASCII_HINT, hasNonAsciiEmailChar } from "@minty/shared/emailInput";
 import { HUB_PATHS } from "@/lib/hubPaths";
 import { mintyModulesUrl } from "@/lib/mintyEntry";
 

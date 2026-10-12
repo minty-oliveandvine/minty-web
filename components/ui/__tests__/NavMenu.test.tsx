@@ -12,7 +12,7 @@ import { AppHeader } from "@/components/ui/AppHeader";
 import { NavMenu } from "@/components/ui/NavMenu";
 import { getAuth, setAuth } from "@/lib/auth";
 import { DISCARD_CHANGES, GO_BACK_UPPER, LEAVE_TITLE } from "@/components/ui/LeaveDialog";
-import { useLeaveGuard } from "@/lib/leaveGuard";
+import { useLeaveGuard } from "@minty/shared/leaveGuard";
 import { env } from "@/lib/env";
 import { _setViewerLoaderForTests } from "@/lib/viewer";
 

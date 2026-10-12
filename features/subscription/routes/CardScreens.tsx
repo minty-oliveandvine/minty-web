@@ -12,7 +12,7 @@ import Image from "next/image";
 import { createPortal } from "react-dom";
 
 import { LeaveDialog } from "@/components/ui/LeaveDialog";
-import { useLeaveGuard } from "@/lib/leaveGuard";
+import { useLeaveGuard } from "@minty/shared/leaveGuard";
 
 import { CardCapturePanel } from "@/features/subscription/components/CardCaptureForm";
 import { PortalHero } from "@/features/subscription/components/PortalHero";

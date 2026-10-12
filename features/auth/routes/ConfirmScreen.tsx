@@ -15,7 +15,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 
 import { ApiError } from "@/lib/apiClient";
-import { isEmail } from "@/lib/emailInput";
+import { isEmail } from "@minty/shared/emailInput";
 import { leaveTo } from "@/lib/handoff";
 
 import { requestCode, verifyCode } from "@/features/auth/api/signIn";

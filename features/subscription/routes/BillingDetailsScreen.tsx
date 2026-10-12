@@ -10,7 +10,7 @@ import Image from "next/image";
 import { createPortal } from "react-dom";
 
 import { LeaveDialog } from "@/components/ui/LeaveDialog";
-import { useLeaveGuard } from "@/lib/leaveGuard";
+import { useLeaveGuard } from "@minty/shared/leaveGuard";
 
 import { BillingDetailsForm } from "@/features/subscription/components/BillingDetailsForm";
 import { PortalHero } from "@/features/subscription/components/PortalHero";

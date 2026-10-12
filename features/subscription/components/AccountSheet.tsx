@@ -69,7 +69,7 @@ import {
   accountCardLine,
   companyCount,
 } from "@/features/subscription/lib/billingAccounts";
-import { EMAIL_ASCII_HINT, useEmailInput } from "@/lib/emailInput";
+import { EMAIL_ASCII_HINT, useEmailInput } from "@minty/shared/emailInput";
 
 // --- The frame ----------------------------------------------------------------------
 

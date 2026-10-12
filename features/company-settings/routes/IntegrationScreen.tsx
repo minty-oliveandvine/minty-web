@@ -13,7 +13,7 @@ import { createPortal } from "react-dom";
 
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { LeaveDialog } from "@/components/ui/LeaveDialog";
-import { useLeaveGuard } from "@/lib/leaveGuard";
+import { useLeaveGuard } from "@minty/shared/leaveGuard";
 
 import { DetailsForm } from "@/features/company-settings/components/DetailsForm";
 import { LoadState, ReadOnlyNotice, SettingsCard, SettingsShell } from "@/features/company-settings/components/SettingsShell";
