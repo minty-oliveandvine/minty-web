@@ -46,6 +46,23 @@ theme namespace, so a token declared only in `:root` generates no utility and `f
 quietly fall back to Tailwind's stack instead of Inter. The marketing site (`minty-www`) is the
 one deliberate exception to all of this — Plus Jakarta Sans is its body face throughout.
 
+This `@theme` block is the **canonical copy for all four frontends** since the mechanism was
+unified (2026-10-12): minty-payment-request-web and minty-onboarding-web carry it byte for byte,
+and minty-www carries the same stacks through its Tailwind v3 `tailwind.config.ts`. Change them
+together, until `@minty/shared` takes the tokens at Part 3 step 4. Three things that block is
+deliberately missing: a `--font-mono` (nothing uses the mono utility, and Tailwind's own default
+keeps it genuinely monospace, so a future `<pre>` renders right — aliasing it to the sans stack
+would have broken that silently). Write "the mono utility" rather than the bare class name
+anywhere in this repo, including in these docs: Tailwind v4's source detection scans Markdown and
+CSS as well as components, so naming the class even in prose is enough to make it generate the
+utility. It is also missing an emoji tail (no frontend has an emoji in its source, and
+browsers find an emoji font by last-resort fallback regardless), and any Google Fonts `<link>`:
+every face is self-hosted via `next/font`, which is what supplies the metric-matched fallback
+(`src: local(Arial)` plus `size-adjust`) so text does not reflow when the webfont arrives. The two
+`fonts.googleapis.com` URLs that remain are Stripe's `cssSrc` (`features/subscription/lib/stripe.ts`
+and onboarding's `BillingSheet.tsx`), fetched inside Stripe's cross-origin iframe, which cannot see
+our `@font-face`.
+
 Keep these current: when a route, a rule or a test named here changes, change the line that
 names it in the same commit. `subscriptions.md` §8 says which step fills which part; move a row
 out of it when the step lands.
