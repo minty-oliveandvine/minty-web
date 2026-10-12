@@ -7,6 +7,8 @@
 import Image from "next/image";
 import type { ReactNode } from "react";
 
+import { Wordmark } from "@/components/ui/Wordmark";
+
 export function AuthShell({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-dvh min-w-0 flex-col bg-white">
@@ -21,7 +23,7 @@ export function AuthShell({ children }: { children: ReactNode }) {
             unoptimized
             className="h-9 w-9 shrink-0 object-contain sm:h-10 sm:w-10"
           />
-          <span className="text-lg font-semibold text-ink">Minty</span>
+          <Wordmark className="text-lg text-ink" />
         </div>
       </header>
       <main className="flex flex-1 justify-center px-4 pb-12 pt-6">

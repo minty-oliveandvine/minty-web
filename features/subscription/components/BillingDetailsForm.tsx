@@ -45,7 +45,7 @@ import {
   type DetailsFields,
   type ReadAddress,
 } from "@/features/subscription/lib/billingAccounts";
-import { stripeFor } from "@/features/subscription/lib/stripe";
+import { STRIPE_FONTS, stripeFor } from "@/features/subscription/lib/stripe";
 import { EMAIL_ASCII_HINT, useEmailInput } from "@/lib/emailInput";
 
 const LABEL = "text-[13px] font-semibold text-[#464e5a]";
@@ -80,7 +80,9 @@ const DETAILS_APPEARANCE: Appearance = {
     ".Label": { fontSize: "13px", fontWeight: "600", color: "#464e5a", marginBottom: "7px" },
   },
 };
-const ELEMENTS_OPTIONS = { appearance: DETAILS_APPEARANCE };
+// `fonts` is what delivers the Inter the appearance above names - without it the fields fall
+// back to the system face inside Stripe's iframe (see STRIPE_FONTS).
+const ELEMENTS_OPTIONS = { appearance: DETAILS_APPEARANCE, fonts: STRIPE_FONTS };
 
 type AddressHandle = { read: ReadAddress };
 

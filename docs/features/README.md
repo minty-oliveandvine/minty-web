@@ -36,6 +36,19 @@ printable ASCII is dropped (after an IME composition ends, never during), the fi
 The APIs refuse it again. Copies of the file live in minty-payment-request-web, minty-onboarding-web and the landing
 page, and Flask's twin is `static/js/email_input.js`: change them together.
 
+Two faces, and the line between them (2026-10-12). **Inter** is this app's body face, loaded
+through `next/font` in `app/layout.tsx` and bound to `--font-sans`. **Plus Jakarta Sans** is the
+brand face and is for the Minty NAME ONLY — the lockup, the name standing as the mark in a bar,
+never a word inside a sentence, a headline or a plan name, which stay Inter so copy is not broken
+up to re-typeset one word. Every lockup drawn as text goes through `components/ui/Wordmark.tsx`,
+which owns the treatment (`font-brand`, weight 700, `-0.005em`) — the same values as
+minty-onboarding-web's `.topbar .brand`, the system's other text lockup; change the two together.
+A lockup drawn as an image (`SideMenu`'s `minty-logo.svg`, `AppHeader`'s `showLogo`) needs none of
+it. Both `--font-*` tokens are declared inside `@theme`, not `:root`: `--font-*` is Tailwind's own
+theme namespace, so a token declared only in `:root` generates no utility and `font-sans` would
+quietly fall back to Tailwind's stack instead of Inter. The marketing site (`minty-www`) is the
+one deliberate exception to all of this — Plus Jakarta Sans is its body face throughout.
+
 Keep these current: when a route, a rule or a test named here changes, change the line that
 names it in the same commit. `subscriptions.md` §8 says which step fills which part; move a row
 out of it when the step lands.
