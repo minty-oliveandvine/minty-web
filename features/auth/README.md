@@ -12,7 +12,8 @@ index.ts        THE public surface: LoginPage, SignUpPage, LoginConfirmPage, AUT
                 AUTH_SIGNUP_PATH
 api/            signIn.ts - every Flask call (no bearer, no re-handoff; ApiError with Flask's sentence),
                 flaskDestination (a verify's hand-off is followed only on Flask's origin), xeroSignInUrl,
-                readNotices, inviteOwesTerms, signUpTerms (the live Terms for the read-to-agree panel)
+                readNotices, inviteOwesTerms, signUpTerms (Flask names the live version at
+                /legal/current, this app supplies its text - lib/legal/, since 2026-10-12)
 hooks/          useSignInNotices - Flask's flashes from the way here (?flash=), as the hub's toasts
 lib/            paths.ts (the mount, once), arrival.ts (the query, read once; `next` kept only as a
                 path on the site), handover.ts (/login -> /login/confirm in sessionStorage; maskEmail)

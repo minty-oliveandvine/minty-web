@@ -25,9 +25,10 @@ const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 
 /** Answers by path; records what was asked. */
+/** Flask's routes plus this app's own - `/api/legal/*` is a relative URL, so resolve it. */
 function flask(routes: Record<string, () => Response>) {
   fetchMock.mockImplementation(async (input) => {
-    const url = new URL(String(input));
+    const url = new URL(String(input), window.location.origin);
     const answer = routes[url.pathname];
     if (!answer) throw new Error(`unexpected call ${url.pathname}`);
     return answer();
@@ -36,7 +37,7 @@ function flask(routes: Record<string, () => Response>) {
 
 const calls = (path: string) =>
   fetchMock.mock.calls
-    .filter(([input]) => new URL(String(input)).pathname === path)
+    .filter(([input]) => new URL(String(input), window.location.origin).pathname === path)
     .map(([, init]) => JSON.parse(String((init as RequestInit).body ?? "null")));
 
 /** `signup` is what the `/signup` route tells `readArrival`, as app/signup does. */
@@ -48,7 +49,19 @@ function show(query = "", opts: { signup?: boolean } = {}) {
   );
 }
 
-const TERMS_DOC = { version: "beta-1", html: "<p>The Terms.</p>", effective_date: "18 September 2026", is_pinned: true };
+// Flask names the live version (`/legal/current`); this app supplies that version's text from
+// its own registry (`/api/legal/terms/<version>`). Two reads, as the gate makes.
+const TERMS_LIVE = { terms_version: "beta-1", privacy_version: "beta-1", effective_date: "18 September 2026" };
+const TERMS_DOC = {
+  kind: "terms",
+  version: "beta-1",
+  html: "<p>The Terms.</p>",
+  sha256: "c90a335ed1b5b8cf5d8f5dc6702117418878594053ef3c0720b7816182c7c438",
+  effective_date: "18 September 2026",
+  is_pinned: true,
+  is_current: true,
+  show_draft_notice: false,
+};
 
 describe("LoginScreen", () => {
   beforeEach(() => {
@@ -92,7 +105,8 @@ describe("LoginScreen", () => {
 
   it("signs up: names, then the Terms - the box opens the document and only agreeing ticks it", async () => {
     flask({
-      "/legal/content/terms": () => json(TERMS_DOC),
+      "/legal/current": () => json(TERMS_LIVE),
+      "/api/legal/terms/beta-1": () => json(TERMS_DOC),
       "/auth/email/request-code": () => json({ status: "success" }),
     });
     show("", { signup: true });

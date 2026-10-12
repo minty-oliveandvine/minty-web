@@ -37,6 +37,10 @@ run" below).
       locked panel.
 - [ ] Simulate a Terms-check failure (Flask down) — the page must still render, **without** the
       gate (fails open), and log the console warning.
+- [ ] `/terms`, `/terms/beta-1` and `/privacy` open with **no cookie at all** (a private window),
+      show the SHA-256 at the foot, and carry no sidebar. `/terms/beta-99` is a 404.
+- [ ] Every Terms link in the app — the gate panel's two, the sign-up tick box's two, "the version
+      you agreed to ... here" — stays on this app's address. None may go to the Flask host.
 - [ ] Terms gate asks only once per token — navigating client-side within the same token does not
       re-ask after "nothing owed" or an acceptance.
 
@@ -394,6 +398,7 @@ before the walk — never the production payer's account.
 
 ## See also
 
+- [legal.md](legal.md) — the documents themselves, their fingerprints and the public pages
 - [authentication.md](authentication.md) — the gate, the Terms modal, the token rules behind
   the first section.
 - [entities.md](entities.md) — the entity list and the module choice screen.

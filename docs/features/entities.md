@@ -11,7 +11,8 @@ is the whole screen (the layout, below).
 - **From Minty.** Flask's `GET /entity` (the page every login lands on, and the target of
   seventy-odd redirects) mints an unscoped token and sends the browser to
   `/landing?next=/entities` — whether or not the person owes a Terms acceptance: this app's
-  Terms gate takes it (`authentication.md`). Always, since phase 2 (2026-10-05): the
+  Terms gate takes it (`authentication.md`), and since 2026-10-12 the document it shows is this
+  app's too ([legal.md](legal.md)). Always, since phase 2 (2026-10-05): the
   `MINTY_WEB_HUB` switch and Flask's own list are gone.
 - **From this app.** The side menu's _Select Entity_, the portal overview's _Back to the entity
   dashboard_ when no company is in the cookie, the empty Manage Subscriptions list and `mintyEntryUrl`'s fallback all

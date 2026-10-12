@@ -21,7 +21,9 @@ address that it is making an account (`readArrival`'s `signup` option) - the one
 Flask's flashes from the way here arrive signed in `?flash=` and are read back from
 `GET /auth/notices`, shown as toasts. Sign-up and a new invitee agree to the Terms on the gate's
 own panel (`components/ui/TermsModal`, `agree` = keep the version shown, which then rides with
-verify). `/login` and `/signup` are open paths: no cookie, no Terms gate. The invite token leaves the address bar on arrival; the handover to the code's page
+verify); the document it shows is **this app's own** since 2026-10-12
+([legal.md](legal.md)) - Flask names the live version over `GET /legal/current`, the wording comes
+from `lib/legal/`. `/login` and `/signup` are open paths: no cookie, no Terms gate. The invite token leaves the address bar on arrival; the handover to the code's page
 is sessionStorage (`features/auth/lib/handover.ts`). Recipe: `features/auth/README.md`.
 
 ## The landing
@@ -74,19 +76,28 @@ account like a bad one.
 
 ## The Terms gate (`components/ui/TermsGate.tsx`)
 
-Every page but the three open ones (`lib/hubPaths.ts::isOpenPath`) asks Flask, once per token,
+Every page but the open ones (`lib/hubPaths.ts::isOpenPath`) asks Flask, once per token,
 whether the person owes a Terms & Conditions acceptance: `GET /api/me/terms` (`lib/terms.ts`,
 Minty's `blueprints/legal/routes/hub.py`). Since 2026-09-29 Flask's `/entity` hands the browser
 here whether or not one is owed, so this is where most people meet the Terms. Owed, the page is
-`inert` behind `TermsModal` - Flask's panel (`templates/legal/_terms_panel.html`), ported as it
-looks: the document scrolled inside its card, the tick box locked until the end is reached (4 px
-of tolerance; a document that does not scroll unlocks at once), _Accept & Continue_ and _Cancel_.
+`inert` behind `TermsModal` - a port of Flask's panel (`templates/legal/_terms_panel.html`,
+deleted with the documents on 2026-10-12, so this is the only Terms panel there is): the document
+scrolled inside its card, the tick box locked until the end is reached (4 px of tolerance; a
+document that does not scroll unlocks at once), _Accept & Continue_ and _Cancel_.
+
+**Two reads since 2026-10-12** ([legal.md](legal.md)): Flask says WHICH version is owed and what
+its fingerprint is; this app then reads that version's text from its own registry
+(`GET /api/legal/terms/<version>`). The panel is drawn only when the two agree - a version this
+app does not hold, or a fingerprint that differs, means the two services are deployed out of step
+and the gate fails open rather than show a document Flask would misrecord.
 
 - **A gate, not a dialog.** No close button, no click-outside, no Escape; focus stays inside.
   _Cancel_ is Log Out (`lib/logout.ts`) - someone who will not agree has nowhere else to go.
-- **Accepting** posts `{accepted: true, terms_version}` - the version on screen - to
-  `POST /api/me/terms/accept`. Flask runs its own panel's checks (`consent.accept_current_terms`)
-  and records the row with the registry's fingerprint and `source = "hub"`. The gate lifts and
+- **Accepting** posts `{accepted: true, terms_version, document_hash}` - the version and
+  fingerprint on screen - to `POST /api/me/terms/accept`. Flask runs its checks
+  (`consent.accept_current_terms`), compares that hash to its own manifest (a canary against a
+  stale bundle; 409 `document_mismatch`) and records the row with **its own** fingerprint and
+  `source = "hub"` - never the one sent from here. The gate lifts and
   the person stays on the page they are on. A **409** (the Terms changed while it sat open)
   reads them again: a new version is a new reading, unticked and locked. Any other refusal is
   said in the panel, and Accept can be tried again.
@@ -94,8 +105,11 @@ of tolerance; a document that does not scroll unlocks at once), _Accept & Contin
   cannot read - shows the page and logs `Terms check failed: showing the page WITHOUT the Terms
   gate` to the console. The gate is a backstop here: entering a company still passes Flask's own
   gate, and the bearer APIs are not Terms-gated (Minty's gate only sees session requests).
-- **The page behind still loads** (inert, hidden from assistive technology) - the trade Flask's
-  own modal makes over its list.
+- **The page behind still loads** (inert, hidden from assistive technology): the company list is
+  readable behind the panel, entering one is not possible - the trade Flask's own modal made over
+  its list before the panel moved here.
+- **The legal pages are open paths** (`/terms`, `/privacy` and their versions), so the gate never
+  covers the very document it is asking someone to read.
 - **Once per token.** An answer of "nothing owed", or an acceptance, is remembered for the token
   (`termsSettled`); a revamp reaches everyone within one token (30 minutes) of going live. The
   gate re-asks after a client-side move, because the landing stores the token and then moves on
@@ -130,7 +144,8 @@ for the current page, once (several requests fail together; one navigation). Not
 
 `features/subscription/__tests__/apiClient.test.ts` (bearer, opt-in header, the 401 → one
 redirect, the error sentence with its status), `components/ui/__tests__/TermsGate.test.tsx` (the
-panel, the lock, accept, 409, refusals, Cancel, once per token, the open pages, failing open); in
+two reads, the panel, the lock, accept with its fingerprint, 409, refusals, Cancel, once per
+token, the open pages, failing open - including on a version or fingerprint mismatch); in
 the browser `e2e/01_landing.spec.ts` (no token → re-handoff; no cookie → re-handoff for that page;
 the handoff stores a cookie that lives as long as the token; an unsafe `next` is ignored) and `e2e/09_terms.spec.ts` (the gate over the list in a real layout). Every other
 spec arrives with the Terms answered "nothing owed" (`e2e/helpers.ts::handoff`). Flask's side:
