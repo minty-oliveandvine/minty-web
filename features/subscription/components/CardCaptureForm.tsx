@@ -64,7 +64,7 @@ import {
 import type { SetupIntentState } from "@/features/subscription/hooks/useCardForm";
 import { CARD_MANDATE, STRIPE_NOTE } from "@/features/subscription/lib/billing";
 import { SAVE_BILLING_ACCOUNT } from "@/features/subscription/lib/billingAccounts";
-import { stripeFor } from "@/features/subscription/lib/stripe";
+import { STRIPE_FONTS, stripeFor } from "@/features/subscription/lib/stripe";
 
 export const CARD_SAVE_FAILED =
   "The card was saved with our payment provider, but we couldn't finish adding it. Refresh and check before trying again.";
@@ -380,7 +380,9 @@ export function CardCaptureForm({
   const options = useMemo(
     () =>
       look === "sheet"
-        ? { clientSecret: handle.client_secret, appearance: SHEET_APPEARANCE }
+        ? // `fonts` goes with the appearance: it is what actually delivers the Inter the
+          // appearance asks for (see STRIPE_FONTS). The page look names no face, so it needs none.
+          { clientSecret: handle.client_secret, appearance: SHEET_APPEARANCE, fonts: STRIPE_FONTS }
         : { clientSecret: handle.client_secret },
     [look, handle.client_secret],
   );
