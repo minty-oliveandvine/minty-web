@@ -116,6 +116,22 @@ const ADDRESS_ELEMENT_OPTIONS: StripeAddressElementOptions = {
   display: { name: "full" },
 };
 
+/**
+ * The address form starting on `country` when there is one - left to itself Stripe guesses from
+ * the browser's location, so a Hong Kong payer on a US-set browser met "United States". Stable
+ * per country: a new options object each render would have Stripe update the element each time.
+ * Anything but an ISO alpha-2 code leaves Stripe's guess alone.
+ */
+function useAddressOptions(country?: string | null): StripeAddressElementOptions {
+  return useMemo(
+    () =>
+      country && /^[A-Z]{2}$/.test(country)
+        ? { ...ADDRESS_ELEMENT_OPTIONS, defaultValues: { address: { country } } }
+        : ADDRESS_ELEMENT_OPTIONS,
+    [country],
+  );
+}
+
 /** What the screens around the form may add to it (the new billing account's two fields). */
 export type CardFormExtras = {
   /**
@@ -137,6 +153,8 @@ export type CardFormExtras = {
   account?: BillingAccountChoice | null;
   /** Told when a save starts, and when it stops without the form going away (it failed). */
   onBusy?: (busy: boolean) => void;
+  /** Where the address starts (ISO alpha-2): the account's own country, when one is known. */
+  country?: string | null;
 };
 
 type SavedCallback = (
@@ -255,6 +273,7 @@ function useCardConfirm({ setupIntent, onSaved, beforeConfirm, account, onBusy }
 /** 08-Y / 08-E / 07-E. */
 function PageForm(props: FormProps) {
   const form = useCardConfirm(props);
+  const addressOptions = useAddressOptions(props.country);
   return (
     <form onSubmit={form.submit} className="flex flex-col gap-4">
       {props.fields?.(form.busy)}
@@ -263,7 +282,7 @@ function PageForm(props: FormProps) {
         onLoadError={form.onLoadError}
         options={PAYMENT_ELEMENT_OPTIONS}
       />
-      <AddressElement options={ADDRESS_ELEMENT_OPTIONS} onChange={form.onAddressChange} />
+      <AddressElement options={addressOptions} onChange={form.onAddressChange} />
       {props.firstCard && (
         <p className="text-[13px] text-[#6b7380]">
           This is the first payment method on your billing account, so it is the one card pickers
@@ -308,6 +327,7 @@ function PageForm(props: FormProps) {
  */
 function SheetForm(props: FormProps) {
   const form = useCardConfirm(props);
+  const addressOptions = useAddressOptions(props.country);
   return (
     <form onSubmit={form.submit} noValidate className="mt-1">
       {props.fields?.(form.busy)}
@@ -325,7 +345,7 @@ function SheetForm(props: FormProps) {
             options={PAYMENT_ELEMENT_OPTIONS}
           />
           <div className="mt-4">
-            <AddressElement options={ADDRESS_ELEMENT_OPTIONS} onChange={form.onAddressChange} />
+            <AddressElement options={addressOptions} onChange={form.onAddressChange} />
           </div>
         </div>
       </div>

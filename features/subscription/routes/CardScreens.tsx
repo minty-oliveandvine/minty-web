@@ -67,6 +67,7 @@ export function AddCardScreen({
           onSaved={add.saved}
           onCancel={add.cancel}
           account={add.account}
+          country={add.country}
         />
       </section>
       <MintyWithCards />

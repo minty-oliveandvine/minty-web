@@ -49,6 +49,7 @@ import {
   type SetupIntentHandle,
 } from "@/features/subscription/api/payerPortal";
 import {
+  findAccount,
   validateIdentity,
   type IdentityErrors,
   type IdentityFields,
@@ -144,6 +145,8 @@ export function useSetupIntent({
 export type UseAddCardResult = SetupIntentState & {
   /** Which account the card goes on - the page it was added from. */
   account: BillingAccountChoice | null;
+  /** That account's address country (ISO alpha-2), where the new card's address starts. */
+  country: string | null;
   /** Step 3: what the form calls once Stripe has the card. */
   saved: (methods: PayerPaymentMethods, paymentMethodId: string | null) => void;
   cancel: () => void;
@@ -162,6 +165,28 @@ export function useAddCard({
   const router = useRouter();
   const opened = useSetupIntent({ fixture, enabled: Boolean(accountId) });
   const account = useMemo(() => (accountId ? { billingGroupId: accountId } : null), [accountId]);
+  // The account's own address country, where the new card's address starts; undefined while it
+  // is read. Read alongside the SetupIntent, not after it, so it costs no wait.
+  const [country, setCountry] = useState<string | null | undefined>(
+    accountId && !(process.env.NODE_ENV !== "production" && fixture) ? undefined : null,
+  );
+  useEffect(() => {
+    if (!accountId || (process.env.NODE_ENV !== "production" && fixture)) return;
+    let live = true;
+    fetchBillingAccounts().then(
+      (answer) => {
+        if (live) setCountry(findAccount(answer, accountId)?.address?.country ?? null);
+      },
+      (err) => {
+        // Only a starting value: the form still opens, on Stripe's own guess.
+        console.warn("Billing accounts unreadable; the card address starts on Stripe's guess", err);
+        if (live) setCountry(null);
+      },
+    );
+    return () => {
+      live = false;
+    };
+  }, [accountId, fixture]);
 
   useEffect(() => {
     if (!accountId) router.replace(BILLING.account({}));
@@ -179,6 +204,9 @@ export function useAddCard({
 
   return {
     ...opened,
+    // Stripe takes a starting country only when its form mounts, so the form waits for it.
+    status: opened.status === "ready" && country === undefined ? "loading" : opened.status,
+    country: country ?? null,
     account,
     saved,
     cancel: useCallback(() => router.push(BILLING.account({ id: accountId })), [router, accountId]),

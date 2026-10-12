@@ -1303,7 +1303,12 @@ schema change), which 08-C writes.
   spare until it is made the one it charges: a SetupIntent
   (`/payment-methods/setup-intent`), Stripe's own `PaymentElement` and `AddressElement`, then
   `/payment-methods/confirm` — three trips in that order, and the last is not optional (for a
-  first card it is what creates the customer). The number is typed into Stripe's iframe and
+  first card it is what creates the customer). The address starts on the account's own country
+  (its `address.country`, read beside the SetupIntent; the form waits for it, since Stripe takes
+  a starting country only at mount) - left to itself Stripe guessed from the browser, so a Hong
+  Kong payer on a US-set browser met "United States" (2026-10-12). A new account, which has no
+  address yet, keeps Stripe's guess; an unreadable account list only loses the start, never the
+  form. The number is typed into Stripe's iframe and
   never reaches this app; Stripe's own mandate line is suppressed inside the Element because it
   names the Stripe ACCOUNT, so the sentence under the form IS the disclosure and the two go
   together. A SetupIntent Stripe has confirmed is remembered, so a retry after OUR confirm
