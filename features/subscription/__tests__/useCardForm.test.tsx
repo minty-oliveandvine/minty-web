@@ -9,6 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { setAuth } from "@/lib/auth";
 
 import {
+  ACCOUNTS,
   ACCOUNTS_OPENED,
   OPENED_ACCOUNT,
   WALLET_NONE,
@@ -87,6 +88,38 @@ describe("useAddCard", () => {
     const { result } = renderHook(() => useAddCard(ON));
     await waitFor(() => expect(result.current.status).toBe("ready"));
     expect(result.current.firstCard).toBe(false);
+  });
+
+  it("starts the new card's address on the account's own country", async () => {
+    // acc-company-a, moved to Singapore - so the answer cannot be a Hong Kong default.
+    const accounts = {
+      ...ACCOUNTS,
+      accounts: ACCOUNTS.accounts.map((a) =>
+        a.id === "acc-company-a" && a.address ? { ...a, address: { ...a.address, country: "SG" } } : a,
+      ),
+    };
+    fetchMock.mockImplementation(async (input) => {
+      const url = new URL(String(input));
+      if (url.pathname.endsWith("/setup-intent")) return reply(200, HANDLE);
+      if (url.pathname === "/api/me/billing/accounts") return reply(200, accounts);
+      return reply(200, WALLET_TWO);
+    });
+    const { result } = renderHook(() => useAddCard(ON));
+    await waitFor(() => expect(result.current.status).toBe("ready"));
+    expect(result.current.country).toBe("SG");
+  });
+
+  it("accounts that cannot be read leave the address to Stripe, and do not stop the form", async () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    fetchMock.mockImplementation(async (input) => {
+      const url = new URL(String(input));
+      if (url.pathname.endsWith("/setup-intent")) return reply(200, HANDLE);
+      if (url.pathname === "/api/me/billing/accounts") return reply(500, { error: "nope" });
+      return reply(200, WALLET_TWO);
+    });
+    const { result } = renderHook(() => useAddCard(ON));
+    await waitFor(() => expect(result.current.status).toBe("ready"));
+    expect(result.current.country).toBeNull();
   });
 
   it("a refused SetupIntent says why, and Try again asks once more", async () => {
