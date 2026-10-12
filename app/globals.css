@@ -61,10 +61,20 @@
      are, and a token declared only in :root generates no utility - font-sans would silently fall
      back to Tailwind's own stack instead of Inter. @theme still emits them onto :root, so the
      html/body rule below reads them unchanged.
-     Inter from next/font (--font-inter on <html className>), as minty-payment-request-web. */
-  --font-sans:
-    var(--font-inter), ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
-  --font-mono: ui-monospace, monospace;
+     Inter from next/font (--font-inter on <html className>), as minty-payment-request-web.
+     TWO tokens, and the canonical copy: minty-payment-request-web and minty-onboarding-web carry
+     this block byte for byte, and minty-www carries the same stacks through its Tailwind v3
+     `tailwind.config.ts` - change them together, until @minty/shared at Part 3 step 4.
+     No --font-mono: nothing uses the mono utility in any of the four apps (2026-10-12), and
+     Tailwind's own default keeps it monospace, so `code, kbd, samp, pre` stay right too -
+     declaring ours as the sans stack would have made the first <pre> anyone adds silently
+     non-monospace. (Write "the mono utility", never the bare class name: Tailwind v4 scans CSS
+     files for class candidates too, so naming it here is enough to generate it.)
+     No emoji tail either: no app has an emoji in its source. Emoji CAN still arrive in user data
+     (entity names, notes, descriptions) and browsers find an emoji font by their own last-resort
+     fallback, so this is safe; `"Apple Color Emoji", "Segoe UI Emoji"` is the line to put back if
+     emoji ever render wrong on some platform. */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   /* Plus Jakarta Sans, for the "Minty" name alone - the brand lockup, never body text
      (the rule, 2026-10-12). Only components/ui/Wordmark.tsx uses it. */
   --font-brand: var(--font-jakarta), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
