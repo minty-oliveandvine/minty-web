@@ -113,7 +113,7 @@ test.describe("sign-in", () => {
     await expect(page.getByLabel("Email")).toHaveAttribute("readonly", "");
     await expect(page.getByRole("link", { name: /Log in with Xero/ })).toHaveAttribute(
       "href",
-      `${PETTY_CASH_URL}/xero_auth?invite=secret-token`,
+      `${PETTY_CASH_URL}/xero_auth?invite=secret-token&return_origin=${encodeURIComponent(new URL(page.url()).origin)}`,
     );
   });
 

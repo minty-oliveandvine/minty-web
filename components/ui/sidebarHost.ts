@@ -19,6 +19,7 @@ import { setSidebarHost, type SidebarHost, type Viewer } from "@minty/shared/sid
 import { mintyFetch } from "@/lib/apiClient";
 import { getAuth } from "@/lib/auth";
 import { env } from "@/lib/env";
+import { siblingUrl } from "@/lib/previewSibling";
 import { COMPANY_SETTINGS_PATTERN, companySettingsPath, HUB_PATHS } from "@/lib/hubPaths";
 import { logOut } from "@/lib/logout";
 import { mintyEntryUrl } from "@/lib/mintyEntry";
@@ -42,7 +43,9 @@ export const sidebarHost: SidebarHost = {
     subscriptions: () => HUB_PATHS.subscription,
     pettyCashDashboard: () => mintyEntryUrl(),
     pettyCashReports: (entityId) => mintyEntryUrl(`/entity/${entityId}/petty-cash/reports`),
-    bills: () => `${env.PAYMENT_REQUEST_WEB_URL}/`,
+    // In a branch preview set, the same set's payments app (lib/previewSibling.ts).
+    bills: () =>
+      `${siblingUrl(env.PAYMENT_REQUEST_WEB_URL, "payment-request", typeof window === "undefined" ? null : window.location.host)}/`,
     settings: () => companySettingsPath(getAuth()?.entityId ?? "", getAuth()?.entityName ?? ""),
     profile: () => HUB_PATHS.profile,
   },

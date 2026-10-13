@@ -10,6 +10,7 @@
 
 import { ApiError, HOUSE_FALLBACK } from "@/lib/apiClient";
 import { env } from "@/lib/env";
+import { withReturnOrigin } from "@/lib/handoff";
 import { fetchLegalDocument } from "@/lib/legal/client";
 import { TERMS, type LegalDocumentBody } from "@/lib/legal/document";
 
@@ -76,7 +77,7 @@ export async function verifyCode(context: ConfirmContext, code: string): Promise
     terms_version: context.termsVersion,
     next: context.next,
   });
-  return flaskDestination(answer.redirect_url);
+  return withReturnOrigin(flaskDestination(answer.redirect_url));
 }
 
 export function flaskDestination(redirectUrl: unknown): string {
@@ -99,7 +100,7 @@ export function xeroSignInUrl(args: { invite?: string; next?: string }): string 
   if (args.invite) qs.set("invite", args.invite);
   if (args.next) qs.set("next", args.next);
   const query = qs.toString();
-  return `${env.PETTY_CASH_URL}/xero_auth${query ? `?${query}` : ""}`;
+  return withReturnOrigin(`${env.PETTY_CASH_URL}/xero_auth${query ? `?${query}` : ""}`);
 }
 
 export type SignInNotice = { category: "success" | "error" | "warning" | "info"; message: string };

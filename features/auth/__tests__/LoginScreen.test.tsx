@@ -183,7 +183,7 @@ describe("LoginScreen", () => {
 
     expect(screen.getByRole("link", { name: /Log in with Xero/ })).toHaveAttribute(
       "href",
-      `${env.PETTY_CASH_URL}/xero_auth?invite=secret&next=%2Fentity`,
+      `${env.PETTY_CASH_URL}/xero_auth?invite=secret&next=%2Fentity&return_origin=${encodeURIComponent(window.location.origin)}`,
     );
   });
 
