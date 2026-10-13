@@ -64,7 +64,10 @@ describe("ConfirmScreen", () => {
     await typeCode("123456");
     await userEvent.click(screen.getByRole("button", { name: CONFIRM_COPY.verify }));
 
-    await waitFor(() => expect(navigate).toHaveBeenCalledWith(`${env.PETTY_CASH_URL}/auth/email/handoff?h=x`));
+    const back = encodeURIComponent(window.location.origin);
+    await waitFor(() =>
+      expect(navigate).toHaveBeenCalledWith(`${env.PETTY_CASH_URL}/auth/email/handoff?h=x&return_origin=${back}`),
+    );
     const body = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
     expect(body).toMatchObject({ email: "jane@example.com", code: "123456", next: "/profile" });
     expect(readConfirmContext()).toBeNull();
@@ -79,7 +82,10 @@ describe("ConfirmScreen", () => {
     await typeCode("123456");
     await userEvent.click(await screen.findByRole("button", { name: CONFIRM_COPY.verify }));
 
-    await waitFor(() => expect(navigate).toHaveBeenCalledWith(new URL(env.PETTY_CASH_URL).toString()));
+    const back = encodeURIComponent(window.location.origin);
+    await waitFor(() =>
+      expect(navigate).toHaveBeenCalledWith(`${new URL(env.PETTY_CASH_URL).toString()}?return_origin=${back}`),
+    );
     expect(error).toHaveBeenCalled();
     error.mockRestore();
   });

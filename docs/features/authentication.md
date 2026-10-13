@@ -61,6 +61,15 @@ Flask's login-gated route (Minty's `/handoff/minty-web`, landed 2026-09-21) that
 `/landing`. Silent while the Flask session (24 h) is alive; when it is not, Flask's
 `login_required` sends the browser to this app's `/login` with that route as `next`.
 
+**`return_origin` (branch preview sets, 2026-10-13).** Every trip to Flask - the re-handoff
+(`lib/handoff.ts::handoffUrl`, the request's origin in the proxy), the code sign-in's hand-off and
+Xero sign-in (`features/auth/api/signIn.ts`) - names this app's origin through `withReturnOrigin`.
+Flask uses it only where `PREVIEW_ORIGIN_REGEX` admits it, to hand back into
+`pr-<branch>-my.dailyminty.com` (Minty `docs/features/authentication.md` 6.1); a normal host's
+origin leaves any set. The sidebar's Bills link stays in the set through `lib/previewSibling.ts`.
+Both helpers are COPIES of `@minty/shared/previewSibling` while this app stays on `v0.1` (owner,
+2026-10-13); delete them when it moves to the Part 13 design and `v0.2`+.
+
 There is no second gate. The subscription feature's dark switch (`NEXT_PUBLIC_SUBSCRIPTION_ENABLED`
 and its `/not-available` page) was removed on 2026-10-01: subscriptions are simply on.
 

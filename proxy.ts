@@ -36,7 +36,7 @@ export function proxy(request: NextRequest) {
 
   const token = request.cookies.get(AUTH_COOKIE_NAME)?.value;
   if (!token) {
-    return NextResponse.redirect(handoffUrl(pathname + search));
+    return NextResponse.redirect(handoffUrl(pathname + search, undefined, request.nextUrl.origin));
   }
 
   return NextResponse.next();

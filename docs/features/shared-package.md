@@ -96,3 +96,12 @@ here:            npm install "git+https://github.com/minty-oliveandvine/minty-sh
 The lockfile will say `git+ssh://` whatever URL you type, and that is fine: npm falls back to
 HTTPS for a public repo, so `npm ci` needs no SSH key (verified 2026-10-12). Tags are immutable.
 Never push a pin bump straight to `development` — production builds from it.
+
+## Pinned at `v0.1` on purpose (owner, 2026-10-13)
+
+`v0.2` restyles the sidebar to Part 13 and needs `@minty/shared/tokens.css`, which also redefines
+Tailwind's radius scale for every page here - so this app stays on `v0.1` until it migrates. Without
+the token sheet the v0.2 sheet draws transparent with no scrim (seen 2026-10-13).
+`v0.2`'s `previewSibling` is copied meanwhile (`lib/previewSibling.ts`, `withReturnOrigin` in
+`lib/handoff.ts`). `ProfilePanel` gained `flex-1` the same day: the sheet's `<section>` has only a
+min-height, so the panel's `min-h-full` resolved to auto and it stopped at its content.
