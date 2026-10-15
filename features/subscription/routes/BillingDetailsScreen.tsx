@@ -35,13 +35,13 @@ export function BillingDetailsScreen({
       {d.status === "error" ? (
         <div
           role="alert"
-          className="flex w-full flex-col items-start gap-3 rounded-xl border border-transparent bg-danger-bg px-4 py-3 text-body-m text-danger"
+          className="flex w-full flex-col items-start gap-3 rounded-lg border border-transparent bg-danger-bg px-4 py-3 text-body-m text-danger"
         >
           {d.error}
           <button
             type="button"
             onClick={d.back}
-            className="min-h-11 rounded-xl border border-danger bg-card px-4 py-1.5 font-semibold"
+            className="min-h-11 rounded-lg border border-danger bg-card px-4 py-1.5 font-semibold"
           >
             Go Back
           </button>

@@ -25,11 +25,11 @@ import { EMAIL_ASCII_HINT, useEmailInput } from "@minty/shared/emailInput";
 const LABEL = "text-body-s text-ink-2";
 const VALUE = "text-body-m text-ink";
 const FIELD =
-  "mt-0.5 h-11 w-full rounded-xl border border-line-input bg-card px-3 text-body-m text-ink focus:border-line-selected focus:outline-none focus:ring-1 focus:ring-line-selected/25";
+  "mt-0.5 h-11 w-full rounded-lg border border-line-input bg-card px-3 text-body-m text-ink focus:border-line-selected focus:outline-none focus:ring-1 focus:ring-line-selected/25";
 
 function Tile({ src, width, height }: { src: string; width: number; height: number }) {
   return (
-    <span className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-selected" aria-hidden>
+    <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-selected" aria-hidden>
       <Image src={src} alt="" width={width} height={height} unoptimized />
     </span>
   );
@@ -59,13 +59,13 @@ export function DetailsCard({ user, draft, saving, error, onEdit, onCancel, onCh
   const editing = draft !== null;
   const emailInput = useEmailInput((value) => onChange("email", value));
   return (
-    <section className="mt-8 rounded-xl border border-line bg-card px-4 pb-4 pt-2 sm:px-5 sm:pb-5" aria-label="Your details">
+    <section className="mt-8 rounded-lg border border-line bg-card px-4 pb-4 pt-2 sm:px-5 sm:pb-5" aria-label="Your details">
       <div className="-mr-2 flex justify-end sm:-mr-3">
         <button
           type="button"
           onClick={editing ? onCancel : onEdit}
           disabled={saving}
-          className="min-h-11 cursor-pointer rounded-xl px-2 text-body-s font-semibold text-link hover:bg-hover hover:underline disabled:cursor-default"
+          className="min-h-11 cursor-pointer rounded-lg px-2 text-body-s font-semibold text-link hover:bg-hover hover:underline disabled:cursor-default"
         >
           {editing ? CANCEL : EDIT}
         </button>
@@ -171,7 +171,7 @@ export function DetailsCard({ user, draft, saving, error, onEdit, onCancel, onCh
             <button
               type="submit"
               disabled={saving}
-              className="h-11 cursor-pointer rounded-xl bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed disabled:cursor-default disabled:bg-action-disabled disabled:text-ink-disabled"
+              className="h-11 cursor-pointer rounded-lg bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed disabled:cursor-default disabled:bg-action-disabled disabled:text-ink-disabled"
             >
               {saving ? "Saving…" : SAVE}
             </button>

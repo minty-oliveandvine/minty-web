@@ -81,8 +81,10 @@
   --pill-text: var(--mv2-neutral-ink);
   --card-live: var(--mv2-state-selected);
   --tile-petty: color-mix(in srgb, var(--mv2-module-petty) 14%, white);
-  --avatar-bg: var(--mv2-warning-bg);
-  --avatar-fg: var(--mv2-warning-ink);
+  /* Part 13's avatar accent, the one the packaged sidebar draws its initials in - so the header
+     badge, the menu and My Profile show one colour. */
+  --avatar-bg: var(--color-accent-avatar-bg);
+  --avatar-fg: var(--color-accent-avatar-ink);
   --alert-bg: var(--mv2-danger-bg);
   --alert-border: var(--mv2-danger-ink);
   --alert-icon: var(--mv2-danger-ink);

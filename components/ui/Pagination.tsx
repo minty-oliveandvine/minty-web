@@ -22,7 +22,7 @@ export function Pagination({
   const start = Math.max(1, Math.min(page - Math.floor(size / 2), pages - size + 1));
   const numbers = Array.from({ length: Math.min(size, pages) }, (_, i) => start + i);
   const box =
-    "inline-flex size-11 items-center justify-center rounded-xl border border-line bg-card px-2 text-body-m text-ink hover:bg-hover disabled:opacity-40 disabled:hover:bg-card";
+    "inline-flex size-11 items-center justify-center rounded-lg border border-line bg-card px-2 text-body-m text-ink hover:bg-hover disabled:opacity-40 disabled:hover:bg-card";
 
   return (
     <nav className="flex items-center gap-2" aria-label="Pagination">

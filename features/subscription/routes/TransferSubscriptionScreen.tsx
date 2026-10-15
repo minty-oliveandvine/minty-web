@@ -30,11 +30,11 @@ export function TransferSubscriptionScreen(args: UseTransferSubscriptionArgs) {
     <div data-portal-col="960" className="mx-auto flex w-full max-w-[960px] flex-col gap-8 pb-16">
       <PortalHero title="Transfer Subscription" />
 
-      <section className="flex flex-col gap-6 rounded-xl border border-line bg-card p-4 sm:p-5">
+      <section className="flex flex-col gap-6 rounded-lg border border-line bg-card p-4 sm:p-5">
         {t.status === "error" ? (
           <div
             role="alert"
-            className="rounded-xl border border-transparent bg-danger-bg px-4 py-3 text-body-m text-danger"
+            className="rounded-lg border border-transparent bg-danger-bg px-4 py-3 text-body-m text-danger"
           >
             {t.error}
           </div>

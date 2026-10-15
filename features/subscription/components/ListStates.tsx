@@ -15,11 +15,11 @@ import {
 } from "@/features/subscription/components/listGrid";
 
 const CARD =
-  "flex flex-col items-center rounded-xl border border-line bg-card px-6 text-center";
+  "flex flex-col items-center rounded-lg border border-line bg-card px-6 text-center";
 const TITLE = "text-display-m font-bold text-ink";
 const BODY = "max-w-[640px] text-body-l text-ink-2";
 const BUTTON =
-  "h-11 rounded-xl bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed";
+  "h-11 rounded-lg bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed";
 
 export function ListEmpty({ entityListHref }: { entityListHref: string }) {
   return (

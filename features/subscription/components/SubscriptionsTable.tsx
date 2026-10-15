@@ -153,7 +153,7 @@ function Row({ row, focused, on }: { row: SubscriptionRow; focused: boolean; on:
           onClick={() => on.onToggle(row.entity)}
           aria-label={`Open ${row.entity.entity_name}`}
           aria-expanded={false}
-          className="flex size-11 items-center justify-center rounded-xl text-ink-muted hover:bg-hover"
+          className="flex size-11 items-center justify-center rounded-lg text-ink-muted hover:bg-hover"
         >
           <Icon name="chevron-down" size={24} />
         </button>

@@ -16,7 +16,7 @@ export function PortalHero({ title, onBack }: { title: string; onBack?: () => vo
           </button>
         </PortalBack>
       )}
-      <div className="rounded-2xl bg-selected p-5 sm:p-8">
+      <div className="rounded-xl bg-selected p-5 sm:p-8">
         <h1 className="text-display-m font-bold text-ink sm:text-display-l">{title}</h1>
       </div>
     </>

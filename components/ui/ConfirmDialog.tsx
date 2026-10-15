@@ -120,7 +120,7 @@ export function ConfirmDialog({
       labelledBy={titleId}
       busy={busy}
       onDismiss={dismiss}
-      className="max-w-[440px] rounded-2xl border border-line bg-card p-6 shadow-modal max-[480px]:max-w-none max-[480px]:rounded-b-none"
+      className="max-w-[440px] rounded-xl border border-line bg-card p-6 shadow-modal max-sm:max-w-none max-sm:rounded-b-none"
     >
       {/*
           The company sits in the TITLE's column, tight under the last line of it and no wider
@@ -169,11 +169,11 @@ export function ConfirmDialog({
       </div>
       {/*
           Minty v2 modal actions: right-aligned, the way back (Secondary) first and the verb
-          after it - one button on its own (`hideBack`) sits on the right too. Below 480px the
+          after it - one button on its own (`hideBack`) sits on the right too. Below 640px the
           card is a bottom sheet and the row stacks full width with the verb on top.
         */}
       <div
-        className="mt-6 flex justify-end gap-3 max-[480px]:flex-col-reverse"
+        className="mt-6 flex justify-end gap-3 max-sm:flex-col-reverse"
       >
         {!hideBack && (
           <button
@@ -181,7 +181,7 @@ export function ConfirmDialog({
             onClick={onBack}
             disabled={busy}
             data-tone={backTone}
-            className={`min-h-11 rounded-xl border bg-card px-4 py-2 text-body-m font-semibold leading-tight disabled:opacity-60 max-[480px]:w-full ${BACK_TONE[backTone]}`}
+            className={`min-h-11 rounded-lg border bg-card px-4 py-2 text-body-m font-semibold leading-tight disabled:opacity-60 max-sm:w-full ${BACK_TONE[backTone]}`}
           >
             {backLabel}
           </button>
@@ -193,7 +193,7 @@ export function ConfirmDialog({
           aria-busy={busy || undefined}
           data-tone={confirmTone}
           // the transparent border keeps it the same height as the bordered button beside it
-          className={`min-h-11 rounded-xl border border-transparent px-4 py-2 text-body-m font-semibold leading-tight text-white disabled:cursor-wait disabled:bg-action-disabled disabled:text-ink-disabled max-[480px]:w-full ${CONFIRM_VARIANT[confirmVariant ?? TONE_VARIANT[confirmTone]]}`}
+          className={`min-h-11 rounded-lg border border-transparent px-4 py-2 text-body-m font-semibold leading-tight text-white disabled:cursor-wait disabled:bg-action-disabled disabled:text-ink-disabled max-sm:w-full ${CONFIRM_VARIANT[confirmVariant ?? TONE_VARIANT[confirmTone]]}`}
         >
           {confirmLabel}
         </button>

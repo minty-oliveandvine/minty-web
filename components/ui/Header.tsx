@@ -29,7 +29,7 @@ export function Header({ title = "Minty" }: { title?: string }) {
       </div>
       <nav aria-label="Primary">
         <a
-          className="inline-flex min-h-11 items-center rounded-xl px-2 text-body-m text-link underline hover:bg-hover"
+          className="inline-flex min-h-11 items-center rounded-lg px-2 text-body-m text-link underline hover:bg-hover"
           href={env.PETTY_CASH_URL}
         >
           Back to Minty

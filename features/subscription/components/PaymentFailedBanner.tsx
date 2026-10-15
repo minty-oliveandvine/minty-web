@@ -13,7 +13,7 @@ export function PaymentFailedBanner({
   return (
     <div
       role="alert"
-      className="flex w-full items-center gap-3 rounded-xl border border-transparent bg-danger-bg px-4 py-3 text-body-m text-danger"
+      className="flex w-full items-center gap-3 rounded-lg border border-transparent bg-danger-bg px-4 py-3 text-body-m text-danger"
     >
       <Icon name="warning" size={24} className="shrink-0 text-danger" />
       <p className="flex-1">
@@ -21,7 +21,7 @@ export function PaymentFailedBanner({
         <button
           type="button"
           onClick={onUpdatePaymentMethod}
-          className="-mx-1 inline-flex min-h-11 items-center rounded-xl px-1 font-semibold text-link underline underline-offset-2 hover:bg-hover"
+          className="-mx-1 inline-flex min-h-11 items-center rounded-lg px-1 font-semibold text-link underline underline-offset-2 hover:bg-hover"
         >
           here
         </button>

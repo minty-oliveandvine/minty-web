@@ -54,7 +54,7 @@ export function UsersScreen({ company, flash }: { company: { id: string; name: s
                 <button
                   type="button"
                   onClick={() => setInviting(true)}
-                  className="inline-flex h-11 items-center gap-1.5 rounded-xl bg-action px-4 text-body-m font-semibold text-white transition-colors hover:bg-action-hover active:bg-action-pressed focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--mv2-border-focus)]"
+                  className="inline-flex h-11 items-center gap-1.5 rounded-lg bg-action px-4 text-body-m font-semibold text-white transition-colors hover:bg-action-hover active:bg-action-pressed focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--mv2-border-focus)]"
                 >
                   <span className="material-symbols-rounded text-[20px]" aria-hidden>
                     person_add

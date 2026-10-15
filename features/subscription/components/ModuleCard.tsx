@@ -61,7 +61,7 @@ export function ModuleCardShell({
       aria-label={name}
       {...data}
       onClick={onClick}
-      className={`group relative w-full overflow-hidden rounded-xl border transition-[background,transform] duration-200 motion-reduce:transform-none motion-reduce:transition-none ${frame} ${lift}`}
+      className={`group relative w-full overflow-hidden rounded-lg border transition-[background,transform] duration-200 motion-reduce:transform-none motion-reduce:transition-none ${frame} ${lift}`}
     >
       <div className="relative flex h-[360px] w-full flex-col items-center overflow-hidden">
         {/* The module's own tint, on the art only - its identity surface. */}

@@ -72,7 +72,7 @@ export function RowMenu({
         aria-expanded={open}
         aria-controls={menuId}
         aria-label={`Actions for ${entityName}`}
-        className="flex size-11 items-center justify-center rounded-xl text-[26px] font-bold leading-none text-ink-muted hover:bg-hover"
+        className="flex size-11 items-center justify-center rounded-lg text-[26px] font-bold leading-none text-ink-muted hover:bg-hover"
       >
         ⋮
       </button>
@@ -80,7 +80,7 @@ export function RowMenu({
         <ul
           id={menuId}
           role="menu"
-          className={`absolute right-0 z-30 w-[201px] rounded-xl bg-card py-2 shadow-overlay ${
+          className={`absolute right-0 z-30 w-[201px] rounded-lg bg-card py-2 shadow-overlay ${
             dropUp ? "bottom-full mb-1" : "top-full mt-1"
           }`}
         >
@@ -93,7 +93,7 @@ export function RowMenu({
                   setOpen(false);
                   onSelect(item);
                 }}
-                className="block min-h-11 w-full rounded-lg px-4 py-2 text-left text-body-m text-ink hover:bg-hover"
+                className="block min-h-11 w-full rounded-md px-4 py-2 text-left text-body-m text-ink hover:bg-hover"
               >
                 {LABEL[item]}
               </button>

@@ -9,7 +9,7 @@ import type { Member, RoleOption } from "@/features/company-settings/api/company
 
 const TAG = "inline-flex h-6 shrink-0 items-center rounded-full bg-neutral-bg px-2.5 text-label font-semibold text-neutral";
 export const ROLE_SELECT =
-  "h-11 min-w-0 rounded-xl border border-line-input bg-card px-3 text-body-m text-ink focus:border-line-selected focus:outline-none focus:ring-2 focus:ring-line-selected/25 disabled:bg-sunk";
+  "h-11 min-w-0 rounded-lg border border-line-input bg-card px-3 text-body-m text-ink focus:border-line-selected focus:outline-none focus:ring-2 focus:ring-line-selected/25 disabled:bg-sunk";
 
 export function MemberRow({
   member,
@@ -30,7 +30,7 @@ export function MemberRow({
     ? roles
     : [{ value: member.role, label: member.role_label ?? member.role }, ...roles];
   return (
-    <li className="flex flex-col gap-3 rounded-xl border border-line bg-card px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5 sm:py-4">
+    <li className="flex flex-col gap-3 rounded-lg border border-line bg-card px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5 sm:py-4">
       <div className="flex min-w-0 items-center gap-3">
         <span
           className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--avatar-bg)] text-sm font-medium text-[var(--avatar-fg)]"
@@ -78,7 +78,7 @@ export function MemberRow({
             onClick={onRemove}
             disabled={busy}
             aria-label={`Remove ${name}`}
-            className="inline-flex h-11 w-11 items-center justify-center rounded-xl text-ink-muted transition-colors hover:bg-danger-bg hover:text-danger focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--mv2-border-focus)] disabled:opacity-50"
+            className="inline-flex h-11 w-11 items-center justify-center rounded-lg text-ink-muted transition-colors hover:bg-danger-bg hover:text-danger focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--mv2-border-focus)] disabled:opacity-50"
           >
             {/* Flask's Users tab's trash icon, as it was */}
             <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" aria-hidden>

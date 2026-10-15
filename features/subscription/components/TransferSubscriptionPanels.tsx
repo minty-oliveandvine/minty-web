@@ -60,7 +60,7 @@ function CandidateRow({
   const current = person.is_current;
   return (
     <label
-      className={`flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 ${
+      className={`flex cursor-pointer items-center gap-3 rounded-lg border px-4 py-3 ${
         selected ? "border-line-selected bg-selected" : "border-line bg-card hover:bg-hover"
       } ${current ? "cursor-default" : ""}`}
     >
@@ -129,7 +129,7 @@ export function SubscriberPicker({
   return (
     <section
       aria-label="Select new subscriber"
-      className="flex w-full max-w-[720px] flex-col gap-4 rounded-xl border border-line bg-card p-4 sm:p-5"
+      className="flex w-full max-w-[720px] flex-col gap-4 rounded-lg border border-line bg-card p-4 sm:p-5"
     >
       <p className="text-body-s font-semibold uppercase tracking-[0.06em] text-ink-muted">
         {PICK_HEADING}
@@ -138,7 +138,7 @@ export function SubscriberPicker({
       {blockers.length > 0 && (
         <div
           role="status"
-          className="rounded-xl border border-transparent bg-warning-bg px-4 py-3 text-body-m text-warning"
+          className="rounded-lg border border-transparent bg-warning-bg px-4 py-3 text-body-m text-warning"
         >
           {blockers.map((reason) => (
             <p key={reason}>{reason}</p>
@@ -151,11 +151,11 @@ export function SubscriberPicker({
           Array.from({ length: 3 }).map((_, i) => (
             <div
               key={i}
-              className="h-[62px] animate-pulse rounded-xl border border-line bg-sunk"
+              className="h-[62px] animate-pulse rounded-lg border border-line bg-sunk"
             />
           ))
         ) : candidates.length === 0 ? (
-          <p className="rounded-xl border border-dashed border-line px-5 py-8 text-center text-sm text-ink-2">
+          <p className="rounded-lg border border-dashed border-line px-5 py-8 text-center text-sm text-ink-2">
             {NO_ADMINS}
           </p>
         ) : (
@@ -176,7 +176,7 @@ export function SubscriberPicker({
         <label htmlFor="inviteEmail" className="text-label font-semibold text-ink">
           {INVITE_HEADING}
         </label>
-        <div className="flex items-center gap-2 rounded-xl border border-line-input bg-card pr-2 focus-within:border-line-selected focus-within:ring-2 focus-within:ring-line-selected/25">
+        <div className="flex items-center gap-2 rounded-lg border border-line-input bg-card pr-2 focus-within:border-line-selected focus-within:ring-2 focus-within:ring-line-selected/25">
           <input
             id="inviteEmail"
             {...inviteEmail.props}
@@ -189,7 +189,7 @@ export function SubscriberPicker({
             type="button"
             onClick={on.onSendInvite}
             disabled={inviting || !invite.trim()}
-            className="min-h-11 shrink-0 rounded-xl px-2 text-body-m font-semibold text-link hover:bg-hover disabled:cursor-not-allowed disabled:text-ink-disabled"
+            className="min-h-11 shrink-0 rounded-lg px-2 text-body-m font-semibold text-link hover:bg-hover disabled:cursor-not-allowed disabled:text-ink-disabled"
           >
             {inviting ? "Sending…" : "Send invite"}
           </button>
@@ -215,7 +215,7 @@ export function SubscriberPicker({
         <button
           type="button"
           onClick={on.onCancel}
-          className="h-11 rounded-xl border border-line-selected bg-card px-4 text-body-m font-semibold text-link hover:bg-selected disabled:opacity-60"
+          className="h-11 rounded-lg border border-line-selected bg-card px-4 text-body-m font-semibold text-link hover:bg-selected disabled:opacity-60"
         >
           Cancel
         </button>
@@ -223,7 +223,7 @@ export function SubscriberPicker({
           type="button"
           onClick={on.onRequest}
           disabled={!canRequest}
-          className="h-11 rounded-xl bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed disabled:cursor-not-allowed disabled:bg-action-disabled disabled:text-ink-disabled"
+          className="h-11 rounded-lg bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed disabled:cursor-not-allowed disabled:bg-action-disabled disabled:text-ink-disabled"
         >
           {busy ? "Sending…" : REQUEST_TRANSFER}
         </button>
@@ -254,12 +254,12 @@ export function PendingRequestPanel({
     <section aria-label="Request pending" className="flex w-full max-w-[720px] flex-col gap-6">
       <div
         role="status"
-        className="rounded-xl border border-transparent bg-warning-bg px-4 py-3 text-body-m text-warning"
+        className="rounded-lg border border-transparent bg-warning-bg px-4 py-3 text-body-m text-warning"
       >
         <p className="font-bold">{REQUEST_WAITING}</p>
         <p className="mt-1">{pendingSentence(recipient)}</p>
       </div>
-      <div className="flex items-center justify-between gap-4 rounded-xl border border-line bg-card px-5 py-4">
+      <div className="flex items-center justify-between gap-4 rounded-lg border border-line bg-card px-5 py-4">
         <div className="min-w-0">
           <p className="truncate text-title-m font-semibold text-ink">
             {recipient.name || recipient.email}
@@ -274,7 +274,7 @@ export function PendingRequestPanel({
         <button
           type="button"
           onClick={onBack}
-          className="h-11 rounded-xl border border-line-selected bg-card px-4 text-body-m font-semibold text-link hover:bg-selected disabled:opacity-60"
+          className="h-11 rounded-lg border border-line-selected bg-card px-4 text-body-m font-semibold text-link hover:bg-selected disabled:opacity-60"
         >
           Back
         </button>
@@ -282,7 +282,7 @@ export function PendingRequestPanel({
           type="button"
           onClick={onWithdraw}
           disabled={busy}
-          className="h-11 rounded-xl bg-danger-action px-4 text-body-m font-semibold text-white hover:bg-[var(--mv2-action-danger-hover)] disabled:opacity-60"
+          className="h-11 rounded-lg bg-danger-action px-4 text-body-m font-semibold text-white hover:bg-[var(--mv2-action-danger-hover)] disabled:opacity-60"
         >
           {busy ? "Withdrawing…" : WITHDRAW_REQUEST}
         </button>
@@ -326,7 +326,7 @@ export function TransferRequested({
         <button
           type="button"
           onClick={onBack}
-          className="h-11 rounded-xl bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed w-full sm:w-auto sm:self-start"
+          className="h-11 rounded-lg bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed w-full sm:w-auto sm:self-start"
         >
           Back to Manage Subscription
         </button>

@@ -59,7 +59,7 @@ export function InvoicePreviewDialog({
       busy={false}
       onDismiss={onClose}
       dismissLabel="Close preview"
-      className="flex max-h-[min(92dvh,1180px)] w-full max-w-[860px] flex-col overflow-hidden rounded-2xl border border-line bg-card shadow-modal max-[480px]:max-w-none max-[480px]:rounded-b-none"
+      className="flex max-h-[min(92dvh,1180px)] w-full max-w-[860px] flex-col overflow-hidden rounded-xl border border-line bg-card shadow-modal max-sm:max-w-none max-sm:rounded-b-none"
     >
       <div className="flex shrink-0 items-center justify-between gap-4 border-b border-line-subtle px-6 py-4">
         <h2 id={titleId} className="min-w-0 truncate text-title-m font-semibold text-ink">
@@ -70,7 +70,7 @@ export function InvoicePreviewDialog({
           type="button"
           aria-label="Close"
           onClick={onClose}
-          className="min-h-11 min-w-11 shrink-0 rounded-lg p-1.5 text-ink-muted hover:bg-hover hover:text-ink"
+          className="min-h-11 min-w-11 shrink-0 rounded-md p-1.5 text-ink-muted hover:bg-hover hover:text-ink"
         >
           <Icon name="close" size={20} />
         </button>

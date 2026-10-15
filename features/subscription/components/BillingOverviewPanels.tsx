@@ -36,7 +36,7 @@ import {
 import { ACCOUNTS_LOAD_FAILED, CHOOSE_ACCOUNT } from "@/features/subscription/lib/billingAccounts";
 
 const CARD =
-  "rounded-xl border border-line bg-card p-4 sm:p-5";
+  "rounded-lg border border-line bg-card p-4 sm:p-5";
 
 /**
  * The first card: ONE billing account at a glance - its name as "Bill to", the payer's next
@@ -85,7 +85,7 @@ export function BillingAccountCard({
             type="button"
             onClick={onPick}
             aria-haspopup="dialog"
-            className="sr-only shrink-0 rounded-xl text-body-s font-semibold text-link underline underline-offset-4 focus-visible:not-sr-only focus-visible:px-2 focus-visible:py-1"
+            className="sr-only shrink-0 rounded-lg text-body-s font-semibold text-link underline underline-offset-4 focus-visible:not-sr-only focus-visible:px-2 focus-visible:py-1"
           >
             {CHOOSE_ACCOUNT}
           </button>
@@ -110,7 +110,7 @@ export function BillingAccountCard({
               onClick={onMove}
               aria-haspopup="dialog"
               aria-label={`${next.billTo || "No billing account"} · ${CHANGE_BILLING_ACCOUNT}`}
-              className="-mx-2 mt-1 flex min-h-11 max-w-full items-center gap-2 rounded-xl px-2 text-left text-title-m font-semibold text-ink hover:text-link"
+              className="-mx-2 mt-1 flex min-h-11 max-w-full items-center gap-2 rounded-lg px-2 text-left text-title-m font-semibold text-ink hover:text-link"
             >
               <span className="truncate">{next.billTo || "—"}</span>
               <span aria-hidden className="text-body-s text-ink-muted">
@@ -135,7 +135,7 @@ export function BillingAccountCard({
       <button
         type="button"
         onClick={onOpen}
-        className="-mx-2 min-h-11 self-end rounded-xl px-2 text-body-m text-ink underline underline-offset-4 hover:text-link"
+        className="-mx-2 min-h-11 self-end rounded-lg px-2 text-body-m text-ink underline underline-offset-4 hover:text-link"
       >
         {GO_TO_BILLING} ›
       </button>
@@ -235,7 +235,7 @@ export function SubscriptionOverviewCard({
             type="button"
             onClick={onToggleUpdates}
             aria-expanded={updatesExpanded}
-            className="-mx-2 min-h-11 self-start rounded-xl px-2 text-body-s text-ink-2 hover:underline"
+            className="-mx-2 min-h-11 self-start rounded-lg px-2 text-body-s text-ink-2 hover:underline"
           >
             {updatesExpanded ? "Show less" : more}
           </button>
@@ -245,7 +245,7 @@ export function SubscriptionOverviewCard({
       <button
         type="button"
         onClick={onManage}
-        className="mx-auto h-11 rounded-xl bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed"
+        className="mx-auto h-11 rounded-lg bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed"
       >
         {MANAGE_SUBSCRIPTION}
       </button>

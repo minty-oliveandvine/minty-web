@@ -66,7 +66,7 @@ export function CompanySearch({
           placeholder={SEARCH_PLACEHOLDER}
           aria-label={SEARCH_PLACEHOLDER}
           autoComplete="off"
-          className="h-11 w-full rounded-xl border border-line-input bg-card pl-3 pr-10 text-body-m text-ink-2 placeholder:text-ink-muted focus:border-line-selected focus:outline-none focus:ring-2 focus:ring-line-selected/25"
+          className="h-11 w-full rounded-lg border border-line-input bg-card pl-3 pr-10 text-body-m text-ink-2 placeholder:text-ink-muted focus:border-line-selected focus:outline-none focus:ring-2 focus:ring-line-selected/25"
         />
         <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-ink-2">
           <svg viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5" aria-hidden>
@@ -108,7 +108,7 @@ export function EntityListLoading() {
   return (
     <div className="flex flex-col gap-2" role="status" aria-label="Loading your companies">
       {[0, 1, 2].map((i) => (
-        <div key={i} className="h-[60px] animate-pulse rounded-xl border border-line bg-sunk" />
+        <div key={i} className="h-[60px] animate-pulse rounded-lg border border-line bg-sunk" />
       ))}
     </div>
   );
@@ -121,7 +121,7 @@ export function EntityListError({ message, onRetry }: { message: string; onRetry
       <button
         type="button"
         onClick={onRetry}
-        className="h-11 cursor-pointer rounded-xl bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed"
+        className="h-11 cursor-pointer rounded-lg bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed"
       >
         Try again
       </button>
@@ -155,7 +155,7 @@ export function EntityListEmpty() {
       <div className="mb-6 mt-6 w-full max-w-md px-6">
         <a
           href={createEntityHref()}
-          className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-action px-4 text-body-m font-semibold text-white transition-colors hover:bg-action-hover active:bg-action-pressed"
+          className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-action px-4 text-body-m font-semibold text-white transition-colors hover:bg-action-hover active:bg-action-pressed"
         >
           <svg width="13" height="14" viewBox="0 0 13 14" fill="none" aria-hidden>
             <path

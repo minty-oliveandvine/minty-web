@@ -43,7 +43,7 @@ function BackButton({ label = BACK_TO_LIST, onBack }: { label?: string; onBack: 
     <button
       type="button"
       onClick={onBack}
-      className="h-11 w-full rounded-xl bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed sm:w-auto sm:self-start"
+      className="h-11 w-full rounded-lg bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed sm:w-auto sm:self-start"
     >
       {label}
     </button>
@@ -88,7 +88,7 @@ export function ChangeResultRow({
       ref={ref}
       data-entity={entity.entity_id}
       data-result={result.kind}
-      className="scroll-mt-[var(--list-sticky-top)] flex flex-col gap-6 rounded-xl border border-line bg-card p-4 sm:p-5"
+      className="scroll-mt-[var(--list-sticky-top)] flex flex-col gap-6 rounded-lg border border-line bg-card p-4 sm:p-5"
     >
       <div className="flex items-center justify-between gap-4">
         <h3 className="min-w-0 truncate text-title-l font-semibold text-ink">
@@ -177,7 +177,7 @@ export function ChangeResultPage({
       aria-label={result.hero ?? result.headline.text}
       data-result={result.kind}
       data-entity={entity.entity_id}
-      className="relative rounded-xl border border-line bg-card px-4 pb-8 pt-14 sm:px-5 sm:pb-10"
+      className="relative rounded-lg border border-line bg-card px-4 pb-8 pt-14 sm:px-5 sm:pb-10"
     >
       <div className="absolute right-4 top-4 sm:right-8 sm:top-8">
         <RowMenu entityName={entity.entity_name} items={menu} onSelect={onMenu} />

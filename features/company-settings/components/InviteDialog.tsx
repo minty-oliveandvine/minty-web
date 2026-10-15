@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Invite someone: their address (English only - `lib/emailInput.ts`), the role (only those this
+ * Invite someone: their address (English only - `@minty/shared/emailInput`), the role (only those this
  * person may give), and their first and last names - required: a new invitee's account is made from them when they
  * sign in by code. On the modal family's frame (`components/ui/ModalFrame`), in the sheet's
  * field and button look; Enter sends.
@@ -43,7 +43,7 @@ export function InviteDialog({
   };
 
   return (
-    <ModalFrame labelledBy={titleId} busy={busy} onDismiss={onClose} dismissLabel="Close" className="max-w-[440px] rounded-2xl border border-line bg-card p-6 shadow-modal max-[480px]:max-w-none max-[480px]:rounded-b-none">
+    <ModalFrame labelledBy={titleId} busy={busy} onDismiss={onClose} dismissLabel="Close" className="max-w-[440px] rounded-xl border border-line bg-card p-6 shadow-modal max-sm:max-w-none max-sm:rounded-b-none">
       <h2 id={titleId} className="text-title-l font-semibold text-ink">
         Invite someone
       </h2>
@@ -86,10 +86,10 @@ export function InviteDialog({
             <input id={`${titleId}-last`} type="text" aria-required="true" autoComplete="off" maxLength={100} className={`${SHEET_INPUT} ${SHEET_INPUT_OK}`} value={lastName} onChange={(e) => setLastName(e.target.value)} />
           </div>
         </div>
-        <div className="mt-6 flex justify-end gap-3 max-[480px]:flex-col-reverse max-[480px]:[&>*]:w-full">
+        <div className="mt-6 flex justify-end gap-3 max-sm:flex-col-reverse max-sm:[&>*]:w-full">
           <button
             type="button"
-            className="inline-flex h-11 items-center justify-center rounded-xl border border-line-selected bg-card px-4 text-body-m font-semibold text-link transition-colors hover:bg-selected disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex h-11 items-center justify-center rounded-lg border border-line-selected bg-card px-4 text-body-m font-semibold text-link transition-colors hover:bg-selected disabled:cursor-not-allowed disabled:opacity-60"
             onClick={onClose}
             disabled={busy}
           >

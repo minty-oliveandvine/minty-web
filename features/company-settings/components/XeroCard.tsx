@@ -17,7 +17,7 @@ const BADGE: Record<"connected" | "reconnect" | "off", { text: string; className
 };
 
 const ACTION =
-  "inline-flex h-11 items-center justify-center rounded-xl px-4 text-body-m font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--mv2-border-focus)]";
+  "inline-flex h-11 items-center justify-center rounded-lg px-4 text-body-m font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--mv2-border-focus)]";
 
 export function xeroConnectUrl(entityId: string): string {
   return mintyEntryUrl(`/xero_reconnect?entity_id=${encodeURIComponent(entityId)}`, entityId);

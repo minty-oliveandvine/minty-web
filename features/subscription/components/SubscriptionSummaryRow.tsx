@@ -158,7 +158,7 @@ function UnderCard({
         onClick={() => on.onStartTrial(module.code)}
         disabled={disabled}
         aria-label={`Start Free Trial · ${module.name}`}
-        className="h-11 w-full max-w-[195px] rounded-xl bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed disabled:bg-action-disabled disabled:text-ink-disabled"
+        className="h-11 w-full max-w-[195px] rounded-lg bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed disabled:bg-action-disabled disabled:text-ink-disabled"
       >
         Start Free Trial
       </button>
@@ -174,7 +174,7 @@ function UnderCard({
       data-changed={module.changed}
       disabled={disabled}
       onClick={() => on.onTick(module.code)}
-      className="flex size-11 items-center justify-center rounded-xl hover:bg-hover"
+      className="flex size-11 items-center justify-center rounded-lg hover:bg-hover"
     >
       <span
         aria-hidden
@@ -227,7 +227,7 @@ export function PriceBox({
   return (
     <div
       data-greyed={greyed}
-      className={`relative flex h-[88px] items-center justify-center gap-2 rounded-xl sm:h-[101px] sm:gap-3 ${
+      className={`relative flex h-[88px] items-center justify-center gap-2 rounded-lg sm:h-[101px] sm:gap-3 ${
         greyed ? "bg-sunk" : "bg-selected"
       }`}
     >
@@ -250,7 +250,7 @@ function Block({ block, card }: { block: SummaryBlock; card?: boolean }) {
   return (
     <div
       className={`flex flex-col gap-4 ${
-        card ? "rounded-xl border border-line bg-card p-5" : ""
+        card ? "rounded-lg border border-line bg-card p-5" : ""
       }`}
     >
       <p className="whitespace-pre-line text-body-l text-ink-2">
@@ -270,7 +270,7 @@ function CalculatingPanel() {
       aria-label="Subscription Summary"
       aria-busy
       data-calculating
-      className={`${PANEL_PLACE} flex min-h-[300px] w-full flex-col items-center justify-center gap-6 rounded-xl border border-line bg-card p-4 sm:p-5`}
+      className={`${PANEL_PLACE} flex min-h-[300px] w-full flex-col items-center justify-center gap-6 rounded-lg border border-line bg-card p-4 sm:p-5`}
     >
       <p role="status" className="text-title-l font-bold text-link">
         {CALCULATING}
@@ -298,7 +298,7 @@ function SummaryPanel({
   return (
     <section
       aria-label="Subscription Summary"
-      className={`${PANEL_PLACE} flex w-full min-w-0 flex-col gap-6 rounded-xl border border-line p-4 sm:p-5 ${
+      className={`${PANEL_PLACE} flex w-full min-w-0 flex-col gap-6 rounded-lg border border-line p-4 sm:p-5 ${
         changing ? "bg-sunk" : "bg-card"
       }`}
     >
@@ -329,7 +329,7 @@ function SummaryPanel({
                 <button
                   type="button"
                   onClick={onChangePaymentMethod}
-                  className="-mr-2 min-h-11 rounded-xl px-2 text-body-m text-link hover:bg-hover"
+                  className="-mr-2 min-h-11 rounded-lg px-2 text-body-m text-link hover:bg-hover"
                 >
                   Change
                 </button>
@@ -366,7 +366,7 @@ function SummaryPanel({
           <button
             type="button"
             onClick={() => onActivate(view.pendingChange!)}
-            className="h-11 rounded-xl bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed"
+            className="h-11 rounded-lg bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed"
           >
             {ACTIVATE_SUBSCRIPTION}
           </button>
@@ -374,7 +374,7 @@ function SummaryPanel({
           <button
             type="button"
             onClick={() => onConfirmChange(view.pendingChange!)}
-            className="h-11 rounded-xl bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed"
+            className="h-11 rounded-lg bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed"
           >
             {CONFIRM_CHANGE}
           </button>
@@ -421,7 +421,7 @@ export function SubscriptionSummaryRow({
       ref={ref}
       data-entity={entity.entity_id}
       data-open
-      className="scroll-mt-[var(--list-sticky-top)] flex flex-col gap-6 rounded-xl border border-line bg-card p-4 sm:p-5"
+      className="scroll-mt-[var(--list-sticky-top)] flex flex-col gap-6 rounded-lg border border-line bg-card p-4 sm:p-5"
     >
       {/*
         The strip is the click target, not the whole `<li>`: the panel below holds the cards and
@@ -443,7 +443,7 @@ export function SubscriptionSummaryRow({
             onClick={on.onClose}
             aria-label={`Close ${entity.entity_name}`}
             aria-expanded
-            className="flex size-11 items-center justify-center rounded-xl text-ink-muted hover:bg-hover"
+            className="flex size-11 items-center justify-center rounded-lg text-ink-muted hover:bg-hover"
           >
             <Icon name="chevron-up" size={24} />
           </button>
@@ -462,7 +462,7 @@ export function SubscriptionSummaryRow({
           <button
             type="button"
             onClick={on.onRetry}
-            className="min-h-11 rounded-xl px-2 text-body-m font-semibold text-link hover:bg-hover"
+            className="min-h-11 rounded-lg px-2 text-body-m font-semibold text-link hover:bg-hover"
           >
             Try again
           </button>

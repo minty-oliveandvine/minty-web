@@ -38,7 +38,7 @@ export function DetailsForm({
 
   return (
     <form className="grid grid-cols-1 gap-4" onSubmit={submit} noValidate>
-      <div className="md:col-span-2">
+      <div>
         <label htmlFor="company-name" className={SHEET_LABEL}>
           Company name
           <RequiredMark />
@@ -95,12 +95,12 @@ export function DetailsForm({
         </select>
       </div>
       {error ? (
-        <p className="text-body-s text-danger md:col-span-2" role="alert">
+        <p className="text-body-s text-danger" role="alert">
           {error}
         </p>
       ) : null}
       {page.can_edit ? (
-        <div className="flex justify-end md:col-span-2">
+        <div className="flex justify-end">
           <button type="submit" className={`${SHEET_PRIMARY} w-full sm:w-auto`} disabled={!dirty || busy}>
             {busy ? "Saving…" : "Save Changes"}
           </button>

@@ -20,7 +20,7 @@ export function ProfileTitlebar({ back }: { back: string }) {
       <BackLink
         href={back}
         ariaLabel="Back"
-        className="flex size-11 items-center justify-center rounded-xl hover:bg-hover"
+        className="flex size-11 items-center justify-center rounded-lg hover:bg-hover"
       >
         <Image
           className="-scale-x-100"
@@ -57,7 +57,7 @@ export function ProfilePanelTitlebar({
         type="button"
         onClick={onBack}
         aria-label="Back to the menu"
-        className="flex size-11 cursor-pointer items-center justify-center rounded-xl hover:bg-hover"
+        className="flex size-11 cursor-pointer items-center justify-center rounded-lg hover:bg-hover"
       >
         <Image
           className="-scale-x-100"
@@ -75,7 +75,7 @@ export function ProfilePanelTitlebar({
         type="button"
         onClick={onClose}
         aria-label="Close My Profile"
-        className="flex size-11 cursor-pointer items-center justify-center rounded-xl text-ink-2 hover:bg-hover"
+        className="flex size-11 cursor-pointer items-center justify-center rounded-lg text-ink-2 hover:bg-hover"
       >
         <span className="material-symbols-rounded text-[24px] leading-none" aria-hidden>
           close
@@ -134,7 +134,7 @@ export function LogOutButton() {
     <button
       type="button"
       onClick={logOut}
-      className="mx-auto mt-18 flex min-h-11 cursor-pointer items-center gap-2 rounded-xl px-3 text-body-m font-semibold text-link hover:bg-hover"
+      className="mx-auto mt-18 flex min-h-11 cursor-pointer items-center gap-2 rounded-lg px-3 text-body-m font-semibold text-link hover:bg-hover"
     >
       <Image src="/profile/logout.svg" alt="" width={13} height={13} unoptimized aria-hidden />
       {LOG_OUT}
@@ -150,8 +150,8 @@ export function ProfileLoading() {
       aria-label="Loading your profile"
     >
       <span className="h-[75px] w-[74px] animate-pulse rounded-full bg-neutral-bg" />
-      <span className="h-8 w-56 animate-pulse rounded-lg bg-neutral-bg" />
-      <span className="mt-6 h-[184px] w-full animate-pulse rounded-xl border border-line bg-sunk" />
+      <span className="h-8 w-56 animate-pulse rounded-md bg-neutral-bg" />
+      <span className="mt-6 h-[184px] w-full animate-pulse rounded-lg border border-line bg-sunk" />
     </div>
   );
 }
@@ -163,7 +163,7 @@ export function ProfileError({ message, onRetry }: { message: string; onRetry: (
       <button
         type="button"
         onClick={onRetry}
-        className="h-11 cursor-pointer rounded-xl bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed"
+        className="h-11 cursor-pointer rounded-lg bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed"
       >
         Try again
       </button>

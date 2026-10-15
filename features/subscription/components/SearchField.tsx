@@ -10,7 +10,7 @@ export function SearchField({
   label?: string;
 }) {
   return (
-    <label className="flex h-[62px] items-center gap-3 rounded-xl bg-sunk px-6 text-base text-ink">
+    <label className="flex h-[62px] items-center gap-3 rounded-lg bg-sunk px-6 text-base text-ink">
       <span aria-hidden>🔍</span>
       <span className="sr-only">{label}</span>
       <input

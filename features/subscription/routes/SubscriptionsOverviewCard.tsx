@@ -79,9 +79,9 @@ export function SubscriptionsOverviewCard({ today }: { today?: Date } = {}) {
       <h2 id="profile-subscriptions-overview" className="pl-2 text-label leading-5 font-bold text-ink-2">
         {PROFILE_OVERVIEW_TITLE}
       </h2>
-      <div className="mt-2.5 flex min-h-[165px] flex-col items-center justify-center rounded-xl border border-line bg-card p-4">
+      <div className="mt-2.5 flex min-h-[165px] flex-col items-center justify-center rounded-lg border border-line bg-card p-4">
         {status === "loading" ? (
-          <div className="h-[120px] w-full animate-pulse rounded-lg bg-sunk" role="status" aria-label="Loading your subscriptions" />
+          <div className="h-[120px] w-full animate-pulse rounded-md bg-sunk" role="status" aria-label="Loading your subscriptions" />
         ) : null}
         {status === "error" ? (
           <div className="flex flex-col items-center gap-3 text-center" role="alert">
@@ -89,7 +89,7 @@ export function SubscriptionsOverviewCard({ today }: { today?: Date } = {}) {
             <button
               type="button"
               onClick={retry}
-              className="h-11 cursor-pointer rounded-xl bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed"
+              className="h-11 cursor-pointer rounded-lg bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed"
             >
               Try again
             </button>
@@ -106,7 +106,7 @@ export function SubscriptionsOverviewCard({ today }: { today?: Date } = {}) {
             </div>
             <Link
               href={PORTAL.index}
-              className="mt-5 flex h-11 w-full items-center justify-center rounded-xl bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed"
+              className="mt-5 flex h-11 w-full items-center justify-center rounded-lg bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed"
             >
               {MANAGE_SUBSCRIPTION}
             </Link>

@@ -298,7 +298,7 @@ function PageForm(props: FormProps) {
       {form.error && (
         <p
           role="alert"
-          className="rounded-xl border border-transparent bg-danger-bg px-4 py-3 text-body-s text-danger"
+          className="rounded-lg border border-transparent bg-danger-bg px-4 py-3 text-body-s text-danger"
         >
           {form.error}
         </p>
@@ -308,14 +308,14 @@ function PageForm(props: FormProps) {
           type="button"
           onClick={props.onCancel}
           disabled={form.busy}
-          className="h-11 rounded-xl border border-line-selected bg-card px-4 text-body-m font-semibold text-link hover:bg-selected disabled:opacity-60"
+          className="h-11 rounded-lg border border-line-selected bg-card px-4 text-body-m font-semibold text-link hover:bg-selected disabled:opacity-60"
         >
           Cancel
         </button>
         <button
           type="submit"
           disabled={!form.canSubmit}
-          className="h-11 rounded-xl bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed disabled:bg-action-disabled disabled:text-ink-disabled"
+          className="h-11 rounded-lg bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed disabled:bg-action-disabled disabled:text-ink-disabled"
         >
           {form.busy ? "Saving…" : "Save"}
         </button>
@@ -341,7 +341,7 @@ function SheetForm(props: FormProps) {
             Payment method
             <RequiredMark />
           </span>
-        <div className="rounded-xl border border-line p-4">
+        <div className="rounded-lg border border-line p-4">
           <PaymentElement
             onReady={form.onReady}
             onLoadError={form.onLoadError}
@@ -492,14 +492,14 @@ export function CardCapturePanel({
           <button
             type="button"
             onClick={onCancel}
-            className="h-11 rounded-xl border border-line-selected bg-card px-4 text-body-m font-semibold text-link hover:bg-selected"
+            className="h-11 rounded-lg border border-line-selected bg-card px-4 text-body-m font-semibold text-link hover:bg-selected"
           >
             Cancel
           </button>
           <button
             type="button"
             onClick={setup.retry}
-            className="h-11 rounded-xl bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed"
+            className="h-11 rounded-lg bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed"
           >
             Try again
           </button>

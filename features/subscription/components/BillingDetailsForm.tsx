@@ -50,7 +50,7 @@ import { EMAIL_ASCII_HINT, useEmailInput } from "@minty/shared/emailInput";
 
 const LABEL = "text-label font-semibold text-ink";
 const INPUT =
-  "h-[46px] w-full rounded-xl border-[1.5px] border-line-input bg-card px-3.5 text-body-m text-ink outline-none placeholder:text-ink-muted focus:border-line-selected disabled:bg-sunk disabled:text-ink-disabled aria-[invalid=true]:border-danger";
+  "h-[46px] w-full rounded-lg border-[1.5px] border-line-input bg-card px-3.5 text-body-m text-ink outline-none placeholder:text-ink-muted focus:border-line-selected disabled:bg-sunk disabled:text-ink-disabled aria-[invalid=true]:border-danger";
 
 /**
  * Stripe's fields in 08-C's look - the same numbers as `INPUT` and `LABEL` above, because they
@@ -236,7 +236,7 @@ export function BillingDetailsForm({
         e.preventDefault();
         onSave(async () => (addressRef.current ? addressRef.current.read() : null));
       }}
-      className="flex w-full flex-col gap-4 rounded-xl border border-line bg-card p-4 sm:p-5"
+      className="flex w-full flex-col gap-4 rounded-lg border border-line bg-card p-4 sm:p-5"
     >
       <Field id="billing-company" label="Billing Company" error={errors.company}>
         <input {...input("company", "(e.g. Vine Consulting Limited)")} autoComplete="organization" />
@@ -285,7 +285,7 @@ export function BillingDetailsForm({
           type="button"
           onClick={onBack}
           disabled={busy}
-          className="h-11 rounded-xl border border-line-selected bg-card px-4 text-body-m font-semibold text-link hover:bg-selected disabled:opacity-60"
+          className="h-11 rounded-lg border border-line-selected bg-card px-4 text-body-m font-semibold text-link hover:bg-selected disabled:opacity-60"
         >
           Go Back
         </button>
@@ -293,7 +293,7 @@ export function BillingDetailsForm({
           type="submit"
           disabled={busy || !dirty}
           aria-busy={busy || undefined}
-          className="h-11 rounded-xl bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed disabled:bg-action-disabled disabled:text-ink-disabled"
+          className="h-11 rounded-lg bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed disabled:bg-action-disabled disabled:text-ink-disabled"
         >
           {busy ? "Saving…" : SAVE_BILLING_ACCOUNT}
         </button>

@@ -53,20 +53,20 @@ export function SubscriptionOverviewScreen(args: UseBillingOverviewArgs) {
           {BACK_TO_ENTITIES}
         </a>
       </PortalBack>
-      <div className="rounded-2xl bg-selected p-5 sm:p-8">
+      <div className="rounded-xl bg-selected p-5 sm:p-8">
         <h1 className="text-display-m font-bold text-ink sm:text-display-l">{OVERVIEW_TITLE}</h1>
       </div>
 
       {o.status === "error" ? (
         <div
           role="alert"
-          className="flex w-full flex-col items-start gap-3 rounded-xl border border-transparent bg-danger-bg px-4 py-3 text-body-m text-danger"
+          className="flex w-full flex-col items-start gap-3 rounded-lg border border-transparent bg-danger-bg px-4 py-3 text-body-m text-danger"
         >
           {o.error}
           <button
             type="button"
             onClick={o.reload}
-            className="h-11 rounded-xl border border-line-selected bg-card px-4 text-body-m font-semibold text-link hover:bg-selected"
+            className="h-11 rounded-lg border border-line-selected bg-card px-4 text-body-m font-semibold text-link hover:bg-selected"
           >
             Try again
           </button>

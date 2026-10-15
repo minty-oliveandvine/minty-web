@@ -14,7 +14,7 @@ export function TransferRequestCard({
 }) {
   return (
     <div
-      className="flex flex-wrap items-center gap-4 rounded-xl border border-line bg-card px-5 py-4"
+      className="flex flex-wrap items-center gap-4 rounded-lg border border-line bg-card px-5 py-4"
       data-transfer={transfer.id}
     >
       <p className="min-w-[200px] flex-1 text-title-l font-semibold text-ink">
@@ -29,7 +29,7 @@ export function TransferRequestCard({
       <button
         type="button"
         onClick={() => onReview(transfer)}
-        className="h-11 rounded-xl bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed"
+        className="h-11 rounded-lg bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed"
       >
         Review and accept
       </button>

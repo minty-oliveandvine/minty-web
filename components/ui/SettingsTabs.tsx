@@ -7,7 +7,7 @@
 import type { SettingsTab } from "@/lib/settingsTabs";
 
 const pill = (active: boolean) =>
-  `cursor-pointer shrink-0 min-h-11 rounded-xl border px-4 py-2 text-center text-body-m font-semibold transition-colors flex items-center justify-center ${
+  `cursor-pointer shrink-0 min-h-11 rounded-lg border px-4 py-2 text-center text-body-m font-semibold transition-colors flex items-center justify-center ${
     active ? "border-line-selected bg-selected text-link" : "border-line bg-card text-ink-2 hover:bg-hover"
   }`;
 

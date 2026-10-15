@@ -76,7 +76,7 @@ export function SettingsCard({
   children: ReactNode;
 }) {
   return (
-    <div className={`min-w-0 overflow-hidden rounded-xl border border-line ${readOnly ? "bg-sunk" : "bg-card"}`}>
+    <div className={`min-w-0 overflow-hidden rounded-lg border border-line ${readOnly ? "bg-sunk" : "bg-card"}`}>
       <div className="flex flex-wrap items-start justify-between gap-3 px-4 pt-4 sm:px-5 sm:pt-5">
         <div className="min-w-0 flex-1">
           <h3 className="text-title-m font-semibold text-ink">{title}</h3>
@@ -92,7 +92,7 @@ export function SettingsCard({
 /** Why the controls are dead - Payment Settings' read-only line. */
 export function ReadOnlyNotice({ children }: { children: ReactNode }) {
   return (
-    <div role="status" className="flex items-center gap-2 rounded-xl border border-line bg-sunk px-4 py-2.5 text-sm text-ink-2">
+    <div role="status" className="flex items-center gap-2 rounded-lg border border-line bg-sunk px-4 py-2.5 text-sm text-ink-2">
       <span className="material-symbols-rounded shrink-0 text-[18px] leading-none text-ink-muted" aria-hidden>
         visibility
       </span>
@@ -109,7 +109,7 @@ export function LoadState({ status, error, onRetry }: { status: "loading" | "err
   ) : (
     <div className="mt-6 text-center" role="alert">
       <p className="text-sm text-danger">{error}</p>
-      <button type="button" className="mt-2 min-h-11 rounded-xl px-2 text-body-m font-semibold text-link underline hover:bg-hover" onClick={onRetry}>
+      <button type="button" className="mt-2 min-h-11 rounded-lg px-2 text-body-m font-semibold text-link underline hover:bg-hover" onClick={onRetry}>
         Try again
       </button>
     </div>

@@ -22,6 +22,20 @@ It is for the **Next.js apps only**. Flask keeps its own sidebar and CSS and is 
 | `lib/viewer.ts` | a shim over `@minty/shared/viewer` |
 | `lib/{safeNext,companyRef,leaveGuard,emailInput}.ts` | **deleted**; ~23 call sites import `@minty/shared/<name>` |
 | the `@theme` font block in `app/globals.css` | `@import "@minty/shared/theme.css";` |
+| the Minty v2 type scale (`--text-*`) and `--color-action-disabled` in `app/globals.css` | `@import "@minty/shared/tokens.css";` (v0.4, 2026-10-15) |
+
+**The sidebar's look is the package's (v0.4).** The `ui-update` branch restyled this app's sidebar
+(Minty v2: 44px rows in `text-title-l`, 76px module icons, a 353px sheet, a 28px header badge);
+that restyle moved INTO the package as v0.4 — the shims here stayed shims — so
+minty-payment-request-web takes the same look the day it bumps past v0.2.
+
+**This app is on the Part 13 radius and type scales.** `tokens.css` redefines Tailwind's
+`--radius-*` (`rounded-md` 8px, `rounded-lg` 12px, `rounded-xl` 16px) and gives `text-display-*`,
+`text-title-*` and `text-label` their Part 13 weight and tracking. Every class here was renamed to
+keep its size (`lg→md`, `xl→lg`, `2xl→xl`, 2026-10-15), so write new ones on that scale: a button
+or input is `rounded-lg`. The `--mv2-*` names in `globals.css` are the same colour values under
+this app's older utility names (`bg-card`, `text-ink` ...); only `--shadow-overlay` and
+`--shadow-modal` deliberately override the package's.
 
 899 lines of component became 54 lines of shim. Each shim's first line is
 `import "@/components/ui/sidebarHost";` — **load-bearing**: it registers this app's host before
@@ -59,7 +73,8 @@ Three parts of its shape exist for reasons worth keeping:
 /* app/globals.css */
 @import "tailwindcss";
 @import "@minty/shared/theme.css";           /* tokens - a bad specifier fails the build */
-@import "material-symbols/outlined.css";
+@import "@minty/shared/tokens.css";          /* Part 13 colour roles, radius, type, shadows */
+@import "material-symbols/rounded.css";
 @source "../node_modules/@minty/shared/src"; /* AFTER every @import */
 ```
 
@@ -80,7 +95,7 @@ modules for good.
 
 | Test | Catches |
 |---|---|
-| `app/__tests__/packagedStyles.test.ts` | a lost `@import`/`@source`, a local token redeclared, `@source` out of order, and the packaged sidebar's own declarations missing from the compiled CSS |
+| `app/__tests__/packagedStyles.test.ts` | a lost `@import`/`@source`, a local font, radius or type token redeclared, `@source` out of order, and the packaged sidebar's own declarations missing from the compiled CSS |
 | `app/__tests__/packagedAssets.test.ts` | a `/menu/*` file the package renders that this app's `public/` does not serve (Next cannot serve one from `node_modules`) — a broken image is not an error |
 
 ## Changing it

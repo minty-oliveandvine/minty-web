@@ -7,7 +7,7 @@
 import type { Invitation } from "@/features/company-settings/api/companySettings";
 
 const BUTTON =
-  "inline-flex h-11 items-center justify-center rounded-xl px-4 text-body-m font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--mv2-border-focus)] disabled:cursor-not-allowed disabled:opacity-50";
+  "inline-flex h-11 items-center justify-center rounded-lg px-4 text-body-m font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--mv2-border-focus)] disabled:cursor-not-allowed disabled:opacity-50";
 
 export function PendingInvitations({
   invitations,
@@ -31,7 +31,7 @@ export function PendingInvitations({
         const wait = cooldowns[inv.id] ?? 0;
         const name = `${inv.first_name} ${inv.last_name}`.trim();
         return (
-          <li key={inv.id} className="flex flex-col gap-2 rounded-xl border border-line bg-card px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5 sm:py-4">
+          <li key={inv.id} className="flex flex-col gap-2 rounded-lg border border-line bg-card px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5 sm:py-4">
             <div className="min-w-0">
               <p className="truncate font-medium text-ink">{inv.email}</p>
               <p className="truncate text-sm text-ink-2">

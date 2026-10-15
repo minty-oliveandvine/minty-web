@@ -146,7 +146,7 @@ export function LoginScreen({ arrival }: { arrival: Arrival }) {
       />
 
       {invited && arrival.email ? (
-        <div className="rounded-xl border border-line-selected bg-selected px-3.5 py-3 text-body-s leading-normal text-ink" role="status">
+        <div className="rounded-lg border border-line-selected bg-selected px-3.5 py-3 text-body-s leading-normal text-ink" role="status">
           This invitation was sent to <strong className="font-semibold">{arrival.email}</strong>. Please
           sign in with that account to accept it.
         </div>

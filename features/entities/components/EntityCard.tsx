@@ -78,7 +78,7 @@ function LastOpened({ row }: { row: EntityRow }) {
         <ClockGlyph />
       </span>
       <span
-        className="pointer-events-none absolute bottom-full right-0 z-20 mb-2 hidden whitespace-nowrap rounded-lg border border-line bg-card px-3 py-1.5 text-right shadow-overlay group-hover:block"
+        className="pointer-events-none absolute bottom-full right-0 z-20 mb-2 hidden whitespace-nowrap rounded-md border border-line bg-card px-3 py-1.5 text-right shadow-overlay group-hover:block"
         aria-hidden
       >
         <span className="block text-label leading-snug text-ink-2">{when}</span>
@@ -104,7 +104,7 @@ export function EntityCard({ row }: { row: EntityRow }) {
       ) : null}
       <a
         href={enterHref(row)}
-        className="flex min-h-11 w-full items-center justify-between gap-2 rounded-xl border border-line bg-card px-5 py-4 font-semibold text-ink transition-[background-color,transform] hover:-translate-y-0.5 hover:bg-hover"
+        className="flex min-h-11 w-full items-center justify-between gap-2 rounded-lg border border-line bg-card px-5 py-4 font-semibold text-ink transition-[background-color,transform] hover:-translate-y-0.5 hover:bg-hover"
       >
         <span className="min-w-0 flex-1 truncate text-title-m font-semibold">{row.name}</span>
         <span className="flex shrink-0 items-center gap-1.5">

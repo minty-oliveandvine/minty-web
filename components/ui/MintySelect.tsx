@@ -38,7 +38,7 @@ export function MintySelect({
         value={value}
         disabled={disabled}
         onChange={(e) => onChange(e.target.value)}
-        className="h-11 rounded-xl border border-line-input bg-card px-3 text-body-m text-ink focus:border-line-selected focus:outline-none focus:ring-2 focus:ring-line-selected/25 disabled:cursor-not-allowed disabled:bg-sunk"
+        className="h-11 rounded-lg border border-line-input bg-card px-3 text-body-m text-ink focus:border-line-selected focus:outline-none focus:ring-2 focus:ring-line-selected/25 disabled:cursor-not-allowed disabled:bg-sunk"
       >
         {placeholder !== undefined && (
           <option value="" disabled>

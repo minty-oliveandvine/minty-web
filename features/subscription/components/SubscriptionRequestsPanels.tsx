@@ -49,7 +49,7 @@ export function NoRequests({ onBack }: { onBack: () => void }) {
   return (
     <section
       aria-label="No requests waiting"
-      className="flex flex-col items-center gap-4 rounded-xl border border-dashed border-line bg-card px-6 py-12 text-center"
+      className="flex flex-col items-center gap-4 rounded-lg border border-dashed border-line bg-card px-6 py-12 text-center"
     >
       {/* the file's own pixels; the drawn width is the class, the height follows the ratio */}
       <Image
@@ -65,7 +65,7 @@ export function NoRequests({ onBack }: { onBack: () => void }) {
       <button
         type="button"
         onClick={onBack}
-        className="mt-2 h-11 rounded-xl border border-line-selected bg-card px-4 text-body-m font-semibold text-link hover:bg-selected disabled:opacity-60"
+        className="mt-2 h-11 rounded-lg border border-line-selected bg-card px-4 text-body-m font-semibold text-link hover:bg-selected disabled:opacity-60"
       >
         Back to Manage Subscription
       </button>
@@ -87,7 +87,7 @@ export function RequestList({
         <li
           key={row.id}
           data-transfer={row.id}
-          className="flex flex-wrap items-center gap-4 rounded-xl border border-line bg-card px-5 py-4"
+          className="flex flex-wrap items-center gap-4 rounded-lg border border-line bg-card px-5 py-4"
         >
           <div className="min-w-[200px] flex-1">
             <p className="text-title-l font-semibold text-ink">{row.entity_name}</p>
@@ -99,7 +99,7 @@ export function RequestList({
           <button
             type="button"
             onClick={() => onReview(row)}
-            className="h-11 rounded-xl bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed"
+            className="h-11 rounded-lg bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed"
           >
             Review and accept
           </button>
@@ -214,7 +214,7 @@ export function IncomingRequestReview({
                      Confirm would have to refuse. */
                   disabled={busy || (taking.length === 1 && taking[0] === module.code)}
                   onClick={() => onToggleModule(module.code)}
-                  className="flex size-11 items-center justify-center rounded-xl hover:bg-hover disabled:opacity-60"
+                  className="flex size-11 items-center justify-center rounded-lg hover:bg-hover disabled:opacity-60"
                 >
                   <span
                     aria-hidden
@@ -232,14 +232,14 @@ export function IncomingRequestReview({
           ))
         ) : (
           <>
-            <div className={`${MODULE_CARD_HEIGHT} animate-pulse rounded-xl bg-neutral-bg`} />
-            <div className={`${MODULE_CARD_HEIGHT} animate-pulse rounded-xl bg-neutral-bg`} />
+            <div className={`${MODULE_CARD_HEIGHT} animate-pulse rounded-lg bg-neutral-bg`} />
+            <div className={`${MODULE_CARD_HEIGHT} animate-pulse rounded-lg bg-neutral-bg`} />
           </>
         )}
 
         <section
           aria-label="Subscription Summary"
-          className="flex w-full min-w-0 flex-col gap-6 rounded-xl border border-line bg-card p-4 sm:col-span-2 sm:p-5"
+          className="flex w-full min-w-0 flex-col gap-6 rounded-lg border border-line bg-card p-4 sm:col-span-2 sm:p-5"
         >
           <h3 className="text-title-l font-semibold text-ink">Subscription Summary</h3>
           {/*
@@ -306,7 +306,7 @@ export function IncomingRequestReview({
             <button
               type="button"
               onClick={onChangeCard}
-              className="col-start-2 row-start-4 -mr-2 min-h-11 justify-self-end rounded-xl px-2 text-body-m text-link hover:bg-hover"
+              className="col-start-2 row-start-4 -mr-2 min-h-11 justify-self-end rounded-lg px-2 text-body-m text-link hover:bg-hover"
             >
               {needsAccount ? ADD_BILLING_ACCOUNT : "Change"}
             </button>
@@ -333,7 +333,7 @@ export function IncomingRequestReview({
           {blocked && (
             <div
               role="status"
-              className="rounded-xl border border-transparent bg-warning-bg px-4 py-3 text-body-m text-warning"
+              className="rounded-lg border border-transparent bg-warning-bg px-4 py-3 text-body-m text-warning"
             >
               {row.blockers.map((reason) => (
                 <p key={reason}>{reason}</p>
@@ -347,7 +347,7 @@ export function IncomingRequestReview({
           {needsAccount && (
             <div
               role="status"
-              className="rounded-xl border border-transparent bg-info-bg px-4 py-3 text-body-m text-info"
+              className="rounded-lg border border-transparent bg-info-bg px-4 py-3 text-body-m text-info"
             >
               {NEEDS_ACCOUNT}
             </div>
@@ -363,7 +363,7 @@ export function IncomingRequestReview({
             onClick={onAccept}
             disabled={busy || blocked || needsAccount || undated !== null}
             aria-busy={busy || undefined}
-            className="h-11 rounded-xl bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed disabled:cursor-not-allowed disabled:bg-action-disabled disabled:text-ink-disabled"
+            className="h-11 rounded-lg bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed disabled:cursor-not-allowed disabled:bg-action-disabled disabled:text-ink-disabled"
           >
             {CONFIRM_TRANSFER}
           </button>
@@ -371,7 +371,7 @@ export function IncomingRequestReview({
             type="button"
             onClick={onDecline}
             disabled={busy}
-            className="h-11 rounded-xl border border-line-selected bg-card px-4 text-body-m font-semibold text-link hover:bg-selected disabled:opacity-60"
+            className="h-11 rounded-lg border border-line-selected bg-card px-4 text-body-m font-semibold text-link hover:bg-selected disabled:opacity-60"
           >
             Decline
           </button>
@@ -412,7 +412,7 @@ export function TransferAccountPicker({
   return (
     <section
       aria-label={BILLING_ACCOUNTS}
-      className="flex w-full max-w-[477px] flex-col gap-5 rounded-xl border border-line bg-card p-4 sm:p-5"
+      className="flex w-full max-w-[477px] flex-col gap-5 rounded-lg border border-line bg-card p-4 sm:p-5"
     >
       <div>
         <h3 className="text-body-l font-semibold text-ink">{BILLING_ACCOUNTS}</h3>

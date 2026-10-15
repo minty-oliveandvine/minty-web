@@ -30,9 +30,9 @@ import { EXPIRY_INVALID, useAddCard, useEditCard } from "@/features/subscription
 // The card form keeps its narrower sheet (the card fields read best short), centred in the
 // page's 720 column.
 const SHEET =
-  "mx-auto flex w-full max-w-[490px] flex-col gap-4 rounded-xl border border-line bg-card p-4 sm:p-5";
+  "mx-auto flex w-full max-w-[490px] flex-col gap-4 rounded-lg border border-line bg-card p-4 sm:p-5";
 const FIELD =
-  "h-11 w-full rounded-xl border border-line-input bg-card px-3.5 text-body-m text-ink outline-none focus:border-line-selected";
+  "h-11 w-full rounded-lg border border-line-input bg-card px-3.5 text-body-m text-ink outline-none focus:border-line-selected";
 const LABEL = "text-label font-semibold text-ink";
 
 function MintyWithCards() {
@@ -175,14 +175,14 @@ export function EditCardScreen({
                 type="button"
                 onClick={edit.cancel}
                 disabled={edit.busy}
-                className="h-11 rounded-xl border border-line-selected bg-card px-4 text-body-m font-semibold text-link hover:bg-selected disabled:opacity-60"
+                className="h-11 rounded-lg border border-line-selected bg-card px-4 text-body-m font-semibold text-link hover:bg-selected disabled:opacity-60"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={edit.busy || !edit.dirty}
-                className="h-11 rounded-xl bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed disabled:bg-action-disabled disabled:text-ink-disabled"
+                className="h-11 rounded-lg bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed disabled:bg-action-disabled disabled:text-ink-disabled"
               >
                 {edit.busy ? "Saving…" : "Save changes"}
               </button>

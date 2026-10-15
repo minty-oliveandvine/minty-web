@@ -82,7 +82,7 @@ export function ModuleChoiceScreen({ entityId, entityName }: { entityId: string;
         {load.state === "failed" ? (
           <div className="text-center" role="alert">
             <p className="text-sm text-danger">{MODULE_CHOICE_COPY.failed}</p>
-            <button type="button" className="mt-2 min-h-11 rounded-xl px-2 text-body-m font-semibold text-link underline hover:bg-hover" onClick={() => setAttempt((n) => n + 1)}>
+            <button type="button" className="mt-2 min-h-11 rounded-lg px-2 text-body-m font-semibold text-link underline hover:bg-hover" onClick={() => setAttempt((n) => n + 1)}>
               {MODULE_CHOICE_COPY.retry}
             </button>
           </div>
