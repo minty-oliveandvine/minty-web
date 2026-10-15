@@ -85,7 +85,7 @@ describe("ChangeResultRow", () => {
       /is confirmed\. Billing starts the day its trial ends\./,
     );
     expect(lines).toHaveLength(1);
-    expect(within(lines[0]).getByText("Super Minty")).toHaveClass("text-[#161f2e]");
+    expect(within(lines[0]).getByText("Super Minty")).toHaveClass("text-ink");
     expect(
       within(row).getByText("Nothing charged today · HK$400 a month when the trial ends."),
     ).toBeInTheDocument();
@@ -118,7 +118,7 @@ describe("ChangeResultRow", () => {
     expect(within(row).getByRole("heading", { level: 4 })).toHaveTextContent(
       "Subscription updated",
     );
-    expect(within(row).getByRole("heading", { level: 4 })).toHaveClass("text-[#161f2e]");
+    expect(within(row).getByRole("heading", { level: 4 })).toHaveClass("text-ink");
     expect(within(row).getByText(/is scheduled to end on/)).toBeInTheDocument();
     expect(within(row).getByText(/is available now\./)).toBeInTheDocument();
     expect(within(row).getByText(/^HK\$280 until .*, then HK\$280 a month\.$/)).toBeInTheDocument();
@@ -141,13 +141,13 @@ describe("ChangeResultPage", () => {
     expect(page).toHaveAttribute("data-result", "module_cancelled");
     const heading = within(page).getByRole("heading", { level: 2 });
     expect(heading).toHaveTextContent("Petty Cash Cancellation Confirmed");
-    expect(within(heading).getByText("Petty Cash")).toHaveClass("text-[#ea9713]");
-    expect(within(page).getByText(entity.entity_name)).toHaveClass("text-[#ea9713]");
+    expect(within(heading).getByText("Petty Cash")).toHaveClass("text-ink");
+    expect(within(page).getByText(entity.entity_name)).toHaveClass("text-ink");
     expect(
       within(page).getByText(/We've received your cancellation request for/),
     ).toBeInTheDocument();
     const access = within(page).getByText(/You'll still have access until/);
-    expect(within(access).getByText(/\d{1,2} \w+ \d{4}/)).toHaveClass("text-[#333]");
+    expect(within(access).getByText(/\d{1,2} \w+ \d{4}/)).toHaveClass("text-ink");
     expect(within(page).getByText(/Changed your mind\? You can reactivate/)).toBeInTheDocument();
     expect(page.querySelector("img")).toHaveAttribute("src", "/portal/minty-heart.png");
     await userEvent.click(within(page).getByRole("button", { name: BACK_TO_LIST }));

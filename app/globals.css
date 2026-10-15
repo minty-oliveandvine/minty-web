@@ -1,42 +1,99 @@
 @import "tailwindcss";
+/* The faces, shared: @minty/shared/theme.css (--font-sans, --font-brand). Plain CSS resolved by
+   the bundler, like the icon font below - misspell it and the build fails. */
+@import "@minty/shared/theme.css";
+/* The Part 13 tokens, shared (colour roles, the radius scale - rounded-lg is 12px - type styles,
+   shadows). The packaged sidebar draws with them. minty-web's own --mv2-* names below are the
+   same values under this app's older utility names. */
+@import "@minty/shared/tokens.css";
 /* minty-payment-request-web's icon font (its Header, NavMenu and pills use these glyphs) */
-@import "material-symbols/outlined.css";
+@import "material-symbols/rounded.css";
+/* Tailwind v4 NEVER scans node_modules, so without this every utility class inside a packaged
+   component (the sidebar) is dropped from the generated CSS - unstyled, with no error anywhere.
+   Relative to this file, not the package name: Tailwind reads it as a path.
+   Guarded by app/__tests__/packagedStyles.test.ts - do not delete either. */
+@source "../node_modules/@minty/shared/src";
 
 /* Skeletal by decision (2026-09-21): a new frontend design replaces this. Only the tokens
    minty-payment-request-web also carries, so the two apps read the same until then. Nothing pixel-level
    is worth keeping; components/ take their look from here and nowhere else. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-  --muted: #6b7280;
-  --border: #e5e7eb;
-  --primary: #656565;
-  --secondary: #54d3da;
-  --danger: #b42318;
+  /* ── Minty v2 tokens (Part 13). Source of truth: Figma "Minty v2 · Semantic / Dimension". ── */
+  --mv2-surface-page: #ffffff;
+  --mv2-surface-card: #ffffff;
+  --mv2-surface-sunk: #f3f4f4;
+  --mv2-border-subtle: #e8eaea;
+  --mv2-border-default: #d9dcdb;
+  --mv2-border-input: #848c8c;
+  --mv2-border-selected: #1d8a90;
+  --mv2-border-focus: #19676b;
+  --mv2-text-primary: #242828;
+  --mv2-text-secondary: #535a5a;
+  --mv2-text-muted: #676f6f;
+  --mv2-text-disabled: #a3aaaa;
+  --mv2-text-link: #19676b;
+  --mv2-text-inverse: #ffffff;
+  --mv2-brand-primary: #54d3da;
+  --mv2-action-primary: #3cbcc3;
+  --mv2-action-primary-hover: #35b2b9;
+  --mv2-action-primary-pressed: #2fa4ab;
+  --mv2-action-secondary-border: #1d8a90;
+  --mv2-action-secondary-text: #19676b;
+  --mv2-action-danger: #c2363b;
+  --mv2-action-danger-hover: #a82a2f;
+  --mv2-action-disabled: #e8eaea;
+  --mv2-state-selected: #effafa;
+  --mv2-state-hover: #f3f4f4;
+  --mv2-success-bg: #dff4ec;
+  --mv2-success-ink: #0c5c42;
+  --mv2-warning-bg: #fdf0dc;
+  --mv2-warning-ink: #7e4e05;
+  --mv2-danger-bg: #fcecec;
+  --mv2-danger-ink: #a82a2f;
+  --mv2-info-bg: #e7f4fe;
+  --mv2-info-ink: #1b57b4;
+  --mv2-neutral-bg: #e8eaea;
+  --mv2-neutral-ink: #535a5a;
+  --mv2-module-petty: #f5b945; /* identity surfaces only */
+  --mv2-module-payment: #3aa6f5; /* identity surfaces only */
+  --mv2-scrim: rgba(17, 19, 19, 0.48);
+  --mv2-elevation-overlay: 0 2px 6px rgba(17, 19, 19, 0.05), 0 8px 24px rgba(17, 19, 19, 0.08);
+  --mv2-elevation-modal: 0 20px 48px rgba(17, 19, 19, 0.16);
+
+  --background: var(--mv2-surface-page);
+  --foreground: var(--mv2-text-primary);
+  --muted: var(--mv2-text-secondary);
+  --border: var(--mv2-border-default);
+  /* A grey used for text and icons, not a brand colour. */
+  --primary: var(--mv2-text-secondary);
+  --secondary: var(--mv2-brand-primary);
+  --danger: var(--mv2-danger-ink);
   /* The module settings page (Figma 43YI3MYtTfX5Xzz6dRoRuT, section 03): the first screen with a
      design. Components read these, never a hex, so a retheme is this block. */
-  --accent: #f15a24;
-  --teal-strong: #18c4c7;
-  --info: #2374f2;
-  --ink: #16202e;
-  --ink-soft: #757575;
-  --quiet: #a0a8b2;
-  --pill: #e5e7eb;
-  --pill-text: #374151;
-  --card-live: #f5ffff;
-  --tile-petty: #fff7ec;
-  --avatar-bg: #ffe6b1;
-  --avatar-fg: #6b3a12;
-  --alert-bg: #fff5f5;
-  --alert-border: #f3b6ad;
-  --alert-icon: #d92d20;
-  /* Inter from next/font (--font-inter on <html className>), as minty-payment-request-web */
-  --font-sans:
-    var(--font-inter), ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
-  --font-mono: ui-monospace, monospace;
-  /* AppHeader's height (its row is h-16 / sm:h-18, plus the 1px border and the notch): what a
+  /* Was orange; every use is an urgency cue (trial ending, cancellation pending), so warning. */
+  --accent: var(--mv2-warning-ink);
+  --teal-strong: var(--mv2-action-primary);
+  --info: var(--mv2-info-ink);
+  --ink: var(--mv2-text-primary);
+  --ink-soft: var(--mv2-text-secondary);
+  --quiet: var(--mv2-text-muted);
+  --pill: var(--mv2-neutral-bg);
+  --pill-text: var(--mv2-neutral-ink);
+  --card-live: var(--mv2-state-selected);
+  --tile-petty: color-mix(in srgb, var(--mv2-module-petty) 14%, white);
+  /* Part 13's avatar accent, the one the packaged sidebar draws its initials in - so the header
+     badge, the menu and My Profile show one colour. */
+  --avatar-bg: var(--color-accent-avatar-bg);
+  --avatar-fg: var(--color-accent-avatar-ink);
+  --alert-bg: var(--mv2-danger-bg);
+  --alert-border: var(--mv2-danger-ink);
+  --alert-icon: var(--mv2-danger-ink);
+  /* AppHeader's height (its row is h-14 / sm:h-15, plus the 1px border and the notch): what a
      bar that sticks UNDER the sticky header uses as its top. Change the two together. */
-  --app-header-h: calc(4rem + 1px + env(safe-area-inset-top, 0px));
+  --app-header-h: calc(3.5rem + 1px + env(safe-area-inset-top, 0px));
+  /* The portal page's content width (Part 15.G). Each page's column says its own width with
+     `data-portal-col`; the header's back line (PortalBackSlot) reads this to line up with it. */
+  --portal-col: 1200px;
   /* Manage Subscriptions' search band, sticking under the header: SearchField's 62px plus the
      band's py-3. A row scrolled to the top clears both (`--list-sticky-top`). Change together. */
   --list-search-h: calc(62px + 1.5rem);
@@ -45,31 +102,68 @@
 
 @media (width >= 40rem) {
   :root {
-    --app-header-h: calc(4.5rem + 1px + env(safe-area-inset-top, 0px));
+    --app-header-h: calc(3.75rem + 1px + env(safe-area-inset-top, 0px));
   }
+}
+
+:root:has([data-portal-col="960"]) {
+  --portal-col: 960px;
+}
+:root:has([data-portal-col="720"]) {
+  --portal-col: 720px;
+}
+:root:has([data-portal-col="640"]) {
+  --portal-col: 640px;
 }
 
 @theme {
   --color-primary: var(--primary);
   --color-secondary: var(--secondary);
   --color-muted: var(--muted);
-  --color-danger: var(--danger);
   --color-accent: var(--accent);
   --color-teal-strong: var(--teal-strong);
-  --color-info: var(--info);
-  --color-ink: var(--ink);
   --color-ink-soft: var(--ink-soft);
   --color-quiet: var(--quiet);
+
+  /* Minty v2 utilities: components use these names, never a hex. */
+  --color-canvas: var(--mv2-surface-page);
+  --color-card: var(--mv2-surface-card);
+  --color-sunk: var(--mv2-surface-sunk);
+  --color-line-subtle: var(--mv2-border-subtle);
+  --color-line: var(--mv2-border-default);
+  --color-line-input: var(--mv2-border-input);
+  --color-line-selected: var(--mv2-border-selected);
+  --color-ink: var(--mv2-text-primary);
+  --color-ink-2: var(--mv2-text-secondary);
+  --color-ink-muted: var(--mv2-text-muted);
+  --color-ink-disabled: var(--mv2-text-disabled);
+  --color-link: var(--mv2-text-link);
+  --color-brand: var(--mv2-brand-primary);
+  --color-action: var(--mv2-action-primary);
+  --color-action-hover: var(--mv2-action-primary-hover);
+  --color-action-pressed: var(--mv2-action-primary-pressed);
+  --color-selected: var(--mv2-state-selected);
+  --color-hover: var(--mv2-state-hover);
+  --color-success: var(--mv2-success-ink);
+  --color-success-bg: var(--mv2-success-bg);
+  --color-warning: var(--mv2-warning-ink);
+  --color-warning-bg: var(--mv2-warning-bg);
+  --color-danger: var(--mv2-danger-ink);
+  --color-danger-bg: var(--mv2-danger-bg);
+  --color-danger-action: var(--mv2-action-danger);
+  --color-info: var(--mv2-info-ink);
+  --color-info-bg: var(--mv2-info-bg);
+  --color-neutral: var(--mv2-neutral-ink);
+  --color-neutral-bg: var(--mv2-neutral-bg);
+  /* These two replace tokens.css's (Part 13 gives no values; each app's are an assumption), so the
+     packaged sidebar draws minty-web's elevation here too. The type styles, the radius scale and
+     --color-action-disabled come from tokens.css. */
+  --shadow-overlay: var(--mv2-elevation-overlay);
+  --shadow-modal: var(--mv2-elevation-modal);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-    --muted: #9ca3af;
-    --border: #262626;
-  }
-}
+/* No dark block: the old one flipped four variables and left the rest light, so dark-OS users
+   got unreadable mixes. Dark mode is a later, complete pass (Part 13 D-24). */
 
 html,
 body {
@@ -81,6 +175,6 @@ body {
 
 /* Every screen is reachable by keyboard; the ring is the one thing the design pass may not remove. */
 :focus-visible {
-  outline: 2px solid var(--secondary);
+  outline: 2px solid var(--mv2-border-focus);
   outline-offset: 2px;
 }

@@ -64,7 +64,7 @@ import {
 import type { SetupIntentState } from "@/features/subscription/hooks/useCardForm";
 import { CARD_MANDATE, STRIPE_NOTE } from "@/features/subscription/lib/billing";
 import { SAVE_BILLING_ACCOUNT } from "@/features/subscription/lib/billingAccounts";
-import { stripeFor } from "@/features/subscription/lib/stripe";
+import { STRIPE_FONTS, stripeFor } from "@/features/subscription/lib/stripe";
 
 export const CARD_SAVE_FAILED =
   "The card was saved with our payment provider, but we couldn't finish adding it. Refresh and check before trying again.";
@@ -81,25 +81,28 @@ export type CardFormLook = "page" | "sheet";
  * cross-origin iframe no stylesheet of ours reaches. Frozen at module scope, as are the options
  * below - a new object identity on every render is a changed prop to Stripe.
  */
+// Literals that mirror the --mv2-* tokens in app/globals.css (text-primary, text-muted,
+// danger-ink, border-input, border-focus): the iframe cannot read our CSS variables.
 const SHEET_APPEARANCE: Appearance = {
   theme: "stripe",
   variables: {
     fontFamily: "Inter, system-ui, -apple-system, sans-serif",
     fontSizeBase: "14px",
-    colorText: "#16202E",
-    colorTextPlaceholder: "#9AA6AC",
-    colorDanger: "#b4231f",
-    borderRadius: "8px",
+    colorText: "#242828",
+    colorTextPlaceholder: "#676F6F",
+    colorPrimary: "#19676B",
+    colorDanger: "#A82A2F",
+    borderRadius: "12px",
     spacingUnit: "4px",
   },
   rules: {
-    ".Input": { border: "1px solid #D7DEE2", boxShadow: "none", padding: "12px 14px" },
+    ".Input": { border: "1px solid #848C8C", boxShadow: "none", padding: "12px 14px" },
     ".Input:focus": {
-      border: "1px solid #4FC7C7",
-      boxShadow: "0 0 0 3px rgba(79, 199, 199, 0.18)",
+      border: "1px solid #19676B",
+      boxShadow: "0 0 0 2px #19676B",
       outline: "none",
     },
-    ".Label": { fontWeight: "600", fontSize: "13px", color: "#16202E" },
+    ".Label": { fontWeight: "500", fontSize: "14px", color: "#242828" },
   },
 };
 
@@ -115,6 +118,22 @@ const ADDRESS_ELEMENT_OPTIONS: StripeAddressElementOptions = {
   mode: "billing",
   display: { name: "full" },
 };
+
+/**
+ * The address form starting on `country` when there is one - left to itself Stripe guesses from
+ * the browser's location, so a Hong Kong payer on a US-set browser met "United States". Stable
+ * per country: a new options object each render would have Stripe update the element each time.
+ * Anything but an ISO alpha-2 code leaves Stripe's guess alone.
+ */
+function useAddressOptions(country?: string | null): StripeAddressElementOptions {
+  return useMemo(
+    () =>
+      country && /^[A-Z]{2}$/.test(country)
+        ? { ...ADDRESS_ELEMENT_OPTIONS, defaultValues: { address: { country } } }
+        : ADDRESS_ELEMENT_OPTIONS,
+    [country],
+  );
+}
 
 /** What the screens around the form may add to it (the new billing account's two fields). */
 export type CardFormExtras = {
@@ -137,6 +156,8 @@ export type CardFormExtras = {
   account?: BillingAccountChoice | null;
   /** Told when a save starts, and when it stops without the form going away (it failed). */
   onBusy?: (busy: boolean) => void;
+  /** Where the address starts (ISO alpha-2): the account's own country, when one is known. */
+  country?: string | null;
 };
 
 type SavedCallback = (
@@ -255,6 +276,7 @@ function useCardConfirm({ setupIntent, onSaved, beforeConfirm, account, onBusy }
 /** 08-Y / 08-E / 07-E. */
 function PageForm(props: FormProps) {
   const form = useCardConfirm(props);
+  const addressOptions = useAddressOptions(props.country);
   return (
     <form onSubmit={form.submit} className="flex flex-col gap-4">
       {props.fields?.(form.busy)}
@@ -263,37 +285,37 @@ function PageForm(props: FormProps) {
         onLoadError={form.onLoadError}
         options={PAYMENT_ELEMENT_OPTIONS}
       />
-      <AddressElement options={ADDRESS_ELEMENT_OPTIONS} onChange={form.onAddressChange} />
+      <AddressElement options={addressOptions} onChange={form.onAddressChange} />
       {props.firstCard && (
-        <p className="text-[13px] text-[#6b7380]">
+        <p className="text-body-s text-ink-2">
           This is the first payment method on your billing account, so it is the one card pickers
           will offer first.
         </p>
       )}
-      <p className="text-[13px] leading-relaxed text-[#8b93a0]">
+      <p className="text-body-s leading-relaxed text-ink-2">
         {CARD_MANDATE}
       </p>
       {form.error && (
         <p
           role="alert"
-          className="rounded-lg border border-[#f3c2c2] bg-[#fdf3f3] px-4 py-3 text-[13px] text-[#b42318]"
+          className="rounded-lg border border-transparent bg-danger-bg px-4 py-3 text-body-s text-danger"
         >
           {form.error}
         </p>
       )}
-      <div className="flex justify-end gap-3">
+      <div className="flex justify-end gap-3 max-sm:flex-col-reverse max-sm:[&>*]:w-full">
         <button
           type="button"
           onClick={props.onCancel}
           disabled={form.busy}
-          className="h-[44px] w-[104px] rounded-lg border border-[#d8dee4] bg-white text-[15px] font-semibold text-[#292e38] hover:bg-[#f5f7fa] disabled:opacity-60"
+          className="h-11 rounded-lg border border-line-selected bg-card px-4 text-body-m font-semibold text-link hover:bg-selected disabled:opacity-60"
         >
           Cancel
         </button>
         <button
           type="submit"
           disabled={!form.canSubmit}
-          className="h-[44px] w-[114px] rounded-lg bg-[#4fc7c7] text-[15px] font-semibold text-white hover:opacity-90 disabled:opacity-60"
+          className="h-11 rounded-lg bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed disabled:bg-action-disabled disabled:text-ink-disabled"
         >
           {form.busy ? "Saving…" : "Save"}
         </button>
@@ -308,6 +330,7 @@ function PageForm(props: FormProps) {
  */
 function SheetForm(props: FormProps) {
   const form = useCardConfirm(props);
+  const addressOptions = useAddressOptions(props.country);
   return (
     <form onSubmit={form.submit} noValidate className="mt-1">
       {props.fields?.(form.busy)}
@@ -318,18 +341,18 @@ function SheetForm(props: FormProps) {
             Payment method
             <RequiredMark />
           </span>
-        <div className="rounded-[10px] border border-[#d7dee2] p-4">
+        <div className="rounded-lg border border-line p-4">
           <PaymentElement
             onReady={form.onReady}
             onLoadError={form.onLoadError}
             options={PAYMENT_ELEMENT_OPTIONS}
           />
           <div className="mt-4">
-            <AddressElement options={ADDRESS_ELEMENT_OPTIONS} onChange={form.onAddressChange} />
+            <AddressElement options={addressOptions} onChange={form.onAddressChange} />
           </div>
         </div>
       </div>
-      <p className="mt-6 text-[12.5px] leading-normal text-[#6b7a80] [overflow-wrap:anywhere]">
+      <p className="mt-6 text-label leading-normal text-ink-muted [overflow-wrap:anywhere]">
         {CARD_MANDATE}
       </p>
       {form.error && (
@@ -380,7 +403,9 @@ export function CardCaptureForm({
   const options = useMemo(
     () =>
       look === "sheet"
-        ? { clientSecret: handle.client_secret, appearance: SHEET_APPEARANCE }
+        ? // `fonts` goes with the appearance: it is what actually delivers the Inter the
+          // appearance asks for (see STRIPE_FONTS). The page look names no face, so it needs none.
+          { clientSecret: handle.client_secret, appearance: SHEET_APPEARANCE, fonts: STRIPE_FONTS }
         : { clientSecret: handle.client_secret },
     [look, handle.client_secret],
   );
@@ -391,7 +416,7 @@ export function CardCaptureForm({
     return (
       <p
         role="status"
-        className={look === "sheet" ? SHEET_LOADING : "text-[15px] text-[#8b93a0]"}
+        className={look === "sheet" ? SHEET_LOADING : "text-body-l text-ink-muted"}
       >
         {STRIPE_NOTE}
       </p>
@@ -460,21 +485,21 @@ export function CardCapturePanel({
     }
     return (
       <div className="flex flex-col items-start gap-3">
-        <p role="alert" className="text-[15px] text-[#b42318]">
+        <p role="alert" className="text-body-l text-danger">
           {setup.error}
         </p>
         <div className="flex gap-3">
           <button
             type="button"
             onClick={onCancel}
-            className="h-[44px] w-[104px] rounded-lg border border-[#d8dee4] bg-white text-[15px] font-semibold text-[#292e38]"
+            className="h-11 rounded-lg border border-line-selected bg-card px-4 text-body-m font-semibold text-link hover:bg-selected"
           >
             Cancel
           </button>
           <button
             type="button"
             onClick={setup.retry}
-            className="h-[44px] w-[114px] rounded-lg bg-[#4fc7c7] text-[15px] font-semibold text-white"
+            className="h-11 rounded-lg bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed"
           >
             Try again
           </button>
@@ -488,7 +513,7 @@ export function CardCapturePanel({
       <p
         role="status"
         className={
-          look === "sheet" ? SHEET_LOADING : "py-6 text-center text-[15px] text-[#8b93a0]"
+          look === "sheet" ? SHEET_LOADING : "py-6 text-center text-body-l text-ink-muted"
         }
       >
         {OPENING_CARD_FORM}

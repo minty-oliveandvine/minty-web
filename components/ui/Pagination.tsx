@@ -22,10 +22,10 @@ export function Pagination({
   const start = Math.max(1, Math.min(page - Math.floor(size / 2), pages - size + 1));
   const numbers = Array.from({ length: Math.min(size, pages) }, (_, i) => start + i);
   const box =
-    "inline-flex h-8 min-w-8 items-center justify-center rounded border border-[var(--border)] px-2 text-sm disabled:opacity-40";
+    "inline-flex size-11 items-center justify-center rounded-lg border border-line bg-card px-2 text-body-m text-ink hover:bg-hover disabled:opacity-40 disabled:hover:bg-card";
 
   return (
-    <nav className="flex items-center gap-1.5" aria-label="Pagination">
+    <nav className="flex items-center gap-2" aria-label="Pagination">
       <button
         type="button"
         className={box}
@@ -39,7 +39,7 @@ export function Pagination({
         <button
           key={n}
           type="button"
-          className={`${box} ${n === page ? "font-semibold underline" : ""}`}
+          className={`${box} ${n === page ? "border-line-selected bg-selected font-semibold text-link hover:bg-selected" : ""}`}
           onClick={() => onChange(n)}
           aria-current={n === page ? "page" : undefined}
         >

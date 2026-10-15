@@ -5,7 +5,7 @@
  * the profile opens in the sidebar instead (`ProfilePanel`); the page stays for Minty's `/profile`
  * router and the links that still use it (the payments app's portal crumbs, a header without
  * scripts) - both other apps open a copy of the sidebar's My Profile in place since 2026-09-30. One column, the design's own 375 px on a
- * phone, centred at up to 560 px wider than that (the design has no desktop frame: "only the
+ * phone, centred at up to 720 px wider than that (the design has no desktop frame: "only the
  * profile exists at 375").
  *
  * `subscriptions` is the slot between the details card and Log Out: the "Subscriptions
@@ -29,11 +29,13 @@ export function ProfileScreen({ subscriptions, ...args }: ProfileScreenProps) {
   const p = useProfile(args);
 
   return (
-    <div className="flex min-h-dvh flex-col bg-[#f9fafb]">
+    <div className="flex min-h-dvh flex-col bg-canvas">
       <ProfileTitlebar back={backHref(p.entityId)} />
-      <main className="mx-auto flex w-full max-w-[560px] flex-col px-4 pb-10">
-        <ProfileBody model={p} subscriptions={subscriptions} />
-      </main>
+      <div className="px-4 sm:px-6 lg:px-8">
+        <main className="mx-auto flex w-full max-w-[720px] flex-col pb-10">
+          <ProfileBody model={p} subscriptions={subscriptions} />
+        </main>
+      </div>
     </div>
   );
 }

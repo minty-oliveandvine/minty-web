@@ -277,18 +277,33 @@ describe("IntegrationScreen", () => {
 
     expect(await screen.findByText("Connected")).toBeInTheDocument();
     expect(screen.getByText("Olive Shop Ltd")).toBeInTheDocument();
+    const lastConnected = screen.getByText(/^Last connected: /).textContent;
+    expect(lastConnected).not.toContain("N/A");
     await userEvent.click(screen.getByRole("button", { name: "Disconnect" }));
     await userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Disconnect" }));
 
+    // Disconnected, but it was connected once: the date stays and the way back is a Reconnect.
     expect(await screen.findByText("You're disconnected from Xero.")).toBeInTheDocument();
     expect(screen.getByText("Not connected")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Connect to Xero" })).toHaveAttribute(
+    expect(screen.getByText(/^Last connected: /)).toHaveTextContent(lastConnected ?? "");
+    expect(screen.getByRole("link", { name: "Reconnect to Xero" })).toHaveAttribute(
       "href",
       expect.stringContaining(`${env.PETTY_CASH_URL}/entity/${ID}/enter?token=`),
     );
-    expect(screen.getByRole("link", { name: "Connect to Xero" }).getAttribute("href")).toContain(
+    expect(screen.getByRole("link", { name: "Reconnect to Xero" }).getAttribute("href")).toContain(
       encodeURIComponent(`/xero_reconnect?entity_id=${ID}`),
     );
+  });
+
+  it("a company never connected says N/A and offers Connect", async () => {
+    flask({
+      "GET /api/me/company/integration": () =>
+        json({ ...INTEGRATION, xero: { status: "disconnected", connected: false, needs_reconnect: false, organisation: null, last_connected_at: null } }),
+    });
+    showIntegration();
+
+    expect(await screen.findByText("Last connected: N/A")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Connect to Xero" })).toBeInTheDocument();
   });
 
   it("a connection revoked at Xero asks for a reconnect", async () => {
@@ -340,7 +355,7 @@ describe("IntegrationScreen", () => {
     showIntegration();
 
     await userEvent.selectOptions(await screen.findByLabelText(/^Country\s*\*?$/), "SG");
-    await userEvent.click(screen.getByRole("link", { name: "Connect to Xero" }));
+    await userEvent.click(screen.getByRole("link", { name: "Reconnect to Xero" }));
     expect(screen.getByRole("dialog")).toHaveAccessibleName(LEAVE_TITLE);
     await userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: GO_BACK_UPPER }));
 
@@ -422,7 +437,7 @@ describe("IntegrationScreen", () => {
     flask({ "GET /api/me/company/integration": (url) => json({ ...REFUSED, xero_conflict: url.searchParams.get("xero_conflict") ? HELD : null }) });
     showIntegration();
 
-    await screen.findByRole("link", { name: "Connect to Xero" });
+    await screen.findByRole("link", { name: "Reconnect to Xero" });
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 

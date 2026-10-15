@@ -13,6 +13,23 @@
 import { loadStripe } from "@stripe/stripe-js/pure";
 import type { Stripe } from "@stripe/stripe-js";
 
+/**
+ * The face the appearances here name, handed to the iframe that has to render it.
+ *
+ * `appearance.variables.fontFamily: "Inter, ..."` on its own is a request for a font the iframe
+ * does not have: the fields are a cross-origin document, so ours is the one stylesheet that
+ * cannot reach them, and the name silently resolved to the system face. `fonts` is the only way
+ * in. It has to be a URL, not our own copy - minty-web self-hosts Inter through next/font and
+ * those files are not reachable from inside the iframe - so this is Google's, the same copy
+ * minty-onboarding-web loads for its whole app.
+ *
+ * Only the weights the fields use (the label is 600). Module scope, like the appearances: a new
+ * object identity on every render is a changed prop to Stripe.
+ */
+export const STRIPE_FONTS = [
+  { cssSrc: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" },
+];
+
 const stripeByKey = new Map<string, Promise<Stripe | null>>();
 
 export function stripeFor(key: string): Promise<Stripe | null> {

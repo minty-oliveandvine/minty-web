@@ -7,6 +7,7 @@ import { NextResponse } from "next/server";
 import { AUTH_COOKIE_NAME } from "@/lib/auth";
 import { handoffUrl } from "@/lib/handoff";
 import { isOpenPath } from "@/lib/hubPaths";
+import { previewSetSlug } from "@/lib/previewSibling";
 
 /**
  * One gate - THE COOKIE. Every page but the landing, sign-in and the maintenance page
@@ -36,7 +37,7 @@ export function proxy(request: NextRequest) {
 
   const token = request.cookies.get(AUTH_COOKIE_NAME)?.value;
   if (!token) {
-    return NextResponse.redirect(handoffUrl(pathname + search));
+    return toFlask(request, handoffUrl(pathname + search, undefined, request.nextUrl.origin));
   }
 
   return NextResponse.next();
@@ -82,3 +83,19 @@ export function movedModulePage(pathname: string): string | null {
 export const config = {
   matcher: ["/((?!_next|api|.*\\..*).*)"],
 };
+
+/**
+ * Off to Flask. A plain redirect - except on a branch preview-set host, where the trip has to
+ * START on a page of this host: a visitor arriving from a link on GitHub or in an email makes
+ * the whole redirect chain cross-site, and Flask names a preview set only on a same-site
+ * navigation (Minty blueprints/shared/preview_origin.py), so it would hand back to the
+ * configured hub instead of the set. A meta refresh is navigated by the page itself.
+ */
+export function toFlask(request: NextRequest, url: string): NextResponse {
+  if (previewSetSlug(request.nextUrl.host) === null) return NextResponse.redirect(url);
+  const attr = url.replaceAll("&", "&amp;").replaceAll('"', "&quot;").replaceAll("<", "&lt;");
+  return new NextResponse(
+    `<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="0;url=${attr}"><title>Minty</title>`,
+    { status: 200, headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } },
+  );
+}

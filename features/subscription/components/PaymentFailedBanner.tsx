@@ -13,15 +13,15 @@ export function PaymentFailedBanner({
   return (
     <div
       role="alert"
-      className="mx-auto flex w-full max-w-[718px] items-center gap-4 rounded-xl border border-[var(--alert-border)] bg-[var(--alert-bg)] px-4 py-3 sm:gap-6 sm:px-8 text-base text-black"
+      className="flex w-full items-center gap-3 rounded-lg border border-transparent bg-danger-bg px-4 py-3 text-body-m text-danger"
     >
-      <Icon name="warning" size={40} className="shrink-0 text-[var(--alert-icon)]" />
-      <p className="flex-1 text-center">
+      <Icon name="warning" size={24} className="shrink-0 text-danger" />
+      <p className="flex-1">
         Payment failed. Update your payment method{" "}
         <button
           type="button"
           onClick={onUpdatePaymentMethod}
-          className="font-medium text-secondary underline-offset-2 hover:underline"
+          className="-mx-1 inline-flex min-h-11 items-center rounded-lg px-1 font-semibold text-link underline underline-offset-2 hover:bg-hover"
         >
           here
         </button>

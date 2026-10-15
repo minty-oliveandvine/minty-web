@@ -46,7 +46,7 @@ export function PaymentFailedDialog({
     <ConfirmDialog
       title={<span data-modal="payment_failed">{PAYMENT_FAILED_TITLE}</span>}
       image="payment_failed"
-      lead={card ? <p className="text-[#ea9713]">{card}</p> : null}
+      lead={card ? <p className="font-semibold text-ink">{card}</p> : null}
       busy={busy}
       confirmLabel={DONE}
       confirmTone="teal"

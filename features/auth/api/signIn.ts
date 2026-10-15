@@ -10,7 +10,9 @@
 
 import { ApiError, HOUSE_FALLBACK } from "@/lib/apiClient";
 import { env } from "@/lib/env";
-import type { OwedTerms } from "@/lib/terms";
+import { withReturnOrigin } from "@/lib/handoff";
+import { fetchLegalDocument } from "@/lib/legal/client";
+import { TERMS, type LegalDocumentBody } from "@/lib/legal/document";
 
 import type { ConfirmContext } from "@/features/auth/lib/handover";
 
@@ -75,7 +77,7 @@ export async function verifyCode(context: ConfirmContext, code: string): Promise
     terms_version: context.termsVersion,
     next: context.next,
   });
-  return flaskDestination(answer.redirect_url);
+  return withReturnOrigin(flaskDestination(answer.redirect_url));
 }
 
 export function flaskDestination(redirectUrl: unknown): string {
@@ -98,7 +100,7 @@ export function xeroSignInUrl(args: { invite?: string; next?: string }): string 
   if (args.invite) qs.set("invite", args.invite);
   if (args.next) qs.set("next", args.next);
   const query = qs.toString();
-  return `${env.PETTY_CASH_URL}/xero_auth${query ? `?${query}` : ""}`;
+  return withReturnOrigin(`${env.PETTY_CASH_URL}/xero_auth${query ? `?${query}` : ""}`);
 }
 
 export type SignInNotice = { category: "success" | "error" | "warning" | "info"; message: string };
@@ -120,22 +122,25 @@ export async function inviteOwesTerms(invite: string): Promise<boolean> {
   return answer.terms_required !== false;
 }
 
-/** The live Terms, for the sign-up's read-to-agree panel (`components/ui/TermsModal`). */
-export async function signUpTerms(): Promise<OwedTerms> {
-  const doc = await call("/legal/content/terms");
-  if (typeof doc.version !== "string" || typeof doc.html !== "string") {
-    throw new ApiError(500, HOUSE_FALLBACK, doc);
+/**
+ * The live Terms, for the sign-up's read-to-agree panel (`components/ui/TermsModal`).
+ *
+ * Two reads, as the gate makes (`components/ui/TermsGate.tsx`): Flask names the live version
+ * (`/legal/current` - it decides which version a consent row may name, and refuses a sign-up
+ * carrying any other), then this app supplies that version's text from its own registry
+ * (`lib/legal/`, since 2026-10-12). A version Flask names and this app does not hold means the
+ * two are deployed out of step: refuse loudly rather than show wording the account could not be
+ * created against.
+ */
+export async function signUpTerms(): Promise<LegalDocumentBody> {
+  const live = await call("/legal/current");
+  if (typeof live.terms_version !== "string") {
+    throw new ApiError(500, HOUSE_FALLBACK, live);
   }
-  return {
-    owed: true,
-    document: {
-      version: doc.version,
-      effective_date: typeof doc.effective_date === "string" ? doc.effective_date : null,
-      html: doc.html,
-      show_draft_notice: doc.is_pinned === false,
-    },
-    is_update: false,
-    previous_version: null,
-    links: { terms: "/legal/terms", privacy: "/legal/privacy", previous: null },
-  };
+  try {
+    return await fetchLegalDocument(TERMS, live.terms_version);
+  } catch (err) {
+    console.error(`[sign-in] Flask names Terms ${live.terms_version}, which this app does not hold`, err);
+    throw new ApiError(500, HOUSE_FALLBACK, live);
+  }
 }

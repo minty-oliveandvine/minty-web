@@ -21,9 +21,9 @@ import { useEffect, useState, type FormEvent } from "react";
 import { RequiredMark } from "@/components/ui/RequiredMark";
 import { TermsModal } from "@/components/ui/TermsModal";
 import { ApiError } from "@/lib/apiClient";
-import { EMAIL_ASCII_HINT, isEmail, useEmailInput } from "@/lib/emailInput";
-import { env } from "@/lib/env";
-import type { OwedTerms } from "@/lib/terms";
+import { EMAIL_ASCII_HINT, isEmail, useEmailInput } from "@minty/shared/emailInput";
+import type { LegalDocumentBody } from "@/lib/legal/document";
+import { LEGAL_PATHS } from "@/lib/legal/paths";
 
 import { requestCode, inviteOwesTerms, signUpTerms, xeroSignInUrl } from "@/features/auth/api/signIn";
 import {
@@ -55,7 +55,6 @@ export const LOGIN_COPY = {
   termsUnavailable: "I couldn't load the Terms of Use just now. Mind trying again?",
 } as const;
 
-const noop = () => {};
 
 export function LoginScreen({ arrival }: { arrival: Arrival }) {
   const router = useRouter();
@@ -79,7 +78,7 @@ export function LoginScreen({ arrival }: { arrival: Arrival }) {
 
   // The Terms: owed on sign-up always; on an invitation unless Flask says this invitee agreed.
   const [termsOwed, setTermsOwed] = useState(signup || invited);
-  const [terms, setTerms] = useState<OwedTerms | null>(null);
+  const [terms, setTerms] = useState<LegalDocumentBody | null>(null);
   const [termsOpen, setTermsOpen] = useState(false);
   const [agreedVersion, setAgreedVersion] = useState("");
   useEffect(() => {
@@ -147,7 +146,7 @@ export function LoginScreen({ arrival }: { arrival: Arrival }) {
       />
 
       {invited && arrival.email ? (
-        <div className="rounded-lg border border-secondary/40 bg-[#f5ffff] px-3.5 py-3 text-[13.5px] leading-normal text-ink" role="status">
+        <div className="rounded-lg border border-line-selected bg-selected px-3.5 py-3 text-body-s leading-normal text-ink" role="status">
           This invitation was sent to <strong className="font-semibold">{arrival.email}</strong>. Please
           sign in with that account to accept it.
         </div>
@@ -205,19 +204,19 @@ export function LoginScreen({ arrival }: { arrival: Arrival }) {
             title={emailLocked ? "This invite was sent to this address" : undefined}
           />
           {emailInput.rejected ? (
-            <p className="mt-1.5 text-[12.5px] text-danger" role="status">
+            <p className="mt-1.5 text-label text-danger" role="status">
               {EMAIL_ASCII_HINT}
             </p>
           ) : null}
         </div>
 
         {termsOwed ? (
-          <label className="flex cursor-pointer items-start gap-2 text-[13.5px] leading-normal text-ink">
+          <label className="flex min-h-11 cursor-pointer items-start gap-2 text-body-s leading-normal text-ink">
             {/* Never ticked directly - a box ticked without reading is not agreement. Clicking
                 opens the document; agreeing at its end ticks it. Unticking is always allowed. */}
             <input
               type="checkbox"
-              className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--teal-strong)]"
+              className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--mv2-border-selected)]"
               checked={Boolean(agreedVersion)}
               onChange={() => {
                 if (agreedVersion) setAgreedVersion("");
@@ -226,11 +225,11 @@ export function LoginScreen({ arrival }: { arrival: Arrival }) {
             />
             <span>
               I agree to the{" "}
-              <a className={AUTH_LINK} href={`${env.PETTY_CASH_URL}/legal/terms`} target="_blank" rel="noopener noreferrer">
+              <a className={AUTH_LINK} href={LEGAL_PATHS.terms} target="_blank" rel="noopener noreferrer">
                 Terms of Use
               </a>{" "}
               and{" "}
-              <a className={AUTH_LINK} href={`${env.PETTY_CASH_URL}/legal/privacy`} target="_blank" rel="noopener noreferrer">
+              <a className={AUTH_LINK} href={LEGAL_PATHS.privacy} target="_blank" rel="noopener noreferrer">
                 Privacy Policy
               </a>
               .
@@ -248,10 +247,10 @@ export function LoginScreen({ arrival }: { arrival: Arrival }) {
         ) : null}
       </form>
 
-      <div className="flex items-center gap-3 text-[13px] text-muted" role="separator">
-        <span className="h-px flex-1 bg-gray-200" />
+      <div className="flex items-center gap-3 text-body-s text-ink-2" role="separator">
+        <span className="h-px flex-1 bg-line-subtle" />
         or
-        <span className="h-px flex-1 bg-gray-200" />
+        <span className="h-px flex-1 bg-line-subtle" />
       </div>
 
       <a className={AUTH_GHOST} href={xeroSignInUrl({ invite: arrival.invite, next: arrival.next })}>
@@ -259,7 +258,7 @@ export function LoginScreen({ arrival }: { arrival: Arrival }) {
         <Image src="/auth/xero-logo.webp" alt="" width={20} height={20} unoptimized className="h-5 w-5 rounded-full object-cover" />
       </a>
 
-      <p className="text-center text-sm text-ink-soft">
+      <p className="text-center text-sm text-ink-2">
         {signup ? (
           <>
             Already have an account?{" "}
@@ -279,10 +278,9 @@ export function LoginScreen({ arrival }: { arrival: Arrival }) {
 
       {termsOpen && terms ? (
         <TermsModal
-          terms={terms}
+          document={terms}
           agree={async (version) => setAgreedVersion(version)}
           onAccepted={() => setTermsOpen(false)}
-          onChanged={noop}
           onCancel={() => setTermsOpen(false)}
         />
       ) : null}

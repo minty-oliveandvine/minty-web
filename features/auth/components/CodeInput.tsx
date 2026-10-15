@@ -76,7 +76,7 @@ export function CodeInput({
             e.preventDefault();
             fillFrom(pasted.length >= CODE_LENGTH ? 0 : i, pasted);
           }}
-          className="h-14 w-full min-w-0 max-w-[52px] rounded-lg border border-gray-300 text-center text-xl font-semibold text-ink focus:border-secondary focus:outline-none focus:ring-2 focus:ring-secondary/30 disabled:bg-gray-50"
+          className="h-14 w-full min-w-0 max-w-[52px] rounded-lg border border-line-input text-center text-title-l font-semibold text-ink focus:border-line-selected focus:outline-none focus:ring-2 focus:ring-line-selected/25 disabled:bg-sunk"
         />
       ))}
     </div>

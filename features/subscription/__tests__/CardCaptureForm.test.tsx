@@ -237,7 +237,7 @@ describe("CardCaptureForm", () => {
     expect(screen.getByText(/you authorise Minty to charge/)).toBeInTheDocument();
     expect(fake.options.at(-1)).toMatchObject({
       clientSecret: "seti_1_secret",
-      appearance: { variables: { colorText: "#16202E", borderRadius: "8px" } },
+      appearance: { variables: { colorText: "#242828", borderRadius: "12px" } },
     });
 
     await save(user);

@@ -62,7 +62,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     <ToastContext.Provider value={value}>
       {children}
       <div
-        className="pointer-events-none fixed right-4 top-4 z-50 flex w-80 max-w-[calc(100vw-2rem)] flex-col gap-2"
+        className="pointer-events-none fixed bottom-4 left-1/2 z-50 flex w-[min(480px,calc(100vw-2rem))] -translate-x-1/2 flex-col gap-2 sm:bottom-6 sm:left-6 sm:translate-x-0"
         aria-live="polite"
         aria-atomic="false"
       >
@@ -71,17 +71,17 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             key={t.id}
             role={t.type === "error" ? "alert" : "status"}
             data-toast-type={t.type}
-            className="pointer-events-auto flex items-start gap-3 rounded border border-[var(--border)] bg-[var(--background)] p-3 text-sm shadow"
+            className="pointer-events-auto flex items-start gap-3 rounded-lg border border-line bg-card py-1 pl-4 pr-1 text-body-m shadow-overlay"
           >
-            <div className="flex-1">
-              <p className="font-semibold">{LABEL[t.type]}</p>
-              <p className="text-muted">{t.message}</p>
+            <div className="flex-1 py-2">
+              <p className="font-semibold text-ink">{LABEL[t.type]}</p>
+              <p className="text-ink-2">{t.message}</p>
             </div>
             <button
               type="button"
               onClick={() => dismiss(t.id)}
               aria-label="Dismiss"
-              className="text-muted hover:text-[var(--foreground)]"
+              className="flex size-11 shrink-0 items-center justify-center rounded-md text-ink-2 hover:bg-hover hover:text-ink"
             >
               ×
             </button>

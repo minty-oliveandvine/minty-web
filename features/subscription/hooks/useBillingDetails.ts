@@ -26,7 +26,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { ApiError } from "@/lib/apiClient";
-import { guardLeave } from "@/lib/leaveGuard";
+import { guardLeave } from "@minty/shared/leaveGuard";
 
 import {
   fetchBillingAccounts,

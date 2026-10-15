@@ -43,8 +43,8 @@ import { RowMenu } from "@/features/subscription/components/RowMenu";
 
 export const CALCULATING = "Calculating....";
 
-/** The summary panel's place in the opened row's grid: below both cards until `lg`. */
-const PANEL_PLACE = "sm:col-span-2 lg:col-span-1";
+/** The summary panel's place in the opened row's grid: below both cards (the row is 960 wide). */
+const PANEL_PLACE = "sm:col-span-2";
 
 export type SummaryRowHandlers = {
   onClose: () => void;
@@ -66,26 +66,26 @@ export type SummaryRowHandlers = {
 };
 
 const CHIP: Record<Chip, string> = {
-  Adding: "bg-[#e9f8f8] text-[#18c4c7]",
-  Restoring: "bg-[#e9f8f8] text-[#18c4c7]",
-  Removing: "bg-[#fff7ec] text-[#cc7f03]",
+  Adding: "bg-selected text-link",
+  Restoring: "bg-selected text-link",
+  Removing: "bg-warning-bg text-warning",
 };
 
 /** The card's own colour (grey, teal when ticked) unless the state has one of its own. */
 const TONE: Record<ModuleStatusLine["tone"], string> = {
-  accent: "text-accent",
+  accent: "text-warning",
   teal: "",
   muted: "",
   info: "text-info",
-  plain: "text-black",
+  plain: "text-ink",
 };
 
 /** The module colours the plan lines are set in; the transfer summary draws its own rows. */
 export const PLAN_TONE: Record<PlanLine["tone"], string> = {
-  petty: "text-[#ea9713]",
-  payment: "text-[#2e6ff2]",
-  bundle: "text-[#161f2e]",
-  none: "text-[#161f2e]",
+  petty: "text-ink",
+  payment: "text-ink",
+  bundle: "text-ink",
+  none: "text-ink",
 };
 
 /**
@@ -125,7 +125,7 @@ export function SummaryModuleCard({
         module.chip ? (
           <span
             data-chip={module.chip}
-            className={`rounded-lg px-6 py-1 text-sm font-bold ${CHIP[module.chip]}`}
+            className={`inline-flex h-6 items-center rounded-full px-2.5 text-label font-semibold ${CHIP[module.chip]}`}
           >
             {module.chip}
           </span>
@@ -158,7 +158,7 @@ function UnderCard({
         onClick={() => on.onStartTrial(module.code)}
         disabled={disabled}
         aria-label={`Start Free Trial · ${module.name}`}
-        className="h-[50px] w-full max-w-[195px] rounded-full bg-secondary text-xl font-bold text-white hover:opacity-90 disabled:opacity-60"
+        className="h-11 w-full max-w-[195px] rounded-lg bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed disabled:bg-action-disabled disabled:text-ink-disabled"
       >
         Start Free Trial
       </button>
@@ -174,18 +174,21 @@ function UnderCard({
       data-changed={module.changed}
       disabled={disabled}
       onClick={() => on.onTick(module.code)}
-      className={
-        ticked
-          ? "flex size-10 items-center justify-center rounded-lg bg-[#4fc7c7] text-white"
-          : "size-[34px] rounded-[9px] border-2 border-[#c7cdd4] bg-white"
-      }
+      className="flex size-11 items-center justify-center rounded-lg hover:bg-hover"
     >
-      {ticked && <Icon name="check" size={24} strokeWidth={3} />}
+      <span
+        aria-hidden
+        className={`flex size-6 items-center justify-center rounded-md ${
+          ticked ? "bg-action text-white" : "border-2 border-line-input bg-card"
+        }`}
+      >
+        {ticked && <Icon name="check" size={16} strokeWidth={3} />}
+      </span>
     </button>
   );
 }
 
-export function PlanLines({ lines, size = "text-xl" }: { lines: PlanLine[]; size?: string }) {
+export function PlanLines({ lines, size = "text-title-l" }: { lines: PlanLine[]; size?: string }) {
   return (
     <ul className="flex flex-col gap-1">
       {lines.map((line) => (
@@ -198,7 +201,7 @@ export function PlanLines({ lines, size = "text-xl" }: { lines: PlanLine[]; size
           <span data-plan-line className="flex flex-wrap items-baseline gap-x-2">
             <span className={`${size} font-bold ${PLAN_TONE[line.tone]}`}>{line.name}</span>
             {line.tag && (
-              <span className="whitespace-nowrap text-sm text-[#737a87]">{line.tag}</span>
+              <span className="whitespace-nowrap text-sm text-ink-2">{line.tag}</span>
             )}
           </span>
           {/* Outside the baseline group: an image aligned to a baseline sits its bottom on
@@ -224,21 +227,21 @@ export function PriceBox({
   return (
     <div
       data-greyed={greyed}
-      className={`relative flex h-[88px] items-center justify-center gap-2 rounded-[32px] sm:h-[101px] sm:gap-3 ${
-        greyed ? "bg-[#e7ecf0]" : "bg-[#e9f8f8]"
+      className={`relative flex h-[88px] items-center justify-center gap-2 rounded-lg sm:h-[101px] sm:gap-3 ${
+        greyed ? "bg-sunk" : "bg-selected"
       }`}
     >
       {struck && (
         <s
           // Its own line height: a 22px line box reached down onto "/month".
-          className="absolute right-5 top-2.5 text-base leading-none text-[#8b95a7] sm:right-8 sm:top-3 sm:text-[22px]"
+          className="absolute right-5 top-2.5 text-base leading-none text-ink-muted sm:right-8 sm:top-3 sm:text-title-l"
           aria-label={`was ${struck}`}
         >
           {struck}
         </s>
       )}
-      <span className="text-[28px] font-bold text-[#4fc7c7] sm:text-[35px]">{price}</span>
-      <span className="text-base text-[#6b7280] sm:text-xl">/month</span>
+      <span className="text-display-m font-bold text-link sm:text-display-l">{price}</span>
+      <span className="text-base text-ink-2 sm:text-title-l">/month</span>
     </div>
   );
 }
@@ -247,16 +250,16 @@ function Block({ block, card }: { block: SummaryBlock; card?: boolean }) {
   return (
     <div
       className={`flex flex-col gap-4 ${
-        card ? "rounded-xl bg-white p-5 shadow-[0px_2px_8px_0px_rgba(0,0,0,0.1)]" : ""
+        card ? "rounded-lg border border-line bg-card p-5" : ""
       }`}
     >
-      <p className="whitespace-pre-line text-[15px] text-[#737a87]">
+      <p className="whitespace-pre-line text-body-l text-ink-2">
         {block.heading}
         {block.dateLine ? `\n${block.dateLine}` : ""}
       </p>
       <PlanLines lines={block.lines} />
       <PriceBox price={block.price} struck={block.struck} greyed={block.greyed} />
-      {block.note && <p className="text-[15px] text-[#8a9099]">{block.note}</p>}
+      {block.note && <p className="text-body-l text-ink-muted">{block.note}</p>}
     </div>
   );
 }
@@ -267,9 +270,9 @@ function CalculatingPanel() {
       aria-label="Subscription Summary"
       aria-busy
       data-calculating
-      className={`${PANEL_PLACE} flex min-h-[300px] w-full flex-col items-center justify-center gap-6 rounded-xl bg-white p-5 shadow-[0px_2px_8px_0px_rgba(0,0,0,0.1)] sm:p-8 lg:min-h-[469px]`}
+      className={`${PANEL_PLACE} flex min-h-[300px] w-full flex-col items-center justify-center gap-6 rounded-lg border border-line bg-card p-4 sm:p-5`}
     >
-      <p role="status" className="text-xl font-bold text-[#4fc7c7]">
+      <p role="status" className="text-title-l font-bold text-link">
         {CALCULATING}
       </p>
       <Image src="/portal/minty-counting.png" alt="" width={157} height={136} unoptimized />
@@ -295,23 +298,23 @@ function SummaryPanel({
   return (
     <section
       aria-label="Subscription Summary"
-      className={`${PANEL_PLACE} flex w-full min-w-0 flex-col gap-6 rounded-xl p-5 shadow-[0px_2px_8px_0px_rgba(0,0,0,0.1)] sm:p-8 ${
-        changing ? "bg-[rgba(230,230,230,0.2)]" : "bg-white"
+      className={`${PANEL_PLACE} flex w-full min-w-0 flex-col gap-6 rounded-lg border border-line p-4 sm:p-5 ${
+        changing ? "bg-sunk" : "bg-card"
       }`}
     >
-      <h3 className="text-xl font-bold text-black">Subscription Summary</h3>
+      <h3 className="text-title-l font-semibold text-ink">Subscription Summary</h3>
 
       {view.panel.kind === "simple" ? (
         <>
           {/* Wraps: on a narrow panel the payment method drops below the plan. */}
           <div className="flex flex-wrap items-start justify-between gap-6">
             <div className="flex flex-col gap-3">
-              <p className="text-[15px] text-[#737a87]">Selected plan</p>
+              <p className="text-body-l text-ink-2">Selected plan</p>
               <PlanLines lines={view.panel.lines} />
             </div>
             {view.paymentMethod && (
               <div className="flex flex-col items-end text-right">
-                <p className="text-[15px] text-[#737a87]">Payment method</p>
+                <p className="text-body-l text-ink-2">Payment method</p>
                 {/* The network's mark above the card it names, bare and at the design's size
                     (73 x 24), the same slot as the handover summary's (07-D). */}
                 <CardBrand
@@ -320,13 +323,13 @@ function SummaryPanel({
                   fit="mark"
                   className={`mt-[19px] ${SUMMARY_MARK}`}
                 />
-                <p className="text-xl font-bold text-black" data-payment-method>
+                <p className="text-title-l font-bold text-ink" data-payment-method>
                   {view.paymentMethod.label}
                 </p>
                 <button
                   type="button"
                   onClick={onChangePaymentMethod}
-                  className="text-[15px] text-quiet hover:underline"
+                  className="-mr-2 min-h-11 rounded-lg px-2 text-body-m text-link hover:bg-hover"
                 >
                   Change
                 </button>
@@ -334,7 +337,7 @@ function SummaryPanel({
             )}
           </div>
           <PriceBox price={view.panel.price} struck={null} greyed={view.panel.greyed} />
-          <p className="text-center text-xl font-bold text-quiet">No pending changes</p>
+          <p className="text-center text-title-l font-bold text-ink-muted">No pending changes</p>
         </>
       ) : (
         <>
@@ -363,7 +366,7 @@ function SummaryPanel({
           <button
             type="button"
             onClick={() => onActivate(view.pendingChange!)}
-            className="h-14 rounded-2xl bg-[#4fc7c7] text-lg font-bold sm:h-[66px] sm:text-xl text-white hover:opacity-90"
+            className="h-11 rounded-lg bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed"
           >
             {ACTIVATE_SUBSCRIPTION}
           </button>
@@ -371,7 +374,7 @@ function SummaryPanel({
           <button
             type="button"
             onClick={() => onConfirmChange(view.pendingChange!)}
-            className="h-14 rounded-2xl bg-[#4fc7c7] text-lg font-bold sm:h-[66px] sm:text-xl text-white hover:opacity-90"
+            className="h-11 rounded-lg bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed"
           >
             {CONFIRM_CHANGE}
           </button>
@@ -418,7 +421,7 @@ export function SubscriptionSummaryRow({
       ref={ref}
       data-entity={entity.entity_id}
       data-open
-      className="scroll-mt-[var(--list-sticky-top)] flex flex-col gap-6 rounded-xl bg-white px-4 pb-6 pt-6 shadow-[0px_2px_8px_0px_rgba(0,0,0,0.1)] sm:gap-8 sm:px-8 sm:pb-8 sm:pt-10"
+      className="scroll-mt-[var(--list-sticky-top)] flex flex-col gap-6 rounded-lg border border-line bg-card p-4 sm:p-5"
     >
       {/*
         The strip is the click target, not the whole `<li>`: the panel below holds the cards and
@@ -430,17 +433,17 @@ export function SubscriptionSummaryRow({
         }}
         className="flex cursor-pointer items-center justify-between gap-4"
       >
-        <h3 className="min-w-0 truncate text-xl font-bold text-black sm:text-[25px]">
+        <h3 className="min-w-0 truncate text-title-l font-semibold text-ink">
           {entity.entity_name}
         </h3>
-        <div className="flex shrink-0 items-center gap-2 sm:gap-4">
+        <div className="flex shrink-0 items-center gap-1">
           <button
             ref={chevron}
             type="button"
             onClick={on.onClose}
             aria-label={`Close ${entity.entity_name}`}
             aria-expanded
-            className="flex size-10 items-center justify-center rounded-md text-[#8c949e] hover:bg-gray-100"
+            className="flex size-11 items-center justify-center rounded-lg text-ink-muted hover:bg-hover"
           >
             <Icon name="chevron-up" size={24} />
           </button>
@@ -449,14 +452,18 @@ export function SubscriptionSummaryRow({
       </div>
 
       {loading && !view && (
-        <p role="status" className="text-quiet">
+        <p role="status" className="text-ink-muted">
           Loading…
         </p>
       )}
       {status === "error" && (
-        <div role="alert" className="flex items-center gap-4 text-ink-soft">
+        <div role="alert" className="flex items-center gap-4 text-ink-2">
           <p>{error}</p>
-          <button type="button" onClick={on.onRetry} className="font-bold text-teal-strong">
+          <button
+            type="button"
+            onClick={on.onRetry}
+            className="min-h-11 rounded-lg px-2 text-body-m font-semibold text-link hover:bg-hover"
+          >
             Try again
           </button>
         </div>
@@ -465,10 +472,10 @@ export function SubscriptionSummaryRow({
       {(status === "ready" || loading) && view && (
         <>
           {view.trialNotice && (
-            <p className="flex items-center gap-2 text-xs text-info">
+            <p className="flex items-center gap-2 text-label text-info">
               <span
                 aria-hidden
-                className="flex size-6 shrink-0 items-center justify-center rounded-full bg-[#007bff] text-white"
+                className="flex size-6 shrink-0 items-center justify-center rounded-full bg-info text-white"
               >
                 <Icon name="info" size={16} />
               </span>
@@ -477,12 +484,12 @@ export function SubscriptionSummaryRow({
           )}
 
           {/* One column on a phone, the two cards side by side from `sm` with the panel below
-              them, and the panel beside them from `lg` (it needs 360px of its own). */}
-          <div className="grid grid-cols-1 items-start gap-6 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_minmax(360px,1.45fr)]">
+              them - always below: the list is 960 wide (Minty v2 Part 15.4a). */}
+          <div className="grid grid-cols-1 items-start gap-6 sm:grid-cols-2">
             {view.modules.map((module) => (
               <div
                 key={module.code}
-                className="flex min-w-0 flex-col items-center gap-5 lg:gap-[46px]"
+                className="flex min-w-0 flex-col items-center gap-5"
               >
                 <SummaryModuleCard
                   module={module}

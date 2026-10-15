@@ -34,7 +34,7 @@ function LandingContent() {
 
   return (
     <main className="flex min-h-screen items-center justify-center">
-      <p className="text-sm text-muted" role="status">
+      <p className="text-sm text-ink-2" role="status">
         Loading…
       </p>
     </main>

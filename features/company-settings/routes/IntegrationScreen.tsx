@@ -13,7 +13,7 @@ import { createPortal } from "react-dom";
 
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { LeaveDialog } from "@/components/ui/LeaveDialog";
-import { useLeaveGuard } from "@/lib/leaveGuard";
+import { useLeaveGuard } from "@minty/shared/leaveGuard";
 
 import { DetailsForm } from "@/features/company-settings/components/DetailsForm";
 import { LoadState, ReadOnlyNotice, SettingsCard, SettingsShell } from "@/features/company-settings/components/SettingsShell";
@@ -102,7 +102,7 @@ export function IntegrationScreen({
           onConfirm={() => void tab.disconnect().then((done) => done && setConfirming(false))}
           onBack={() => setConfirming(false)}
         >
-          <p className="mt-6 text-[15px] leading-snug">
+          <p className="mt-6 text-body-l leading-snug">
             Nothing more is published to Xero until you connect again, and the Xero accounts and contacts kept for this company
             are cleared.
           </p>

@@ -37,7 +37,9 @@ these cards with `innerHTML`, which let an invited address run script.
 The company's name (admins), country and currency (accountants and up), saved with only what
 changed; Flask's refusal stays under the form. Read-only below that, with the reason said. The
 Xero card: Connected / Reconnect needed (a grant revoked at Xero, or no token) / Not connected, the
-organisation and when it was connected; Connect / Reconnect navigate to Flask's
+organisation and "Last connected:" always - kept through a disconnect, "N/A" only when the company
+was never connected (Flask sends `last_connected_at` as is, no fallback). A company connected once
+offers Reconnect, never Connect, even after a deliberate disconnect. Connect / Reconnect navigate to Flask's
 `/entity/<id>/enter?…&next=/xero_reconnect?entity_id=<id>`; Disconnect asks first (it was one
 click) and shows the new state.
 

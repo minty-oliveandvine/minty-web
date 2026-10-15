@@ -23,6 +23,9 @@ export const env = {
   SUBSCRIPTION_API_URL: url(process.env.SUBSCRIPTION_API_URL, "http://localhost:8000"),
   /** Petty Cash (the Flask app) - login, the re-handoff, the entity list's and the profile's reads. */
   PETTY_CASH_URL: url(process.env.PETTY_CASH_URL, "http://localhost:8010"),
-  /** minty-payment-request-web - the side menu's Bills, the profile's way back. */
+  /**
+   * minty-payment-request-web. Only the side menu's Bills inside a branch preview set reads it
+   * (moved onto the set's host); everywhere else Bills goes through Minty's hand-over (2026-10-15).
+   */
   PAYMENT_REQUEST_WEB_URL: url(process.env.PAYMENT_REQUEST_WEB_URL, "http://localhost:3020"),
 } as const;

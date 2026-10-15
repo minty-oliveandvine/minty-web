@@ -10,9 +10,10 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { AppHeader } from "@/components/ui/AppHeader";
 import { NavMenu } from "@/components/ui/NavMenu";
+import { billsHref } from "@/components/ui/sidebarHost";
 import { getAuth, setAuth } from "@/lib/auth";
 import { DISCARD_CHANGES, GO_BACK_UPPER, LEAVE_TITLE } from "@/components/ui/LeaveDialog";
-import { useLeaveGuard } from "@/lib/leaveGuard";
+import { useLeaveGuard } from "@minty/shared/leaveGuard";
 import { env } from "@/lib/env";
 import { _setViewerLoaderForTests } from "@/lib/viewer";
 
@@ -74,10 +75,12 @@ describe("NavMenu", () => {
     expect(petty.getByRole("link", { name: "Reports" }).getAttribute("href")).toContain(
       encodeURIComponent("/entity/e1/petty-cash/reports"),
     );
+    // Bills names THIS company: the payments app's bare `/` opens whichever company ITS cookie
+    // last held, which is another company's list after a visit there.
     const payments = within(menu.getByRole("group", { name: "Payment Request" }));
     expect(payments.getByRole("link", { name: "Bills" })).toHaveAttribute(
       "href",
-      `${env.PAYMENT_REQUEST_WEB_URL}/`,
+      `${env.PETTY_CASH_URL}/entity/e1/enter?token=${encodeURIComponent(TOKEN)}&next=${encodeURIComponent("/entity/e1/payment-request")}`,
     );
     expect(menu.getByRole("link", { name: "Settings" })).toHaveAttribute(
       "href",
@@ -87,6 +90,20 @@ describe("NavMenu", () => {
       "aria-current",
       "page",
     );
+  });
+
+  // jsdom cannot serve a page on another host, so the host is handed in. Inside a branch preview
+  // set Bills stays in the set: Minty's hand-over would leave for the payments app Flask knows.
+  it("Bills: Minty's hand-over for this company, but the set's own payments app in a preview set", () => {
+    setAuth(TOKEN, "e1", "Olive Shop");
+    expect(billsHref("my.dailyminty.com")).toBe(
+      `${env.PETTY_CASH_URL}/entity/e1/enter?token=${encodeURIComponent(TOKEN)}&next=${encodeURIComponent("/entity/e1/payment-request")}`,
+    );
+    // Host and scheme only: the configured URL here is localhost:3020, whose port siblingUrl keeps.
+    const inSet = new URL(billsHref("pr-ui-update-my.dailyminty.com"));
+    expect(inSet.protocol).toBe("https:");
+    expect(inSet.hostname).toBe("pr-ui-update-payment-request.dailyminty.com");
+    expect(inSet.pathname).toBe("/");
   });
 
   it("the cat sits above Settings and Logout", async () => {

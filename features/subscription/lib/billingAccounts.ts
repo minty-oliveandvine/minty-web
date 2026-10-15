@@ -30,7 +30,7 @@ import type {
 } from "@/features/subscription/api/payerPortal";
 import { cardTitle, type NextBilling } from "@/features/subscription/lib/billing";
 import { formatMinor } from "@/features/subscription/lib/transfer";
-import { EMAIL_RE, isEmail } from "@/lib/emailInput";
+import { EMAIL_RE, isEmail } from "@minty/shared/emailInput";
 
 // --- Copy ---------------------------------------------------------------------------
 

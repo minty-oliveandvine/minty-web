@@ -4,3 +4,8 @@ public
 test-results
 playwright-report
 package-lock.json
+
+# The legal documents ARE the legal text, and their SHA-256 is pinned: every terms_consent row
+# stores the fingerprint of the exact bytes. Reformatting one would silently invalidate every
+# record pointing at it, so Prettier must never touch them (lib/legal/registry.server.ts).
+lib/legal/documents

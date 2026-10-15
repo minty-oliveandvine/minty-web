@@ -9,7 +9,9 @@ import { PETTY_CASH_URL, requireApp } from "../../../e2e/helpers";
 
 type Asked = { path: string; body: unknown }[];
 
-const LONG_TERMS = Array.from({ length: 60 }, (_, i) => `<p>Clause ${i + 1}. Words to read.</p>`).join("");
+// The Terms the sign-up panel shows are NOT stubbed: since 2026-10-12 they are this app's own
+// (app/api/legal/[kind]/[version] out of lib/legal/documents/), and the real document is long
+// enough to scroll at any width. Flask only names the live version, over `/legal/current`.
 
 async function stubFlask(page: Page): Promise<Asked> {
   const asked: Asked = [];
@@ -25,7 +27,7 @@ async function stubFlask(page: Page): Promise<Asked> {
     redirect_url: `${PETTY_CASH_URL}/auth/email/handoff?h=signed`,
   });
   await answer("/auth/notices", { notices: [{ category: "info", message: "Please log in to access this page." }] });
-  await answer("/legal/content/terms", { version: "beta-1", html: LONG_TERMS, effective_date: null, is_pinned: true });
+  await answer("/legal/current", { terms_version: "beta-1", privacy_version: "beta-1", effective_date: "18 September 2026" });
   await answer("/legal/invite-terms-status", { terms_required: true });
   await page.route(`${PETTY_CASH_URL}/auth/email/handoff**`, (route) =>
     route.fulfill({ status: 200, contentType: "text/html", body: "<p>Flask signs you in</p>" }),
@@ -111,7 +113,7 @@ test.describe("sign-in", () => {
     await expect(page.getByLabel("Email")).toHaveAttribute("readonly", "");
     await expect(page.getByRole("link", { name: /Log in with Xero/ })).toHaveAttribute(
       "href",
-      `${PETTY_CASH_URL}/xero_auth?invite=secret-token`,
+      `${PETTY_CASH_URL}/xero_auth?invite=secret-token&return_origin=${encodeURIComponent(new URL(page.url()).origin)}`,
     );
   });
 

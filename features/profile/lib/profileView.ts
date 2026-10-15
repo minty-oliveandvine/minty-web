@@ -4,7 +4,7 @@
  * refuses before anything is sent.
  */
 
-import { EMAIL_ASCII_HINT, hasNonAsciiEmailChar } from "@/lib/emailInput";
+import { EMAIL_ASCII_HINT, hasNonAsciiEmailChar } from "@minty/shared/emailInput";
 import { HUB_PATHS } from "@/lib/hubPaths";
 import { mintyModulesUrl } from "@/lib/mintyEntry";
 
@@ -44,8 +44,8 @@ export function planLabel(company: ProfileCompany | null): PlanLabel | null {
   const payments = company.modules.includes("PAYMENT_REQUEST");
   if (petty && payments)
     return { text: "SuperMinty", tone: "font-bold text-teal-strong", cat: true };
-  if (payments) return { text: "Payment Request", tone: "text-[#2e6ff2]", cat: false };
-  if (petty) return { text: "Petty Cash", tone: "text-[#ea9713]", cat: false };
+  if (payments) return { text: "Payment Request", tone: "text-ink", cat: false };
+  if (petty) return { text: "Petty Cash", tone: "text-ink", cat: false };
   return null;
 }
 

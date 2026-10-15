@@ -15,7 +15,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 
 import { ApiError } from "@/lib/apiClient";
-import { isEmail } from "@/lib/emailInput";
+import { isEmail } from "@minty/shared/emailInput";
 import { leaveTo } from "@/lib/handoff";
 
 import { requestCode, verifyCode } from "@/features/auth/api/signIn";
@@ -95,7 +95,7 @@ export function ConfirmScreen() {
   if (!context) {
     return (
       <AuthShell>
-        <p className="text-center text-sm text-muted" role="status">
+        <p className="text-center text-sm text-ink-2" role="status">
           Loading…
         </p>
       </AuthShell>
@@ -161,7 +161,7 @@ export function ConfirmScreen() {
       <form className="flex flex-col gap-4" onSubmit={(e) => void verify(e)} noValidate>
         <CodeInput digits={digits} onChange={setDigits} disabled={verifying || locked} />
         {attemptsLeft < MAX_ATTEMPTS && attemptsLeft > 0 && !locked ? (
-          <p className="text-center text-[13px] text-ink-soft">
+          <p className="text-center text-body-s text-ink-2">
             {attemptsLeft} {attemptsLeft === 1 ? "attempt" : "attempts"} remaining
           </p>
         ) : null}
@@ -174,14 +174,14 @@ export function ConfirmScreen() {
           </p>
         ) : null}
       </form>
-      <p className="text-center text-sm text-ink-soft">
+      <p className="text-center text-sm text-ink-2">
         Didn&apos;t get it?{" "}
         {canResend ? (
           <button type="button" className={`${AUTH_LINK} min-h-11`} onClick={() => void resend()}>
             {CONFIRM_COPY.resend}
           </button>
         ) : (
-          <span className="text-quiet">
+          <span className="text-ink-muted">
             {resending ? CONFIRM_COPY.resending : locked ? CONFIRM_COPY.resend : `${CONFIRM_COPY.resend} in ${resendIn}s`}
           </span>
         )}

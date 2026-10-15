@@ -27,20 +27,20 @@ export function TransferSubscriptionScreen(args: UseTransferSubscriptionArgs) {
   const t = useTransferSubscription(args);
 
   return (
-    <div className="flex flex-col gap-8 pb-16">
+    <div data-portal-col="960" className="mx-auto flex w-full max-w-[960px] flex-col gap-8 pb-16">
       <PortalHero title="Transfer Subscription" />
 
-      <section className="flex flex-col gap-6 rounded-xl bg-white px-8 pb-8 pt-10 shadow-[0px_2px_8px_0px_rgba(0,0,0,0.1)]">
+      <section className="flex flex-col gap-6 rounded-lg border border-line bg-card p-4 sm:p-5">
         {t.status === "error" ? (
           <div
             role="alert"
-            className="rounded-lg border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-sm text-rose-800"
+            className="rounded-lg border border-transparent bg-danger-bg px-4 py-3 text-body-m text-danger"
           >
             {t.error}
           </div>
         ) : t.requested ? (
           <>
-            <h2 className="text-[25px] font-bold text-black">{t.entityName}</h2>
+            <h2 className="text-display-m font-bold text-ink">{t.entityName}</h2>
             <TransferRequested
               email={t.requested.email}
               note={t.note}
@@ -50,7 +50,7 @@ export function TransferSubscriptionScreen(args: UseTransferSubscriptionArgs) {
           </>
         ) : (
           <>
-            <h2 className="text-[25px] font-bold text-black">
+            <h2 className="text-display-m font-bold text-ink">
               {t.status === "loading" ? "Loading…" : t.entityName}
             </h2>
             <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-[minmax(0,1fr)_auto]">
@@ -90,7 +90,7 @@ export function TransferSubscriptionScreen(args: UseTransferSubscriptionArgs) {
                 width={t.pending ? 330 : 433}
                 height={t.pending ? 277 : 270}
                 unoptimized
-                className="justify-self-center lg:mt-16"
+                className="h-auto w-[260px] justify-self-center lg:mt-16 lg:w-[300px]"
               />
             </div>
             {!t.pending && t.status === "ready" && (

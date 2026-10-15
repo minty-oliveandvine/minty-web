@@ -12,17 +12,31 @@
 import { clearAuth } from "@/lib/auth";
 import { env } from "@/lib/env";
 import { HUB_HOME } from "@/lib/hubPaths";
-import { safeNextPath } from "@/lib/safeNext";
+import { safeNextPath } from "@minty/shared/safeNext";
 
 /** A path this app may land on after the handoff (lib/safeNext.ts has the rule). */
 export function safeNext(raw: string | null | undefined, fallback: string = HUB_HOME): string {
   return safeNextPath(raw, fallback);
 }
 
-export function handoffUrl(next: string, entityId?: string): string {
+/**
+ * `origin` is where Flask should hand back to: the page's own origin, or - in the proxy, which
+ * runs on the server - the request's. Flask uses it only for a branch preview set (Minty
+ * `blueprints/shared/preview_origin.py`) and ignores it everywhere else.
+ */
+export function handoffUrl(next: string, entityId?: string, origin?: string): string {
   const qs = new URLSearchParams({ next: safeNext(next) });
   if (entityId) qs.set("entity_id", entityId);
-  return `${env.PETTY_CASH_URL}/handoff/minty-web?${qs.toString()}`;
+  return withReturnOrigin(`${env.PETTY_CASH_URL}/handoff/minty-web?${qs.toString()}`, origin);
+}
+
+/** `url` (a Flask address) naming this app's origin as `return_origin`; unchanged with none. */
+export function withReturnOrigin(url: string, origin?: string): string {
+  const own = origin ?? (typeof window === "undefined" ? undefined : window.location.origin);
+  if (!own) return url;
+  const target = new URL(url);
+  target.searchParams.set("return_origin", own);
+  return target.toString();
 }
 
 type Navigate = (url: string) => void;

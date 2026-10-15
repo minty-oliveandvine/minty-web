@@ -17,7 +17,7 @@ import { useEffect, useState } from "react";
 
 import { mintyFetch } from "@/lib/apiClient";
 import { getAuth } from "@/lib/auth";
-import { shortIdOf, slugifyName } from "@/lib/companyRef";
+import { shortIdOf, slugifyName } from "@minty/shared/companyRef";
 import { redirectToHandoff } from "@/lib/handoff";
 
 export type AddressedCompany = { id: string; name: string };
