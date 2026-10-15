@@ -26,6 +26,15 @@ import { mintyEntryUrl } from "@/lib/mintyEntry";
 import { getModuleClaims } from "@/lib/moduleClaims";
 import { guardLeave } from "@minty/shared/leaveGuard";
 
+/** The side menu's Bills, for a page served on `host` (see `links` below). */
+export function billsHref(host: string | null): string {
+  if (previewSetSlug(host) !== null) {
+    return `${siblingUrl(env.PAYMENT_REQUEST_WEB_URL, "payment-request", host)}/`;
+  }
+  const entityId = getAuth()?.entityId;
+  return mintyEntryUrl(entityId ? `/entity/${entityId}/payment-request` : undefined);
+}
+
 export const sidebarHost: SidebarHost = {
   app: "minty-web",
   entityId: () => getAuth()?.entityId ?? "",
@@ -47,14 +56,7 @@ export const sidebarHost: SidebarHost = {
     subscriptions: () => HUB_PATHS.subscription,
     pettyCashDashboard: () => mintyEntryUrl(),
     pettyCashReports: (entityId) => mintyEntryUrl(`/entity/${entityId}/petty-cash/reports`),
-    bills: () => {
-      const host = typeof window === "undefined" ? null : window.location.host;
-      if (previewSetSlug(host) !== null) {
-        return `${siblingUrl(env.PAYMENT_REQUEST_WEB_URL, "payment-request", host)}/`;
-      }
-      const entityId = getAuth()?.entityId;
-      return mintyEntryUrl(entityId ? `/entity/${entityId}/payment-request` : undefined);
-    },
+    bills: () => billsHref(typeof window === "undefined" ? null : window.location.host),
     settings: () => companySettingsPath(getAuth()?.entityId ?? "", getAuth()?.entityName ?? ""),
     profile: () => HUB_PATHS.profile,
   },
