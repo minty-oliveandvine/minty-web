@@ -735,7 +735,7 @@ describe("ManageSubscriptionsScreen", { timeout: 30_000 }, () => {
     // the module's name is its own coloured span inside the line
     const line = within(row).getByText(/free trial has started/);
     expect(line).toHaveTextContent("Petty Cash free trial has started — 30 days, free.");
-    expect(within(line).getByText("Petty Cash")).toHaveClass("text-[#ea9713]");
+    expect(within(line).getByText("Petty Cash")).toHaveClass("text-ink");
     // M21 has nothing else running, so nothing bills - RV11's own money line.
     expect(within(row).getByText("Nothing is being charged.")).toBeVisible();
     // the other companies are still listed around it

@@ -1,6 +1,6 @@
 /**
- * The two cards side by side, laid out as onboarding's module step lays its cards out (300px
- * cards 42px apart, what goes under a card 34px below it). Each card's CTA sits under it - or,
+ * The two cards side by side in an equal grid (one column on a phone, two from `sm`), what goes
+ * under a card 16px below it. Each card's CTA sits under it - or,
  * when both cards share the same "Manage Subscription" (frames 03-B, 03-C), one CTA centred
  * under the pair. No CTAs at all for a viewer who may not manage the subscription.
  */
@@ -58,10 +58,10 @@ export function ModuleCardGrid({
   on: ModuleCtaHandlers;
 }) {
   return (
-    <div className="flex flex-col items-center gap-[34px]">
-      <ul className="flex flex-wrap justify-center gap-[42px]">
+    <div className="flex w-full flex-col gap-4">
+      <ul className="grid w-full gap-4 sm:grid-cols-2">
         {views.map((view) => (
-          <li key={view.code} className="flex w-[300px] flex-col items-center gap-[34px]">
+          <li key={view.code} className="flex min-w-0 flex-col gap-4">
             <ModuleCard view={view} />
             {canManage && !shared && (
               <ModuleCta
@@ -78,7 +78,9 @@ export function ModuleCardGrid({
           company-wide act. The code is irrelevant for either kind - that is what COMPANY_WIDE
           means - but it is `press` that knows which handler to call. */}
       {canManage && shared && views.length > 0 && (
-        <ModuleCta cta={shared} onClick={press(shared, views[0].code, on)} />
+        <div className="mx-auto flex w-full justify-center sm:w-[calc(50%-0.5rem)]">
+          <ModuleCta cta={shared} onClick={press(shared, views[0].code, on)} />
+        </div>
       )}
     </div>
   );

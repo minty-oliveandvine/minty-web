@@ -47,35 +47,32 @@ export function BillingPageScreen(args: UseBillingPageArgs) {
   const b = useBillingPage(args);
 
   return (
-    <div className="flex flex-col gap-8 pb-16">
+    // Minty v2 detail page: one 720 column (`data-portal-col` lines the header's back link up).
+    <div data-portal-col="720" className="mx-auto flex w-full max-w-[720px] flex-col gap-8 pb-16">
       <PortalHero title={BILLING_TITLE} onBack={b.back} />
 
       {b.status === "error" ? (
         <div
           role="alert"
-          className="flex flex-col items-start gap-3 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800"
+          className="flex flex-col items-start gap-3 rounded-lg border border-danger bg-danger-bg px-4 py-3 text-sm text-danger"
         >
           {b.error}
           <button
             type="button"
             onClick={b.reload}
-            className="rounded-lg border border-rose-300 bg-white px-4 py-1.5 font-semibold"
+            className="min-h-11 rounded-lg border border-danger bg-card px-4 py-1.5 font-semibold"
           >
             Try again
           </button>
         </div>
       ) : b.status === "ready" && !b.account ? (
-        <div className="mx-auto flex w-full max-w-[942px] flex-col gap-8">
+        <div className="flex flex-col gap-8">
           <NoAccountPanel onOpen={b.openAccount} />
         </div>
       ) : (
-        // The design's blocks sit in a 942px column inside the banner's 1298px one.
-        <div className="mx-auto flex w-full max-w-[942px] flex-col gap-8">
-          <NextBillingCard
-            next={b.next}
-            onChangeDetails={b.account ? b.changeDetails : undefined}
-            onPick={b.openPicker}
-          />
+        // Minty v2's order: the payment method (with the expired-card line over it), then the
+        // billing details and next bill, then the invoices.
+        <div className="flex flex-col gap-8">
           {b.expired && <ExpiredCardNotice text={b.expired} onAdd={b.addCard} />}
           <PaymentMethodsPanel
             rows={b.rows}
@@ -90,6 +87,11 @@ export function BillingPageScreen(args: UseBillingPageArgs) {
             onAdd={b.addCard}
             onPick={b.openPicker}
             accountFailed={b.next.failed}
+          />
+          <NextBillingCard
+            next={b.next}
+            onChangeDetails={b.account ? b.changeDetails : undefined}
+            onPick={b.openPicker}
           />
           <InvoiceHistoryTable
             invoices={b.invoices}

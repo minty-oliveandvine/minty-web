@@ -41,13 +41,15 @@ export function ModalFrame({
   }, [busy, onDismiss]);
 
   return (
-    <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
+    // Below 640px the card is pinned to the bottom edge (a bottom sheet); callers drop its
+    // bottom radius with `max-sm:rounded-b-none`.
+    <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 max-sm:items-end max-sm:p-0">
       <button
         type="button"
         aria-label={dismissLabel}
         onClick={onDismiss}
         disabled={busy}
-        className="absolute inset-0 cursor-default bg-white/60 backdrop-blur-[3px]"
+        className="absolute inset-0 cursor-default bg-[var(--mv2-scrim)]"
       />
       <div
         role="dialog"

@@ -42,9 +42,9 @@ type Loaded = { attempt: number; list: PayerAccount | null; error: string | null
 function Figure({ label, value, tone }: { label: string; value: number; tone: string }) {
   return (
     <div className="flex flex-col items-center text-center">
-      <p className="text-[10px] leading-5 text-[#4b5563]">{label}</p>
-      <p className={`mt-2.5 text-xl leading-5 font-bold ${tone}`}>{value}</p>
-      <p className="text-[10px] leading-5 text-[#6b7280]">{entityUnit(value)}</p>
+      <p className="text-label leading-5 text-ink-2">{label}</p>
+      <p className={`mt-2.5 text-title-l font-bold ${tone}`}>{value}</p>
+      <p className="text-label leading-5 text-ink-2">{entityUnit(value)}</p>
     </div>
   );
 }
@@ -75,38 +75,38 @@ export function SubscriptionsOverviewCard({ today }: { today?: Date } = {}) {
   const retry = useCallback(() => setAttempt((n) => n + 1), []);
 
   return (
-    <section className="mt-[27px] flex flex-col" aria-labelledby="profile-subscriptions-overview">
-      <h2 id="profile-subscriptions-overview" className="pl-[9px] text-[10px] leading-5 font-bold text-[#475467]">
+    <section className="mt-7 flex flex-col" aria-labelledby="profile-subscriptions-overview">
+      <h2 id="profile-subscriptions-overview" className="pl-2 text-label leading-5 font-bold text-ink-2">
         {PROFILE_OVERVIEW_TITLE}
       </h2>
-      <div className="mt-2.5 flex min-h-[165px] flex-col items-center justify-center rounded-xl bg-white px-4 py-[18px]">
+      <div className="mt-2.5 flex min-h-[165px] flex-col items-center justify-center rounded-lg border border-line bg-card p-4">
         {status === "loading" ? (
-          <div className="h-[120px] w-full animate-pulse rounded-lg bg-[#f4f5f7]" role="status" aria-label="Loading your subscriptions" />
+          <div className="h-[120px] w-full animate-pulse rounded-md bg-sunk" role="status" aria-label="Loading your subscriptions" />
         ) : null}
         {status === "error" ? (
           <div className="flex flex-col items-center gap-3 text-center" role="alert">
-            <p className="text-xs text-[#4b5563]">{loaded?.error}</p>
+            <p className="text-label text-ink-2">{loaded?.error}</p>
             <button
               type="button"
               onClick={retry}
-              className="cursor-pointer rounded-xl bg-[#54d3da] px-5 py-1.5 text-sm font-medium text-white hover:bg-[#54d3da]/80"
+              className="h-11 cursor-pointer rounded-lg bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed"
             >
               Try again
             </button>
           </div>
         ) : null}
         {list && list.entities.length === 0 ? (
-          <p className="text-center text-[10px] leading-5 text-[#4b5563]">{NO_SUBSCRIPTIONS}</p>
+          <p className="text-center text-label leading-5 text-ink-2">{NO_SUBSCRIPTIONS}</p>
         ) : null}
         {list && list.entities.length > 0 && figures ? (
           <>
-            <div className="flex justify-center gap-[39px]">
-              <Figure label={ACTIVE_SUBSCRIPTIONS} value={figures.active} tone="text-[#737a87]" />
-              <Figure label={TRIAL_ENDING} value={figures.trialEnding} tone="text-accent" />
+            <div className="flex justify-center gap-10">
+              <Figure label={ACTIVE_SUBSCRIPTIONS} value={figures.active} tone="text-ink-2" />
+              <Figure label={TRIAL_ENDING} value={figures.trialEnding} tone="text-warning" />
             </div>
             <Link
               href={PORTAL.index}
-              className="mt-[19px] flex h-[38px] w-[242px] items-center justify-center rounded-xl bg-[#54d3da] text-sm leading-[21px] font-medium text-white hover:bg-[#54d3da]/85"
+              className="mt-5 flex h-11 w-full items-center justify-center rounded-lg bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed"
             >
               {MANAGE_SUBSCRIPTION}
             </Link>

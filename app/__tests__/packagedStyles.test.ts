@@ -1,7 +1,8 @@
 // The two silent failure modes of consuming @minty/shared, each made loud.
 //
-// 1. TOKENS: app/globals.css imports @minty/shared/theme.css. That one is loud by itself (a bad
-//    specifier fails the build), but the ASSERTION here is what the tokens must come out as - and
+// 1. TOKENS: app/globals.css imports @minty/shared/theme.css and tokens.css. Those are loud by
+//    themselves (a bad specifier fails the build), but the ASSERTION here is what the tokens must
+//    come out as - and
 //    that nothing local redeclares them, which would win invisibly.
 // 2. CLASSES: Tailwind v4 never scans node_modules, so without the `@source` line every utility
 //    class inside the packaged sidebar is dropped from the generated CSS. Nothing errors. The
@@ -31,6 +32,7 @@ describe("@minty/shared reaches the stylesheet", () => {
   it("declares the source so Tailwind scans the package", () => {
     const source = readFileSync(CSS, "utf8");
     expect(source).toContain('@import "@minty/shared/theme.css";');
+    expect(source).toContain('@import "@minty/shared/tokens.css";');
     expect(source).toContain(`@source "../${PKG_SRC}";`);
     // The @source path is only as good as what is behind it.
     expect(existsSync(resolve(PKG_SRC, "sidebar/SideMenu.tsx"))).toBe(true);
@@ -39,6 +41,15 @@ describe("@minty/shared reaches the stylesheet", () => {
   it("has no local font tokens left to override the shared ones", () => {
     const source = readFileSync(CSS, "utf8");
     expect(source).not.toMatch(/^\s*--font-(sans|brand|mono):/m);
+  });
+
+  it("takes the Part 13 radius and type scales from tokens.css, with no local copy", () => {
+    // minty-web's classes are written on the Part 13 scale (rounded-lg is 12px), so a local
+    // --radius-* or --text-* would silently resize every button, input and heading.
+    const source = readFileSync(CSS, "utf8");
+    expect(source).not.toMatch(/^\s*--(radius|text)-[\w-]+:/m);
+    expect(compiled).toMatch(/--radius-lg:\s*12px/);
+    expect(compiled).toMatch(/--text-title-l:\s*20px/);
   });
 
   it("emits the shared faces, with the Minty name in Plus Jakarta Sans", () => {
@@ -53,7 +64,9 @@ describe("@minty/shared reaches the stylesheet", () => {
     // appears in the package's sidebar and nowhere in this app's own source, so if Tailwind stops
     // scanning node_modules they disappear from the output.
     expect(compiled).toMatch(/width:\s*min\(100%,\s*353px\)/); // Sidebar's menu panel
-    expect(compiled).toMatch(/padding-left:\s*49px/); // SideMenu's nav
-    expect(compiled).toMatch(/gap:\s*40px/); // the person block
+    expect(compiled).toMatch(/padding-top:\s*max\(48px,\s*env\(safe-area-inset-top,\s*0px\)\)/); // SideMenu's nav
+    expect(compiled).toMatch(/margin-left:\s*calc\(var\(--spacing\)\s*\*\s*22\)/); // the logo
+    // A tokens.css colour role only the packaged sidebar uses here (the app says bg-selected).
+    expect(compiled).toMatch(/background-color:\s*var\(--color-state-selected\)/);
   });
 });

@@ -686,8 +686,8 @@ describe("the card screens", () => {
     // Themed to 08-C's own fields: the 1.5px edge, the 10px corner, the teal focus.
     expect(stripeForm.elementOptions.at(-1)).toMatchObject({
       appearance: {
-        variables: { borderRadius: "10px", colorPrimary: "#4fc7c7" },
-        rules: { ".Input": { border: "1.5px solid #d6dae0" } },
+        variables: { borderRadius: "12px", colorPrimary: "#19676B" },
+        rules: { ".Input": { border: "1.5px solid #848C8C" } },
       },
     });
 
@@ -874,10 +874,10 @@ describe("08-A, the portal's landing", () => {
     expect(dialog).toHaveAccessibleName("Sonia Chan declined the transfer");
     // The design's colours: the person in orange, the company in teal, "Entity" neither.
     // The same rule wherever the name appears - the title here, the body on 07-L.
-    expect(within(dialog).getByText("Sonia Chan")).toHaveClass("text-[#ea9713]");
+    expect(within(dialog).getByText("Sonia Chan")).toHaveClass("text-ink");
     const company = within(dialog).getByText("Company B Limited");
     expect(company).toBeInTheDocument();
-    expect(company).toHaveClass("text-[#18c4c7]");
+    expect(company).toHaveClass("text-ink");
     expect(
       within(dialog).getByText("You can send a new request to anyone anytime."),
     ).toBeInTheDocument();
@@ -964,7 +964,7 @@ describe("08-A, the portal's landing", () => {
     expect(dialog).toHaveAccessibleName("Transfer has been successful");
     // The sentence stays whole around the coloured run.
     expect(dialog).toHaveTextContent("Angelika Lifecycle has accepted the transfer.");
-    expect(within(dialog).getByText("Angelika Lifecycle")).toHaveClass("text-[#ea9713]");
+    expect(within(dialog).getByText("Angelika Lifecycle")).toHaveClass("text-ink");
   });
 
   it("nothing is told when there is no unseen outcome", async () => {

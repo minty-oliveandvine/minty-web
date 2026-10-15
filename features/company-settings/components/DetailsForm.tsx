@@ -37,8 +37,8 @@ export function DetailsForm({
   };
 
   return (
-    <form className="grid grid-cols-1 gap-4 md:grid-cols-2" onSubmit={submit} noValidate>
-      <div className="md:col-span-2">
+    <form className="grid grid-cols-1 gap-4" onSubmit={submit} noValidate>
+      <div>
         <label htmlFor="company-name" className={SHEET_LABEL}>
           Company name
           <RequiredMark />
@@ -52,7 +52,7 @@ export function DetailsForm({
           disabled={!page.can_rename || busy}
           onChange={(e) => draft.setName(e.target.value)}
         />
-        {!page.can_rename && page.can_edit ? <p className="mt-1.5 text-[12.5px] text-gray-500">Only an admin can rename the company.</p> : null}
+        {!page.can_rename && page.can_edit ? <p className="mt-1.5 text-body-s text-ink-2">Only an admin can rename the company.</p> : null}
       </div>
       <div className="min-w-0">
         <label htmlFor="company-country" className={SHEET_LABEL}>
@@ -95,12 +95,12 @@ export function DetailsForm({
         </select>
       </div>
       {error ? (
-        <p className="text-sm text-danger md:col-span-2" role="alert">
+        <p className="text-body-s text-danger" role="alert">
           {error}
         </p>
       ) : null}
       {page.can_edit ? (
-        <div className="flex justify-end md:col-span-2">
+        <div className="flex justify-end">
           <button type="submit" className={`${SHEET_PRIMARY} w-full sm:w-auto`} disabled={!dirty || busy}>
             {busy ? "Saving…" : "Save Changes"}
           </button>

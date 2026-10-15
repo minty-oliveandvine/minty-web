@@ -48,7 +48,7 @@ export function InvoicePreviewDialog({
 
   const error = preview.status === "error" ? (preview.error ?? INVOICE_PDF_FAILED) : drawError;
   const preparing = (
-    <p role="status" className="py-16 text-center text-[15px] text-[#8b93a0]">
+    <p role="status" className="py-16 text-center text-body-l text-ink-muted">
       {PREPARING_INVOICE}
     </p>
   );
@@ -59,10 +59,10 @@ export function InvoicePreviewDialog({
       busy={false}
       onDismiss={onClose}
       dismissLabel="Close preview"
-      className="flex max-h-[min(92dvh,1180px)] w-full max-w-[860px] flex-col overflow-hidden rounded-[20px] bg-white shadow-[0px_4px_8px_0px_rgba(15,23,42,0.08),0px_12px_32px_0px_rgba(0,0,0,0.1)]"
+      className="flex max-h-[min(92dvh,1180px)] w-full max-w-[860px] flex-col overflow-hidden rounded-xl border border-line bg-card shadow-modal max-sm:max-w-none max-sm:rounded-b-none"
     >
-      <div className="flex shrink-0 items-center justify-between gap-4 border-b border-[#eef1f4] px-6 py-4">
-        <h2 id={titleId} className="min-w-0 truncate text-[17px] font-bold text-[#16202e]">
+      <div className="flex shrink-0 items-center justify-between gap-4 border-b border-line-subtle px-6 py-4">
+        <h2 id={titleId} className="min-w-0 truncate text-title-m font-semibold text-ink">
           {title}
         </h2>
         <button
@@ -70,15 +70,15 @@ export function InvoicePreviewDialog({
           type="button"
           aria-label="Close"
           onClick={onClose}
-          className="shrink-0 rounded-lg p-1.5 text-[#8b93a0] hover:bg-[#f5f7fa] hover:text-[#16202e]"
+          className="min-h-11 min-w-11 shrink-0 rounded-md p-1.5 text-ink-muted hover:bg-hover hover:text-ink"
         >
           <Icon name="close" size={20} />
         </button>
       </div>
       {/* The page at its true size fits the card's 860 with 32px a side; a phone's is narrower. */}
-      <div className="min-h-0 flex-1 overflow-auto bg-[#f5f6f8] p-3 sm:px-8 sm:py-6">
+      <div className="min-h-0 flex-1 overflow-auto bg-sunk p-3 sm:px-8 sm:py-6">
         {error ? (
-          <p role="alert" className="py-16 text-center text-[15px] text-[#b42318]">
+          <p role="alert" className="py-16 text-center text-body-l text-danger">
             {error}
           </p>
         ) : preview.status === "ready" && preview.bytes ? (

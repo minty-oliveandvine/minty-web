@@ -47,6 +47,8 @@ export function XeroConflictDialog({
       hideBack={!conflict.can_move}
       confirmLabel={conflict.can_move ? "Move it here" : "Close"}
       confirmTone={conflict.can_move ? "orange" : "teal"}
+      // The move clears the other company's Xero accounts and contacts: it cannot be undone.
+      confirmVariant={conflict.can_move ? "danger" : undefined}
       backLabel="Go back"
       onConfirm={conflict.can_move ? onMove : onClose}
       onBack={onClose}

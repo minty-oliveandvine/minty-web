@@ -18,23 +18,22 @@
   align-items: center;
   justify-content: center;
   padding: 24px 16px;
-  background: rgba(249, 250, 251, 0.72);
+  background: var(--mv2-scrim);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
   overflow-y: auto;
 }
 
 .modal {
-  background: #fff;
-  color: #111827;
-  border-radius: 18px;
+  background: var(--mv2-surface-card);
+  color: var(--mv2-text-primary);
+  border-radius: 16px;
   width: 100%;
   max-width: 1180px;
-  padding: 36px 38px 32px;
+  border: 1px solid var(--mv2-border-default);
+  padding: 24px;
   margin: auto;
-  box-shadow:
-    0 10px 40px rgba(16, 24, 40, 0.16),
-    0 2px 6px rgba(16, 24, 40, 0.06);
+  box-shadow: var(--mv2-elevation-modal);
 }
 .modal:focus {
   outline: none;
@@ -58,58 +57,54 @@
 
 /* ---- Heading ---- */
 .title {
-  font-size: 27px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  color: #111827;
-  margin: 0 0 10px;
-  line-height: 1.2;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--mv2-text-primary);
+  margin: 0 0 8px;
+  line-height: 1.35;
 }
 .lead {
-  color: #6b7280;
+  color: var(--mv2-text-secondary);
   font-size: 14px;
   line-height: 1.6;
-  margin: 0 0 18px;
+  margin: 0 0 16px;
 }
 
 /* ---- Notices ---- */
 .note,
 .draft {
-  border-radius: 10px;
-  padding: 14px 16px;
-  margin-bottom: 18px;
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
   font-size: 14px;
   line-height: 1.55;
 }
 .note {
-  background: #ecfdfb;
-  border: 1px solid #a7e8e1;
-  color: #115e56;
+  background: var(--mv2-state-selected);
+  border: 1px solid var(--mv2-border-selected);
+  color: var(--mv2-text-link);
 }
 .draft {
-  background: #fffbeb;
-  border: 1px solid #fcd34d;
-  color: #92400e;
+  background: var(--mv2-warning-bg);
+  border: 1px solid var(--mv2-border-default);
+  color: var(--mv2-warning-ink);
 }
 .note a {
-  color: #0f7a6e;
+  color: var(--mv2-text-link);
   font-weight: 600;
   text-decoration: underline;
 }
 
 /* ---- The document ---- */
 .card {
-  background: #fff;
-  border: 1px solid #e5e7eb;
+  background: var(--mv2-surface-card);
+  border: 1px solid var(--mv2-border-default);
   border-radius: 12px;
   padding: 18px 10px 18px 20px;
-  box-shadow:
-    0 1px 2px rgba(16, 24, 40, 0.04),
-    0 4px 14px rgba(16, 24, 40, 0.05);
 }
 .updated {
   font-size: 13px;
-  color: #9ca3af;
+  color: var(--mv2-text-muted);
   margin: 0 14px 16px 0;
 }
 /* Scrollable, not paginated: the whole document is on the page, so "I was not shown it" is not
@@ -120,11 +115,11 @@
   overflow-y: auto;
   padding-right: 12px;
   scrollbar-width: thin;
-  scrollbar-color: #d1d5db transparent;
+  scrollbar-color: var(--mv2-border-default) transparent;
   border-radius: 6px;
 }
 .doc:focus-visible {
-  outline: 2px solid #36c3b4;
+  outline: 2px solid var(--mv2-border-focus);
   outline-offset: 4px;
 }
 .doc::-webkit-scrollbar {
@@ -134,14 +129,14 @@
   background: transparent;
 }
 .doc::-webkit-scrollbar-thumb {
-  background: #d1d5db;
+  background: var(--mv2-border-default);
   border-radius: 999px;
 }
 .doc h1,
 .doc h2 {
   font-size: 16px;
   font-weight: 700;
-  color: #111827;
+  color: var(--mv2-text-primary);
   margin: 24px 0 7px;
   line-height: 1.35;
 }
@@ -151,7 +146,7 @@
 .doc p {
   font-size: 15px;
   line-height: 1.55;
-  color: #6b7280;
+  color: var(--mv2-text-secondary);
   margin: 0 0 12px;
 }
 /* Bullets drawn, where Flask's modal loses them: its list page loads the Tailwind CDN, whose
@@ -164,7 +159,7 @@
 .doc li {
   font-size: 15px;
   line-height: 1.55;
-  color: #6b7280;
+  color: var(--mv2-text-secondary);
   margin-bottom: 5px;
 }
 
@@ -183,34 +178,34 @@
   height: 24px;
   flex: none;
   margin: 0;
-  border: 1.5px solid #d1d5db;
+  border: 1.5px solid var(--mv2-border-input);
   border-radius: 7px;
-  background: #fff;
+  background: var(--mv2-surface-card);
   cursor: pointer;
   transition:
     background-color 0.15s ease,
     border-color 0.15s ease;
 }
 .check input:hover {
-  border-color: #9ca3af;
+  border-color: var(--mv2-border-default);
 }
 .check input:checked {
-  background-color: #36c3b4;
-  border-color: #36c3b4;
+  background-color: var(--mv2-border-selected);
+  border-color: var(--mv2-border-selected);
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='20 6 9 17 4 12'/></svg>");
   background-size: 14px;
   background-position: center;
   background-repeat: no-repeat;
 }
 .check input:focus-visible {
-  outline: 2px solid #36c3b4;
+  outline: 2px solid var(--mv2-border-focus);
   outline-offset: 2px;
 }
 /* Locked until the document has been read to the end. Muted, not invisible: it has to stay
    obvious what is waiting. */
 .check input:disabled {
-  background: #f3f4f6;
-  border-color: #e5e7eb;
+  background: var(--mv2-surface-sunk);
+  border-color: var(--mv2-border-default);
   cursor: not-allowed;
 }
 .check:has(input:disabled) {
@@ -219,17 +214,17 @@
 .check span {
   font-size: 14px;
   line-height: 1.5;
-  color: #374151;
+  color: var(--mv2-text-secondary);
 }
 .check:has(input:disabled) span {
-  color: #9ca3af;
+  color: var(--mv2-text-disabled);
 }
 /* #0F7A6E, not the button's #36C3B4: small text, and the brand teal on white is about 2:1.
    The links stay readable and clickable while the box is locked - someone may want the full
    document in a tab of its own. */
 .check a,
 .check:has(input:disabled) a {
-  color: #0f7a6e;
+  color: var(--mv2-text-link);
   font-weight: 600;
   text-decoration: none;
 }
@@ -275,28 +270,31 @@
   max-width: 300px;
   margin: 0 auto;
 }
+/* Secondary: the teal-edged button. */
 .cancel {
-  background: #fff;
-  border: 1px solid #d1d5db;
-  border-radius: 999px;
-  padding: 10px 20px;
+  background: var(--mv2-surface-card);
+  border: 1px solid var(--mv2-border-selected);
+  border-radius: 12px;
+  min-height: 44px;
+  padding: 10px 16px;
   font-size: 14px;
-  font-weight: 500;
-  color: #374151;
+  font-weight: 600;
+  color: var(--mv2-text-link);
   font-family: inherit;
   text-align: center;
   cursor: pointer;
   transition: background-color 0.15s ease;
 }
 .cancel:hover {
-  background: #f9fafb;
+  background: var(--mv2-state-selected);
 }
 .accept {
-  background: #36c3b4;
-  color: #fff;
+  background: var(--mv2-action-primary);
+  color: var(--mv2-text-inverse);
   border: 0;
-  border-radius: 999px;
-  padding: 11px 20px;
+  border-radius: 12px;
+  min-height: 44px;
+  padding: 11px 16px;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -308,10 +306,14 @@
   transition: background-color 0.15s ease;
 }
 .accept:hover:not(:disabled) {
-  background: #2ba99c;
+  background: var(--mv2-action-primary-hover);
+}
+.accept:active:not(:disabled) {
+  background: var(--mv2-action-primary-pressed);
 }
 .accept:disabled {
-  background: #d1d5db;
+  background: var(--mv2-action-disabled);
+  color: var(--mv2-text-disabled);
   cursor: not-allowed;
 }
 .accept svg {
@@ -320,7 +322,7 @@
 }
 
 .error {
-  color: #b91c1c;
+  color: var(--mv2-danger-ink);
   font-size: 14px;
   min-height: 1.1em;
   text-align: center;
@@ -342,10 +344,7 @@
 }
 @media (max-width: 640px) {
   .modal {
-    padding: 24px 20px 22px;
-    border-radius: 14px;
-  }
-  .title {
-    font-size: 22px;
+    padding: 24px 16px;
+    border-radius: 16px;
   }
 }

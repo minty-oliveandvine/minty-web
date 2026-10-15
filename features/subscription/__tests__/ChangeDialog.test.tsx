@@ -34,7 +34,7 @@ describe("ChangeDialog", () => {
   it("Remove Petty Cash? - the name in its colour, the two sentences, Confirm Change in orange", async () => {
     const { dialog, onConfirm, onBack } = show(["PETTY_CASH"]);
     expect(dialog).toHaveAccessibleName("Remove Petty Cash?");
-    expect(within(dialog).getByText("Petty Cash")).toHaveClass("text-[#ea9713]");
+    expect(within(dialog).getByText("Petty Cash")).toHaveClass("text-ink");
     expect(within(dialog).getByText("Nexora Health Limited")).toBeInTheDocument();
     expect(
       within(dialog).getByText(/You've chosen to remove Petty Cash\. You'll still have access/),
@@ -65,7 +65,7 @@ describe("ChangeDialog", () => {
   it("You have unlocked Super Minty - the bundle's name in teal, Minty in a cape", () => {
     const { dialog } = show(["PETTY_CASH", "PAYMENT_REQUEST"], SUMMARY_FIXTURES.M22);
     expect(dialog).toHaveAccessibleName("You have unlocked Super Minty");
-    expect(within(dialog).getByText("Super Minty")).toHaveClass("text-[#18c4c7]");
+    expect(within(dialog).getByText("Super Minty")).toHaveClass("text-ink");
     expect(within(dialog).getByRole("button", { name: "Confirm" })).toHaveAttribute(
       "data-tone",
       "teal",
@@ -79,8 +79,8 @@ describe("ChangeDialog", () => {
     const p = within(dialog)
       .getByText(/will be/)
       .closest("p")!;
-    expect(within(p).getByText("Petty Cash")).toHaveClass("text-[#ea9713]");
-    expect(within(p).getByText("Payment Request")).toHaveClass("text-[#2e6ff2]");
+    expect(within(p).getByText("Petty Cash")).toHaveClass("text-ink");
+    expect(within(p).getByText("Payment Request")).toHaveClass("text-ink");
     expect(within(p).getByText("removed").tagName).toBe("STRONG");
     expect(within(p).getByText("added").tagName).toBe("STRONG");
     expect(within(dialog).getByRole("button", { name: "Confirm Changes" })).toBeInTheDocument();

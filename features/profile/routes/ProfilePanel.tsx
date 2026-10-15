@@ -26,7 +26,8 @@ export function ProfilePanel({ subscriptions }: { subscriptions?: ReactNode }) {
   return (
     // flex-1, not just min-h-full: the sheet's <section> has only a min-height, so a percentage
     // min-height resolves to auto and the panel stopped at its content, the sheet showing below.
-    <div className="flex min-h-full flex-1 flex-col bg-[#f9fafb]">
+    <div className="flex min-h-full flex-1 flex-col bg-canvas">
+
       <ProfilePanelTitlebar onBack={sidebar?.showMenu} onClose={sidebar?.close} />
       <div className="flex flex-col px-4 pb-[max(2.5rem,env(safe-area-inset-bottom,0px))]">
         <ProfileBody model={p} subscriptions={subscriptions} />

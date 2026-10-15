@@ -28,25 +28,26 @@ export function BillingDetailsScreen({
   const leave = useLeaveGuard(d.dirty, d.reset);
 
   return (
-    <div className="flex flex-col gap-8 pb-16">
+    // Minty v2 record form: one 720 column (`data-portal-col` lines the header's back link up).
+    <div data-portal-col="720" className="mx-auto flex w-full max-w-[720px] flex-col gap-8 pb-16">
       <PortalHero title={DETAILS_TITLE} />
 
       {d.status === "error" ? (
         <div
           role="alert"
-          className="mx-auto flex w-full max-w-[720px] flex-col items-start gap-3 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800"
+          className="flex w-full flex-col items-start gap-3 rounded-lg border border-transparent bg-danger-bg px-4 py-3 text-body-m text-danger"
         >
           {d.error}
           <button
             type="button"
             onClick={d.back}
-            className="rounded-lg border border-rose-300 bg-white px-4 py-1.5 font-semibold"
+            className="min-h-11 rounded-lg border border-danger bg-card px-4 py-1.5 font-semibold"
           >
             Go Back
           </button>
         </div>
       ) : d.status === "loading" ? (
-        <p role="status" className="py-6 text-center text-[15px] text-[#8b93a0]">
+        <p role="status" className="py-6 text-center text-body-l text-ink-muted">
           Loading…
         </p>
       ) : (
@@ -70,15 +71,15 @@ export function BillingDetailsScreen({
         />
       )}
 
-      {/* The file is twice the drawn size (1448x708) for sharp screens; the design draws it at
-          724x354, 73px under the card. */}
+      {/* The file is twice the drawn size (1448x708) for sharp screens; drawn the column's width
+          under the card. */}
       <Image
         src="/portal/minty-filling-form.png"
         alt=""
         width={1448}
         height={708}
         unoptimized
-        className="mx-auto mt-10 w-full max-w-[724px]"
+        className="mx-auto mt-2 w-full"
       />
 
       {/* Over the drawer and any other modal - see IntegrationScreen's note. */}

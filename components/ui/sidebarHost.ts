@@ -19,7 +19,7 @@ import { setSidebarHost, type SidebarHost, type Viewer } from "@minty/shared/sid
 import { mintyFetch } from "@/lib/apiClient";
 import { getAuth } from "@/lib/auth";
 import { env } from "@/lib/env";
-import { siblingUrl } from "@/lib/previewSibling";
+import { previewSetSlug, siblingUrl } from "@/lib/previewSibling";
 import { COMPANY_SETTINGS_PATTERN, companySettingsPath, HUB_PATHS } from "@/lib/hubPaths";
 import { logOut } from "@/lib/logout";
 import { mintyEntryUrl } from "@/lib/mintyEntry";
@@ -36,16 +36,25 @@ export const sidebarHost: SidebarHost = {
 
   /**
    * This app IS the hub, so most of these are its own pages. Petty Cash goes into Minty through
-   * `/entity/<id>/enter`, whose token re-establishes the Flask session; Bills to the payments app.
+   * `/entity/<id>/enter`, whose token re-establishes the Flask session; Bills the same way, on to
+   * Minty's `entity.go_to_bills`, which hands the payments app a token for THIS company - that
+   * app's bare `/` opens the company in its own cookie, which may be another one. Except inside
+   * a branch preview set, where Bills stays in the set (lib/previewSibling.ts): Minty's hand-over
+   * would send it to the payments app Flask is configured with, outside the set.
    */
   links: {
     entities: () => HUB_PATHS.entities,
     subscriptions: () => HUB_PATHS.subscription,
     pettyCashDashboard: () => mintyEntryUrl(),
     pettyCashReports: (entityId) => mintyEntryUrl(`/entity/${entityId}/petty-cash/reports`),
-    // In a branch preview set, the same set's payments app (lib/previewSibling.ts).
-    bills: () =>
-      `${siblingUrl(env.PAYMENT_REQUEST_WEB_URL, "payment-request", typeof window === "undefined" ? null : window.location.host)}/`,
+    bills: () => {
+      const host = typeof window === "undefined" ? null : window.location.host;
+      if (previewSetSlug(host) !== null) {
+        return `${siblingUrl(env.PAYMENT_REQUEST_WEB_URL, "payment-request", host)}/`;
+      }
+      const entityId = getAuth()?.entityId;
+      return mintyEntryUrl(entityId ? `/entity/${entityId}/payment-request` : undefined);
+    },
     settings: () => companySettingsPath(getAuth()?.entityId ?? "", getAuth()?.entityName ?? ""),
     profile: () => HUB_PATHS.profile,
   },
