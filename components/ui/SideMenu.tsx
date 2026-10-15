@@ -14,15 +14,15 @@
  * Settings (inside a company only - never on the entity list) and Logout.
  *
  * Where the links go: this app's own pages by `HUB_PATHS`; Petty Cash into Minty through
- * `/entity/<id>/enter` (the cookie's token re-establishes the Flask session); Bills to the
- * payments app; Logout to Minty's, which ends the session everywhere.
+ * `/entity/<id>/enter` (the cookie's token re-establishes the Flask session); Bills the same way,
+ * on to Minty's hand-over into the payments app for this company; Logout to Minty's, which ends
+ * the session everywhere.
  */
 
 import Image from "next/image";
 import type { ReactNode } from "react";
 
 import { getAuth } from "@/lib/auth";
-import { env } from "@/lib/env";
 import { COMPANY_SETTINGS_PATTERN, companySettingsPath, HUB_PATHS } from "@/lib/hubPaths";
 import { guardLeave } from "@/lib/leaveGuard";
 import { logOut } from "@/lib/logout";
@@ -191,6 +191,9 @@ export function SideMenu({ modules, viewer, onClose, onProfile }: SideMenuProps)
     });
 
   const reports = entityId ? `/entity/${entityId}/petty-cash/reports` : undefined;
+  // Through Minty's `entity.go_to_bills`, which hands the payments app a token for THIS company.
+  // That app's bare `/` opens the company in its own cookie, which may be another one.
+  const bills = entityId ? `/entity/${entityId}/payment-request` : undefined;
   const who = (
     <>
       <span
@@ -337,7 +340,7 @@ export function SideMenu({ modules, viewer, onClose, onProfile }: SideMenuProps)
                 iconBox=""
               />
               <a
-                href={`${env.PAYMENT_REQUEST_WEB_URL}/`}
+                href={mintyEntryUrl(bills)}
                 onClick={onClose}
                 className={`${ROW} ${BUTTON} mt-[28px] min-h-[41px] gap-[25px] pl-[17px]`}
               >

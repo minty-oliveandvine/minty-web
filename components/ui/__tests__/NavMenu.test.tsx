@@ -74,10 +74,12 @@ describe("NavMenu", () => {
     expect(petty.getByRole("link", { name: "Reports" }).getAttribute("href")).toContain(
       encodeURIComponent("/entity/e1/petty-cash/reports"),
     );
+    // Bills names THIS company: the payments app's bare `/` opens whichever company ITS cookie
+    // last held, which is another company's list after a visit there.
     const payments = within(menu.getByRole("group", { name: "Payment Request" }));
     expect(payments.getByRole("link", { name: "Bills" })).toHaveAttribute(
       "href",
-      `${env.PAYMENT_REQUEST_WEB_URL}/`,
+      `${env.PETTY_CASH_URL}/entity/e1/enter?token=${encodeURIComponent(TOKEN)}&next=${encodeURIComponent("/entity/e1/payment-request")}`,
     );
     expect(menu.getByRole("link", { name: "Settings" })).toHaveAttribute(
       "href",
