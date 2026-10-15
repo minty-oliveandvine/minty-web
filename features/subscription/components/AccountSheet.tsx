@@ -75,11 +75,15 @@ import { EMAIL_ASCII_HINT, useEmailInput } from "@minty/shared/emailInput";
 
 export type SheetSize = "list" | "form" | "done";
 
-/** `.billing-sheet` and its three modifiers - and 01-L's width again for the form on a small screen. */
+/**
+ * `.billing-sheet` and its three widths - and 01-L's width again for the form on a small screen.
+ * Minty v2's modal: p-6 throughout; 01-J (a confirmation) takes the modal's 440. The list and the
+ * form keep onboarding's widths (a picker of wide rows, a form beside Minty).
+ */
 const SIZE: Record<SheetSize, string> = {
-  list: "max-w-[481px] p-[30px] max-[560px]:px-[18px] max-[560px]:py-[22px]",
-  form: "max-w-[880px] px-7 pb-7 pt-[26px] max-[900px]:max-w-[481px] max-[560px]:px-[18px] max-[560px]:py-[22px]",
-  done: "max-w-[435px] px-12 pb-10 pt-[67px] max-[560px]:px-[22px] max-[560px]:pb-8 max-[560px]:pt-[30px]",
+  list: "max-w-[481px]",
+  form: "max-w-[880px] max-[900px]:max-w-[481px]",
+  done: "max-w-[440px]",
 };
 
 export type SheetFrameProps = {
@@ -131,7 +135,7 @@ export function SheetFrame({
       onClick={(e) => {
         if (e.target === e.currentTarget && !busy) onDismiss();
       }}
-      className="fixed inset-0 z-[150] flex items-center justify-center overflow-y-auto overscroll-contain bg-[rgba(22,32,46,0.12)] p-5 backdrop-blur-[6px] transition-opacity duration-150 ease-out starting:opacity-0 motion-reduce:transition-none"
+      className="fixed inset-0 z-[150] flex items-center justify-center overflow-y-auto overscroll-contain bg-[var(--mv2-scrim)] p-5 max-[480px]:items-end max-[480px]:p-0 max-[480px]:pt-5 backdrop-blur-[6px] transition-opacity duration-150 ease-out starting:opacity-0 motion-reduce:transition-none"
     >
       <div
         role="dialog"
@@ -139,23 +143,20 @@ export function SheetFrame({
         aria-label={label}
         // `m-auto`, not only the overlay's centring: a sheet taller than the window then scrolls
         // from its top instead of being cut off above it. Translate only, never scale - Stripe
-        // measures the box it mounts into.
-        className={`relative m-auto w-full rounded-2xl bg-white shadow-[0_16px_44px_rgba(22,32,46,0.16)] transition-[opacity,translate] duration-[180ms] ease-[cubic-bezier(0.16,1,0.3,1)] starting:translate-y-2 starting:opacity-0 motion-reduce:transition-none ${SIZE[size]}`}
+        // measures the box it mounts into. Below 480px it is a bottom sheet: full width, flat
+        // along the bottom edge.
+        className={`relative m-auto w-full rounded-2xl border border-line bg-card p-6 shadow-modal max-[480px]:mx-0 max-[480px]:mb-0 max-[480px]:max-w-none max-[480px]:rounded-b-none transition-[opacity,translate] duration-[180ms] ease-[cubic-bezier(0.16,1,0.3,1)] starting:translate-y-2 starting:opacity-0 motion-reduce:transition-none ${SIZE[size]}`}
       >
         {(title || onClose) && (
-          <div className="mb-[22px] flex items-start gap-3">
+          <div className="mb-5 flex items-start gap-3">
             <div className="min-w-0">
               {title && (
-                <h2
-                  className={`mb-1.5 leading-[normal] tracking-[-0.01em] text-[#16202e] ${
-                    size === "list" ? "text-[16px] font-semibold" : "text-[20px] font-bold"
-                  }`}
-                >
+                <h2 className="mb-1.5 text-title-l font-semibold text-ink">
                   {title}
                 </h2>
               )}
               {sub && (
-                <p className="max-w-[434px] text-[13.5px] leading-[normal] text-[#6b7a80]">{sub}</p>
+                <p className="max-w-[434px] text-body-m text-ink-2">{sub}</p>
               )}
             </div>
             {onClose && (
@@ -165,7 +166,7 @@ export function SheetFrame({
                 aria-label="Close"
                 onClick={onClose}
                 disabled={busy}
-                className="ml-auto flex-none rounded-lg p-1 leading-none text-[#8a8d8b] hover:bg-[#f5f5f3] hover:text-[#4a4d4b] disabled:cursor-not-allowed disabled:opacity-50"
+                className="-mr-2 -mt-2 ml-auto inline-flex size-11 flex-none items-center justify-center rounded-xl leading-none text-ink-muted hover:bg-hover hover:text-ink-2 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <svg
                   width="14"
@@ -194,17 +195,17 @@ export function SheetFrame({
 type FlagTone = "red" | "amber" | "grey";
 
 const FLAG_TONE: Record<FlagTone, string> = {
-  red: "border-[#ffcccc] bg-[#fff1f1] text-[#b4231f]",
-  amber: "border-[#f2d59b] bg-[#fce6bd] text-[#9e690d]",
+  red: "border-danger bg-danger-bg text-danger",
+  amber: "border-line bg-warning-bg text-warning",
   // Ours: onboarding has no neutral fact to flag ("Billed here now").
-  grey: "border-[#e3e7ec] bg-[#eff1f4] text-[#6b7380]",
+  grey: "border-line bg-neutral-bg text-neutral",
 };
 
 /** `.billing-pm-flag` - a fact about the row, as a pill; only the colour family changes. */
 export function SheetFlag({ text, tone }: { text: string; tone: FlagTone }) {
   return (
     <span
-      className={`flex-none whitespace-nowrap rounded-full border px-2 py-[3px] text-[11.5px] font-bold tracking-[0.02em] ${FLAG_TONE[tone]}`}
+      className={`flex-none whitespace-nowrap rounded-full border px-2 py-[3px] text-label font-bold tracking-[0.02em] ${FLAG_TONE[tone]}`}
     >
       {text}
     </span>
@@ -216,7 +217,7 @@ function BrandChip({ card }: { card: SavedPaymentMethod | null }) {
   return (
     <span
       aria-hidden="true"
-      className="inline-flex h-9 w-14 flex-none items-center justify-center rounded-[7px] border border-[#eff1f3] bg-white"
+      className="inline-flex h-9 w-14 flex-none items-center justify-center rounded-lg border border-line bg-card"
     >
       {card && <CardBrand brand={card.brand} label={card.brand_label} className="h-[30px] w-[46px]" />}
     </span>
@@ -255,16 +256,16 @@ export function SheetRow({
   return (
     <li>
       <label
-        className={`flex min-h-[95px] items-center gap-[18px] rounded-xl bg-white px-5 py-3.5 outline-2 -outline-offset-2 transition-[box-shadow,outline-color] duration-150 max-[560px]:flex-wrap max-[560px]:gap-3.5 max-[560px]:px-4 ${
+        className={`flex min-h-[95px] items-center gap-[18px] rounded-xl bg-card px-5 py-3.5 -outline-offset-2 transition-[background-color,outline-color] duration-150 max-[560px]:flex-wrap max-[560px]:gap-3.5 max-[560px]:px-4 ${
           checked
-            ? "shadow-[0_2px_10px_rgba(79,199,199,0.18)] outline-[#4fc7c7]"
-            : "shadow-[0_2px_8px_rgba(0,0,0,0.1)] outline-transparent"
+            ? "outline-2 outline-line-selected"
+            : "outline-1 outline-line"
         } ${
           disabled
             ? "cursor-not-allowed opacity-60"
             : checked
               ? "cursor-pointer"
-              : "cursor-pointer hover:shadow-[0_3px_12px_rgba(0,0,0,0.14)]"
+              : "cursor-pointer hover:bg-hover"
         }`}
       >
         <input
@@ -274,13 +275,13 @@ export function SheetRow({
           checked={checked}
           disabled={disabled}
           onChange={() => onSelect(value)}
-          className="size-5 flex-none cursor-pointer appearance-none rounded-full border-2 border-[#d7dee2] bg-white transition-[border-color,border-width] duration-150 checked:border-[6px] checked:border-[#2e9b9b] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4fc7c7] disabled:cursor-not-allowed"
+          className="size-5 flex-none cursor-pointer appearance-none rounded-full border-2 border-line-input bg-card transition-[border-color,border-width] duration-150 checked:border-[6px] checked:border-line-selected focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--mv2-border-focus)] disabled:cursor-not-allowed"
         />
         {leading}
         <span className="flex min-w-0 flex-col gap-[5px]">
-          <span className="text-[14px] font-bold tracking-[-0.005em] text-[#16202e]">{title}</span>
-          {meta && <span className="text-[12px] text-[#16202e]">{meta}</span>}
-          {detail && <span className="text-[12.5px] text-[#8a8d8b]">{detail}</span>}
+          <span className="text-body-m font-bold tracking-[-0.005em] text-ink">{title}</span>
+          {meta && <span className="text-label text-ink">{meta}</span>}
+          {detail && <span className="text-label text-ink-muted">{detail}</span>}
         </span>
         {flags && (
           <span className="ml-auto flex flex-none flex-col items-end gap-1.5 max-[560px]:ml-0 max-[560px]:basis-full max-[560px]:flex-row max-[560px]:justify-start">
@@ -498,10 +499,10 @@ function AccountAdded({
     <div className="relative">
       {/* Heading and cat are one row, centred against each other; a column, cat on top, on a phone. */}
       <div className="flex items-center justify-between gap-3 max-[560px]:flex-col-reverse max-[560px]:gap-1.5">
-        <h2 className="text-[26px] font-bold leading-[1.2] tracking-[-0.02em] text-[#16202e] max-[560px]:text-center max-[560px]:text-[24px]">
+        <h2 className="text-title-l font-semibold text-ink max-[560px]:text-center">
           {CARD_ADDED}
           <br />
-          <span className="text-[#18c4c7]">{CARD_ADDED_TAIL}</span>
+          <span className="text-success">{CARD_ADDED_TAIL}</span>
         </h2>
         <Image
           src="/portal/billing-cat-celebrate.png"
@@ -513,19 +514,19 @@ function AccountAdded({
           className="pointer-events-none h-auto w-[106px] flex-none max-[560px]:w-[120px]"
         />
       </div>
-      <p className="pt-12 text-[15px] leading-[1.2] text-[#737a87]">
-        <span className="text-[#ea9713]">{shortCardName(card.brand_label, card.last4)}</span> is
+      <p className="pt-6 text-body-m text-ink-2">
+        <span className="font-semibold text-ink">{shortCardName(card.brand_label, card.last4)}</span> is
         added successfully.
       </p>
       {isDefault && (
-        <p className="pt-[18px] text-[15px] leading-[1.2] text-[#737a87]">{CARD_ADDED_DEFAULT}</p>
+        <p className="pt-3 text-body-m text-ink-2">{CARD_ADDED_DEFAULT}</p>
       )}
-      <div className="mt-12 flex justify-center max-[560px]:mt-8">
+      <div className="mt-6 flex justify-end max-[480px]:flex-col">
         <button
           ref={doneRef}
           type="button"
           onClick={onDone}
-          className={`${SHEET_DONE} max-[560px]:w-full`}
+          className={`${SHEET_DONE} max-[480px]:w-full`}
         >
           Done
         </button>

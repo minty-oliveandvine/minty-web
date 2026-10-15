@@ -59,7 +59,7 @@ function LastOpened({ row }: { row: EntityRow }) {
   if (!when) {
     return (
       <span
-        className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-gray-200 text-gray-400"
+        className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-neutral-bg text-neutral"
         role="img"
         title={NOT_OPENED_YET}
         aria-label={NOT_OPENED_YET}
@@ -71,19 +71,19 @@ function LastOpened({ row }: { row: EntityRow }) {
   return (
     <span className="group relative inline-flex">
       <span
-        className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-gray-500 text-white"
+        className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-brand text-white"
         role="img"
         aria-label={lastOpenedLabel(when, row.last_accessed_by)}
       >
         <ClockGlyph />
       </span>
       <span
-        className="pointer-events-none absolute bottom-full right-0 z-20 mb-2 hidden whitespace-nowrap rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-right shadow-md group-hover:block"
+        className="pointer-events-none absolute bottom-full right-0 z-20 mb-2 hidden whitespace-nowrap rounded-lg border border-line bg-card px-3 py-1.5 text-right shadow-overlay group-hover:block"
         aria-hidden
       >
-        <span className="block text-[12px] leading-snug text-gray-500">{when}</span>
+        <span className="block text-label leading-snug text-ink-2">{when}</span>
         {row.last_accessed_by ? (
-          <span className="block text-[12px] leading-snug text-gray-500">
+          <span className="block text-label leading-snug text-ink-2">
             By {row.last_accessed_by}
           </span>
         ) : null}
@@ -98,20 +98,20 @@ export function EntityCard({ row }: { row: EntityRow }) {
     // The pill hangs off this wrapper, not the link, so it is hidden with the card it labels.
     <li className="relative">
       {isSettingUp(row) ? (
-        <span className="absolute -top-2 left-3 z-10 rounded-full bg-[#E6F9FA] px-2.5 py-0.5 text-[11px] font-medium text-[#1FA9B1] shadow-sm">
+        <span className="absolute -top-2 left-3 z-10 rounded-full bg-selected px-2.5 py-0.5 text-label font-medium text-link">
           {SETUP_IN_PROGRESS}
         </span>
       ) : null}
       <a
         href={enterHref(row)}
-        className="flex min-h-[56px] w-full items-center justify-between gap-2 rounded-[12px] border border-[#f6f6f8] bg-white px-4 py-3 font-semibold text-[#1f2937] shadow-md transition-[background-color,transform,box-shadow] hover:-translate-y-0.5 hover:bg-gray-50 hover:shadow-lg"
+        className="flex min-h-11 w-full items-center justify-between gap-2 rounded-xl border border-line bg-card px-5 py-4 font-semibold text-ink transition-[background-color,transform] hover:-translate-y-0.5 hover:bg-hover"
       >
-        <span className="min-w-0 flex-1 truncate text-[17px]">{row.name}</span>
+        <span className="min-w-0 flex-1 truncate text-title-m font-semibold">{row.name}</span>
         <span className="flex shrink-0 items-center gap-1.5">
           {trial ? <TrialBadge label={trial} /> : null}
           {row.modules.includes("PETTY_CASH") ? (
             <span
-              className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[#FFF3D6]"
+              className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-warning-bg"
               role="img"
               title="Petty Cash"
               aria-label="Petty Cash module"
@@ -128,7 +128,7 @@ export function EntityCard({ row }: { row: EntityRow }) {
           ) : null}
           {row.modules.includes("PAYMENT_REQUEST") ? (
             <span
-              className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[#DBEAFE] text-[#2563EB]"
+              className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-info-bg text-info"
               role="img"
               title="Bills"
               aria-label="Bills module"
@@ -139,10 +139,10 @@ export function EntityCard({ row }: { row: EntityRow }) {
             </span>
           ) : null}
           <LastOpened row={row} />
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden>
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" className="text-ink" aria-hidden>
             <path
               d="M10.8234 9.99945L6.98561 13.8395L8.07324 14.9434L13.0142 9.99945L8.07324 5.05555L6.98561 6.15938L10.8234 9.99945Z"
-              fill="#1F2937"
+              fill="currentColor"
             />
           </svg>
         </span>

@@ -14,22 +14,22 @@ export function TransferRequestCard({
 }) {
   return (
     <div
-      className="flex min-h-[125px] flex-wrap items-center gap-6 rounded-xl bg-[var(--tile-petty)] px-7 py-6 shadow-[0px_2px_8px_0px_rgba(0,0,0,0.1)]"
+      className="flex flex-wrap items-center gap-4 rounded-xl border border-line bg-card px-5 py-4"
       data-transfer={transfer.id}
     >
-      <p className="min-w-[260px] flex-1 text-[25px] font-bold text-black">
+      <p className="min-w-[200px] flex-1 text-title-l font-semibold text-ink">
         {transfer.entity_name}
       </p>
-      <p className="flex-1 text-xl text-black">
+      <p className="flex-1 text-body-l text-ink">
         Transfer request received.
         {transfer.from_name ? (
-          <span className="block text-base text-[var(--ink-soft)]">from {transfer.from_name}</span>
+          <span className="block text-body-s text-ink-2">from {transfer.from_name}</span>
         ) : null}
       </p>
       <button
         type="button"
         onClick={() => onReview(transfer)}
-        className="h-[58px] rounded-[24px] bg-secondary px-6 text-xl font-bold text-white hover:opacity-90"
+        className="h-11 rounded-xl bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed"
       >
         Review and accept
       </button>

@@ -53,10 +53,10 @@ export function ModuleChoiceScreen({ entityId, entityName }: { entityId: string;
 
   return (
     // overflow-x-hidden: Minty peeks out past a door's corner (ModuleChoiceButton) - never past the screen.
-    <div className="flex min-h-dvh min-w-0 flex-col overflow-x-hidden bg-white">
+    <div className="flex min-h-dvh min-w-0 flex-col overflow-x-hidden bg-canvas">
       {/* The way back to the list; the page names itself in its own heading. */}
       <AppHeader back={{ href: HUB_PATHS.entities, label: "Back" }} />
-      <main className="flex min-h-0 flex-1 flex-col items-center justify-center gap-4 px-4 py-6 sm:gap-6 sm:p-8">
+      <main className="mx-auto flex min-h-0 w-full max-w-[calc(640px+2rem)] flex-1 flex-col items-center justify-center gap-4 px-4 py-6 sm:max-w-[calc(640px+3rem)] sm:gap-6 sm:px-6 sm:py-8 lg:max-w-[calc(640px+4rem)] lg:px-8">
         <Image
           src="/minty-mark.png"
           alt=""
@@ -66,31 +66,31 @@ export function ModuleChoiceScreen({ entityId, entityName }: { entityId: string;
           unoptimized
           className="h-auto w-full max-w-[120px] sm:max-w-[150px] md:max-w-[180px] lg:max-w-[210px]"
         />
-        <div className="flex max-w-full items-center gap-3 rounded-full border border-gray-100 bg-white px-4 py-2 shadow-sm">
-          <span className="material-symbols-outlined text-[20px] text-[#00838F]" aria-hidden>
+        <div className="flex max-w-full items-center gap-3 rounded-full border border-line bg-card px-4 py-2">
+          <span className="material-symbols-rounded text-[20px] text-link" aria-hidden>
             corporate_fare
           </span>
-          <span className="min-w-0 truncate text-sm font-semibold text-[#474747]">{entityName}</span>
+          <span className="min-w-0 truncate text-sm font-semibold text-ink-2">{entityName}</span>
         </div>
-        <h1 className="text-center text-lg font-bold text-black sm:text-xl md:text-2xl">{MODULE_CHOICE_COPY.title}</h1>
+        <h1 className="text-center text-title-l font-bold text-ink sm:text-display-m">{MODULE_CHOICE_COPY.title}</h1>
 
         {load.state === "loading" ? (
-          <p className="text-sm text-muted" role="status">
+          <p className="text-sm text-ink-2" role="status">
             Loading…
           </p>
         ) : null}
         {load.state === "failed" ? (
           <div className="text-center" role="alert">
             <p className="text-sm text-danger">{MODULE_CHOICE_COPY.failed}</p>
-            <button type="button" className="mt-2 min-h-11 text-sm underline" onClick={() => setAttempt((n) => n + 1)}>
+            <button type="button" className="mt-2 min-h-11 rounded-xl px-2 text-body-m font-semibold text-link underline hover:bg-hover" onClick={() => setAttempt((n) => n + 1)}>
               {MODULE_CHOICE_COPY.retry}
             </button>
           </div>
         ) : null}
         {load.state === "ready" && load.choices.length === 0 ? (
-          <p className="text-center text-sm text-ink-soft">
+          <p className="text-center text-sm text-ink-2">
             {MODULE_CHOICE_COPY.none}{" "}
-            <a className="font-semibold text-teal-strong underline" href={companySettingsPath(entityId, entityName)}>
+            <a className="font-semibold text-link underline" href={companySettingsPath(entityId, entityName)}>
               {MODULE_CHOICE_COPY.settings}
             </a>
           </p>
@@ -98,7 +98,7 @@ export function ModuleChoiceScreen({ entityId, entityName }: { entityId: string;
         {load.state === "ready" && load.choices.length > 1 ? (
           <nav
             aria-label="Modules"
-            className="mx-auto flex w-full max-w-[260px] flex-col items-center gap-4 sm:max-w-[400px] md:max-w-[820px] md:flex-row md:justify-center md:gap-6"
+            className="grid w-full grid-cols-1 justify-items-center gap-4 sm:grid-cols-2"
           >
             {load.choices.map((c) => (
               <ModuleChoiceButton key={c.code} code={c.code} label={c.label} href={c.href} />

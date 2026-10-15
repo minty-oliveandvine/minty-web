@@ -29,7 +29,7 @@ describe("PaymentFailedDialog (A-05)", () => {
     );
     const dialog = screen.getByRole("dialog");
     expect(dialog).toHaveAccessibleName(PAYMENT_FAILED_TITLE);
-    expect(within(dialog).getByText("Visa 4121")).toHaveClass("text-[#ea9713]");
+    expect(within(dialog).getByText("Visa 4121")).toHaveClass("text-ink");
     expect(within(dialog).getByText(PAYMENT_FAILED_RETRY)).toBeInTheDocument();
     expect(within(dialog).getByText(/If you've resolved the issue/)).toBeInTheDocument();
     expect(within(dialog).queryByText("Entity")).toBeNull();

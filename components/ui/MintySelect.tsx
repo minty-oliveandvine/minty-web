@@ -30,15 +30,15 @@ export function MintySelect({
 }) {
   const id = useId();
   return (
-    <label htmlFor={id} className="flex flex-col gap-1 text-sm">
-      <span className="font-medium">{label}</span>
+    <label htmlFor={id} className="flex flex-col gap-1.5">
+      <span className="text-label font-semibold text-ink">{label}</span>
       <select
         id={id}
         name={name}
         value={value}
         disabled={disabled}
         onChange={(e) => onChange(e.target.value)}
-        className="rounded border border-[var(--border)] bg-[var(--background)] px-2 py-1.5"
+        className="h-11 rounded-xl border border-line-input bg-card px-3 text-body-m text-ink focus:border-line-selected focus:outline-none focus:ring-2 focus:ring-line-selected/25 disabled:cursor-not-allowed disabled:bg-sunk"
       >
         {placeholder !== undefined && (
           <option value="" disabled>

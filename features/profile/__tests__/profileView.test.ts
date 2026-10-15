@@ -26,13 +26,13 @@ describe("profileView", () => {
     expect(planLabel(SUPERMINTY.entity)).toMatchObject({ text: "SuperMinty", cat: true });
     expect(planLabel(SCOPED.entity)).toMatchObject({
       text: "Payment Request",
-      tone: "text-[#2e6ff2]",
+      tone: "text-ink",
       cat: false,
     });
     // Petty Cash's amber, the one the subscription screens pair with Payment Request's blue
     expect(planLabel({ ...SCOPED.entity!, modules: ["PETTY_CASH"] })).toMatchObject({
       text: "Petty Cash",
-      tone: "text-[#ea9713]",
+      tone: "text-ink",
       cat: false,
     });
     expect(planLabel({ ...SCOPED.entity!, modules: [] })).toBeNull();

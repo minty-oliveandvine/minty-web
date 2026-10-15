@@ -67,9 +67,9 @@ const MENU_LABEL: Record<CardMenuItem, string> = {
 };
 
 const CHIP: Record<CardRow["chip"], string> = {
-  default: "bg-[#fdf2e0] text-[#c98b1b]",
-  saved: "bg-[#eff1f4] text-[#6b7380]",
-  expired: "bg-[#fdeded] text-[#dc5a5a]",
+  default: "bg-warning-bg text-warning",
+  saved: "bg-neutral-bg text-neutral",
+  expired: "bg-danger-bg text-danger",
 };
 
 const CHIP_LABEL: Record<CardRow["chip"], string> = {
@@ -156,27 +156,32 @@ export function NextBillingCard({
       // other two leave, with the gaps kept tight to give it room; what still does not fit
       // WRAPS rather than clipping - an email after its "@". Only a phone stacks them, and
       // drops the cat.
-      className={`grid cursor-pointer grid-cols-1 gap-x-6 gap-y-5 rounded-[20px] px-8 py-7 sm:grid-cols-[minmax(0,1fr)_auto_auto] ${
-        next.failed ? "bg-[#fdf6ec]" : "bg-[#e7f6f5]"
-      }`}
+      // Minty v2: the section header sits above the card (16/600, 12px under it), and the
+      // card is the plain white one; a failed payment is said by the red line and pill inside.
+      className="flex cursor-pointer flex-col"
     >
-      <div className="flex flex-wrap items-start justify-between gap-3 sm:col-span-2">
-        <h2 className="text-[17px] font-bold text-[#16202e]">{NEXT_BILLING}</h2>
+      <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+        <h2 className="text-title-m font-semibold text-ink">{NEXT_BILLING}</h2>
         {/* What a click on the card does, for the keyboard - shown only while focused. */}
         <button
           type="button"
           onClick={onPick}
           aria-haspopup="dialog"
-          className="sr-only shrink-0 rounded-md text-[13px] font-semibold text-[#2e9b9b] underline underline-offset-4 focus-visible:not-sr-only focus-visible:px-2 focus-visible:py-1"
+          className="sr-only shrink-0 rounded-xl text-body-s font-semibold text-link underline underline-offset-4 focus-visible:not-sr-only focus-visible:px-2 focus-visible:py-1"
         >
           {CHOOSE_ACCOUNT}
         </button>
       </div>
-      <div className="min-w-0 [overflow-wrap:anywhere] sm:col-start-1 sm:row-start-2">
-        <p className="text-[17px] font-bold text-[#16202e]">{BILL_TO}</p>
-        <p className="mt-2 text-[17px] text-[#16202e]">{next.billTo || "—"}</p>
+      <div
+        className={`grid grid-cols-1 gap-x-6 gap-y-5 rounded-xl border bg-card p-4 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:p-5 ${
+          next.failed ? "border-danger" : "border-line"
+        }`}
+      >
+      <div className="min-w-0 [overflow-wrap:anywhere] sm:col-start-1 sm:row-start-1">
+        <p className="text-body-s text-ink-2">{BILL_TO}</p>
+        <p className="mt-1 text-body-m font-semibold text-ink">{next.billTo || "—"}</p>
         {next.addressLines.length > 0 && (
-          <address className="mt-3 text-[15px] not-italic leading-snug text-[#8b93a0]">
+          <address className="mt-2 text-body-m not-italic leading-snug text-ink-2">
             {next.addressLines.map((line) => (
               <span key={line} className="block">
                 {line}
@@ -185,7 +190,7 @@ export function NextBillingCard({
           </address>
         )}
         {next.email && (
-          <p className="mt-3 text-[15px] text-[#8b93a0]">
+          <p className="mt-2 text-body-m text-ink-2">
             <BreakableEmail address={next.email} />
           </p>
         )}
@@ -193,47 +198,52 @@ export function NextBillingCard({
           <button
             type="button"
             onClick={onChangeDetails}
-            className="mt-5 text-[15px] text-[#16202e] underline underline-offset-4 hover:text-[#2e9b9b]"
+            className="-mx-2 mt-2 min-h-11 rounded-xl px-2 text-body-m text-ink underline underline-offset-4 hover:text-link"
           >
             {CHANGE_BILLING_DETAILS}
           </button>
         )}
       </div>
-      <div className="sm:col-start-2 sm:row-start-2">
-        {/* The design's two rows: the labels in a column, their values right-aligned beside
-            them, and the amount set large in the price teal with "(estimated)" under it -
-            the API prices it with the renewal runner itself, but a trial that lapses or a
-            module cancelled before the date changes the bill. */}
-        <dl className="grid grid-cols-[auto_auto] items-baseline gap-x-6 gap-y-6">
-          <dt className="text-[17px] font-bold text-[#16202e]">{NEXT_BILL_DATE}</dt>
-          <dd className="text-right text-[17px] text-[#16202e]">{next.date ?? "—"}</dd>
-          <dt className="text-[17px] font-bold text-[#16202e]">{AMOUNT}</dt>
-          <dd className="text-right">
-            <span className="block text-[28px] font-bold leading-none tabular-nums text-[#4fc7c7]">
-              {next.amount ?? "—"}
-            </span>
-            {next.amount && (
-              <span className="mt-1.5 block text-[13px] text-[#a0a8b2]">{ESTIMATED}</span>
-            )}
-          </dd>
+      <div className="sm:col-start-2 sm:row-start-1">
+        {/* Two label/value rows, ruled between: the date, and the amount set large in the
+            price teal with "(estimated)" under it - the API prices it with the renewal runner
+            itself, but a trial that lapses or a module cancelled before the date changes the
+            bill. */}
+        <dl className="flex flex-col divide-y divide-line-subtle">
+          <div className="flex items-baseline justify-between gap-6 pb-3">
+            <dt className="text-body-s text-ink-2">{NEXT_BILL_DATE}</dt>
+            <dd className="text-right text-body-m text-ink">{next.date ?? "—"}</dd>
+          </div>
+          <div className="flex items-baseline justify-between gap-6 pt-3">
+            <dt className="text-body-s text-ink-2">{AMOUNT}</dt>
+            <dd className="text-right">
+              <span className="block text-display-m font-bold leading-none tabular-nums text-link">
+                {next.amount ?? "—"}
+              </span>
+              {next.amount && (
+                <span className="mt-1.5 block text-body-s text-ink-2">{ESTIMATED}</span>
+              )}
+            </dd>
+          </div>
         </dl>
         {/* Which companies failed is the overview's line (08-A); here the block only
             says that the account owes something now. */}
         {next.failed && (
-          <div className="mt-4 flex flex-col items-start gap-3">
-            <p className="text-[17px] text-[#dc5a5a]">{DUE_IMMEDIATELY}</p>
-            <span className="rounded-lg bg-[#fdeded] px-5 py-2 text-[15px] font-semibold text-[#dc5a5a]">
+          <div className="mt-4 flex flex-col items-start gap-2">
+            <p className="text-body-m font-semibold text-danger">{DUE_IMMEDIATELY}</p>
+            <span className="inline-flex h-6 items-center rounded-full bg-danger-bg px-2.5 text-label font-semibold text-danger">
               {PAYMENT_FAILED}
             </span>
           </div>
         )}
       </div>
-      {/* The third column: the whole block's height, centred, against the right edge. */}
+      {/* The third column: the block's height, centred, against the right edge. */}
       <CatArt
         cat={next.failed ? "thinking" : "clock"}
-        width={next.failed ? 124 : 172}
-        className="hidden self-center justify-self-end sm:col-start-3 sm:row-span-2 sm:row-start-1 sm:block"
+        width={next.failed ? 96 : 128}
+        className="hidden self-center justify-self-end sm:col-start-3 sm:row-start-1 sm:block"
       />
+      </div>
     </section>
   );
 }
@@ -243,13 +253,17 @@ export function ExpiredCardNotice({ text, onAdd }: { text: string; onAdd: () => 
   return (
     <p
       role="alert"
-      className="mx-auto flex w-fit items-center gap-3 rounded-lg border border-[#f3c2c2] bg-[#fdf3f3] px-6 py-3.5 text-[15px] text-[#21262e]"
+      className="flex w-full flex-wrap items-center gap-x-3 rounded-xl border border-transparent bg-danger-bg px-4 py-3 text-body-m text-danger"
     >
-      <span aria-hidden className="text-lg text-[#dc5a5a]">
+      <span aria-hidden className="text-danger">
         ⚠
       </span>
       {text.replace(/\s*Update your payment method here\.$/, "")}{" "}
-      <button type="button" onClick={onAdd} className="font-semibold text-[#dc5a5a] underline">
+      <button
+        type="button"
+        onClick={onAdd}
+        className="-mx-2 min-h-11 rounded-xl px-2 font-semibold text-danger underline"
+      >
         Update your payment method here.
       </button>
     </p>
@@ -261,8 +275,8 @@ function BrandTile({ label }: { label: string }) {
   return (
     <span
       aria-hidden
-      className={`flex h-[62px] w-[92px] shrink-0 items-center justify-center rounded-xl border border-[#eef1f4] bg-white text-center font-black italic text-[#1a1f71] shadow-[0px_2px_8px_0px_rgba(0,0,0,0.06)] ${
-        label.length > 5 ? "text-[13px]" : "text-xl"
+      className={`flex h-12 w-[72px] shrink-0 items-center justify-center rounded-xl border border-line bg-card text-center font-black italic text-[#1a1f71] ${
+        label.length > 5 ? "text-body-s" : "text-xl"
       }`}
     >
       {label}
@@ -313,10 +327,10 @@ function CardMenu({
         aria-controls={menuId}
         aria-label={`${UPDATE_CARD} · ${row.title}`}
         data-attention={attention || undefined}
-        className={`h-[38px] w-[112px] rounded-lg border bg-white text-[13px] font-semibold hover:bg-[#f7f9fa] ${
+        className={`h-11 whitespace-nowrap rounded-xl border bg-card px-4 text-body-m font-semibold ${
           attention
-            ? "border-[#e3a1a1] text-[#dc5a5a]"
-            : "border-[#d8dee4] text-[#292e38]"
+            ? "border-danger text-danger hover:bg-danger-bg"
+            : "border-line-selected text-link hover:bg-selected"
         }`}
       >
         {UPDATE_CARD}
@@ -325,7 +339,8 @@ function CardMenu({
         <div
           id={menuId}
           role="menu"
-          className="absolute right-0 top-[44px] z-20 w-[164px] overflow-hidden rounded-xl border border-[#eef1f4] bg-white py-2 shadow-[0px_8px_24px_0px_rgba(0,0,0,0.12)]"
+          // 6px under the h-11 (44px) button.
+          className="absolute right-0 top-[50px] z-20 w-[164px] overflow-hidden rounded-xl border border-line bg-card py-2 shadow-overlay"
         >
           {items.map((item) => (
             <button
@@ -336,8 +351,8 @@ function CardMenu({
                 setOpen(false);
                 onSelect(item);
               }}
-              className={`block w-full px-5 py-2.5 text-left text-[15px] hover:bg-[#f5f7fa] ${
-                item === "delete" ? "text-[#dc5a5a]" : "text-[#292e38]"
+              className={`block min-h-11 w-full px-5 py-2.5 text-left text-body-m hover:bg-hover ${
+                item === "delete" ? "text-danger" : "text-ink"
               }`}
             >
               {MENU_LABEL[item]}
@@ -361,18 +376,23 @@ function CardRowView({
   onSelect: (item: CardMenuItem) => void;
 }) {
   return (
-    <li className="flex items-center gap-4" data-card={row.card.id} data-chip={row.chip}>
+    // A record row: the brand tile, the facts and the menu in one bordered card.
+    <li
+      className="flex items-center gap-4 rounded-xl border border-line bg-card px-4 py-3 sm:px-5 sm:py-4"
+      data-card={row.card.id}
+      data-chip={row.chip}
+    >
       <BrandTile label={row.card.brand_label || "Card"} />
-      <div className="flex flex-1 items-center gap-6 rounded-xl border border-[#f0f2f5] bg-white px-7 py-4 shadow-[0px_2px_8px_0px_rgba(0,0,0,0.06)]">
+      <div className="flex min-w-0 flex-1 items-center gap-4 sm:gap-6">
         <div className="min-w-0 flex-1">
-          <p className="text-[13px] text-[#a0a8b2]">Payment Method</p>
-          <p className="truncate text-[15px] font-bold text-[#16202e]">{row.title}</p>
+          <p className="text-body-s text-ink-2">Payment Method</p>
+          <p className="truncate text-body-m font-semibold text-ink">{row.title}</p>
         </div>
-        <div className="hidden min-w-[110px] sm:block">
-          <p className="text-[13px] text-[#a0a8b2]">Expiry date</p>
+        <div className="hidden min-w-[96px] sm:block">
+          <p className="text-body-s text-ink-2">Expiry date</p>
           <p
-            className={`text-[15px] font-bold ${
-              row.chip === "expired" ? "text-[#dc5a5a]" : "text-[#16202e]"
+            className={`text-body-m ${
+              row.chip === "expired" ? "text-danger" : "text-ink"
             }`}
           >
             {row.expiry ?? "—"}
@@ -380,7 +400,7 @@ function CardRowView({
         </div>
         <span
           data-chip-label
-          className={`hidden shrink-0 rounded-md px-4 py-1.5 text-[13px] font-semibold sm:inline ${CHIP[row.chip]}`}
+          className={`hidden h-6 shrink-0 items-center rounded-full px-2.5 text-label font-semibold sm:inline-flex ${CHIP[row.chip]}`}
         >
           {CHIP_LABEL[row.chip]}
         </span>
@@ -398,14 +418,14 @@ export function NoAccountPanel({ onOpen }: { onOpen: () => void }) {
   return (
     <div
       role="status"
-      className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-[#c7cdd4] px-6 py-10 text-center"
+      className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-line px-6 py-10 text-center"
     >
-      <p className="text-[17px] font-bold text-[#16202e]">{NO_ACCOUNT_TITLE}</p>
-      <p className="max-w-[520px] text-[15px] text-[#8b93a0]">{NO_ACCOUNT_BODY}</p>
+      <p className="text-title-m font-semibold text-ink">{NO_ACCOUNT_TITLE}</p>
+      <p className="max-w-[520px] text-body-m text-ink-2">{NO_ACCOUNT_BODY}</p>
       <button
         type="button"
         onClick={onOpen}
-        className="mt-2 h-[44px] w-[220px] rounded-lg bg-[#4fc7c7] text-[15px] font-semibold text-white hover:opacity-90"
+        className="mt-2 h-11 rounded-xl bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed"
       >
         {OPEN_BILLING_ACCOUNT}
       </button>
@@ -418,14 +438,14 @@ export function NoCardPanel({ onAdd }: { onAdd: () => void }) {
   return (
     <div
       role="status"
-      className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-[#c7cdd4] px-6 py-10 text-center"
+      className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-line px-6 py-10 text-center"
     >
-      <p className="text-[17px] font-bold text-[#16202e]">{NO_CARD}</p>
-      <p className="max-w-[520px] text-[15px] text-[#8b93a0]">{NO_CARD_BODY}</p>
+      <p className="text-title-m font-semibold text-ink">{NO_CARD}</p>
+      <p className="max-w-[520px] text-body-m text-ink-2">{NO_CARD_BODY}</p>
       <button
         type="button"
         onClick={onAdd}
-        className="mt-2 h-[44px] w-[220px] rounded-lg bg-[#4fc7c7] text-[15px] font-semibold text-white hover:opacity-90"
+        className="mt-2 h-11 rounded-xl bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed"
       >
         {ADD_A_PAYMENT_METHOD}
       </button>
@@ -473,16 +493,16 @@ export function PaymentMethodsPanel({
       onClick={(e) => {
         if (!fromControl(e)) onPick();
       }}
-      className="flex cursor-pointer flex-col gap-4"
+      className="flex cursor-pointer flex-col gap-2"
     >
-      <div className="flex items-center justify-between gap-4">
-        <h2 className="text-[15px] font-bold text-[#16202e]">{PAYMENT_METHODS}</h2>
+      <div className="mb-1 flex items-center justify-between gap-4">
+        <h2 className="text-title-m font-semibold text-ink">{PAYMENT_METHODS}</h2>
         {/* What a click on the card does, for the keyboard - shown only while focused. */}
         <button
           type="button"
           onClick={onPick}
           aria-haspopup="dialog"
-          className="sr-only shrink-0 rounded-md text-[13px] font-semibold text-[#2e9b9b] underline underline-offset-4 focus-visible:not-sr-only focus-visible:px-2 focus-visible:py-1"
+          className="sr-only shrink-0 rounded-xl text-body-s font-semibold text-link underline underline-offset-4 focus-visible:not-sr-only focus-visible:px-2 focus-visible:py-1"
         >
           {CHOOSE_ACCOUNT}
         </button>
@@ -490,7 +510,7 @@ export function PaymentMethodsPanel({
           <button
             type="button"
             onClick={onAdd}
-            className="h-[38px] rounded-lg bg-[#4fc7c7] px-5 text-[13px] font-semibold text-white hover:opacity-90"
+            className="h-11 rounded-xl bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed"
           >
             {ADD_PAYMENT_METHOD}
           </button>
@@ -501,7 +521,7 @@ export function PaymentMethodsPanel({
         <NoCardPanel onAdd={onAdd} />
       ) : (
         <>
-          <ul className="flex flex-col gap-4">
+          <ul className="flex flex-col gap-2">
             {shown.map((row) => (
               <CardRowView
                 key={row.card.id}
@@ -516,20 +536,20 @@ export function PaymentMethodsPanel({
             <button
               type="button"
               onClick={onToggle}
-              className="self-end text-[15px] text-[#6b7380] hover:underline"
+              className="min-h-11 self-end rounded-xl px-2 text-body-m text-ink-2 hover:underline"
             >
               {expanded ? "Show less" : showMore}
             </button>
           )}
           {expanded && (
-            <p className="text-[13px] text-[#a0a8b2]">
+            <p className="text-body-s text-ink-muted">
               All {rows.length} saved cards. The default card is the one this account charges.
             </p>
           )}
         </>
       )}
       {actionError && (
-        <p role="alert" className="text-[13px] text-[#b42318]">
+        <p role="alert" className="text-body-s text-danger">
           {actionError}
         </p>
       )}
@@ -596,140 +616,144 @@ export function InvoiceHistoryTable({
   const downloading = pdfBusy !== null || breakdownBusy !== null;
   return (
     <section aria-label={INVOICE_HISTORY} className="flex flex-col gap-3">
-      <h2 className="text-[15px] font-bold text-[#16202e]">{INVOICE_HISTORY}</h2>
+      <h2 className="text-title-m font-semibold text-ink">{INVOICE_HISTORY}</h2>
       {invoices.length === 0 && paging.loading ? (
-        <p role="status" className="text-[15px] text-[#8b93a0]">
+        <p role="status" className="text-body-l text-ink-muted">
           {LOADING_INVOICES}
         </p>
       ) : invoices.length === 0 ? (
-        <p className="text-[15px] text-[#8b93a0]">{NO_INVOICES}</p>
+        <p className="text-body-l text-ink-muted">{NO_INVOICES}</p>
       ) : (
-        <table
-          aria-busy={paging.loading || undefined}
-          className={`w-full border-collapse text-left ${paging.loading ? "opacity-60" : ""}`}
-        >
-          <thead>
-            <tr className="text-[13px] font-semibold text-[#16202e]">
-              <th scope="col" className="pb-2">
-                Inv#
-              </th>
-              <th scope="col" className="pb-2">
-                {amountHeader}
-              </th>
-              <th scope="col" className="pb-2">
-                Paid date
-              </th>
-              {/* The two downloads, centred over their icon and link as the design sets them. */}
-              <th scope="col" className="pb-2 text-center">
-                Invoice PDF
-              </th>
-              <th scope="col" className="pb-2 text-center">
-                {BILLING_BREAKDOWN}
-              </th>
-              <th scope="col" className="pb-2">
-                <span className="sr-only">Actions</span>
-              </th>
-            </tr>
-          </thead>
-          <tbody className="text-[13px] text-[#16202e]">
-            {invoices.map((inv) => (
-              // A declined charge is red across the row (08-K); the two downloads keep their own
-              // colours - they are actions, not what went wrong.
-              <tr
-                key={inv.id}
-                data-failed={inv.failed || undefined}
-                className={`border-b border-[#eef1f4] ${inv.failed ? "text-[#dc5a5a]" : ""}`}
-              >
-                <td className="py-3">
-                  {/* The Inv# opens the preview where there is a PDF to show. It keeps the row's
-                      colour (a button inherits it), so a declined invoice's stays red. */}
-                  {inv.hasPdf ? (
-                    <button
-                      type="button"
-                      onClick={() => onPreview(inv.id)}
-                      aria-haspopup="dialog"
-                      aria-label={`Preview invoice ${inv.reference}`}
-                      className="cursor-pointer underline-offset-2 hover:underline focus-visible:underline"
-                    >
-                      {inv.reference}
-                    </button>
-                  ) : (
-                    inv.reference
-                  )}
-                </td>
-                <td className="py-3 tabular-nums">{inv.amount}</td>
-                <td className="py-3">{inv.paid ?? "—"}</td>
-                <td className="py-3 text-center">
-                  {inv.hasPdf ? (
-                    <button
-                      type="button"
-                      onClick={() => onPdf(inv.id)}
-                      disabled={downloading}
-                      aria-busy={pdfBusy === inv.id || undefined}
-                      aria-label={`Invoice ${inv.reference} (PDF)`}
-                      className="inline-flex cursor-pointer text-[#16202e] hover:text-[#2e9b9b] disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
-                        <path
-                          d="M8 1.5v8m0 0 3-3m-3 3-3-3M2 11.5v1.5a1.5 1.5 0 0 0 1.5 1.5h9a1.5 1.5 0 0 0 1.5-1.5v-1.5"
-                          stroke="currentColor"
-                          strokeWidth="1.4"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    </button>
-                  ) : (
-                    <span className="text-[#c7cdd4]">—</span>
-                  )}
-                </td>
-                <td className="py-3 text-center">
-                  <button
-                    type="button"
-                    onClick={() => onBreakdown(inv.id)}
-                    disabled={downloading}
-                    aria-busy={breakdownBusy === inv.id || undefined}
-                    aria-label={`${DOWNLOAD_CSV}: the billing breakdown of invoice ${inv.reference}`}
-                    className="text-[13px] text-[#18c4c7] hover:underline hover:underline-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {breakdownBusy === inv.id ? PREPARING_CSV : DOWNLOAD_CSV}
-                  </button>
-                </td>
-                <td className="py-2 pl-3 text-right">
-                  {/* Only on the invoice a retry would charge: an abandoned bill stays red, with
-                      no button that could only refuse. */}
-                  {inv.retryable && (
-                    <button
-                      type="button"
-                      onClick={() => onRetry(inv.id)}
-                      disabled={retrying !== null}
-                      aria-busy={retrying === inv.id || undefined}
-                      aria-label={`${RETRY_PAYMENT}: invoice ${inv.reference}`}
-                      className="h-[32px] whitespace-nowrap rounded-lg bg-[#dc5a5a] px-5 text-[13px] font-semibold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {retrying === inv.id ? RETRYING : RETRY_PAYMENT}
-                    </button>
-                  )}
-                </td>
+        // A bordered card round the real table; narrower than the table, it scrolls sideways
+        // inside the card rather than the page.
+        <div className="overflow-x-auto rounded-xl border border-line bg-card">
+          <table
+            aria-busy={paging.loading || undefined}
+            className={`w-full min-w-[600px] border-collapse text-left ${paging.loading ? "opacity-60" : ""}`}
+          >
+            <thead className="border-b border-line-subtle">
+              <tr className="text-body-s font-semibold text-ink-2">
+                <th scope="col" className="px-4 py-3">
+                  Inv#
+                </th>
+                <th scope="col" className="px-4 py-3">
+                  {amountHeader}
+                </th>
+                <th scope="col" className="px-4 py-3">
+                  Paid date
+                </th>
+                {/* The two downloads, centred over their icon and link as the design sets them. */}
+                <th scope="col" className="px-4 py-3 text-center">
+                  Invoice PDF
+                </th>
+                <th scope="col" className="px-4 py-3 text-center">
+                  {BILLING_BREAKDOWN}
+                </th>
+                <th scope="col" className="px-4 py-3">
+                  <span className="sr-only">Actions</span>
+                </th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-line-subtle text-body-s text-ink">
+              {invoices.map((inv) => (
+                // A declined charge is red across the row (08-K); the two downloads keep their own
+                // colours - they are actions, not what went wrong.
+                <tr
+                  key={inv.id}
+                  data-failed={inv.failed || undefined}
+                  className={inv.failed ? "text-danger" : undefined}
+                >
+                  <td className="px-4 py-1">
+                    {/* The Inv# opens the preview where there is a PDF to show. It keeps the row's
+                        colour (a button inherits it), so a declined invoice's stays red. */}
+                    {inv.hasPdf ? (
+                      <button
+                        type="button"
+                        onClick={() => onPreview(inv.id)}
+                        aria-haspopup="dialog"
+                        aria-label={`Preview invoice ${inv.reference}`}
+                        className="inline-flex min-h-11 cursor-pointer items-center underline-offset-2 hover:underline focus-visible:underline"
+                      >
+                        {inv.reference}
+                      </button>
+                    ) : (
+                      inv.reference
+                    )}
+                  </td>
+                  <td className="px-4 py-1 tabular-nums">{inv.amount}</td>
+                  <td className="px-4 py-1">{inv.paid ?? "—"}</td>
+                  <td className="px-4 py-1 text-center">
+                    {inv.hasPdf ? (
+                      <button
+                        type="button"
+                        onClick={() => onPdf(inv.id)}
+                        disabled={downloading}
+                        aria-busy={pdfBusy === inv.id || undefined}
+                        aria-label={`Invoice ${inv.reference} (PDF)`}
+                        className="inline-flex size-11 cursor-pointer items-center justify-center rounded-xl text-ink hover:bg-hover hover:text-link disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+                          <path
+                            d="M8 1.5v8m0 0 3-3m-3 3-3-3M2 11.5v1.5a1.5 1.5 0 0 0 1.5 1.5h9a1.5 1.5 0 0 0 1.5-1.5v-1.5"
+                            stroke="currentColor"
+                            strokeWidth="1.4"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      </button>
+                    ) : (
+                      <span className="text-ink-disabled">—</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-1 text-center">
+                    <button
+                      type="button"
+                      onClick={() => onBreakdown(inv.id)}
+                      disabled={downloading}
+                      aria-busy={breakdownBusy === inv.id || undefined}
+                      aria-label={`${DOWNLOAD_CSV}: the billing breakdown of invoice ${inv.reference}`}
+                      className="min-h-11 rounded-xl px-2 text-body-s text-link hover:underline hover:underline-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {breakdownBusy === inv.id ? PREPARING_CSV : DOWNLOAD_CSV}
+                    </button>
+                  </td>
+                  <td className="py-2 pl-3 pr-4 text-right">
+                    {/* Only on the invoice a retry would charge: an abandoned bill stays red, with
+                        no button that could only refuse. */}
+                    {inv.retryable && (
+                      <button
+                        type="button"
+                        onClick={() => onRetry(inv.id)}
+                        disabled={retrying !== null}
+                        aria-busy={retrying === inv.id || undefined}
+                        aria-label={`${RETRY_PAYMENT}: invoice ${inv.reference}`}
+                        className="h-11 whitespace-nowrap rounded-xl bg-danger-action px-4 text-body-m font-semibold text-white hover:bg-[var(--mv2-action-danger-hover)] disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {retrying === inv.id ? RETRYING : RETRY_PAYMENT}
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
       {pdfError && (
-        <p role="alert" className="text-[13px] text-[#b42318]">
+        <p role="alert" className="text-body-s text-danger">
           {pdfError}
         </p>
       )}
       {breakdownError && (
-        <p role="alert" className="text-[13px] text-[#b42318]">
+        <p role="alert" className="text-body-s text-danger">
           {breakdownError}
         </p>
       )}
       {retryNotice && (
         <p
           role={retryNotice.tone === "ok" ? "status" : "alert"}
-          className={`text-[13px] ${retryNotice.tone === "ok" ? "text-[#2e9b9b]" : "text-[#b42318]"}`}
+          className={`text-body-s ${retryNotice.tone === "ok" ? "text-success" : "text-danger"}`}
         >
           {retryNotice.text}
         </p>
@@ -738,7 +762,7 @@ export function InvoiceHistoryTable({
         // The payer's pick of 10, 50 or 100 to a page, and the way through them.
         <nav
           aria-label="Invoice pages"
-          className="flex w-full flex-wrap items-center justify-between gap-3 text-[13px] text-[#6b7380]"
+          className="flex w-full flex-wrap items-center justify-between gap-3 text-body-s text-ink-2"
         >
           <div className="flex items-center gap-2">
             <label htmlFor={perPageId}>Rows per page</label>
@@ -749,7 +773,7 @@ export function InvoiceHistoryTable({
                 const size = Number(e.target.value);
                 if (isInvoicePageSize(size)) onPerPage(size);
               }}
-              className="h-8 rounded-md border border-[#d8dee4] bg-white px-2 text-[13px] text-[#16202e]"
+              className="h-11 rounded-xl border border-line-input bg-card px-2 text-body-s text-ink"
             >
               {INVOICE_PAGE_SIZES.map((size) => (
                 <option key={size} value={size}>
@@ -765,7 +789,7 @@ export function InvoiceHistoryTable({
               onClick={() => onPage(paging.page - 1)}
               disabled={paging.page <= 1}
               aria-label="Previous page"
-              className="h-8 w-8 rounded-md border border-[#d8dee4] bg-white text-[15px] text-[#16202e] hover:bg-[#f5f7fa] disabled:opacity-40"
+              className="size-11 rounded-xl border border-line bg-card text-body-m text-ink hover:bg-hover disabled:opacity-40"
             >
               ‹
             </button>
@@ -774,7 +798,7 @@ export function InvoiceHistoryTable({
               onClick={() => onPage(paging.page + 1)}
               disabled={paging.page >= paging.pages}
               aria-label="Next page"
-              className="h-8 w-8 rounded-md border border-[#d8dee4] bg-white text-[15px] text-[#16202e] hover:bg-[#f5f7fa] disabled:opacity-40"
+              className="size-11 rounded-xl border border-line bg-card text-body-m text-ink hover:bg-hover disabled:opacity-40"
             >
               ›
             </button>

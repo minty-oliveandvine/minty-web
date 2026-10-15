@@ -32,13 +32,13 @@ export function ResponsibilityNote({ note, entityName }: { note: string; entityN
   const tail = parts[1] ?? "";
   const [beforeDate, afterDate] = date ? tail.split(date) : [tail, ""];
   return (
-    <p className="text-[15px] text-[#a0a8b2]">
+    <p className="text-body-l text-ink-muted">
       {parts[0]}
-      <span className="text-[#219994]">{entityName}</span>
+      <span className="text-link">{entityName}</span>
       {date ? (
         <>
           {beforeDate}
-          <span className="text-[#16202e]">{date}</span>
+          <span className="text-ink">{date}</span>
           {afterDate}
         </>
       ) : (
@@ -60,8 +60,8 @@ function CandidateRow({
   const current = person.is_current;
   return (
     <label
-      className={`flex cursor-pointer items-center gap-3 rounded-lg border px-4 py-3 ${
-        selected ? "border-[#2e9b9b] bg-[#f0faf9]" : "border-[#e6ebed] bg-white hover:bg-[#f7f9fa]"
+      className={`flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 ${
+        selected ? "border-line-selected bg-selected" : "border-line bg-card hover:bg-hover"
       } ${current ? "cursor-default" : ""}`}
     >
       <input
@@ -71,18 +71,18 @@ function CandidateRow({
         checked={selected}
         disabled={current}
         onChange={onSelect}
-        className="size-[18px] shrink-0 accent-[#2e9b9b]"
+        className="size-[18px] shrink-0 accent-[var(--mv2-border-selected)]"
       />
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-[15px] font-semibold text-[#21262e]">
+        <span className="block truncate text-body-m font-semibold text-ink">
           {person.name || person.email}
         </span>
-        <span className="block truncate text-[13px] text-[#6b7380]">
+        <span className="block truncate text-body-s text-ink-2">
           {person.email || "No email on file"}
         </span>
       </span>
       {current && (
-        <span className="shrink-0 rounded-md bg-[#eff1f4] px-2.5 py-1 text-xs font-semibold text-[#6b7380]">
+        <span className="shrink-0 inline-flex h-6 items-center rounded-full px-2.5 text-label font-semibold bg-neutral-bg text-neutral">
           Current
         </span>
       )}
@@ -129,16 +129,16 @@ export function SubscriberPicker({
   return (
     <section
       aria-label="Select new subscriber"
-      className="flex w-full max-w-[720px] flex-col gap-4 rounded-2xl border border-[#e6ebed] bg-white p-8"
+      className="flex w-full max-w-[720px] flex-col gap-4 rounded-xl border border-line bg-card p-4 sm:p-5"
     >
-      <p className="text-[13px] font-semibold uppercase tracking-[0.06em] text-[#9aa3ae]">
+      <p className="text-body-s font-semibold uppercase tracking-[0.06em] text-ink-muted">
         {PICK_HEADING}
       </p>
 
       {blockers.length > 0 && (
         <div
           role="status"
-          className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+          className="rounded-xl border border-transparent bg-warning-bg px-4 py-3 text-body-m text-warning"
         >
           {blockers.map((reason) => (
             <p key={reason}>{reason}</p>
@@ -151,11 +151,11 @@ export function SubscriberPicker({
           Array.from({ length: 3 }).map((_, i) => (
             <div
               key={i}
-              className="h-[62px] animate-pulse rounded-lg border border-[#e6ebed] bg-[#f7f9fa]"
+              className="h-[62px] animate-pulse rounded-xl border border-line bg-sunk"
             />
           ))
         ) : candidates.length === 0 ? (
-          <p className="rounded-lg border border-dashed border-[#e6ebed] px-5 py-8 text-center text-sm text-[#6b7380]">
+          <p className="rounded-xl border border-dashed border-line px-5 py-8 text-center text-sm text-ink-2">
             {NO_ADMINS}
           </p>
         ) : (
@@ -170,52 +170,52 @@ export function SubscriberPicker({
         )}
       </div>
 
-      <hr className="border-[#eef1f4]" />
+      <hr className="border-line-subtle" />
 
       <div className="flex flex-col gap-2">
-        <label htmlFor="inviteEmail" className="text-sm font-semibold text-[#374151]">
+        <label htmlFor="inviteEmail" className="text-label font-semibold text-ink">
           {INVITE_HEADING}
         </label>
-        <div className="flex items-center gap-2 rounded-lg border border-[#e5e7eb] bg-white pr-2 focus-within:border-secondary focus-within:ring-2 focus-within:ring-secondary/20">
+        <div className="flex items-center gap-2 rounded-xl border border-line-input bg-card pr-2 focus-within:border-line-selected focus-within:ring-2 focus-within:ring-line-selected/25">
           <input
             id="inviteEmail"
             {...inviteEmail.props}
             value={invite}
             placeholder={INVITE_PLACEHOLDER}
             aria-describedby={inviteEmail.rejected ? "inviteEmail-hint" : undefined}
-            className="min-w-0 flex-1 bg-transparent px-4 py-3 text-[15px] text-[#16202e] placeholder:text-[#9ca3af] focus:outline-none"
+            className="h-11 min-w-0 flex-1 bg-transparent px-3 text-body-m text-ink placeholder:text-ink-muted focus:outline-none"
           />
           <button
             type="button"
             onClick={on.onSendInvite}
             disabled={inviting || !invite.trim()}
-            className="shrink-0 rounded-lg px-3 py-1.5 text-[15px] font-semibold text-[#2e9b9b] hover:opacity-80 disabled:cursor-not-allowed disabled:text-[#b4bac3]"
+            className="min-h-11 shrink-0 rounded-xl px-2 text-body-m font-semibold text-link hover:bg-hover disabled:cursor-not-allowed disabled:text-ink-disabled"
           >
             {inviting ? "Sending…" : "Send invite"}
           </button>
         </div>
         {inviteEmail.rejected && (
-          <p id="inviteEmail-hint" className="text-sm text-[#b42318]" role="status">
+          <p id="inviteEmail-hint" className="text-sm text-danger" role="status">
             {EMAIL_ASCII_HINT}
           </p>
         )}
         {inviteError && (
-          <p className="text-sm text-[#b42318]" role="alert">
+          <p className="text-sm text-danger" role="alert">
             {inviteError}
           </p>
         )}
         {invited && (
-          <p className="text-sm text-[#267347]" role="status">
+          <p className="text-sm text-success" role="status">
             {invited}
           </p>
         )}
       </div>
 
-      <div className="flex flex-wrap items-center justify-end gap-3 pt-2">
+      <div className="flex justify-end gap-3 pt-2 max-sm:flex-col-reverse max-sm:[&>*]:w-full">
         <button
           type="button"
           onClick={on.onCancel}
-          className="rounded-lg border border-[#d8dee4] bg-white px-6 py-2.5 text-[15px] font-semibold text-[#292e38] hover:bg-[#f5f7fa]"
+          className="h-11 rounded-xl border border-line-selected bg-card px-4 text-body-m font-semibold text-link hover:bg-selected disabled:opacity-60"
         >
           Cancel
         </button>
@@ -223,13 +223,13 @@ export function SubscriberPicker({
           type="button"
           onClick={on.onRequest}
           disabled={!canRequest}
-          className="rounded-lg bg-[#4fc7c7] px-6 py-2.5 text-[15px] font-semibold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+          className="h-11 rounded-xl bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed disabled:cursor-not-allowed disabled:bg-action-disabled disabled:text-ink-disabled"
         >
           {busy ? "Sending…" : REQUEST_TRANSFER}
         </button>
       </div>
       {sendError && (
-        <p className="text-right text-sm text-[#b42318]" role="alert">
+        <p className="text-right text-sm text-danger" role="alert">
           {sendError}
         </p>
       )}
@@ -251,30 +251,30 @@ export function PendingRequestPanel({
   onWithdraw: () => void;
 }) {
   return (
-    <section aria-label="Request pending" className="flex w-full max-w-[760px] flex-col gap-6">
+    <section aria-label="Request pending" className="flex w-full max-w-[720px] flex-col gap-6">
       <div
         role="status"
-        className="rounded-lg border border-[#f0b25a] bg-[#fff7ec] px-5 py-4 text-[15px] text-[#cc7f03]"
+        className="rounded-xl border border-transparent bg-warning-bg px-4 py-3 text-body-m text-warning"
       >
         <p className="font-bold">{REQUEST_WAITING}</p>
         <p className="mt-1">{pendingSentence(recipient)}</p>
       </div>
-      <div className="flex items-center justify-between gap-4 rounded-lg border border-[#e6ebed] bg-white px-8 py-5">
+      <div className="flex items-center justify-between gap-4 rounded-xl border border-line bg-card px-5 py-4">
         <div className="min-w-0">
-          <p className="truncate text-[17px] font-semibold text-[#21262e]">
+          <p className="truncate text-title-m font-semibold text-ink">
             {recipient.name || recipient.email}
           </p>
-          <p className="truncate text-[15px] text-[#6b7380]">{recipient.email}</p>
+          <p className="truncate text-body-m text-ink-2">{recipient.email}</p>
         </div>
-        <span className="shrink-0 rounded-md bg-[#eff1f4] px-5 py-2 text-sm font-semibold text-[#6b7380]">
+        <span className="shrink-0 inline-flex h-6 items-center rounded-full px-2.5 text-label font-semibold bg-neutral-bg text-neutral">
           Pending
         </span>
       </div>
-      <div className="flex flex-wrap items-center justify-end gap-4">
+      <div className="flex justify-end gap-3 max-sm:flex-col-reverse max-sm:[&>*]:w-full">
         <button
           type="button"
           onClick={onBack}
-          className="h-[52px] w-[150px] rounded-lg border border-[#d8dee4] bg-white text-[17px] font-semibold text-[#292e38] hover:bg-[#f5f7fa]"
+          className="h-11 rounded-xl border border-line-selected bg-card px-4 text-body-m font-semibold text-link hover:bg-selected disabled:opacity-60"
         >
           Back
         </button>
@@ -282,13 +282,13 @@ export function PendingRequestPanel({
           type="button"
           onClick={onWithdraw}
           disabled={busy}
-          className="h-[52px] w-[240px] rounded-lg border border-[#e3a1a1] bg-white text-[17px] font-semibold text-[#dc5a5a] hover:bg-[#fef3f2] disabled:opacity-60"
+          className="h-11 rounded-xl bg-danger-action px-4 text-body-m font-semibold text-white hover:bg-[var(--mv2-action-danger-hover)] disabled:opacity-60"
         >
           {busy ? "Withdrawing…" : WITHDRAW_REQUEST}
         </button>
       </div>
       {sendError && (
-        <p className="text-right text-sm text-[#b42318]" role="alert">
+        <p className="text-right text-sm text-danger" role="alert">
           {sendError}
         </p>
       )}
@@ -313,10 +313,10 @@ export function TransferRequested({
       className="grid grid-cols-1 items-center gap-8 md:grid-cols-[minmax(0,1fr)_auto] md:px-6"
     >
       <div className="flex flex-col gap-6">
-        <h2 className="text-[40px] font-bold leading-tight text-[#54d3da]">Transfer requested</h2>
+        <h2 className="text-display-l font-bold text-link">Transfer requested</h2>
         <div className="flex flex-col gap-3 pl-5">
-          <p className="text-[15px] text-[#a0a8b2]">
-            Request has been sent to <span className="text-[#219994]">{email}</span>.
+          <p className="text-body-l text-ink-muted">
+            Request has been sent to <span className="text-link">{email}</span>.
           </p>
           <ResponsibilityNote
             note={note.replace(/^Send request to take over the subscription\. /, "")}
@@ -326,7 +326,7 @@ export function TransferRequested({
         <button
           type="button"
           onClick={onBack}
-          className="h-[66px] w-[368px] max-w-full rounded-[24px] bg-[#54d3da] text-xl font-bold text-white hover:opacity-90"
+          className="h-11 rounded-xl bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed w-full sm:w-auto sm:self-start"
         >
           Back to Manage Subscription
         </button>

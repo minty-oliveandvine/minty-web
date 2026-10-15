@@ -49,17 +49,28 @@ export const MODAL_IMAGE: Record<ModalImage, { src: string; width: number; heigh
   hourglass: { src: "/portal/hourglass.png", width: 81, height: 127 },
 };
 
-const CONFIRM_TONE: Record<ConfirmTone, string> = {
-  teal: "bg-[#4fc7c7]",
-  orange: "bg-[#ea9713]",
-  red: "bg-[#dc5a5a]",
+/** Minty v2 has two confirming buttons: Primary, and Danger for what cannot be undone. */
+export type ConfirmVariant = "primary" | "danger";
+
+const CONFIRM_VARIANT: Record<ConfirmVariant, string> = {
+  primary: "bg-action hover:bg-action-hover active:bg-action-pressed",
+  danger: "bg-danger-action hover:bg-[var(--mv2-action-danger-hover)]",
+};
+
+// There is no orange action any more: an "orange" change is Primary unless the caller says it
+// cannot be undone (`confirmVariant`). `data-tone` keeps the tone so callers can tell them apart.
+const TONE_VARIANT: Record<ConfirmTone, ConfirmVariant> = {
+  teal: "primary",
+  orange: "primary",
+  red: "danger",
 };
 
 export type BackTone = "grey" | "teal";
 
 const BACK_TONE: Record<BackTone, string> = {
-  grey: "border-[#737a87]/30 font-bold text-black hover:bg-gray-50",
-  teal: "border-[#18c4c7] text-[#4fc7c7] hover:bg-[#f5ffff]",
+  // Both tones are the Secondary button now; the prop (and `data-tone`) is kept for callers.
+  grey: "border-line-selected text-link hover:bg-selected",
+  teal: "border-line-selected text-link hover:bg-selected",
 };
 
 export function ConfirmDialog({
@@ -70,6 +81,7 @@ export function ConfirmDialog({
   busy,
   confirmLabel,
   confirmTone = "teal",
+  confirmVariant,
   backLabel = "Go back",
   backTone = "grey",
   hideBack = false,
@@ -87,6 +99,8 @@ export function ConfirmDialog({
   busy: boolean;
   confirmLabel: string;
   confirmTone?: ConfirmTone;
+  /** The button's look, when the tone alone does not say whether the change can be undone. */
+  confirmVariant?: ConfirmVariant;
   backLabel?: string;
   backTone?: BackTone;
   /** One button only (a result to acknowledge): no secondary. */
@@ -106,7 +120,7 @@ export function ConfirmDialog({
       labelledBy={titleId}
       busy={busy}
       onDismiss={dismiss}
-      className="max-w-[435px] rounded-[24px] border border-white/40 bg-white p-12 max-[560px]:p-6 shadow-[0px_4px_8px_0px_rgba(15,23,42,0.08),0px_12px_32px_0px_rgba(0,0,0,0.1)]"
+      className="max-w-[440px] rounded-2xl border border-line bg-card p-6 shadow-modal max-[480px]:max-w-none max-[480px]:rounded-b-none"
     >
       {/*
           The company sits in the TITLE's column, tight under the last line of it and no wider
@@ -118,7 +132,7 @@ export function ConfirmDialog({
         */}
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
-          <h2 id={titleId} className="text-[26px] font-bold leading-tight text-black">
+          <h2 id={titleId} className="text-title-l font-semibold text-ink">
             {title}
           </h2>
           {/*
@@ -127,15 +141,15 @@ export function ConfirmDialog({
               and a company name reads as part of the sentence without one.
             */}
           {lead !== undefined ? (
-            <div className="mt-4 text-[15px] leading-snug break-words">{lead}</div>
+            <div className="mt-3 text-body-m break-words">{lead}</div>
           ) : entityName ? (
-            <p className="mt-4 text-[15px] leading-snug break-words text-[#737a87]">
+            <p className="mt-3 text-body-m break-words text-ink-2">
               Entity
               <br />
               {/* The COMPANY is coloured, the label above it is not: "Entity" is furniture,
                     the name is the thing the modal is about. (It was one grey for a while -
                     that reading of the design's single text node is superseded.) */}
-              <span className="text-[#18c4c7]">{entityName}</span>
+              <span className="font-semibold text-ink">{entityName}</span>
             </p>
           ) : null}
         </div>
@@ -147,25 +161,19 @@ export function ConfirmDialog({
           unoptimized
           data-image={image}
           style={{ height: art.height }}
-          className="-mr-3 -mt-2 w-auto shrink-0"
+          className="w-auto shrink-0"
         />
       </div>
-      <div className="mt-6 flex flex-col gap-4 text-[15px] leading-snug text-[var(--ink-soft)]">
+      <div className="mt-4 flex flex-col gap-3 text-body-m text-ink-2">
         {children}
       </div>
       {/*
-          The design's button row is WIDER than the card's padding: 169px each, a 20px gap,
-          and 39px to each edge (435 - 39 - 169 - 20 - 169 - 38). The card's p-12 leaves only
-          339px, so the row reaches back out by 9px a side and the two buttons share what is
-          left - which lands them on 169px again, without pinning a width that a longer label
-          ("Confirm Cancellation") could not wrap inside. One button on its own (`hideBack`) is
-          centred at the fixed 169px, as the design draws that case. On a phone the pair stacks,
-          the action on top, as the billing sheet's does (`SHEET_PAIR`).
+          Minty v2 modal actions: right-aligned, the way back (Secondary) first and the verb
+          after it - one button on its own (`hideBack`) sits on the right too. Below 480px the
+          card is a bottom sheet and the row stacks full width with the verb on top.
         */}
       <div
-        className={`mt-8 flex gap-5 max-[560px]:gap-3 ${
-          hideBack ? "justify-center" : "-mx-[9px] max-[560px]:mx-0 max-[560px]:flex-col-reverse"
-        }`}
+        className="mt-6 flex justify-end gap-3 max-[480px]:flex-col-reverse"
       >
         {!hideBack && (
           <button
@@ -173,7 +181,7 @@ export function ConfirmDialog({
             onClick={onBack}
             disabled={busy}
             data-tone={backTone}
-            className={`h-[66px] flex-1 rounded-[14px] max-[560px]:h-14 max-[560px]:w-full max-[560px]:flex-none border bg-white text-lg leading-tight disabled:opacity-60 ${BACK_TONE[backTone]}`}
+            className={`min-h-11 rounded-xl border bg-card px-4 py-2 text-body-m font-semibold leading-tight disabled:opacity-60 max-[480px]:w-full ${BACK_TONE[backTone]}`}
           >
             {backLabel}
           </button>
@@ -184,13 +192,8 @@ export function ConfirmDialog({
           disabled={busy}
           aria-busy={busy || undefined}
           data-tone={confirmTone}
-          // the transparent border matters: with `flex-1` the bordered button beside it would
-          // otherwise end up 2px wider, both being basis-0 under border-box
-          className={`h-[66px] rounded-[14px] border border-transparent text-lg font-bold leading-tight text-white hover:opacity-90 disabled:cursor-wait disabled:opacity-60 ${
-            hideBack
-              ? "w-[169px]"
-              : "flex-1 max-[560px]:h-14 max-[560px]:w-full max-[560px]:flex-none"
-          } ${CONFIRM_TONE[confirmTone]}`}
+          // the transparent border keeps it the same height as the bordered button beside it
+          className={`min-h-11 rounded-xl border border-transparent px-4 py-2 text-body-m font-semibold leading-tight text-white disabled:cursor-wait disabled:bg-action-disabled disabled:text-ink-disabled max-[480px]:w-full ${CONFIRM_VARIANT[confirmVariant ?? TONE_VARIANT[confirmTone]]}`}
         >
           {confirmLabel}
         </button>

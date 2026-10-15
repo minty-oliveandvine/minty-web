@@ -320,7 +320,7 @@ export function MoveCompanyDialog({
       onDismiss={onClose}
     >
       {companies.length === 0 ? (
-        <p className="text-[13.5px] text-[#6b7a80]">{MOVE_NO_COMPANIES}</p>
+        <p className="text-body-s text-ink-muted">{MOVE_NO_COMPANIES}</p>
       ) : (
         <ul className={SHEET_LIST}>
           {companies.map((row) => (

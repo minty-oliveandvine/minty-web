@@ -20,7 +20,7 @@ import type { ModuleCode } from "@/features/subscription/api/moduleSettings";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 const MODULE_COLOUR: Record<ModuleCode, string> = {
-  PETTY_CASH: "text-[#ea9713]",
+  PETTY_CASH: "text-ink",
   PAYMENT_REQUEST: "text-info",
 };
 

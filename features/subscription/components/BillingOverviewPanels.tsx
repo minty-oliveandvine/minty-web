@@ -36,7 +36,7 @@ import {
 import { ACCOUNTS_LOAD_FAILED, CHOOSE_ACCOUNT } from "@/features/subscription/lib/billingAccounts";
 
 const CARD =
-  "rounded-xl border border-[#eef1f4] bg-white px-10 py-9 shadow-[0px_2px_8px_0px_rgba(0,0,0,0.06)]";
+  "rounded-xl border border-line bg-card p-4 sm:p-5";
 
 /**
  * The first card: ONE billing account at a glance - its name as "Bill to", the payer's next
@@ -78,14 +78,14 @@ export function BillingAccountCard({
       className={`${CARD} flex flex-col gap-5 ${accountsFailed ? "" : "cursor-pointer"}`}
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <h2 className="text-[19px] font-bold text-[#16202e]">{MANAGE_BILLING_DETAILS}</h2>
+        <h2 className="text-title-l font-semibold text-ink">{MANAGE_BILLING_DETAILS}</h2>
         {!accountsFailed && (
           // What a click on the card does, for the keyboard - shown only while focused.
           <button
             type="button"
             onClick={onPick}
             aria-haspopup="dialog"
-            className="sr-only shrink-0 rounded-md text-[13px] font-semibold text-[#2e9b9b] underline underline-offset-4 focus-visible:not-sr-only focus-visible:px-2 focus-visible:py-1"
+            className="sr-only shrink-0 rounded-xl text-body-s font-semibold text-link underline underline-offset-4 focus-visible:not-sr-only focus-visible:px-2 focus-visible:py-1"
           >
             {CHOOSE_ACCOUNT}
           </button>
@@ -94,40 +94,40 @@ export function BillingAccountCard({
       {notice && (
         <p
           role={notice.tone === "failed" ? "alert" : "status"}
-          className={`text-[15px] ${notice.tone === "failed" ? "text-[#b42318]" : "text-[#2e9b9b]"}`}
+          className={`text-body-l ${notice.tone === "failed" ? "text-danger" : "text-success"}`}
         >
           {notice.text}
         </p>
       )}
       <div className="flex flex-wrap gap-x-16 gap-y-5">
         <div className="min-w-0">
-          <p className="text-[17px] font-bold text-[#16202e]">{BILL_TO}</p>
+          <p className="text-title-m font-bold text-ink">{BILL_TO}</p>
           {accountsFailed ? (
-            <p className="mt-2 truncate text-[17px] text-[#16202e]">{next.billTo || "—"}</p>
+            <p className="mt-2 truncate text-title-m font-semibold text-ink">{next.billTo || "—"}</p>
           ) : (
             <button
               type="button"
               onClick={onMove}
               aria-haspopup="dialog"
               aria-label={`${next.billTo || "No billing account"} · ${CHANGE_BILLING_ACCOUNT}`}
-              className="mt-2 flex max-w-full items-center gap-2 text-left text-[17px] text-[#16202e] hover:text-[#2e9b9b]"
+              className="-mx-2 mt-1 flex min-h-11 max-w-full items-center gap-2 rounded-xl px-2 text-left text-title-m font-semibold text-ink hover:text-link"
             >
               <span className="truncate">{next.billTo || "—"}</span>
-              <span aria-hidden className="text-[13px] text-[#8b93a0]">
+              <span aria-hidden className="text-body-s text-ink-muted">
                 ▾
               </span>
             </button>
           )}
         </div>
         <div>
-          <p className="text-[17px] font-bold text-[#16202e]">{NEXT_BILLING_DATE}</p>
-          <p className="mt-2 text-[17px] text-[#16202e]">{next.date ?? "—"}</p>
+          <p className="text-title-m font-bold text-ink">{NEXT_BILLING_DATE}</p>
+          <p className="mt-2 text-title-m font-semibold text-ink">{next.date ?? "—"}</p>
         </div>
       </div>
       {accountsFailed && (
-        <p className="text-[13px] text-[#b42318]">
+        <p className="text-body-s text-danger">
           {ACCOUNTS_LOAD_FAILED}{" "}
-          <button type="button" onClick={onRetry} className="font-semibold underline">
+          <button type="button" onClick={onRetry} className="min-h-11 px-1 font-semibold underline">
             Try again
           </button>
         </p>
@@ -135,7 +135,7 @@ export function BillingAccountCard({
       <button
         type="button"
         onClick={onOpen}
-        className="self-end text-[15px] text-[#16202e] underline underline-offset-4 hover:text-[#2e9b9b]"
+        className="-mx-2 min-h-11 self-end rounded-xl px-2 text-body-m text-ink underline underline-offset-4 hover:text-link"
       >
         {GO_TO_BILLING} ›
       </button>
@@ -146,17 +146,17 @@ export function BillingAccountCard({
 function UpdateLine({ update }: { update: OverviewUpdate }) {
   return (
     <li className="flex flex-wrap items-baseline gap-x-2 gap-y-1" data-tone={update.tone}>
-      <span className="w-[150px] shrink-0 truncate text-[13px] text-[#a0a8b2]">
+      <span className="w-[150px] shrink-0 truncate text-body-s text-ink-muted">
         {update.entityName}
       </span>
       {update.module && (
-        <span className="text-[13px] font-bold text-[#16202e]">{update.module}</span>
+        <span className="text-body-s font-bold text-ink">{update.module}</span>
       )}
-      <span className={`text-[13px] ${update.tone === "failed" ? "font-bold text-[#e5484d]" : ""}`}>
+      <span className={`text-body-s ${update.tone === "failed" ? "font-bold text-danger" : ""}`}>
         {update.text}
       </span>
       {update.emphasis && (
-        <span className="text-[13px] font-bold text-[#ea9713]">{update.emphasis}</span>
+        <span className="text-body-s font-bold text-warning">{update.emphasis}</span>
       )}
     </li>
   );
@@ -165,15 +165,15 @@ function UpdateLine({ update }: { update: OverviewUpdate }) {
 function Figure({ label, value, tone }: { label: string; value: number; tone: "grey" | "orange" }) {
   return (
     <div className="flex min-w-[150px] flex-col items-center gap-1">
-      <p className="text-[15px] text-[#16202e]">{label}</p>
+      <p className="text-body-l text-ink">{label}</p>
       <p
-        className={`text-[40px] font-bold leading-none ${
-          tone === "orange" ? "text-[#e5484d]" : "text-[#8b93a0]"
+        className={`text-display-l font-bold leading-none ${
+          tone === "orange" ? "text-danger" : "text-ink-muted"
         }`}
       >
         {value}
       </p>
-      <p className="text-[13px] text-[#8b93a0]">{entityCount(value).replace(/^\d+\s/, "")}</p>
+      <p className="text-body-s text-ink-muted">{entityCount(value).replace(/^\d+\s/, "")}</p>
     </div>
   );
 }
@@ -195,7 +195,7 @@ export function SubscriptionOverviewCard({
     <section aria-label={SUBSCRIPTION_OVERVIEW} className={`${CARD} flex flex-col gap-8`}>
       <div className="flex flex-wrap items-start justify-between gap-6">
         <div className="flex flex-col gap-7">
-          <h2 className="text-[19px] font-bold text-[#16202e]">{SUBSCRIPTION_OVERVIEW}</h2>
+          <h2 className="text-title-l font-semibold text-ink">{SUBSCRIPTION_OVERVIEW}</h2>
           <div className="flex flex-wrap gap-6">
             <Figure label={ACTIVE_SUBSCRIPTIONS} value={overview.active} tone="grey" />
             <Figure label={TRIAL_ENDING} value={overview.trialEnding} tone="orange" />
@@ -217,9 +217,9 @@ export function SubscriptionOverviewCard({
       </div>
 
       <div className="flex flex-col gap-3">
-        <h3 className="text-[15px] text-[#16202e]">{SUBSCRIPTION_UPDATES}</h3>
+        <h3 className="text-body-l text-ink">{SUBSCRIPTION_UPDATES}</h3>
         {overview.updates.length === 0 ? (
-          <p className="text-[13px] text-[#a0a8b2]">{NOTHING_TO_UPDATE}</p>
+          <p className="text-body-s text-ink-muted">{NOTHING_TO_UPDATE}</p>
         ) : (
           <ul className="flex flex-col gap-2">
             {visibleUpdates(overview.updates, updatesExpanded).map((update, i) => (
@@ -235,7 +235,7 @@ export function SubscriptionOverviewCard({
             type="button"
             onClick={onToggleUpdates}
             aria-expanded={updatesExpanded}
-            className="self-start text-[13px] text-[#6b7380] hover:underline"
+            className="-mx-2 min-h-11 self-start rounded-xl px-2 text-body-s text-ink-2 hover:underline"
           >
             {updatesExpanded ? "Show less" : more}
           </button>
@@ -245,7 +245,7 @@ export function SubscriptionOverviewCard({
       <button
         type="button"
         onClick={onManage}
-        className="mx-auto h-[52px] w-[240px] rounded-[26px] bg-[#4fc7c7] text-[15px] font-bold text-white hover:opacity-90"
+        className="mx-auto h-11 rounded-xl bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed"
       >
         {MANAGE_SUBSCRIPTION}
       </button>

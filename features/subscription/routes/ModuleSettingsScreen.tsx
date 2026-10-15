@@ -3,7 +3,7 @@
 /**
  * The module settings page of one company, composed the way minty-payment-request-web composes its
  * settings page (`app/settings/page.tsx` + `components/settings/SettingsContent.tsx` there):
- * its header, a sticky pill row in a 1024px column, and then the contents - which is the one
+ * its header, a sticky pill row in a 720px column (Minty v2), and then the contents - which is the one
  * thing that differs: the "Modules" heading, the payment-failed banner when a renewal failed,
  * the two cards and their CTAs, from the Figma design. `ModuleSettingsPage` reads the URL and
  * hands the parameters here; the tests render this directly with a fixture and a pinned `today`.
@@ -77,7 +77,7 @@ export function ModuleSettingsScreen(args: ModuleSettingsScreenProps) {
   }, [m.page, claims]);
 
   return (
-    <div className="flex h-dvh h-screen min-w-0 max-w-full flex-col overflow-hidden bg-white">
+    <div className="flex h-dvh h-screen min-w-0 max-w-full flex-col overflow-hidden bg-canvas">
       <AppHeader
         title="Settings"
         back={settingsBackLink(entityId)}
@@ -86,9 +86,9 @@ export function ModuleSettingsScreen(args: ModuleSettingsScreenProps) {
         nav={{ modules: access }}
         noBorder
       />
-      <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto overflow-x-hidden pb-[env(safe-area-inset-bottom,0px)]">
-        <div className="mx-auto w-full max-w-[1024px] px-4 sm:px-6">
-          <div className="sticky top-0 z-10 bg-white pt-3 pb-3 sm:pt-4 sm:pb-4">
+      <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto overflow-x-hidden px-4 pb-[env(safe-area-inset-bottom,0px)] sm:px-6 lg:px-8">
+        <div className="mx-auto w-full max-w-[720px]">
+          <div className="sticky top-0 z-10 bg-canvas pt-3 pb-3 sm:pt-4 sm:pb-4">
             <SettingsTabs
               tabs={settingsTabs({ id: entityId, name: entityName }, access, "modules")}
             />
@@ -124,8 +124,8 @@ export function ModuleSettingsScreen(args: ModuleSettingsScreenProps) {
               )
             ) : (
               <>
-                <h2 className="text-[25px] font-bold">Modules</h2>
-                <p className="mt-2 text-[15px] text-ink-soft">
+                <h2 className="text-display-m font-bold">Modules</h2>
+                <p className="mt-2 text-body-l text-ink-2">
                   View the modules available to this entity, start free trials and manage active
                   subscriptions.
                 </p>
@@ -136,7 +136,7 @@ export function ModuleSettingsScreen(args: ModuleSettingsScreenProps) {
                 )}
 
                 {m.status === "loading" && (
-                  <p className="mt-10 text-center text-sm text-muted" role="status">
+                  <p className="mt-10 text-center text-sm text-ink-2" role="status">
                     Loading…
                   </p>
                 )}
@@ -144,7 +144,7 @@ export function ModuleSettingsScreen(args: ModuleSettingsScreenProps) {
                 {m.status === "error" && (
                   <div className="mt-10 text-center" role="alert">
                     <p className="text-sm text-danger">{m.error}</p>
-                    <button type="button" className="mt-3 text-sm underline" onClick={m.reload}>
+                    <button type="button" className="mt-3 min-h-11 rounded-xl px-2 text-body-m font-semibold text-link underline hover:bg-hover" onClick={m.reload}>
                       Try again
                     </button>
                   </div>
