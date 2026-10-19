@@ -54,7 +54,11 @@ test.describe("module choice", () => {
     // the browser tab names the company (lib/companyTitle.ts)
     await expect(page).toHaveTitle(`Choose Module Type - ${COMPANY.name}`);
     const petty = page.getByRole("link", { name: "Petty Cash" });
-    await expect(petty).toHaveAttribute("href", new RegExp(`/entity/${COMPANY.id}/enter\\?token=.+&next=%2Fentity%2F${COMPANY.id}%2Fpetty-cash$`));
+    // Petty Cash is its own app (Step 5): /enter, then Flask's hand-off mints that app's token
+    await expect(petty).toHaveAttribute(
+      "href",
+      new RegExp(`/entity/${COMPANY.id}/enter\\?token=.+&next=%2Fhandoff%2Fpetty-cash-web%3Fentity_id%3D${COMPANY.id}(%26|$)`),
+    );
     await expect(page.getByRole("link", { name: "Payment Request" })).toHaveAttribute(
       "href",
       new RegExp(`next=%2Fentity%2F${COMPANY.id}%2Fpayment-request$`),
@@ -67,7 +71,7 @@ test.describe("module choice", () => {
   test("one module goes straight into it", async ({ page }) => {
     await stubFlask(page, ["PETTY_CASH"]);
     await handoff(page, creds(), "/entity/360812e1/olive-and-vine");
-    await expect(page).toHaveURL(new RegExp(`${PETTY_CASH_URL}/entity/${COMPANY.id}/enter.*petty-cash`));
+    await expect(page).toHaveURL(new RegExp(`${PETTY_CASH_URL}/entity/${COMPANY.id}/enter.*%2Fhandoff%2Fpetty-cash-web`));
   });
 
   for (const width of [360, 768, 1440]) {

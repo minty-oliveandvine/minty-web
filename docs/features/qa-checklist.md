@@ -393,7 +393,7 @@ before the walk — never the production payer's account.
   Playwright per the docs; their behaviour is covered by unit tests with Stripe stubbed, not by
   a manual click-through here.
 - **The email OTP sign-in's inbox step** — ends at a real inbox; not testable in this app alone.
-- **Each other app's own settings tab** (Flask's Petty Cash Settings, the payments app's
+- **Each other app's own settings tab** (minty-petty-cash-web's Petty Cash Settings, the payments app's
   Payment Request Settings) — those belong to their own repo's checklist, not this one; this
   app only owns Users and Entity & Integration.
 

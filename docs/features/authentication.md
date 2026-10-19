@@ -70,7 +70,17 @@ Flask uses it only where `PREVIEW_ORIGIN_REGEX` admits it, to hand back into
 `pr-<branch>-my.dailyminty.com` (Minty `docs/features/authentication.md` 6.1); a normal host's
 origin leaves any set. The sidebar's Bills link stays in the set through `lib/previewSibling.ts`.
 Both helpers are COPIES of `@minty/shared/previewSibling` while this app stays on `v0.1` (owner,
-2026-10-13); delete them when it moves to the Part 13 design and `v0.2`+.
+2026-10-13); delete them when it moves to the Part 13 design and `v0.2`+. The copy already knows
+Petty Cash's preview label as **`pettycash`** (`pr-<branch>-pettycash.dailyminty.com`; it was
+`petty-cash` until Step 5, 2026-10-19), as `@minty/shared` v0.5 will.
+
+**Into the Petty Cash app (Step 5, 2026-10-19).** Every Petty Cash link here - the sidebar's
+Dashboard and Reports, the module choice's Petty Cash door, the Petty Cash Settings pill and the
+settings page's Back fallback - is `lib/mintyEntry.ts::pettyCashWebUrl`: Minty's `/entity/<id>/enter`
+(rebuilding the Flask session from the cookie token), on to Flask's login-gated
+`/handoff/petty-cash-web?entity_id=<id>&next=<path on that app>&return_origin=<this origin>`,
+which mints minty-petty-cash-web's token for that company. Flask, not this app, knows that app's
+address, so there is no `PETTY_CASH_WEB_URL` here; `PETTY_CASH_URL` still means Flask.
 
 There is no second gate. The subscription feature's dark switch (`NEXT_PUBLIC_SUBSCRIPTION_ENABLED`
 and its `/not-available` page) was removed on 2026-10-01: subscriptions are simply on.
