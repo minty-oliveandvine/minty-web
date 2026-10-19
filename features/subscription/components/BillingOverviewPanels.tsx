@@ -162,6 +162,41 @@ function UpdateLine({ update }: { update: OverviewUpdate }) {
   );
 }
 
+/**
+ * The current position (Part 15.19, "know that what I pay is right"): at most three equal cards
+ * over the panels - the modules being paid for, the next bill (amount and date), and the soonest
+ * trial end while a trial runs. Only values the page already has: the next bill's card goes when
+ * its amount is unknown (the accounts read failed), the trial's when nothing is on trial.
+ */
+export function CurrentPositionCards({
+  activeModules,
+  next,
+  trialEnds,
+}: {
+  activeModules: number;
+  next: NextBilling;
+  trialEnds: string | null;
+}) {
+  const cards: { label: string; value: string; sub?: string | null }[] = [
+    { label: "Active modules", value: String(activeModules) },
+  ];
+  if (next.amount) cards.push({ label: "Next bill", value: next.amount, sub: next.date });
+  if (trialEnds) cards.push({ label: "Trial ends", value: trialEnds });
+  return (
+    <ul className="grid w-full grid-cols-1 gap-3 sm:grid-cols-3">
+      {cards.map((card) => (
+        <li key={card.label} className={`${CARD} flex min-w-0 flex-col gap-1`}>
+          <p className="text-body-s text-ink-muted">{card.label}</p>
+          <p className="text-title-l font-bold text-ink" translate="no">
+            {card.value}
+          </p>
+          {card.sub && <p className="text-body-s text-ink-2">{card.sub}</p>}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 function Figure({ label, value, tone }: { label: string; value: number; tone: "grey" | "orange" }) {
   return (
     <div className="flex min-w-[150px] flex-col items-center gap-1">

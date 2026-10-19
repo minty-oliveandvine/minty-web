@@ -115,7 +115,7 @@ describe("SubscriptionSummaryRow", () => {
     expect(on.onChangePaymentMethod).toHaveBeenCalledTimes(1);
     await userEvent.click(screen.getByRole("checkbox", { name: "Petty Cash subscription" }));
     expect(on.onTick).toHaveBeenCalledWith("PETTY_CASH");
-    expect(screen.queryByRole("button", { name: CONFIRM_CHANGE })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: new RegExp(`^${CONFIRM_CHANGE}`) })).not.toBeInTheDocument();
 
     // The footer's first sentence carries the company's name in its own span.
     const footer = screen.getAllByText(
@@ -255,7 +255,7 @@ describe("SubscriptionSummaryRow", () => {
     expect(within(p).getByText(/Future Subscription/)).toBeInTheDocument();
     expect(within(p).getByText("only")).toBeInTheDocument();
 
-    await userEvent.click(within(p).getByRole("button", { name: CONFIRM_CHANGE }));
+    await userEvent.click(within(p).getByRole("button", { name: new RegExp(`^${CONFIRM_CHANGE}`) }));
     expect(on.onConfirmChange).toHaveBeenCalledWith(view.pendingChange);
     expect(view.pendingChange).toMatchObject({ code: "PETTY_CASH", seam: "cancel" });
   });
@@ -265,7 +265,7 @@ describe("SubscriptionSummaryRow", () => {
     const pc = screen.getByRole("article", { name: "Petty Cash" });
     expect(pc).toHaveAttribute("data-ticked", "true");
     expect(within(pc).getByText("Adding")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: CONFIRM_CHANGE })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: new RegExp(`^${CONFIRM_CHANGE}`) })).toBeInTheDocument();
   });
 
   it("NX21a: unticking a confirmed trial - no chip, the trial now and no future block", () => {
@@ -276,7 +276,7 @@ describe("SubscriptionSummaryRow", () => {
     const p = panel();
     expect(within(p).getByText("(Free Trial)")).toBeInTheDocument();
     expect(within(p).queryByText(/Future Subscription/)).not.toBeInTheDocument();
-    expect(within(p).getByRole("button", { name: CONFIRM_CHANGE })).toBeInTheDocument();
+    expect(within(p).getByRole("button", { name: new RegExp(`^${CONFIRM_CHANGE}`) })).toBeInTheDocument();
   });
 
   it("the header strip closes the row; the panel under it does not", async () => {
@@ -325,7 +325,7 @@ describe("SubscriptionSummaryRow", () => {
     expect(panel).toHaveAttribute("aria-busy", "true");
     expect(within(panel).getByRole("status")).toHaveTextContent("Calculating");
     expect(panel.querySelector("img")).toHaveAttribute("src", "/portal/minty-counting.png");
-    expect(screen.queryByRole("button", { name: "Confirm Subscription Change" })).toBeNull();
+    expect(screen.queryByRole("button", { name: /^Confirm Subscription Change/ })).toBeNull();
     // The cards already show the change.
     expect(screen.getByRole("checkbox", { name: "Petty Cash subscription" })).not.toBeChecked();
     expect(screen.getByRole("checkbox", { name: "Petty Cash subscription" })).toBeEnabled();

@@ -196,7 +196,7 @@ test.describe("transfers", () => {
     await picker.getByRole("button", { name: "Confirm" }).click();
     await expect(panel).toContainText("Mastercard 8842");
 
-    await panel.getByRole("button", { name: "Confirm Subscription Transfer" }).click();
+    await panel.getByRole("button", { name: /^Confirm Subscription Transfer/ }).click();
     await page.waitForURL(
       (u) =>
         u.pathname === "/subscription/subscriptions" &&

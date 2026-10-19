@@ -221,16 +221,16 @@ test.describe("manage subscriptions", () => {
     await expect(panel).toBeVisible();
     // Nothing ticked: the panel offers NO act at all (the user, 2026-10-08 - the button must
     // not sit under "No pending changes").
-    await expect(panel.getByRole("button", { name: "Activate Subscription" })).toHaveCount(0);
-    await expect(panel.getByRole("button", { name: "Confirm Subscription Change" })).toHaveCount(0);
+    await expect(panel.getByRole("button", { name: /^Activate Subscription/ })).toHaveCount(0);
+    await expect(panel.getByRole("button", { name: /^Confirm Subscription Change/ })).toHaveCount(0);
 
     // Ticked (M45's cancelling Payment Request, restored - the same tick the 06 test uses), it
     // is Activate Subscription that appears in Confirm Subscription Change's slot: a company
     // with no subscriber has to get one before anything can be confirmed.
     await row.getByRole("checkbox", { name: "Payment Request subscription" }).click();
-    const activate = panel.getByRole("button", { name: "Activate Subscription" });
+    const activate = panel.getByRole("button", { name: /^Activate Subscription/ });
     await expect(activate).toBeVisible({ timeout: 15_000 });
-    await expect(panel.getByRole("button", { name: "Confirm Subscription Change" })).toHaveCount(0);
+    await expect(panel.getByRole("button", { name: /^Confirm Subscription Change/ })).toHaveCount(0);
     await activate.click();
 
     // The SAME section-06 modal a change asks in (the user, 2026-10-08), word for word, then
@@ -238,7 +238,7 @@ test.describe("manage subscriptions", () => {
     const unlock = page.getByRole("dialog", { name: "You have unlocked Super Minty" });
     await expect(unlock).toContainText(unactivated.entity_name);
     expect(posts).toEqual([]);
-    await unlock.getByRole("button", { name: "Confirm" }).click();
+    await unlock.getByRole("button", { name: /^Confirm/ }).click();
 
     // The same Billing Accounts sheet Manage Subscriptions asks a change with.
     const sheet = page.getByRole("dialog", { name: "Billing Accounts" });
@@ -281,7 +281,7 @@ test.describe("manage subscriptions", () => {
       await row.getByRole("checkbox", { name: "Payment Request subscription" }).click();
       const activate = body(page)
         .getByRole("region", { name: "Subscription Summary" })
-        .getByRole("button", { name: "Activate Subscription" });
+        .getByRole("button", { name: /^Activate Subscription/ });
       await expect(activate).toBeVisible({ timeout: 15_000 });
       expect((await activate.boundingBox())!.height).toBeGreaterThanOrEqual(44);
       // The page itself never scrolls sideways (the Responsive UI rules).
@@ -294,7 +294,7 @@ test.describe("manage subscriptions", () => {
       await activate.click();
       await page
         .getByRole("dialog", { name: "You have unlocked Super Minty" })
-        .getByRole("button", { name: "Confirm" })
+        .getByRole("button", { name: /^Confirm/ })
         .click();
       const sheet = page.getByRole("dialog", { name: "Billing Accounts" });
       await expect(sheet).toBeVisible();
@@ -352,7 +352,7 @@ test.describe("manage subscriptions", () => {
     // The tick waits for the row's own read, then shows as any other pending change would.
     await expect(row.getByRole("checkbox", { name: "Payment Request subscription" })).toBeChecked();
     await expect(row.locator("[data-chip]")).toHaveText("Restoring");
-    await expect(row.getByRole("button", { name: "Confirm Subscription Change" })).toBeVisible();
+    await expect(row.getByRole("button", { name: /^Confirm Subscription Change/ })).toBeVisible();
     // Arriving asks nothing and posts nothing - the person confirms.
     await expect(page.getByRole("dialog")).toHaveCount(0);
     expect(posts).toEqual([]);
@@ -407,11 +407,11 @@ test.describe("manage subscriptions", () => {
     await restore.click();
     await expect(restore).not.toBeChecked();
     await expect(opened.locator("[data-chip]")).toHaveCount(0);
-    await expect(opened.getByRole("button", { name: "Confirm Subscription Change" })).toHaveCount(
+    await expect(opened.getByRole("button", { name: /^Confirm Subscription Change/ })).toHaveCount(
       0,
     );
     await restore.click();
-    await expect(opened.getByRole("button", { name: "Confirm Subscription Change" })).toBeVisible();
+    await expect(opened.getByRole("button", { name: /^Confirm Subscription Change/ })).toBeVisible();
 
     // 06·B: leaving with the tick pending asks first - Go Back stays, Discard changes goes.
     await opened.getByRole("button", { name: "Close Mino Market Limited" }).click();
@@ -447,12 +447,12 @@ test.describe("manage subscriptions", () => {
     await body(page).getByRole("button", { name: "Open Kestrel Foods Limited" }).click();
     const opened = body(page).locator("li[data-open]");
     await opened.getByRole("checkbox", { name: "Payment Request subscription" }).click();
-    await opened.getByRole("button", { name: "Confirm Subscription Change" }).click();
+    await opened.getByRole("button", { name: /^Confirm Subscription Change/ }).click();
     // The change's modal asks first; its Confirm then asks which account pays - Company A,
     // preselected, charges Visa 4121.
     await page
       .getByRole("dialog", { name: "You have unlocked Super Minty" })
-      .getByRole("button", { name: "Confirm" })
+      .getByRole("button", { name: /^Confirm/ })
       .click();
     await page
       .getByRole("dialog", { name: "Billing Accounts" })
@@ -491,7 +491,7 @@ test.describe("manage subscriptions", () => {
     const opened = body(page).locator("li[data-open]");
     await opened.getByRole("checkbox", { name: "Payment Request subscription" }).click();
     await serveModules(RESULT_FIXTURES.RW45.after);
-    await opened.getByRole("button", { name: "Confirm Subscription Change" }).click();
+    await opened.getByRole("button", { name: /^Confirm Subscription Change/ }).click();
     // The change's modal asks first ("You have unlocked Super Minty"); nothing is posted.
     const unlock = page.getByRole("dialog", { name: "You have unlocked Super Minty" });
     await expect(unlock).toContainText("You’ve activated both modules.");
@@ -499,7 +499,7 @@ test.describe("manage subscriptions", () => {
     expect(posts).toEqual([]);
     // It bills: its Confirm opens "Billing Accounts" in its place. The company is on no account,
     // so the first that can take it is picked; the one whose collection is failing is shut.
-    await unlock.getByRole("button", { name: "Confirm" }).click();
+    await unlock.getByRole("button", { name: /^Confirm/ }).click();
     const accounts = page.getByRole("dialog", { name: "Billing Accounts" });
     await expect(accounts).toContainText("Choose the account that pays for Kestrel Foods Limited.");
     await expect(page.getByRole("dialog")).toHaveCount(1);
@@ -554,7 +554,7 @@ test.describe("manage subscriptions", () => {
     await expect(mino.getByRole("checkbox", { name: "Petty Cash subscription" })).toBeChecked();
     await mino.getByRole("checkbox", { name: "Petty Cash subscription" }).click();
     await serveModules(RESULT_FIXTURES.RV45.after);
-    await mino.getByRole("button", { name: "Confirm Subscription Change" }).click();
+    await mino.getByRole("button", { name: /^Confirm Subscription Change/ }).click();
     // Nothing is ticked after (Payment Request winds down): Cancel Subscription?, in red; Go
     // back keeps the tick, then confirm for real.
     const ask = page.getByRole("dialog", { name: "Cancel Subscription?" });
@@ -562,7 +562,7 @@ test.describe("manage subscriptions", () => {
     await ask.getByRole("button", { name: "Go back" }).click();
     await expect(page.getByRole("dialog")).toHaveCount(0);
     await expect(mino.getByRole("checkbox", { name: "Petty Cash subscription" })).not.toBeChecked();
-    await mino.getByRole("button", { name: "Confirm Subscription Change" }).click();
+    await mino.getByRole("button", { name: /^Confirm Subscription Change/ }).click();
     await page
       .getByRole("dialog", { name: "Cancel Subscription?" })
       .getByRole("button", { name: "Confirm Cancellation" })

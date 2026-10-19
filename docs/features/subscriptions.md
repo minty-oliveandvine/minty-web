@@ -605,6 +605,19 @@ re-homed and redrawn to Figma section "04 · Manage Subscriptions — the payer 
   _Manage Subscription_ button and its account card, every result's _Back to Manage
   Subscriptions_, each page's back line - so the portal now navigates only through the
   design's own hotspots. `e2e/01_landing.spec.ts` pins the absence.
+- **The current position** (Round 2.1, 2026-10-16; Part 15.19): over 08-A's two cards, at most
+  three equal cards (`CurrentPositionCards` in `BillingOverviewPanels.tsx`) - _Active modules_
+  (modules paid for across the payer's companies, counted as the figures count a paying
+  company), _Next bill_ (the account's estimated amount and the next date; left out when the
+  accounts read failed) and _Trial ends_ (the soonest trial end, while one runs). All from the
+  page's two reads (`useBillingOverview`'s `position`). There is no _Plan_ card: the landing is
+  the payer's, across companies, and plan names live on each company's module page.
+- **Money buttons name the money** (same round): _Activate Subscription_ and _Confirm
+  Subscription Change_ on the open row, the change modal's confirm opened from the list (not a
+  removal or cancellation), and _Confirm Subscription Transfer_ read "… · HK$400/month" when the
+  panel shows that monthly price (`pendingMonthly`, `pricedLabel` in `SubscriptionSummaryRow.tsx`).
+  Start Free Trial, the trial dialog, module settings' Activate and the account picker's Confirm
+  have no price in scope and stay as they were.
 - **Seeing it without the API**: `?fixture=A` (the full list + a transfer), `B` (empty), `F`
   (the suspended companies) — dev only, as the module page's; with a list fixture the open row
   is served from a 05·A frame too, `?summary=M11 … N21a` (M44 unless named).

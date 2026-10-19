@@ -212,7 +212,7 @@ describe("SubscriptionRequestsScreen", () => {
     expect(posts).toEqual([]);
 
     await userEvent.click(
-      within(back).getByRole("button", { name: "Confirm Subscription Transfer" }),
+      within(back).getByRole("button", { name: /^Confirm Subscription Transfer/ }),
     );
     await waitFor(() =>
       expect(push).toHaveBeenCalledWith(
@@ -242,7 +242,7 @@ describe("SubscriptionRequestsScreen", () => {
     const panel = within(review).getByRole("region", { name: "Subscription Summary" });
     await within(panel).findByText(NEEDS_ACCOUNT);
     expect(
-      within(review).getByRole("button", { name: "Confirm Subscription Transfer" }),
+      within(review).getByRole("button", { name: /^Confirm Subscription Transfer/ }),
     ).toBeDisabled();
 
     await userEvent.click(within(panel).getByRole("button", { name: "Add a billing account" }));

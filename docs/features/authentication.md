@@ -10,7 +10,9 @@ the verifying half `minty-subscription-api/docs/features/authentication.md`.
 Log in and invitations (`?invite=&email=&fn=&ln=`) on `/login`, sign up on **`/signup`** (its own
 route since 2026-10-09, like log in; `/login?mode=signup` 307s there in `proxy.ts`), the code
 on `/login/confirm` - Flask's `/` + `/register` and minty-onboarding-web's `/auth` pages until
-2026-10-05; those forward here (Flask's `hub_login_url`, onboarding's `next.config.ts`). The page
+2026-10-05; those forward here (Flask's `hub_login_url`, onboarding's `next.config.ts`). The
+Minty mark appears once, in the top bar (`AuthShell`; the card stopped repeating it on
+2026-10-16). The page
 is a client of Flask's identity, nothing more: `POST /auth/email/request-code` (log-in mode asks
 Flask to refuse an address with no account), `POST /auth/email/verify-code` (a new address's
 account is made there, with the names and the Terms version agreed), and the verify's answer is

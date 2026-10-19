@@ -29,6 +29,7 @@ import { PaymentFailedBanner } from "@/features/subscription/components/PaymentF
 import { PortalHero } from "@/features/subscription/components/PortalHero";
 import { SearchField } from "@/features/subscription/components/SearchField";
 import { StartTrialDialog } from "@/features/subscription/components/StartTrialDialog";
+import { pendingMonthly } from "@/features/subscription/components/SubscriptionSummaryRow";
 import { SubscriptionsTable } from "@/features/subscription/components/SubscriptionsTable";
 import { TransferRequestCard } from "@/features/subscription/components/TransferRequestCard";
 import {
@@ -135,6 +136,7 @@ export function ManageSubscriptionsScreen(args: UseSubscriptionsListArgs) {
           modal={m.changePrompt.modal}
           entityName={m.changePrompt.entity.entity_name}
           busy={m.changeBusy}
+          monthly={pendingMonthly(m.summary.view)}
           onConfirm={() => void m.applyChangePrompt()}
           onBack={m.dismissChangePrompt}
         />

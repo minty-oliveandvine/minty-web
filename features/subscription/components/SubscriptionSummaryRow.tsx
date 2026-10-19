@@ -215,6 +215,21 @@ export function PlanLines({ lines, size = "text-title-l" }: { lines: PlanLine[];
   );
 }
 
+/**
+ * What the pending change will bill a month, as the panel shows it ("HK$400") - the money a
+ * Confirm or Activate button names (Part 15.19). Null when nothing is pending or it bills nothing.
+ */
+export function pendingMonthly(view: SummaryView | null | undefined): string | null {
+  if (!view?.pendingChange) return null;
+  const block = view.panel.kind === "changing" ? view.panel.future : null;
+  return block && !block.greyed ? block.price : null;
+}
+
+/** "Confirm Subscription Change · HK$400/month", or the label alone with no amount to name. */
+export function pricedLabel(label: string, monthly: string | null): string {
+  return monthly ? `${label} · ${monthly}/month` : label;
+}
+
 export function PriceBox({
   price,
   struck,
@@ -368,7 +383,7 @@ function SummaryPanel({
             onClick={() => onActivate(view.pendingChange!)}
             className="h-11 rounded-lg bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed"
           >
-            {ACTIVATE_SUBSCRIPTION}
+            {pricedLabel(ACTIVATE_SUBSCRIPTION, pendingMonthly(view))}
           </button>
         ) : (
           <button
@@ -376,7 +391,7 @@ function SummaryPanel({
             onClick={() => onConfirmChange(view.pendingChange!)}
             className="h-11 rounded-lg bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed"
           >
-            {CONFIRM_CHANGE}
+            {pricedLabel(CONFIRM_CHANGE, pendingMonthly(view))}
           </button>
         ))}
     </section>

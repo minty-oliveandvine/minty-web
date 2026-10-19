@@ -70,11 +70,18 @@ export type UseBillingOverviewArgs = {
 
 export type OverviewNotice = { text: string; tone: "ok" | "failed" };
 
+/**
+ * The current position (Part 15.19), from the same read as the figures: how many modules are
+ * being paid for across the payer's companies, and the soonest trial end (formatted by the API).
+ */
+export type CurrentPosition = { activeModules: number; trialEnds: string | null };
+
 export type UseBillingOverviewResult = {
   status: OverviewStatus;
   error: string | null;
   next: NextBilling;
   overview: Overview;
+  position: CurrentPosition;
   /** The Subscription updates: the first five, or - after *Show more* - every one. */
   updatesExpanded: boolean;
   toggleUpdates: () => void;
@@ -222,6 +229,15 @@ export function useBillingOverview({
     () => overview(list, fixtureToday ?? today ?? new Date()),
     [list, fixtureToday, today],
   );
+  const position = useMemo((): CurrentPosition => {
+    const modules = (list?.entities ?? []).flatMap((entity) => entity.modules);
+    // Counted as the overview counts a paying company: active, or cancelled but still running.
+    const activeModules = modules.filter((m) => m.status === "active" || m.status === "cancelled").length;
+    const soonest = modules
+      .filter((m) => m.status === "trialing" && m.date_iso && m.date)
+      .sort((a, b) => (a.date_iso as string).localeCompare(b.date_iso as string))[0];
+    return { activeModules, trialEnds: soonest?.date ?? null };
+  }, [list]);
 
   // What the card says about a move: made here, or made for a new account the sheet opened (or
   // refused, with the account open all the same). Derived from the accounts, so it names the
@@ -294,6 +310,7 @@ export function useBillingOverview({
     error,
     next,
     overview: summary,
+    position,
     updatesExpanded,
     toggleUpdates: useCallback(() => setUpdatesExpanded((open) => !open), []),
     accounts,

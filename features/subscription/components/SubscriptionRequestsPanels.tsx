@@ -43,6 +43,7 @@ import {
   PLAN_TONE,
   PriceBox,
   SummaryModuleCard,
+  pricedLabel,
 } from "@/features/subscription/components/SubscriptionSummaryRow";
 
 export function NoRequests({ onBack }: { onBack: () => void }) {
@@ -365,7 +366,7 @@ export function IncomingRequestReview({
             aria-busy={busy || undefined}
             className="h-11 rounded-lg bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed disabled:cursor-not-allowed disabled:bg-action-disabled disabled:text-ink-disabled"
           >
-            {CONFIRM_TRANSFER}
+            {pricedLabel(CONFIRM_TRANSFER, chosen && !chosen.greyed ? chosen.price : null)}
           </button>
           <button
             type="button"

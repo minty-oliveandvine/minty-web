@@ -170,8 +170,8 @@ describe("ManageSubscriptionsScreen", { timeout: 30_000 }, () => {
     );
     // Nothing ticked yet, so the panel offers NO act at all (the user, 2026-10-08: the button
     // must not sit under "No pending changes").
-    expect(panel.queryByRole("button", { name: "Activate Subscription" })).toBeNull();
-    expect(panel.queryByRole("button", { name: "Confirm Subscription Change" })).toBeNull();
+    expect(panel.queryByRole("button", { name: /^Activate Subscription/ })).toBeNull();
+    expect(panel.queryByRole("button", { name: /^Confirm Subscription Change/ })).toBeNull();
 
     // Tick a module and it is Activate Subscription that appears - Confirm Subscription
     // Change's slot, since a company with no subscriber has to get one before anything can be
@@ -182,10 +182,10 @@ describe("ManageSubscriptionsScreen", { timeout: 30_000 }, () => {
     );
     const activate = await within(item).findByRole(
       "button",
-      { name: "Activate Subscription" },
+      { name: /^Activate Subscription/ },
       AFTER_BEAT,
     );
-    expect(within(item).queryByRole("button", { name: "Confirm Subscription Change" })).toBeNull();
+    expect(within(item).queryByRole("button", { name: /^Confirm Subscription Change/ })).toBeNull();
     await userEvent.click(activate);
 
     // It asks in the SAME section-06 modal a change asks in (the user, 2026-10-08) - the person
@@ -491,14 +491,14 @@ describe("ManageSubscriptionsScreen", { timeout: 30_000 }, () => {
     await userEvent.click(
       await within(item).findByRole(
         "button",
-        { name: "Confirm Subscription Change" },
+        { name: /^Confirm Subscription Change/ },
         AFTER_BEAT,
       ),
     );
     const dialog = await screen.findByRole("dialog");
     expect(dialog).toHaveAccessibleName("Remove Petty Cash?");
     expect(within(dialog).getByText(ENTITIES[0].entity_name)).toBeInTheDocument();
-    expect(within(dialog).getByRole("button", { name: "Confirm Change" })).toHaveAttribute(
+    expect(within(dialog).getByRole("button", { name: /^Confirm Change/ })).toHaveAttribute(
       "data-tone",
       "orange",
     );
@@ -646,7 +646,7 @@ describe("ManageSubscriptionsScreen", { timeout: 30_000 }, () => {
     await userEvent.click(
       await within(item).findByRole(
         "button",
-        { name: "Confirm Subscription Change" },
+        { name: /^Confirm Subscription Change/ },
         AFTER_BEAT,
       ),
     );
@@ -659,7 +659,7 @@ describe("ManageSubscriptionsScreen", { timeout: 30_000 }, () => {
     );
     // It bills: its Confirm opens "Billing Accounts" in its place. Nothing is posted until an
     // account is chosen.
-    await userEvent.click(within(unlocked).getByRole("button", { name: "Confirm" }));
+    await userEvent.click(within(unlocked).getByRole("button", { name: /^Confirm/ }));
     const sheet = await screen.findByRole("dialog", { name: "Billing Accounts" });
     expect(screen.getAllByRole("dialog")).toHaveLength(1);
     expect(

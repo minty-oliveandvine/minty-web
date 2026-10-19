@@ -28,14 +28,6 @@ export function AuthShell({ children }: { children: ReactNode }) {
       </header>
       <main className="flex flex-1 justify-center px-4 pb-12 pt-6 sm:px-6 sm:pt-12 lg:px-8">
         <div className="flex h-fit w-full min-w-0 max-w-[440px] flex-col gap-6 rounded-xl border border-line bg-card p-6 sm:p-8">
-          <Image
-            src="/minty-mark.png"
-            alt=""
-            width={40}
-            height={40}
-            unoptimized
-            className="h-10 w-10 shrink-0 object-contain"
-          />
           {children}
         </div>
       </main>

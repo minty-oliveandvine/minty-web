@@ -15,6 +15,7 @@ import type { ChangeModal } from "@/features/subscription/lib/changeModal";
 import type { ResultPart } from "@/features/subscription/lib/changeResult";
 
 import { PLAN_TONE } from "@/features/subscription/components/ChangeResultView";
+import { pricedLabel } from "@/features/subscription/components/SubscriptionSummaryRow";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 function Part({ part }: { part: ResultPart }) {
@@ -25,21 +26,28 @@ function Part({ part }: { part: ResultPart }) {
   return <span className={`font-bold ${PLAN_TONE[part.style]}`}>{part.text}</span>;
 }
 
+/** The shapes that only end something: their Confirm names no amount. */
+const BILLS_NOTHING = new Set<ChangeModal["kind"]>(["remove", "cancel_subscription"]);
+
 export function ChangeDialog({
   modal,
   entityName,
   busy,
+  monthly = null,
   onConfirm,
   onBack,
 }: {
   modal: ChangeModal;
   entityName: string;
   busy: boolean;
+  /** What the change bills a month ("HK$400"), when the screen already shows it (Part 15.19). */
+  monthly?: string | null;
   onConfirm: () => void;
   onBack: () => void;
 }) {
   const { title } = modal;
   const bundle = title.module?.tone === "bundle";
+  const confirmLabel = pricedLabel(modal.confirmLabel, BILLS_NOTHING.has(modal.kind) ? null : monthly);
   return (
     <ConfirmDialog
       title={
@@ -60,7 +68,7 @@ export function ChangeDialog({
       image={modal.image}
       entityName={entityName}
       busy={busy}
-      confirmLabel={modal.confirmLabel}
+      confirmLabel={confirmLabel}
       confirmTone={modal.confirmTone}
       // Removing a module cannot be undone from here: Danger. Every other change is Primary.
       confirmVariant={modal.kind === "remove" ? "danger" : undefined}

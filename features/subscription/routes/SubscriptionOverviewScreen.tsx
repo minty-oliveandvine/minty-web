@@ -27,6 +27,7 @@ import {
 } from "@/features/subscription/components/BillingAccountDialogs";
 import {
   BillingAccountCard,
+  CurrentPositionCards,
   SubscriptionOverviewCard,
 } from "@/features/subscription/components/BillingOverviewPanels";
 import { BACK_LINE_CLASS, PortalBack } from "@/features/subscription/components/PortalBack";
@@ -76,6 +77,15 @@ export function SubscriptionOverviewScreen(args: UseBillingOverviewArgs) {
           className="grid w-full gap-6 lg:grid-cols-2 lg:items-start"
           aria-busy={o.status === "loading"}
         >
+          {o.status === "ready" && (
+            <div className="lg:col-span-2">
+              <CurrentPositionCards
+                activeModules={o.position.activeModules}
+                next={o.next}
+                trialEnds={o.position.trialEnds}
+              />
+            </div>
+          )}
           <BillingAccountCard
             next={o.next}
             accountsFailed={o.accountsFailed}
