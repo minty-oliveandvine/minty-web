@@ -1,8 +1,9 @@
 /**
  * The select-company page's other pieces: the header (the payments app's header bar - the Minty
  * mark at the left, the title in the middle, the person's initials, which open My Profile, and
- * the ≡ on the right), the doors, the search box, the "+" for a new company, and the states the
- * list can be in (loading, failed, no companies at all, nothing matching the search).
+ * the ≡ on the right), the question with Minty, the search box, a group's heading, *Create a
+ * business*, and the states the list can be in (loading, failed, no companies at all, nothing
+ * matching the search).
  */
 
 import Image from "next/image";
@@ -10,13 +11,14 @@ import Image from "next/image";
 import { AppHeader } from "@/components/ui/AppHeader";
 
 import {
-  ADD_ENTITY,
+  CREATE_BUSINESS,
   CREATE_ENTITY,
   createEntityHref,
   EMPTY_TEXT,
   EMPTY_TITLE,
   NO_MATCH,
   PAGE_TITLE,
+  QUESTION,
   SEARCH_PLACEHOLDER,
 } from "@/features/entities/lib/entityRows";
 
@@ -25,22 +27,33 @@ export function SelectCompanyHeader() {
 }
 
 /**
- * Flask's doors in Flask's box: at least 160 px tall (120 from 640 px), taller than the picture -
- * that is what gives the search box Flask's room above it.
+ * Part 15.8's selection header: the question, with a small Minty beside it from 640px - the
+ * greeting's character, decorative (the words carry it). It replaced Flask's doors picture, which
+ * pushed the list down, on 2026-10-19.
  */
-export function DoorsHero() {
+export function SelectionQuestion() {
   return (
-    <div className="mx-auto mb-2 block min-h-[160px] w-80 sm:min-h-[120px] sm:w-60">
+    <div className="flex items-center justify-between gap-4">
+      <h2 className="text-display-m font-bold text-ink">{QUESTION}</h2>
       <Image
-        className="mx-auto block h-auto w-80 sm:w-60"
-        src="/entities/select_company.webp"
+        className="hidden h-auto w-[80px] shrink-0 sm:block"
+        src="/portal/minty-thinking.png"
         alt=""
-        width={1446}
-        height={524}
+        width={235}
+        height={276}
         priority
         unoptimized
       />
     </div>
+  );
+}
+
+/** A group's heading over its cards ("Needs you", "Your businesses"). */
+export function GroupHeading({ id, children }: { id: string; children: string }) {
+  return (
+    <h3 id={id} className="text-title-m font-semibold text-ink-2">
+      {children}
+    </h3>
   );
 }
 
@@ -83,23 +96,20 @@ export function CompanySearch({
 }
 
 /**
- * The floating "+": a new company, through Minty's /entity/create and the onboarding wizard.
- * Held to the SCREEN's bottom-right corner, clear of a phone's home bar, over the scrolling list.
+ * A new company, through Minty's /entity/create and the onboarding wizard: a page-level
+ * Secondary button under the list (Part 15.8 - "not floating"; it was a round "+" held to the
+ * screen's corner until 2026-10-19). Full width on a phone.
  */
-export function AddEntityButton() {
+export function CreateBusinessButton() {
   return (
     <a
       href={createEntityHref()}
-      aria-label={ADD_ENTITY}
-      title={ADD_ENTITY}
-      className="fixed bottom-[max(1.5rem,env(safe-area-inset-bottom,0px))] right-6 z-10 flex h-14 w-14 items-center justify-center rounded-full bg-action shadow-overlay transition-[background-color,transform] hover:-translate-y-0.5 hover:bg-action-hover active:bg-action-pressed sm:right-8 lg:right-10"
+      className="flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-line-selected bg-card px-4 text-body-m font-semibold text-link transition-colors hover:bg-selected sm:w-auto sm:self-start"
     >
-      <svg width="34" height="34" viewBox="0 0 34 34" fill="none" aria-hidden>
-        <path
-          d="M16.0714 16.0714V10.5H17.9286V16.0714H23.5V17.9286H17.9286V23.5H16.0714V17.9286H10.5V16.0714H16.0714Z"
-          fill="white"
-        />
-      </svg>
+      <span className="material-symbols-rounded" aria-hidden>
+        add
+      </span>
+      {CREATE_BUSINESS}
     </a>
   );
 }

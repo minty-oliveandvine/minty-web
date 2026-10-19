@@ -1,6 +1,7 @@
-// "Select Company" as a person sees it: the grid of cards (Flask's cards, across the whole
-// screen since 2026-09-29), search, the "+", the empty and failed states, what Flask flashed on
-// the way here, and the header bar - the initials (My Profile) and the side menu.
+// "Select Company" as a person sees it: the question, the companies that need the person and
+// then the rest (Part 15.8, 2026-10-19), search from seven companies, Create a business, the
+// empty and failed states, what Flask flashed on the way here, and the header bar - the
+// initials (My Profile) and the side menu.
 
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -39,7 +40,8 @@ function show(flash: string | null = null) {
   );
 }
 
-const list = () => within(screen.getByRole("list", { name: "Your companies" }));
+const list = () => within(screen.getByRole("list", { name: "Your businesses" }));
+const needs = () => within(screen.getByRole("list", { name: "Needs you" }));
 
 describe("EntityListScreen", () => {
   beforeEach(() => {
@@ -72,16 +74,23 @@ describe("EntityListScreen", () => {
     expect(card.getByRole("img", { name: "Bills module" })).toBeInTheDocument();
     expect(card.getByRole("img", { name: /^Last opened .+ by Olive Vine$/ })).toBeInTheDocument();
 
-    // setup in progress: the pill over the card, the grey clock of a company nobody opened yet
-    expect(list().getByText("Setup in progress")).toBeInTheDocument();
-    const scenario = list().getByRole("link", { name: /^Scenario/ });
+    // setup not finished: in "Needs you", saying why and what to do; nobody opened it yet
+    const scenario = needs().getByRole("link", { name: /^Scenario/ });
+    expect(scenario).toHaveTextContent("Setup not finished — continue setup");
     expect(within(scenario).getByRole("img", { name: "Not opened yet" })).toBeInTheDocument();
-    expect(list().getAllByRole("link")).toHaveLength(LIST.entities.length);
+    expect(needs().getAllByRole("link")).toHaveLength(1);
+    expect(list().getAllByRole("link")).toHaveLength(LIST.entities.length - 1);
+    expect(list().queryByText(/continue setup/)).toBeNull();
 
-    expect(screen.getByRole("link", { name: "Add a new entity" })).toHaveAttribute(
+    // the page-level Secondary action replaced the floating "+"
+    expect(screen.queryByRole("link", { name: "Add a new entity" })).toBeNull();
+    expect(screen.getByRole("link", { name: "Create a business" })).toHaveAttribute(
       "href",
       `${env.PETTY_CASH_URL}/entity/create`,
     );
+    expect(
+      screen.getByRole("heading", { level: 2, name: "Which business are you working on?" }),
+    ).toBeInTheDocument();
     // one read of the list; nothing else went to the network (the viewer is stubbed out)
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(String(fetchMock.mock.calls[0][0])).toBe(`${env.PETTY_CASH_URL}/api/me/entities`);
@@ -90,7 +99,7 @@ describe("EntityListScreen", () => {
   it("searches as the person types, and says so when nothing matches", async () => {
     serve(LIST);
     show();
-    await screen.findByRole("list", { name: "Your companies" });
+    await screen.findByRole("list", { name: "Your businesses" });
 
     await userEvent.type(screen.getByRole("textbox", { name: "Search company" }), "both active");
     expect(list().getAllByRole("link")).toHaveLength(1);
@@ -100,7 +109,29 @@ describe("EntityListScreen", () => {
     expect(screen.getByText("No companies found.")).toBeInTheDocument();
   });
 
-  it("with no company at all, the empty page and a way to create one - and no +", async () => {
+  it("offers search only from seven companies; a disconnected one needs the person too", async () => {
+    const six = LIST.entities.slice(1);
+    serve({
+      ...LIST,
+      entities: six.map((row, i) => (i === 2 ? { ...row, status: "disconnected" as const } : row)),
+    });
+    show();
+    const needing = await screen.findByRole("list", { name: "Needs you" });
+    expect(within(needing).getByRole("link")).toHaveTextContent(
+      "Xero is disconnected — reconnect it in Settings",
+    );
+    expect(screen.queryByRole("textbox", { name: "Search company" })).toBeNull();
+  });
+
+  it("with nothing needing the person, no Needs you group at all", async () => {
+    serve({ ...LIST, entities: LIST.entities.slice(1) });
+    show();
+    await screen.findByRole("list", { name: "Your businesses" });
+    expect(screen.queryByRole("list", { name: "Needs you" })).toBeNull();
+    expect(screen.queryByRole("heading", { name: "Needs you" })).toBeNull();
+  });
+
+  it("with no company at all, the empty page and a way to create one - and nothing else", async () => {
     serve(EMPTY);
     show();
 
@@ -109,7 +140,7 @@ describe("EntityListScreen", () => {
       "href",
       `${env.PETTY_CASH_URL}/entity/create`,
     );
-    expect(screen.queryByRole("link", { name: "Add a new entity" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Create a business" })).toBeNull();
     expect(screen.queryByRole("textbox", { name: "Search company" })).toBeNull();
   });
 
@@ -121,7 +152,7 @@ describe("EntityListScreen", () => {
     expect(alert).toHaveTextContent("Your companies didn't load. Mind trying again?");
     serve(LIST);
     await userEvent.click(within(alert).getByRole("button", { name: "Try again" }));
-    expect(await screen.findByRole("list", { name: "Your companies" })).toBeInTheDocument();
+    expect(await screen.findByRole("list", { name: "Your businesses" })).toBeInTheDocument();
   });
 
   it("says what Flask flashed on the way here, once, and drops the spent hand-over", async () => {

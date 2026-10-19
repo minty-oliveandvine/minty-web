@@ -12,8 +12,10 @@ import {
   createEntityHref,
   enterHref,
   filterRows,
+  groupRows,
   lastAccessedLabel,
   lastOpenedLabel,
+  needsYou,
   sortRows,
   trialLabel,
 } from "@/features/entities/lib/entityRows";
@@ -38,20 +40,39 @@ describe("entityRows", () => {
     expect(names("nothing like it")).toEqual([]);
   });
 
-  it("puts setup in progress first, then A→Z ignoring case, numbers in order, input untouched", () => {
+  it("puts the last used first, then the never-opened A→Z ignoring case, input untouched", () => {
     const before = LIST.entities.map((r) => r.id);
-    const lower = { ...LIST.entities[6], id: "e-lower", name: "digitalisation - Scenario 3" };
-    expect(sortRows([...LIST.entities, lower]).map((r) => r.id)).toEqual([
-      "e-scenario", // onboarding, though "S" sorts after "D"
-      "e-scenario-2",
-      "e-lower",
-      "e-scenario-5",
-      "e-scenario-6",
+    const at = (iso: string) => ({ last_accessed_at: iso });
+    const rows = [
+      { ...LIST.entities[3], ...at("2026-10-01T09:00:00Z") }, // e-scenario-10
+      { ...LIST.entities[6], ...at("2026-10-18T09:00:00Z") }, // e-scenario-8
+      { ...LIST.entities[0] }, // e-scenario, never opened
+      { ...LIST.entities[1], ...at("2026-10-10T09:00:00Z") }, // e-scenario-5
+      { ...LIST.entities[4], last_accessed_at: null }, // e-scenario-2, never opened
+      { ...LIST.entities[5], last_accessed_at: "not a date" }, // e-scenario-9, unreadable
+    ];
+    expect(sortRows(rows).map((r) => r.id)).toEqual([
       "e-scenario-8",
-      "e-scenario-9",
+      "e-scenario-5",
       "e-scenario-10",
+      // nobody opened these: A→Z, "Digitalisation - Scenario 2" and "… 9" before "Scenario"
+      "e-scenario-2",
+      "e-scenario-9",
+      "e-scenario",
     ]);
     expect(LIST.entities.map((r) => r.id)).toEqual(before);
+  });
+
+  it("says why a company needs the person, and lifts those out, each group keeping its order", () => {
+    const [onboarding, five, six] = LIST.entities;
+    const cut = { ...six, status: "disconnected" as const };
+    expect(needsYou(onboarding)).toEqual({ reason: "Setup not finished", action: "continue setup" });
+    expect(needsYou(cut)).toEqual({ reason: "Xero is disconnected", action: "reconnect it in Settings" });
+    // a trial is not a reason: the list carries no trial end to act on
+    expect(needsYou(five)).toBeNull();
+    const groups = groupRows([five, cut, onboarding, six]);
+    expect(groups.needsYou.map((r) => r.id)).toEqual(["e-scenario-6", "e-scenario"]);
+    expect(groups.others.map((r) => r.id)).toEqual(["e-scenario-5", "e-scenario-6"]);
   });
 
   it("reads the last opening in the viewer's zone, as Flask's page did", () => {
@@ -72,7 +93,7 @@ describe("entityRows", () => {
     expect(trialLabel(ten)).toBeNull();
   });
 
-  it("a card leads into its company through Minty's re-entry; + leads to a new one", () => {
+  it("a card leads into its company through Minty's re-entry; Create a business to a new one", () => {
     setAuth("h.eyJ1c2VyX2lkIjoidTEifQ.s", "", "");
     expect(enterHref(LIST.entities[1])).toBe(
       `${env.PETTY_CASH_URL}/entity/e-scenario-5/enter?token=h.eyJ1c2VyX2lkIjoidTEifQ.s` +

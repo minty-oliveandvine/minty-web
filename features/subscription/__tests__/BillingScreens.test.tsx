@@ -789,47 +789,111 @@ describe("08-A, the portal's landing", () => {
   });
   afterEach(() => vi.unstubAllGlobals());
 
-  it("one billing account's bill, the two figures, the updates and the ways on", async () => {
+  it("the position header, the banners, the modules and the ways on", async () => {
     const user = userEvent.setup();
     render(<SubscriptionOverviewScreen fixture="A" today={TODAY} />);
 
+    // The header IS the shown billing account's position (it was 08-A's card until 2026-10-19).
     const payment = await screen.findByRole("region", { name: "Billing account" });
+    expect(within(payment).getByRole("heading", { level: 1 })).toHaveTextContent(
+      "Subscription & Billing",
+    );
     // The eyebrow is gone; "Bill to" is the ACCOUNT's name, the oldest when none is asked for.
     expect(within(payment).queryByText("Payment Method")).toBeNull();
     expect(payment).toHaveTextContent("Company A Limited");
-    // The payer's NEXT billing date - the fixture's anchor is 28 Jul, which is never printed.
+    // The hero: the next bill's amount, and the payer's NEXT billing date - the fixture's anchor
+    // is 28 Jul, which is never printed.
+    expect(within(payment).getByText(/^HKD 960/)).toHaveClass("text-display-xl");
     expect(payment).toHaveTextContent("28 Sep 2026");
     expect(payment).not.toHaveTextContent("28 Jul 2026");
+    // One pill, the most urgent thing's: companies on the list have failed payments.
+    expect(within(payment).getByText("Payment failed")).toHaveAttribute("data-tone", "danger");
 
-    const overview = screen.getByRole("region", { name: "Subscription Overview" });
-    expect(within(overview).getByText("Active subscriptions")).toBeInTheDocument();
-    expect(within(overview).getByText("Trial ending")).toBeInTheDocument();
-    expect(within(overview).getAllByText("entities").length).toBeGreaterThan(0);
+    // A Page banner per thing that needs the payer, issue then action - no red figure anywhere.
+    const banners = screen.getByRole("list", { name: "Needs your attention" });
+    const failed = within(banners).getAllByRole("listitem")[0];
+    expect(failed).toHaveTextContent(/^.*Payment failed for 6 companies\. Update the payment method/);
+    expect(screen.queryByText("Trial ending")).toBeNull();
+    expect(screen.queryByText("Active subscriptions")).toBeNull();
+
+    // The modules: one row per module, its identity chip, states as pills with plain counts.
+    const modules = screen.getByRole("region", { name: "Modules" });
+    const rows = within(modules).getByRole("list", { name: "Modules" });
+    const petty = within(rows).getAllByRole("listitem")[0];
+    expect(petty).toHaveAttribute("data-module", "PETTY_CASH");
+    expect(petty).toHaveTextContent("Petty Cash");
+    expect(within(petty).getByText("Active")).toHaveAttribute("data-tone", "success");
+
     // A failure is what needs acting on, so those lines come first - and five show until Show
     // more opens the rest (the 04-A fixture holds six failures and trials besides).
-    const lines = () => within(overview).getAllByRole("listitem");
+    const updates = within(modules).getByRole("list", { name: "Subscription updates" });
+    const lines = () => within(updates).getAllByRole("listitem");
     expect(lines()).toHaveLength(5);
-    expect(within(overview).getAllByText("Payment failed").length).toBe(5);
-    const more = within(overview).getByRole("button", { name: /^Show more \(\d+\)$/ });
+    expect(within(updates).getAllByText("Payment failed").length).toBe(5);
+    const more = within(modules).getByRole("button", { name: /^Show more \(\d+\)$/ });
     expect(more).toHaveAttribute("aria-expanded", "false");
     const hidden = Number(/\((\d+)\)/.exec(more.textContent ?? "")?.[1]);
     await user.click(more);
     expect(lines()).toHaveLength(5 + hidden);
-    expect(within(overview).getAllByText("Payment failed").length).toBe(6);
-    await user.click(within(overview).getByRole("button", { name: "Show less" }));
+    expect(within(updates).getAllByText("Payment failed").length).toBe(6);
+    await user.click(within(modules).getByRole("button", { name: "Show less" }));
     expect(lines()).toHaveLength(5);
     expect(push).not.toHaveBeenCalled(); // opening the list is not leaving the page
 
-    await user.click(within(payment).getByRole("button", { name: /Go to payment details/ }));
+    // The payment method: the card the shown account charges, its mark drawn large.
+    const method = screen.getByRole("region", { name: "Payment method" });
+    expect(method).toHaveTextContent("Visa ending in 4121");
+    expect(method.querySelector('[data-brand="visa"]')).not.toBeNull();
+    await user.click(within(method).getByRole("button", { name: /Go to payment details/ }));
     // The link is a control of its own: it goes to THIS account's page, and no picker opens.
     expect(push).toHaveBeenCalledWith("/subscription/billing?account=acc-company-a");
     expect(screen.queryByRole("dialog")).toBeNull();
-    await user.click(within(overview).getByRole("button", { name: "Manage Subscription" }));
-    expect(push).toHaveBeenCalledWith("/subscription/subscriptions");
+    push.mockReset();
+    const invoices = screen.getByRole("region", { name: "Invoices" });
+    await user.click(within(invoices).getByRole("button", { name: /See all invoices/ }));
+    expect(push).toHaveBeenCalledWith("/subscription/billing?account=acc-company-a");
+
+    await user.click(within(failed).getByRole("button", { name: "Update payment method" }));
+    expect(push).toHaveBeenLastCalledWith(expect.stringMatching(/^\/subscription\/billing\?entity=/));
+    // ONE Manage Subscription, the header's action.
+    await user.click(within(payment).getByRole("button", { name: "Manage Subscription" }));
+    expect(push).toHaveBeenLastCalledWith("/subscription/subscriptions");
+    expect(screen.getAllByRole("button", { name: "Manage Subscription" })).toHaveLength(1);
+    expect(screen.queryByRole("dialog")).toBeNull(); // header controls open no picker
     // With no company scoped, the way back can only be the entity list - this app's own.
     expect(screen.getByRole("link", { name: "Back to the entity dashboard" })).toHaveAttribute(
       "href",
       "/entities",
+    );
+  });
+
+  it("no banner when nothing needs the payer, and the calm pill", async () => {
+    const calm = {
+      ...LIST_FIXTURES.A.page,
+      entities: LIST_FIXTURES.A.page.entities.filter((e) =>
+        e.modules.every((m) => m.status === "active" || m.status === "not_subscribed"),
+      ),
+    };
+    fetchMock.mockImplementation(async (input) =>
+      new URL(String(input)).pathname === "/api/me/billing/accounts"
+        ? reply(200, { ...ACCOUNTS, accounts: [{ ...ACCOUNTS.accounts[1], past_due: false }] })
+        : reply(200, {
+            ...calm,
+            total: calm.entities.length,
+            page: 1,
+            pages: 1,
+            per_page: 100,
+            sort: "entity",
+            direction: "asc",
+            query: "",
+          }),
+    );
+    render(<SubscriptionOverviewScreen today={TODAY} />);
+    const header = await screen.findByRole("region", { name: "Billing account" });
+    expect(await within(header).findByText("Up to date")).toHaveAttribute("data-tone", "success");
+    expect(screen.queryByRole("list", { name: "Needs your attention" })).toBeNull();
+    expect(screen.getByRole("region", { name: "Modules" })).toHaveTextContent(
+      "Nothing needs your attention right now.",
     );
   });
 
@@ -1316,7 +1380,9 @@ describe("08-A, the portal's landing", () => {
     expect(card).toHaveTextContent("Olive Vine");
     expect(card).toHaveTextContent("I couldn't load your billing accounts.");
     expect(within(card).getByRole("button", { name: "Try again" })).toBeVisible();
-    expect(screen.getByRole("region", { name: "Subscription Overview" })).toBeVisible();
+    expect(screen.getByRole("region", { name: "Modules" })).toBeVisible();
+    // No account to read a card from: nothing is said about one.
+    expect(screen.queryByText(/No card is saved/)).toBeNull();
   });
 
   it("the way back goes to the scoped company's modules, signed in", () => {

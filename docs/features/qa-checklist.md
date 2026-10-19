@@ -48,12 +48,13 @@ run" below).
 
 - [ ] Arriving from Flask's `/entity` always lands on `/entities` with an unscoped token,
       regardless of whether Terms are owed.
-- [ ] Sort order: "Setup in progress" companies first, then A→Z case-insensitive, natural order
-      ("Scenario 2" before "Scenario 10") — not Flask's own onboarding-then-recent order.
+- [ ] "Needs you" (setup not finished, Xero disconnected — each with its reason in words) comes
+      first; "Your businesses" is last used first, then never-opened A→Z case-insensitive,
+      natural order ("Scenario 2" before "Scenario 10"). Search shows only from 7 companies.
 - [ ] Search matches case-insensitively, anywhere in the name (not just the start).
 - [ ] A card's last-opened time renders in the viewer's own timezone; hovering shows "By
       <name>"; a never-opened company shows grey "Not opened yet".
-- [ ] The "+" / empty-state _Create Entity_ goes to Minty's onboarding wizard, not an in-app form.
+- [ ] _Create a business_ / empty-state _Create Entity_ goes to Minty's onboarding wizard, not an in-app form.
 - [ ] A company still onboarding resumes the wizard on click; one module on goes straight into
       it; two modules land on "Choose Module Type".
 - [ ] On "Choose Module Type", the two doors reflect the company's actual modules

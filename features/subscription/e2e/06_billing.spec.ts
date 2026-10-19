@@ -186,14 +186,17 @@ test.describe("billing", () => {
     await expect(account).toContainText("28 Sep 2026");
     await expect(account).not.toContainText("28 Jul 2026");
     await expect(account.getByText("Payment Method", { exact: true })).toHaveCount(0);
-    const overview = body(page).getByRole("region", { name: "Subscription Overview" });
-    await expect(overview).toContainText("Active subscriptions");
-    await expect(overview).toContainText("Trial ending");
+    // The position header's pill and a Page banner say what needs the payer - no red figure.
+    await expect(body(page).getByRole("list", { name: "Needs your attention" })).toContainText(
+      "Payment failed for",
+    );
+    const overview = body(page).getByRole("region", { name: "Modules" });
+    await expect(overview.locator("li[data-module='PETTY_CASH']")).toContainText("Petty Cash");
     await expect(overview.locator("li[data-tone='failed']").first()).toContainText(
       "Payment failed",
     );
 
-    await overview.getByRole("button", { name: "Manage Subscription" }).click();
+    await account.getByRole("button", { name: "Manage Subscription" }).click();
     await page.waitForURL((u) => u.pathname === "/subscription/subscriptions");
     await expect(body(page).getByRole("heading", { level: 1 })).toHaveText("Manage Subscriptions");
   });
@@ -223,7 +226,10 @@ test.describe("billing", () => {
 
     const account = body(page).getByRole("region", { name: "Billing account" });
     await expect(account).toContainText("Vine Consulting Limited");
-    await account.getByRole("button", { name: /Go to payment details and invoices/ }).click();
+    await body(page)
+      .getByRole("region", { name: "Payment method" })
+      .getByRole("button", { name: /Go to payment details and invoices/ })
+      .click();
     await page.waitForURL(
       (u) => u.pathname === "/subscription/billing" && u.searchParams.get("account") === "acc-vine",
     );

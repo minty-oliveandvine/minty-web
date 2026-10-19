@@ -163,7 +163,10 @@ test.describe("over the live API", () => {
       const picker = page.getByRole("dialog", { name: "Billing Accounts" });
       await expect(picker.getByRole("radio")).toHaveCount(data.accounts.length);
       await page.keyboard.press("Escape");
-      await card.getByRole("button", { name: /Go to payment details and invoices/ }).click();
+      await body(page)
+        .getByRole("region", { name: "Payment method" })
+        .getByRole("button", { name: /Go to payment details and invoices/ })
+        .click();
       await page.waitForURL(
         (u) => u.pathname === "/subscription/billing" && u.searchParams.get("account") === first.id,
       );

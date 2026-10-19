@@ -156,7 +156,7 @@ test.describe("the Terms gate", () => {
       "/privacy",
     );
     // the list is behind it, out of reach: hidden from the accessibility tree, and inert
-    await expect(page.getByRole("list", { name: "Your companies" })).toHaveCount(0);
+    await expect(page.getByRole("list", { name: "Your businesses" })).toHaveCount(0);
     await expect(page.locator("[inert]").getByText("Olive Shop Limited")).toBeAttached();
 
     const box = dialog.getByRole("checkbox");
@@ -183,7 +183,7 @@ test.describe("the Terms gate", () => {
       { accepted: true, terms_version: doc.version, document_hash: doc.sha256 },
     ]);
     await expect(page).toHaveURL(/\/entities$/);
-    await expect(page.getByRole("list", { name: "Your companies" }).getByRole("link")).toHaveCount(
+    await expect(page.getByRole("list", { name: "Your businesses" }).getByRole("link")).toHaveCount(
       1,
     );
   });

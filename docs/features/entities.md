@@ -21,36 +21,44 @@ is the whole screen (the layout, below).
   first for an unscoped one through Flask's re-handoff: a person choosing a company is in none,
   and every page after this one must stop describing the company just left.
 
-## The layout (the user's calls, 2026-09-29)
-
-Flask drew the list as a phone-shaped card fixed in the middle of the screen. Here:
+## The layout (Part 15.8, the owner's visual-anchors brief, 2026-10-19)
 
 - **The header bar spans the screen** (`components/ui/AppHeader`, `showLogo` + `centerTitle`):
-  the Minty mark at the left, "Select Company" in the middle, the initials and the ≡ at the
-  right. It stays put.
-- **Under it, Flask's column in the middle** — its widths (640 px from 640, 768 from 1024, 1024
-  from 1200; the whole width on a phone), its 24 px padding and its spacing: the doors in
-  Flask's box (at least 160 px tall, 120 from 640 — taller than the picture, which is what leaves
-  65 px above the search box, 76 on a phone), the search box, then the rows 24 px under it.
-- **The screen scrolls as one** under the header, so the scrollbar is the screen's own right
-  edge; **the search box stays** at the top while the rows scroll under it; the "+" is held to
-  the screen's bottom-right corner.
+  the Minty mark at the left, "Select Company" (the h1) in the middle, the initials and the ≡
+  at the right. It stays put.
+- **Under it, a centred 640 px column** (the whole width inside 16 px gutters on a phone): the
+  question **"Which business are you working on?"** with a small Minty thinking beside it (80
+  px, from 640 px, decorative) - Flask's doors picture, which pushed the list down, is gone; the
+  search box (only from **seven** companies, Part 15.8's "more than six"); **Needs you** - the
+  companies with something to do, each saying why and what in words under its name; **Your
+  businesses** - the rest; and **Create a business**, a page-level Secondary button (full width
+  on a phone) that replaced the floating "+".
+- **The screen scrolls as one** under the header; **the search box stays** at the top while the
+  rows scroll under it.
 
-Tried and dropped the same day: a grid of cards, then the rows in a 70% column — the user asked
-for Flask's widths and spacing instead.
+The 2026-09-29 layout (Flask's 640 / 768 / 1024 widths, the doors, the corner "+") was replaced
+in two steps: the 640 column in Round 2, the rest on 2026-10-19.
 
 ## What it shows, and where it comes from
 
 One read: Flask's `GET /api/me/entities` (`blueprints/entity/routes/me_api.py`), the SAME
 builder the Jinja list draws from (`services/entity_list.build_entity_list`); a superuser sees
-every company. Flask sends them onboarding first, then most recently opened; minty-web re-sorts
-(`lib/entityRows.sortRows`, user's choice 2026-10-05): "Setup in progress" first, then A→Z by
-name (case-insensitive, "Scenario 2" before "Scenario 10"). Flask's own Jinja list keeps its order. Per card (`components/EntityCard`):
-the "Setup in progress" pill, the name, the free-trial badge (the design's own tag, named
+every company. Flask sends them onboarding first, then most recently opened; minty-web sorts
+(`lib/entityRows.sortRows`, 2026-10-19 - it was "Setup in progress" first then A→Z from
+2026-10-05): **last used first** (`last_accessed_at`, anyone's opening), then the never-opened
+A→Z (case-insensitive, "Scenario 2" before "Scenario 10"); `groupRows` then lifts the companies
+that need the person into **Needs you**, each group keeping that order. **Why a company needs
+the person** (`needsYou`) comes only from the list's own fields: `onboarding` → "Setup not
+finished — continue setup", `disconnected` → "Xero is disconnected — reconnect it in Settings".
+A trial ending or a failed payment would be reasons too, but this read carries no trial end and
+no payment state - nor the person's role, so the cards show none. Flask's own Jinja list keeps
+its order. Per card (`components/EntityCard`): the name and, in Needs you, the reason line,  the free-trial badge (the design's own tag, named
 "Free trial: <modules>"), one badge per module that is on, the last-opened clock ("9 Jun 5:42
 PM" in the viewer's zone, "By <name>" on hover, grey "Not opened yet" when nobody has) and the
-chevron. Search is Flask's: case-insensitive, anywhere in the name. The "+" and the empty
-state's _Create Entity_ go to Minty's `/entity/create` (the onboarding wizard).
+chevron; the module badges wear the module identity washes (Part 13). Search is Flask's:
+case-insensitive, anywhere in the name. _Create a business_ and the empty state's _Create
+Entity_ (the empty desk, `no_entity.webp`, unchanged) go to Minty's `/entity/create` (the
+onboarding wizard). A single company still shows the list - no direct routing exists today.
 
 **A card leads into its company** through Minty's `/entity/<id>/enter?token=…&next=/entity/<id>/modules`
 (`lib/mintyEntry.ts::mintyEnterCompanyUrl`): `/enter` re-establishes the Flask session from the

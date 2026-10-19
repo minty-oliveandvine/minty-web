@@ -605,13 +605,30 @@ re-homed and redrawn to Figma section "04 · Manage Subscriptions — the payer 
   _Manage Subscription_ button and its account card, every result's _Back to Manage
   Subscriptions_, each page's back line - so the portal now navigates only through the
   design's own hotspots. `e2e/01_landing.spec.ts` pins the absence.
-- **The current position** (Round 2.1, 2026-10-16; Part 15.19): over 08-A's two cards, at most
-  three equal cards (`CurrentPositionCards` in `BillingOverviewPanels.tsx`) - _Active modules_
-  (modules paid for across the payer's companies, counted as the figures count a paying
-  company), _Next bill_ (the account's estimated amount and the next date; left out when the
-  accounts read failed) and _Trial ends_ (the soonest trial end, while one runs). All from the
-  page's two reads (`useBillingOverview`'s `position`). There is no _Plan_ card: the landing is
-  the payer's, across companies, and plan names live on each company's module page.
+- **08-A as a Decision dashboard** (the owner's visual-anchors brief, 2026-10-19; Part 15.6b) -
+  replaced the day-old three equal "current position" tiles and the red "Trial ending" figure.
+  Top to bottom: the **position header** (`PositionHeader`) on the subscription header gradient
+  (Part 13's exception asset, `--subscription-header-gradient` in `app/globals.css`; all text
+  is text/primary - 7.35:1 / 8.00:1 on the two stops - and its one action, _Manage
+  Subscription_, wears the white Secondary look because Minty Action's fill vanishes on the
+  gradient): the title, ONE status pill (`positionPill`), the next bill's estimated amount as
+  the page's only large figure with the Next Billing Date under it (the date is the hero when
+  there is no amount), Bill to = _Change billing account_, the move notice, and Minty with the
+  cards (from 640px, decorative). The header is the region "Billing account" and keeps the old
+  card's whole-region click to the picker. Then a **Page banner per thing that needs the payer**
+  (`attentionItems`, most urgent first: a failed payment on any company → that company's
+  account page; the shown account's card expired / missing / expiring; trials ending within
+  `TRIAL_SOON_DAYS` = 7 → the list) - issue, then action, tone + icon; none when nothing is
+  due. Then **Modules** (`moduleRows`: a row per module, its identity chip in the module wash,
+  each state - Payment failed, Trial ends <soonest>, Cancelling, Active - a pill with the
+  company count in plain text; the Subscription updates lines and _Show more_ under them, the
+  "3 days" no longer orange), and side by side from `md` **Payment method** (the shown
+  account's card, `CardBrand` large, last four, expiry, an Expired / Expiring soon pill;
+  `NoAccountPanel` / `NoCardPanel` otherwise; _Go to payment details and invoices_) and
+  **Invoices** (a note and _See all invoices_ → the account's page). Still the page's two reads:
+  the landing reads no invoices and no prices, so the last three invoices and a price per
+  module are NOT shown (they would need `/api/me/invoices` on this page and a price on
+  `/api/me/subscriptions`' modules).
 - **Money buttons name the money** (same round): _Activate Subscription_ and _Confirm
   Subscription Change_ on the open row, the change modal's confirm opened from the list (not a
   removal or cancellation), and _Confirm Subscription Transfer_ read "… · HK$400/month" when the
@@ -1243,6 +1260,8 @@ schema change), which 08-C writes.
   billed to <Account>." - or, when the move after a new account was refused, that the account is
   ready and the company stayed. A refusal stays in the dialog in the API's words. Accounts that
   cannot be read leave the card on the payer (the old fallback) with a retry, and the page up.
+  (Restructured 2026-10-19 - see "08-A as a Decision dashboard" above: the card below is now
+  the position header, and the figures are gone.)
   Then the Subscription Overview (payer-wide, all companies - the user's call): **Active subscriptions** and **Trial ending**
   counted in COMPANIES (a company counts once however many modules it pays for, and a trial is
   not an active subscription — nothing is being charged for it yet; "Trial ending" is a trial

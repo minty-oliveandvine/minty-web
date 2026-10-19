@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 
 import { TODAY } from "@/features/subscription/__fixtures__/modulePage";
 import {
+  ACCOUNTS,
   FAILED_INVOICES,
   INVOICES,
   WALLET_EXPIRED,
@@ -15,10 +16,14 @@ import {
   card,
 } from "@/features/subscription/__fixtures__/billing";
 import { ENTITIES, subscriptionsPage } from "@/features/subscription/__fixtures__/subscriptions";
-import type { InvoiceRow } from "@/features/subscription/api/payerPortal";
+import type { InvoiceRow, PortalModule } from "@/features/subscription/api/payerPortal";
 import {
   CARDS_SHOWN,
   TRIAL_ENDING_DAYS,
+  TRIAL_SOON_DAYS,
+  attentionItems,
+  moduleRows,
+  positionPill,
   amountHeader,
   cardExpiry,
   cardMenu,
@@ -286,5 +291,105 @@ describe("the overview (08-A)", () => {
       },
     ]);
     expect(overview(over, TODAY).trialEnding).toBe(0);
+  });
+});
+
+describe("the position (08-A as a Decision dashboard)", () => {
+  const at = (days: number) => new Date(TODAY.getTime() + days * 86_400_000).toISOString();
+  const [base] = ENTITIES;
+  const entity = (id: string, statuses: { status: PortalModule["status"]; days?: number }[]) => ({
+    ...base,
+    entity_id: id,
+    entity_name: `${id} Limited`,
+    modules: statuses.map(({ status, days = 21 }, i) => ({
+      ...base.modules[i % base.modules.length],
+      code: i === 0 ? "PETTY_CASH" : "PAYMENT_REQUEST",
+      name: i === 0 ? "Petty Cash" : "Payment Request",
+      status,
+      date: `in ${days}`,
+      date_iso: at(days),
+    })),
+  });
+  const account = ACCOUNTS.accounts[1]; // Vine: an Amex, nothing owed
+  const kinds = (items: ReturnType<typeof attentionItems>) => items.map((i) => i.kind);
+
+  it("says nothing when nothing needs the payer", () => {
+    const calm = subscriptionsPage([entity("calm", [{ status: "active" }])]);
+    expect(attentionItems(calm, account, TODAY)).toEqual([]);
+    expect(positionPill([], calm)).toEqual({ label: "Up to date", tone: "success" });
+    expect(positionPill([], subscriptionsPage([entity("t", [{ status: "trialing", days: 20 }])]))).toEqual({
+      label: "On free trial",
+      tone: "neutral",
+    });
+    expect(positionPill([], null)).toEqual({ label: "No active subscriptions", tone: "neutral" });
+  });
+
+  it("orders what needs the payer most urgent first, and the pill is the first one's", () => {
+    const list = subscriptionsPage([
+      entity("soon", [{ status: "trialing", days: 3 }]),
+      entity("failing", [{ status: "past_due" }]),
+    ]);
+    const expired = { ...account, card: { ...account.card!, expired: true } };
+    const items = attentionItems(list, expired, TODAY);
+    expect(kinds(items)).toEqual(["payment_failed", "card_expired", "trial_ending"]);
+    expect(items[0]).toMatchObject({
+      tone: "danger",
+      text: "Payment failed for failing Limited. Update the payment method to restore its modules.",
+      // The account the failing company is on - the list knows a company, not an account.
+      action: { label: "Update payment method", href: "/subscription/billing?entity=failing" },
+    });
+    expect(items[1].action.href).toBe("/subscription/billing?account=acc-vine");
+    expect(items[2]).toMatchObject({
+      tone: "warning",
+      text: "The Petty Cash trial for soon Limited ends in 3 days. Review it in Manage Subscriptions.",
+      action: { href: "/subscription/subscriptions" },
+    });
+    expect(positionPill(items, list)).toEqual({ label: "Payment failed", tone: "danger" });
+  });
+
+  it("names a missing or expiring card on the shown account - and nothing without one", () => {
+    const list = subscriptionsPage([entity("calm", [{ status: "active" }])]);
+    const none = attentionItems(list, { ...account, card: null }, TODAY);
+    expect(none).toMatchObject([
+      { kind: "no_card", tone: "warning", action: { href: "/subscription/billing/add?account=acc-vine" } },
+    ]);
+    const expiring = attentionItems(list, { ...account, card: { ...account.card!, expires_soon: true } }, TODAY);
+    expect(kinds(expiring)).toEqual(["card_expiring"]);
+    // The accounts could not be read: no account, so nothing is said about a card.
+    expect(attentionItems(list, null, TODAY)).toEqual([]);
+  });
+
+  it("bannerizes only trials ending within a week, counting several", () => {
+    const list = (...days: number[]) =>
+      subscriptionsPage(days.map((d, i) => entity(`t${i}`, [{ status: "trialing", days: d }])));
+    expect(TRIAL_SOON_DAYS).toBe(7);
+    expect(attentionItems(list(8), null, TODAY)).toEqual([]);
+    expect(attentionItems(list(0), null, TODAY)[0].text).toMatch(/ends today\./);
+    expect(attentionItems(list(5, 2, 30), null, TODAY)[0].text).toBe(
+      "2 trials end in the next 7 days, the first in 2 days. Review them in Manage Subscriptions.",
+    );
+  });
+
+  it("draws a row per module, its states worst first, each with a plain count", () => {
+    const rows = moduleRows(
+      subscriptionsPage([
+        entity("a", [{ status: "active" }, { status: "trialing", days: 9 }]),
+        entity("b", [{ status: "past_due" }, { status: "trialing", days: 4 }]),
+        entity("c", [{ status: "cancelled" }, { status: "ended" }]),
+        entity("d", [{ status: "active" }, { status: "not_subscribed" }]),
+      ]),
+    );
+    expect(rows.map((r) => r.code)).toEqual(["PETTY_CASH", "PAYMENT_REQUEST"]);
+    expect(rows[0].states).toEqual([
+      { key: "failed", label: "Payment failed", tone: "danger", count: "1 company" },
+      { key: "cancelling", label: "Cancelling", tone: "warning", count: "1 company" },
+      { key: "active", label: "Active", tone: "success", count: "2 companies" },
+    ]);
+    // Two trials: the soonest end is named.
+    expect(rows[1].states).toEqual([
+      { key: "trial", label: "First trial ends in 4", tone: "warning", count: "2 companies" },
+    ]);
+    // A module in none of the four states has no row at all.
+    expect(moduleRows(subscriptionsPage([entity("x", [{ status: "ended" }])]))).toEqual([]);
   });
 });

@@ -98,6 +98,10 @@
      band's py-3. A row scrolled to the top clears both (`--list-sticky-top`). Change together. */
   --list-search-h: calc(62px + 1.5rem);
   --list-sticky-top: calc(var(--app-header-h) + var(--list-search-h) + 1.5rem);
+  /* Part 13's brand gradient: an EXCEPTION ASSET, not a colour role - the subscription header
+     only (08-A's position header, `bg-[image:var(--subscription-header-gradient)]`). Text on it
+     is text/primary: 7.35:1 / 8.00:1 on the two stops; white fails. */
+  --subscription-header-gradient: linear-gradient(90deg, #00cbc6, #00d5bf);
 }
 
 @media (width >= 40rem) {

@@ -1,5 +1,6 @@
 /**
- * The select-company list per state - the rows of Figma 02-A's background (the design drew
+ * The select-company list per state (each company opened an hour apart, so "last used first"
+ * has one answer: Scenario 5, 6, 10, 2, 9, 8; Scenario itself is in setup and never opened) - the rows of Figma 02-A's background (the design drew
  * today's Flask page), shared by Vitest, Playwright's `page.route` stubs and the dev-only
  * `?fixture=` switch (`hooks/useEntityList`).
  */
@@ -49,18 +50,34 @@ export const LIST: EntityListAnswer = {
       name: "Digitalisation - Scenario 6 - Expired + Free trial",
       trial_modules: ["PETTY_CASH"],
       trial_module_names: ["Petty Cash"],
+      last_accessed_at: hoursAgo(2),
     }),
-    row({ id: "e-scenario-10", name: "Digitalisation - Scenario 10 - Resume Module After A Renewal" }),
+    row({
+      id: "e-scenario-10",
+      name: "Digitalisation - Scenario 10 - Resume Module After A Renewal",
+      last_accessed_at: hoursAgo(3),
+    }),
     row({
       id: "e-scenario-2",
       name: "Digitalisation - Scenario 2: 1 Trial + Not started",
       modules: BOTH,
       trial_modules: BOTH,
       trial_module_names: ["Payment Request", "Petty Cash"],
+      last_accessed_at: hoursAgo(4),
       last_accessed_by: null,
     }),
-    row({ id: "e-scenario-9", name: "Digitalisation - Scenario 9 - Modules Cancelled On Different Dates", modules: BOTH }),
-    row({ id: "e-scenario-8", name: "Digitalisation - Scenario 8 - Both Active", modules: BOTH }),
+    row({
+      id: "e-scenario-9",
+      name: "Digitalisation - Scenario 9 - Modules Cancelled On Different Dates",
+      modules: BOTH,
+      last_accessed_at: hoursAgo(5),
+    }),
+    row({
+      id: "e-scenario-8",
+      name: "Digitalisation - Scenario 8 - Both Active",
+      modules: BOTH,
+      last_accessed_at: hoursAgo(6),
+    }),
   ],
   notices: [],
 };

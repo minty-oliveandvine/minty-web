@@ -43,11 +43,17 @@ import {
 } from "@/features/subscription/api/payerPortal";
 import {
   BILLING_LOAD_FAILED,
+  attentionItems,
+  moduleRows,
   nextBilling,
   overview,
+  positionPill,
+  type AttentionItem,
+  type ModuleSummaryRow,
   type NextBilling,
   type Overview,
   type PayerAccount,
+  type StatusTone,
 } from "@/features/subscription/lib/billing";
 import type { OpenedAccount } from "@/features/subscription/hooks/useCardForm";
 import {
@@ -70,18 +76,18 @@ export type UseBillingOverviewArgs = {
 
 export type OverviewNotice = { text: string; tone: "ok" | "failed" };
 
-/**
- * The current position (Part 15.19), from the same read as the figures: how many modules are
- * being paid for across the payer's companies, and the soonest trial end (formatted by the API).
- */
-export type CurrentPosition = { activeModules: number; trialEnds: string | null };
-
 export type UseBillingOverviewResult = {
   status: OverviewStatus;
   error: string | null;
   next: NextBilling;
   overview: Overview;
-  position: CurrentPosition;
+  /**
+   * The Decision dashboard (Part 15.6b), from the same two reads: what needs the payer (a Page
+   * banner each, most urgent first), the header's one pill, and a row per module.
+   */
+  attention: AttentionItem[];
+  pill: { label: string; tone: StatusTone };
+  modules: ModuleSummaryRow[];
   /** The Subscription updates: the first five, or - after *Show more* - every one. */
   updatesExpanded: boolean;
   toggleUpdates: () => void;
@@ -106,6 +112,8 @@ export type UseBillingOverviewResult = {
   accountOpened: (opened: OpenedAccount) => void;
   goToBilling: () => void;
   manageSubscriptions: () => void;
+  /** Where an attention item's action, or the no-card panel's, goes. */
+  go: (href: string) => void;
   /**
    * How one of the payer's own offers ended, where they have not been told (07-I / A-07 /
    * A-08). One at a time, oldest first: several can have finished while they were away, and
@@ -229,15 +237,12 @@ export function useBillingOverview({
     () => overview(list, fixtureToday ?? today ?? new Date()),
     [list, fixtureToday, today],
   );
-  const position = useMemo((): CurrentPosition => {
-    const modules = (list?.entities ?? []).flatMap((entity) => entity.modules);
-    // Counted as the overview counts a paying company: active, or cancelled but still running.
-    const activeModules = modules.filter((m) => m.status === "active" || m.status === "cancelled").length;
-    const soonest = modules
-      .filter((m) => m.status === "trialing" && m.date_iso && m.date)
-      .sort((a, b) => (a.date_iso as string).localeCompare(b.date_iso as string))[0];
-    return { activeModules, trialEnds: soonest?.date ?? null };
-  }, [list]);
+  const attention = useMemo(
+    () => attentionItems(list, account, fixtureToday ?? today ?? new Date()),
+    [list, account, fixtureToday, today],
+  );
+  const pill = useMemo(() => positionPill(attention, list), [attention, list]);
+  const modules = useMemo(() => moduleRows(list), [list]);
 
   // What the card says about a move: made here, or made for a new account the sheet opened (or
   // refused, with the account open all the same). Derived from the accounts, so it names the
@@ -310,7 +315,9 @@ export function useBillingOverview({
     error,
     next,
     overview: summary,
-    position,
+    attention,
+    pill,
+    modules,
     updatesExpanded,
     toggleUpdates: useCallback(() => setUpdatesExpanded((open) => !open), []),
     accounts,
@@ -341,6 +348,7 @@ export function useBillingOverview({
       [router, account],
     ),
     manageSubscriptions: useCallback(() => router.push(PORTAL.subscriptions), [router]),
+    go: useCallback((href: string) => router.push(href), [router]),
     reload,
   };
 }

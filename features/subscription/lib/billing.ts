@@ -2,9 +2,8 @@
  * What the billing screens SHOW, derived from what the API SAYS - Figma section 08 ("Billing —
  * details and payment methods"), both of its pages:
  *
- * - the overview (08-A): one billing account's next bill, how many companies are paying and how
- *   many are on a trial about to end, and a line per company that needs the payer to know
- *   something;
+ * - the overview (08-A): one billing account's next bill, what needs the payer (a Page banner
+ *   each), a row per module, and a line per company that needs the payer to know something;
  * - the billing page (08-B and its states): one billing account - who the bill goes to, its
  *   cards with the card it charges pinned first, and its invoices.
  *
@@ -19,6 +18,7 @@
  */
 
 import type {
+  BillingAccount,
   InvoiceRow,
   PayerPaymentMethods,
   PayerSubscriptions,
@@ -27,6 +27,7 @@ import type {
   SavedPaymentMethod,
 } from "@/features/subscription/api/payerPortal";
 
+import { BILLING, PORTAL } from "@/features/subscription/lib/paths";
 import { utcDay } from "@/features/subscription/lib/subscriptionSummary";
 
 /**
@@ -355,7 +356,7 @@ export type OverviewUpdate = {
   /** "Petty Cash trial ends in" / "Payment failed" - the module's name is drawn in bold. */
   module: string | null;
   text: string;
-  /** "3 days" - drawn in orange beside the sentence; null for a failure. */
+  /** "3 days" - bold beside the sentence, never coloured (a number); null for a failure. */
   emphasis: string | null;
   tone: "trial" | "failed";
 };
@@ -460,6 +461,208 @@ export function overview(list: PayerAccount | null, today: Date): Overview {
   // the trials run soonest first (a stable sort keeps a company's modules together on a tie).
   trials.sort((a, b) => a.left - b.left);
   return { active, trialEnding, updates: [...failed, ...trials.map((t) => t.update)] };
+}
+
+// --- 08-A's position header, attention banners and module rows (2026-10-19) ---------
+//
+// The Decision dashboard (Part 15.6b): the current position in the header, a Page banner only
+// for what needs the payer, then the modules. Status is a pill or a banner - words, a tone and
+// an icon - and never a coloured number.
+
+export type StatusTone = "success" | "warning" | "danger" | "neutral";
+
+export type AttentionKind =
+  | "payment_failed"
+  | "card_expired"
+  | "no_card"
+  | "card_expiring"
+  | "trial_ending";
+
+/** One Page banner: the issue, then the action (Part 11), and where the action goes. */
+export type AttentionItem = {
+  kind: AttentionKind;
+  tone: "danger" | "warning";
+  /** The header's pill when this is the most urgent item. */
+  pill: string;
+  text: string;
+  action: { label: string; href: string };
+};
+
+/**
+ * How near a trial's end must be to earn a banner. Shorter than `TRIAL_ENDING_DAYS` (which
+ * lists every running trial under Subscription updates): a banner is for what is due now.
+ */
+export const TRIAL_SOON_DAYS = 7;
+
+export const UP_TO_DATE = "Up to date";
+export const ON_FREE_TRIAL = "On free trial";
+export const NO_ACTIVE_SUBSCRIPTIONS = "No active subscriptions";
+const PAYMENT_FAILED_PILL = "Payment failed";
+
+function companies(n: number): string {
+  return n === 1 ? "1 company" : `${n} companies`;
+}
+
+function inDaysText(left: number): string {
+  if (left <= 0) return "today";
+  return left === 1 ? "in 1 day" : `in ${left} days`;
+}
+
+/**
+ * What needs the payer, most urgent first: a payment that failed (on ANY of their companies -
+ * the action opens the account the first one is on), then the shown account's card - expired,
+ * missing, about to expire - then trials ending within `TRIAL_SOON_DAYS`. `account` is null
+ * when the accounts could not be read or the payer has none: nothing is said about a card then.
+ */
+export function attentionItems(
+  list: PayerAccount | null,
+  account: BillingAccount | null,
+  today: Date,
+): AttentionItem[] {
+  const items: AttentionItem[] = [];
+  const entities = list?.entities ?? [];
+
+  const failing = entities.filter(pastDue);
+  if (failing.length > 0) {
+    items.push({
+      kind: "payment_failed",
+      tone: "danger",
+      pill: PAYMENT_FAILED_PILL,
+      text:
+        failing.length === 1
+          ? `Payment failed for ${failing[0].entity_name}. Update the payment method to restore its modules.`
+          : `Payment failed for ${companies(failing.length)}. Update the payment method to restore their modules.`,
+      action: {
+        label: "Update payment method",
+        href: BILLING.account({ entity: failing[0].entity_id }),
+      },
+    });
+  }
+
+  if (account) {
+    const card = account.card;
+    const expiry = card ? cardExpiry(card) : null;
+    if (!card) {
+      items.push({
+        kind: "no_card",
+        tone: "warning",
+        pill: NO_CARD,
+        text: "No card is saved on this billing account. Add a card so subscriptions can start when trials end.",
+        action: { label: ADD_A_PAYMENT_METHOD, href: BILLING.add(account.id) },
+      });
+    } else if (card.expired) {
+      items.push({
+        kind: "card_expired",
+        tone: "danger",
+        pill: "Card expired",
+        text: `The card on this billing account expired${expiry ? ` in ${expiry}` : ""}. Update the card so the next bill can be paid.`,
+        action: { label: UPDATE_CARD, href: BILLING.account({ id: account.id }) },
+      });
+    } else if (card.expires_soon) {
+      items.push({
+        kind: "card_expiring",
+        tone: "warning",
+        pill: "Card expiring",
+        text: `The card on this billing account expires${expiry ? ` in ${expiry}` : " soon"}. Update the card before then.`,
+        action: { label: UPDATE_CARD, href: BILLING.account({ id: account.id }) },
+      });
+    }
+  }
+
+  const soon = entities
+    .flatMap((entity) =>
+      trialing(entity).map((trial) => ({ entity, trial, left: daysUntil(trial.date_iso, today) })),
+    )
+    .filter((t): t is typeof t & { left: number } => t.left !== null && t.left >= 0 && t.left <= TRIAL_SOON_DAYS)
+    .sort((a, b) => a.left - b.left);
+  if (soon.length > 0) {
+    const [first] = soon;
+    items.push({
+      kind: "trial_ending",
+      tone: "warning",
+      pill: "Trial ending soon",
+      text:
+        soon.length === 1
+          ? `The ${first.trial.name} trial for ${first.entity.entity_name} ends ${inDaysText(first.left)}. Review it in Manage Subscriptions.`
+          : `${soon.length} trials end in the next ${TRIAL_SOON_DAYS} days, the first ${inDaysText(first.left)}. Review them in Manage Subscriptions.`,
+      action: { label: "Review trials", href: PORTAL.subscriptions },
+    });
+  }
+  return items;
+}
+
+/**
+ * The header's one pill: the most urgent attention item's, else the calm position - paying,
+ * only trials, or nothing at all.
+ */
+export function positionPill(
+  items: AttentionItem[],
+  list: PayerAccount | null,
+): { label: string; tone: StatusTone } {
+  if (items.length > 0) return { label: items[0].pill, tone: items[0].tone };
+  const modules = (list?.entities ?? []).flatMap((e) => e.modules);
+  if (modules.some((m) => m.status === "active" || m.status === "cancelled")) {
+    return { label: UP_TO_DATE, tone: "success" };
+  }
+  if (modules.some((m) => m.status === "trialing")) return { label: ON_FREE_TRIAL, tone: "neutral" };
+  return { label: NO_ACTIVE_SUBSCRIPTIONS, tone: "neutral" };
+}
+
+/** One state a module is in across the payer's companies, as a pill and a plain count. */
+export type ModuleRowState = {
+  key: "failed" | "trial" | "cancelling" | "active";
+  label: string;
+  tone: StatusTone;
+  /** "4 companies" - plain text beside the pill, never coloured. */
+  count: string;
+};
+
+export type ModuleSummaryRow = { code: string; name: string; states: ModuleRowState[] };
+
+const MODULE_ORDER = ["PETTY_CASH", "PAYMENT_REQUEST"];
+
+/**
+ * The Modules section: one row per module, each with the states it is in across the payer's
+ * companies - failed first, then trials (the soonest end named), cancelling (cancelled, still
+ * running) and active. A module in none of them (never taken, ended, trial expired) has no row.
+ */
+export function moduleRows(list: PayerAccount | null): ModuleSummaryRow[] {
+  const byCode = new Map<string, { name: string; modules: PortalModule[] }>();
+  for (const entity of list?.entities ?? []) {
+    for (const m of entity.modules) {
+      const row = byCode.get(m.code) ?? { name: m.name, modules: [] };
+      row.modules.push(m);
+      byCode.set(m.code, row);
+    }
+  }
+  const rank = (code: string) => {
+    const i = MODULE_ORDER.indexOf(code);
+    return i === -1 ? MODULE_ORDER.length : i;
+  };
+  return [...byCode.entries()]
+    .sort(([a], [b]) => rank(a) - rank(b))
+    .map(([code, { name, modules }]) => {
+      const of = (s: PortalModule["status"]) => modules.filter((m) => m.status === s);
+      const states: ModuleRowState[] = [];
+      const failed = of("past_due");
+      if (failed.length) states.push({ key: "failed", label: PAYMENT_FAILED_PILL, tone: "danger", count: companies(failed.length) });
+      const trials = of("trialing").sort((a, b) => (a.date_iso ?? "").localeCompare(b.date_iso ?? ""));
+      if (trials.length) {
+        const soonest = trials.find((t) => t.date)?.date;
+        states.push({
+          key: "trial",
+          label: !soonest ? "Free trial" : trials.length === 1 ? `Trial ends ${soonest}` : `First trial ends ${soonest}`,
+          tone: "warning",
+          count: companies(trials.length),
+        });
+      }
+      const cancelling = of("cancelled");
+      if (cancelling.length) states.push({ key: "cancelling", label: "Cancelling", tone: "warning", count: companies(cancelling.length) });
+      const active = of("active");
+      if (active.length) states.push({ key: "active", label: "Active", tone: "success", count: companies(active.length) });
+      return { code, name, states };
+    })
+    .filter((row) => row.states.length > 0);
 }
 
 /** "entity" / "entities" - the unit alone, for a figure drawn above it (My Profile, 10-A). */

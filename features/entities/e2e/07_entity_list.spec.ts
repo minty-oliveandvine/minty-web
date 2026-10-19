@@ -77,22 +77,23 @@ test.describe("the entity list", () => {
 
     const main = page.getByRole("main");
     await expect(page.getByRole("heading", { level: 1, name: "Select Company" })).toBeVisible();
-    const cards = main.getByRole("list", { name: "Your companies" }).getByRole("link");
-    await expect(cards).toHaveCount(LIST.entities.length);
+    const cards = main.getByRole("list", { name: "Your businesses" }).getByRole("link");
+    await expect(cards).toHaveCount(LIST.entities.length - 1);
     const five = main.getByRole("link", { name: /Scenario 5 - Free trial \+ Active/ });
     await expect(five).toHaveAttribute(
       "href",
       /\/entity\/e-scenario-5\/enter\?token=.+&next=%2Fentity%2Fe-scenario-5%2Fmodules$/,
     );
     await expect(five.getByRole("img", { name: "Free trial: Petty Cash" })).toBeVisible();
-    await expect(main.getByText("Setup in progress")).toBeVisible();
-    // the "+" is held to the screen's corner, outside `main`
-    const add = page.getByRole("link", { name: "Add a new entity" });
-    await expect(add).toHaveAttribute("href", `${PETTY_CASH_URL}/entity/create`);
-    const viewport = page.viewportSize()!;
-    const addBox = (await add.boundingBox())!;
-    expect(viewport.width - (addBox.x + addBox.width)).toBeLessThan(64);
-    expect(viewport.height - (addBox.y + addBox.height)).toBeLessThan(64);
+    await expect(
+      main.getByRole("list", { name: "Needs you" }).getByText("Setup not finished — continue setup"),
+    ).toBeVisible();
+    // a page-level Secondary action, inside `main` - no floating "+" (Part 15.8)
+    await expect(page.getByRole("link", { name: "Add a new entity" })).toHaveCount(0);
+    await expect(main.getByRole("link", { name: "Create a business" })).toHaveAttribute(
+      "href",
+      `${PETTY_CASH_URL}/entity/create`,
+    );
 
     await main.getByRole("textbox", { name: "Search company" }).fill("both active");
     await expect(cards).toHaveCount(1);
@@ -100,14 +101,14 @@ test.describe("the entity list", () => {
     await expect(main.getByText("No companies found.")).toBeVisible();
   });
 
-  test("setup in progress first, then A→Z, kept while searching, at phone to desktop widths", async ({
+  test("needs you first, then last used first, kept while searching, at phone to desktop widths", async ({
     page,
   }) => {
     await stubFlask(page);
     await page.setViewportSize({ width: 360, height: 800 });
     await handoff(page, creds(), "/entities");
     const main = page.getByRole("main");
-    const cards = main.getByRole("list", { name: "Your companies" }).getByRole("link");
+    const cards = main.getByRole("link", { name: /Scenario/ });
     const order = async () =>
       (await cards.allInnerTexts()).map((t) => t.match(/Scenario( \d+)?/)![0]);
     for (const width of [360, 768, 1440]) {
@@ -115,21 +116,21 @@ test.describe("the entity list", () => {
       await expect(cards).toHaveCount(LIST.entities.length);
       expect(await order()).toEqual([
         "Scenario",
-        "Scenario 2",
         "Scenario 5",
         "Scenario 6",
-        "Scenario 8",
-        "Scenario 9",
         "Scenario 10",
+        "Scenario 2",
+        "Scenario 9",
+        "Scenario 8",
       ]);
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     }
     await main.getByRole("textbox", { name: "Search company" }).fill("trial");
     await expect(cards).toHaveCount(3);
-    expect(await order()).toEqual(["Scenario 2", "Scenario 5", "Scenario 6"]);
+    expect(await order()).toEqual(["Scenario 5", "Scenario 6", "Scenario 2"]);
   });
 
-  test("the whole screen: the bar across the top, the title in its middle, and Flask's column under it", async ({
+  test("the whole screen: the bar across the top, the title in its middle, and the 640 px column under it", async ({
     page,
   }) => {
     await stubFlask(page);
@@ -147,23 +148,21 @@ test.describe("the entity list", () => {
     expect(mark.x).toBeLessThan(40);
     expect(Math.abs(title.x + title.width / 2 - width / 2)).toBeLessThan(2);
 
-    // Flask's column: 1024 px wide from 1200 (976 inside its 24 px padding), in the middle
+    // Part 15.8's centred column: 640 px wide, in the middle
     const main = page.getByRole("main");
     const column = (await main.boundingBox())!;
-    expect(Math.round(column.width)).toBe(1024);
+    expect(Math.round(column.width)).toBe(640);
     expect(Math.abs(column.x - (width - (column.x + column.width)))).toBeLessThan(2);
 
-    // Flask's spacing: the doors, 65 px, the search box, 24 px, the rows
-    const doors = (await main.locator('img[src="/entities/select_company.webp"]').boundingBox())!;
+    // the search box, then the rows under it
     const search = main.getByRole("textbox", { name: "Search company" });
     const box = (await search.boundingBox())!;
-    const rows = main.getByRole("list", { name: "Your companies" }).getByRole("listitem");
+    const rows = main.getByRole("list", { name: "Your businesses" }).getByRole("listitem");
     const [first, second] = await Promise.all(
       [0, 1].map(async (i) => (await rows.nth(i).boundingBox())!),
     );
-    expect(Math.round(box.y - (doors.y + doors.height))).toBe(65);
-    expect(Math.round(first.y - (box.y + box.height))).toBe(24);
-    expect(Math.round(first.width)).toBe(976);
+    expect(first.y).toBeGreaterThan(box.y + box.height);
+    expect(Math.round(first.width)).toBe(640);
     expect(Math.round(second.x)).toBe(Math.round(first.x));
     expect(second.y).toBeGreaterThan(first.y + first.height);
 
@@ -179,18 +178,12 @@ test.describe("the entity list", () => {
     await expect(search).toBeInViewport();
     await expect(header).toBeInViewport();
 
-    // a phone: the whole width inside Flask's 24 px, and its taller doors box (76 px to the search)
+    // a phone: the whole width inside the 16 px gutters
     await page.setViewportSize({ width: 390, height: 844 });
     await scroller.evaluate((el) => el.scrollTo({ top: 0 }));
     await expect
       .poll(async () => Math.round((await rows.nth(0).boundingBox())!.width))
-      .toBe(390 - 48);
-    const phoneDoors = (await main
-      .locator('img[src="/entities/select_company.webp"]')
-      .boundingBox())!;
-    expect(Math.round((await search.boundingBox())!.y - (phoneDoors.y + phoneDoors.height))).toBe(
-      76,
-    );
+      .toBe(390 - 32);
   });
 
   test("the header's initials open My Profile over the list; the menu has no Settings, the cat above Logout", async ({
@@ -254,7 +247,7 @@ test.describe("the entity list", () => {
     const flaskAsked = await bounceFlaskHandoff(page, creds());
     await handoff(page, { ...creds(), entityId: "e1", entityName: "Olive Shop" }, "/entities");
 
-    await expect(page.getByRole("list", { name: "Your companies" })).toBeVisible();
+    await expect(page.getByRole("list", { name: "Your businesses" })).toBeVisible();
     expect(
       flaskAsked.some((q) => q.includes("next=%2Fentities") && !q.includes("entity_id=e1")),
     ).toBe(true);

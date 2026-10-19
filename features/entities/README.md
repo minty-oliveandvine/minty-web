@@ -14,7 +14,7 @@ api/            entities.ts - Flask's GET /api/me/entities, typed (mintyFetch)
 hooks/          useEntityList - the read, search, the flashed notices, the unscoped-token rule
 lib/            entityRows (pure: search, the clock's words, the trial label, where a card leads), paths,
                 moduleChoice (a company's doors: the database's modules, each entered through Minty's /enter)
-components/     EntityCard (one company's row), EntityListParts (header, doors, the search box that stays, +, the states),
+components/     EntityCard (one company's row), EntityListParts (header, the question with Minty, the search box that stays, group headings, Create a business, the states),
                 ModuleChoiceButton (one module's door - minty-payment-request-web's ModuleButton, moved here)
 routes/         EntityList (Suspense + the query string) -> EntityListScreen (the page);
                 ModuleChoice (the company from the address) -> ModuleChoiceScreen ("Choose Module Type", phase 2)

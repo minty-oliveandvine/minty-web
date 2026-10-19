@@ -1,10 +1,12 @@
 "use client";
 
 /**
- * "Subscription & Billing" - the portal's landing, composed (Figma 08-A; Minty v2: a 1200px
- * column, the two cards side by side from `lg`): the way back into
- * Minty (in the header bar, `PortalBack`), the banner, the billing-account card and the Subscription Overview, and the two
- * account dialogs the card opens - which account to show, and "Change billing account" - each
+ * "Subscription & Billing" - the portal's landing, composed (Figma 08-A as a Decision dashboard,
+ * Part 15.6b, 2026-10-19; a 1200px column): the way back into Minty (in the header bar,
+ * `PortalBack`), the position header (the shown account's next bill, who it is billed to and
+ * Manage Subscription), a Page banner per thing that needs the payer, then the modules and -
+ * side by side from `md` - the payment method and the invoices; and the two account dialogs the
+ * header opens - which account to show, and "Change billing account" - each
  * of which can open a new account in place (onboarding's sheet, `BillingAccountDialogs`).
  * `SubscriptionOverview` reads the URL and hands the parameters here; the tests render this
  * directly with fixtures.
@@ -26,9 +28,11 @@ import {
   MoveCompanyDialog,
 } from "@/features/subscription/components/BillingAccountDialogs";
 import {
-  BillingAccountCard,
-  CurrentPositionCards,
-  SubscriptionOverviewCard,
+  AttentionBanners,
+  InvoicesSection,
+  ModulesSection,
+  PaymentMethodSection,
+  PositionHeader,
 } from "@/features/subscription/components/BillingOverviewPanels";
 import { BACK_LINE_CLASS, PortalBack } from "@/features/subscription/components/PortalBack";
 import { TransferOutcomeDialog } from "@/features/subscription/components/TransferOutcomeDialog";
@@ -36,7 +40,8 @@ import {
   useBillingOverview,
   type UseBillingOverviewArgs,
 } from "@/features/subscription/hooks/useBillingOverview";
-import { BACK_TO_ENTITIES, OVERVIEW_TITLE } from "@/features/subscription/lib/billing";
+import { BACK_TO_ENTITIES } from "@/features/subscription/lib/billing";
+import { BILLING } from "@/features/subscription/lib/paths";
 
 // A primitive, not the auth object: a fresh object per read makes the store loop (PortalChrome).
 const noSubscribe = () => () => {};
@@ -48,15 +53,27 @@ export function SubscriptionOverviewScreen(args: UseBillingOverviewArgs) {
   const entityId = useSyncExternalStore(noSubscribe, readEntityId, serverEmpty);
 
   return (
-    <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-8 pb-16" data-portal-col="1200">
+    <div
+      className="mx-auto flex w-full max-w-[1200px] flex-col gap-8 pb-16"
+      data-portal-col="1200"
+      aria-busy={o.status === "loading"}
+    >
       <PortalBack>
         <a href={mintyModulesUrl(entityId)} className={BACK_LINE_CLASS}>
           {BACK_TO_ENTITIES}
         </a>
       </PortalBack>
-      <div className="rounded-xl bg-selected p-5 sm:p-8">
-        <h1 className="text-display-m font-bold text-ink sm:text-display-l">{OVERVIEW_TITLE}</h1>
-      </div>
+      <PositionHeader
+        next={o.next}
+        pill={o.status === "ready" ? o.pill : null}
+        accountsFailed={o.accountsFailed}
+        notice={o.notice}
+        ready={o.status === "ready"}
+        onPick={o.openPicker}
+        onMove={o.openMove}
+        onRetry={o.reload}
+        onManage={o.manageSubscriptions}
+      />
 
       {o.status === "error" ? (
         <div
@@ -73,39 +90,32 @@ export function SubscriptionOverviewScreen(args: UseBillingOverviewArgs) {
           </button>
         </div>
       ) : (
-        <div
-          className="grid w-full gap-6 lg:grid-cols-2 lg:items-start"
-          aria-busy={o.status === "loading"}
-        >
-          {o.status === "ready" && (
-            <div className="lg:col-span-2">
-              <CurrentPositionCards
-                activeModules={o.position.activeModules}
-                next={o.next}
-                trialEnds={o.position.trialEnds}
+        o.status === "ready" && (
+          <>
+            <AttentionBanners items={o.attention} onAction={o.go} />
+            <ModulesSection
+              rows={o.modules}
+              overview={o.overview}
+              updatesExpanded={o.updatesExpanded}
+              onToggleUpdates={o.toggleUpdates}
+            />
+            <div className="grid w-full gap-8 md:grid-cols-2 md:gap-6">
+              <PaymentMethodSection
+                account={o.account}
+                hasAccounts={Boolean(o.accounts && o.accounts.accounts.length > 0)}
+                accountsFailed={o.accountsFailed}
+                onOpenAccount={o.openPicker}
+                onAdd={(accountId) => o.go(BILLING.add(accountId))}
+                onOpen={o.goToBilling}
               />
+              <InvoicesSection onOpen={o.goToBilling} />
             </div>
-          )}
-          <BillingAccountCard
-            next={o.next}
-            accountsFailed={o.accountsFailed}
-            notice={o.notice}
-            onPick={o.openPicker}
-            onMove={o.openMove}
-            onOpen={o.goToBilling}
-            onRetry={o.reload}
-          />
-          <SubscriptionOverviewCard
-            overview={o.overview}
-            updatesExpanded={o.updatesExpanded}
-            onToggleUpdates={o.toggleUpdates}
-            onManage={o.manageSubscriptions}
-          />
-        </div>
+          </>
+        )
       )}
 
-      {/* Siblings of the card, never inside it: a click in a dialog would otherwise bubble to
-          the card's own click and open the picker under the dialog. */}
+      {/* Siblings of the header, never inside it: a click in a dialog would otherwise bubble to
+          the header's own click and open the picker under the dialog. */}
       {o.picking && o.accounts && (
         <AccountPickerDialog
           data={o.accounts}

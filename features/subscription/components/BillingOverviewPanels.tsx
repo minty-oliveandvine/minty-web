@@ -1,145 +1,302 @@
 "use client";
 
 /**
- * The portal's landing, drawn (Figma 08-A "Subscription & Billing"): the billing-account card -
- * which account the bill goes to, when it next goes out, and the ways to the billing-account
- * sheet, to moving a company between accounts and to the account's page - and the Subscription
- * Overview beside Minty counting the
- * cash: how many companies are being paid for, how many trials end soon, a line per company
- * that needs the payer to know something, and *Manage Subscription*. Everything shown is the
- * hook's (`useBillingOverview`).
+ * The portal's landing, drawn (Figma 08-A "Subscription & Billing") as a Decision dashboard
+ * (Part 15.6b, the owner's visual-anchors brief 2026-10-19): the POSITION HEADER on the
+ * subscription header's gradient - the title, one status pill, the next bill as the page's one
+ * large amount, who it is billed to (the way to move a company between accounts) and *Manage
+ * Subscription* - then a Page banner for each thing that needs the payer, then three plain
+ * sections: the modules, the payment method and the invoices. Everything shown is the hook's
+ * (`useBillingOverview`).
  */
 
 import Image from "next/image";
+import type { ReactNode } from "react";
 
+import { CardBrand } from "@/features/subscription/components/CardBrand";
+import { NoAccountPanel, NoCardPanel } from "@/features/subscription/components/BillingPanels";
 import { fromControl } from "@/features/subscription/components/SubscriptionSummaryRow";
+import type { BillingAccount } from "@/features/subscription/api/payerPortal";
 import {
-  ACTIVE_SUBSCRIPTIONS,
   BILL_TO,
   BILLING_ACCOUNT,
   CHANGE_BILLING_ACCOUNT,
+  ESTIMATED,
   GO_TO_BILLING,
-  MANAGE_BILLING_DETAILS,
   MANAGE_SUBSCRIPTION,
   NEXT_BILLING_DATE,
   NOTHING_TO_UPDATE,
-  SUBSCRIPTION_OVERVIEW,
+  OVERVIEW_TITLE,
   SUBSCRIPTION_UPDATES,
-  TRIAL_ENDING,
-  entityCount,
+  cardExpiry,
+  cardTitle,
   moreUpdatesLabel,
   visibleUpdates,
+  type AttentionItem,
+  type ModuleSummaryRow,
   type NextBilling,
   type Overview,
   type OverviewUpdate,
+  type StatusTone,
 } from "@/features/subscription/lib/billing";
 import { ACCOUNTS_LOAD_FAILED, CHOOSE_ACCOUNT } from "@/features/subscription/lib/billingAccounts";
 
-const CARD =
-  "rounded-lg border border-line bg-card p-4 sm:p-5";
+export const NEXT_BILL = "Next bill";
+export const MODULES = "Modules";
+export const PAYMENT_METHOD = "Payment method";
+export const INVOICES = "Invoices";
+export const SEE_ALL_INVOICES = "See all invoices";
+export const NO_MODULES = "No module is being paid for or on a trial yet.";
+export const INVOICES_NOTE =
+  "Every invoice for this billing account, with its PDF and billing breakdown, is on the billing page.";
+
+const PILL: Record<StatusTone, string> = {
+  success: "bg-success-bg text-success",
+  warning: "bg-warning-bg text-warning",
+  danger: "bg-danger-bg text-danger",
+  neutral: "bg-neutral-bg text-neutral",
+};
+
+/** A status, in words, in its tone's soft pill (Part 13 status tones). */
+export function StatusPill({ label, tone }: { label: string; tone: StatusTone }) {
+  return (
+    <span
+      data-tone={tone}
+      className={`inline-flex h-7 shrink-0 items-center rounded-full px-3 text-label font-semibold ${PILL[tone]}`}
+    >
+      {label}
+    </span>
+  );
+}
+
+/** The section headings' one look: plain, on the page, a link at the right when there is one. */
+function SectionHeading({ id, title, children }: { id: string; title: string; children?: ReactNode }) {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+      <h2 id={id} className="text-title-l font-semibold text-ink">
+        {title}
+      </h2>
+      {children}
+    </div>
+  );
+}
+
+const SECTION = "flex min-w-0 flex-col gap-4 border-t border-line-subtle pt-6";
+const TEXT_LINK =
+  "-mx-2 inline-flex min-h-11 items-center rounded-lg px-2 text-body-m font-semibold text-link underline underline-offset-4 hover:bg-selected";
 
 /**
- * The first card: ONE billing account at a glance - its name as "Bill to", the payer's next
- * billing date (shared by every account) - and the ways on.
+ * The position header: ONE billing account's position on the subscription header's gradient
+ * (Part 13's exception asset, `--subscription-header-gradient`). Every word on it is text/primary,
+ * the only ink that passes AA on both stops (7.35:1 on #00CBC6, 8.00:1 on #00D5BF); white and
+ * the secondary greys do not. The action is the Secondary look, white: Minty Action's own fill
+ * would vanish into the gradient.
  *
- * TWO CLICKS, TWO JOBS (the user's call): CLICKING THE CARD opens the billing-account sheet -
- * which account it shows, and *New billing account* - and CLICKING THE ACCOUNT'S NAME is "Change
- * billing account", moving a company to another account. There is no separate button for the
- * move. The card is a region, not a control, and never gets a role or a name of its own, so the
- * keyboard's way to the sheet is a button of its own, out of sight until it is focused. Clicks on
- * the card's real controls are theirs (`fromControl`): the name moves a company and the link goes
- * to the account's page without the sheet opening under them.
+ * TWO CLICKS, TWO JOBS (the user's call, kept from 08-A's card): CLICKING THE HEADER opens the
+ * billing-account sheet - which account it shows, and *New billing account* - and CLICKING THE
+ * ACCOUNT'S NAME is "Change billing account", moving a company to another account. The header is
+ * a region, not a control, so the keyboard's way to the sheet is a button of its own, out of
+ * sight until focused. Clicks on its real controls are theirs (`fromControl`).
  */
-export function BillingAccountCard({
+export function PositionHeader({
   next,
+  pill,
   accountsFailed,
   notice,
+  ready,
   onPick,
   onMove,
-  onOpen,
   onRetry,
+  onManage,
 }: {
   next: NextBilling;
+  pill: { label: string; tone: StatusTone } | null;
   /** The accounts could not be read: the payer-level fallback is shown, with a retry. */
   accountsFailed: boolean;
-  /** How a move went, said once under the heading. */
+  /** How a move went, said once under the account line. */
   notice: { text: string; tone: "ok" | "failed" } | null;
+  /** The reads are in: the figures and the pill are facts, not placeholders. */
+  ready: boolean;
   onPick: () => void;
   onMove: () => void;
-  onOpen: () => void;
   onRetry: () => void;
+  onManage: () => void;
 }) {
+  const pickable = ready && !accountsFailed;
   return (
     <section
       aria-label={BILLING_ACCOUNT}
       onClick={(e) => {
-        if (!accountsFailed && !fromControl(e)) onPick();
+        if (pickable && !fromControl(e)) onPick();
       }}
-      className={`${CARD} flex flex-col gap-5 ${accountsFailed ? "" : "cursor-pointer"}`}
+      className={`flex gap-6 rounded-xl bg-[image:var(--subscription-header-gradient)] p-5 text-ink sm:p-8 ${
+        pickable ? "cursor-pointer" : ""
+      }`}
     >
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <h2 className="text-title-l font-semibold text-ink">{MANAGE_BILLING_DETAILS}</h2>
-        {!accountsFailed && (
-          // What a click on the card does, for the keyboard - shown only while focused.
-          <button
-            type="button"
-            onClick={onPick}
-            aria-haspopup="dialog"
-            className="sr-only shrink-0 rounded-lg text-body-s font-semibold text-link underline underline-offset-4 focus-visible:not-sr-only focus-visible:px-2 focus-visible:py-1"
-          >
-            {CHOOSE_ACCOUNT}
-          </button>
-        )}
-      </div>
-      {notice && (
-        <p
-          role={notice.tone === "failed" ? "alert" : "status"}
-          className={`text-body-l ${notice.tone === "failed" ? "text-danger" : "text-success"}`}
-        >
-          {notice.text}
-        </p>
-      )}
-      <div className="flex flex-wrap gap-x-16 gap-y-5">
-        <div className="min-w-0">
-          <p className="text-title-m font-bold text-ink">{BILL_TO}</p>
-          {accountsFailed ? (
-            <p className="mt-2 truncate text-title-m font-semibold text-ink">{next.billTo || "—"}</p>
-          ) : (
+      <div className="flex min-w-0 flex-1 flex-col gap-5">
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="text-display-m font-bold text-ink">{OVERVIEW_TITLE}</h1>
+          {ready && pill && <StatusPill label={pill.label} tone={pill.tone} />}
+          {pickable && (
+            // What a click on the header does, for the keyboard - shown only while focused.
             <button
               type="button"
-              onClick={onMove}
+              onClick={onPick}
               aria-haspopup="dialog"
-              aria-label={`${next.billTo || "No billing account"} · ${CHANGE_BILLING_ACCOUNT}`}
-              className="-mx-2 mt-1 flex min-h-11 max-w-full items-center gap-2 rounded-lg px-2 text-left text-title-m font-semibold text-ink hover:text-link"
+              className="sr-only shrink-0 rounded-lg bg-card text-body-s font-semibold text-link underline underline-offset-4 focus-visible:not-sr-only focus-visible:px-2 focus-visible:py-1"
             >
-              <span className="truncate">{next.billTo || "—"}</span>
-              <span aria-hidden className="text-body-s text-ink-muted">
-                ▾
-              </span>
+              {CHOOSE_ACCOUNT}
             </button>
           )}
         </div>
-        <div>
-          <p className="text-title-m font-bold text-ink">{NEXT_BILLING_DATE}</p>
-          <p className="mt-2 text-title-m font-semibold text-ink">{next.date ?? "—"}</p>
-        </div>
+
+        {ready && (
+          <>
+            {/* The hero: the next bill's amount, the one large figure on the page - or, with no
+                amount to show, the date itself. */}
+            <div className="flex flex-col gap-1">
+              {next.amount ? (
+                <>
+                  <p className="text-body-m font-semibold text-ink">
+                    {NEXT_BILL} <span className="font-normal">{ESTIMATED}</span>
+                  </p>
+                  <p className="text-display-xl text-ink" translate="no">
+                    {next.amount}
+                  </p>
+                  <p className="text-body-m text-ink">
+                    <span>{NEXT_BILLING_DATE}</span>{" "}
+                    <span className="font-semibold">{next.date ?? "—"}</span>
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="text-body-m font-semibold text-ink">{NEXT_BILLING_DATE}</p>
+                  <p className="text-display-l text-ink">{next.date ?? "—"}</p>
+                </>
+              )}
+            </div>
+
+            <div className="min-w-0">
+              <p className="text-body-m text-ink">{BILL_TO}</p>
+              {accountsFailed ? (
+                <p className="truncate text-title-m font-semibold text-ink">{next.billTo || "—"}</p>
+              ) : (
+                <button
+                  type="button"
+                  onClick={onMove}
+                  aria-haspopup="dialog"
+                  aria-label={`${next.billTo || "No billing account"} · ${CHANGE_BILLING_ACCOUNT}`}
+                  className="-mx-2 flex min-h-11 max-w-full items-center gap-1 rounded-lg px-2 text-left text-title-m font-semibold text-ink underline-offset-4 hover:underline"
+                >
+                  <span className="truncate">{next.billTo || "—"}</span>
+                  <span className="material-symbols-rounded shrink-0" aria-hidden>
+                    expand_more
+                  </span>
+                </button>
+              )}
+            </div>
+
+            {notice && (
+              <p
+                role={notice.tone === "failed" ? "alert" : "status"}
+                className={`rounded-lg bg-card px-3 py-2 text-body-m ${
+                  notice.tone === "failed" ? "text-danger" : "text-success"
+                }`}
+              >
+                {notice.text}
+              </p>
+            )}
+            {accountsFailed && (
+              <p className="rounded-lg bg-card px-3 py-1 text-body-s text-danger">
+                {ACCOUNTS_LOAD_FAILED}{" "}
+                <button type="button" onClick={onRetry} className="min-h-11 px-1 font-semibold underline">
+                  Try again
+                </button>
+              </p>
+            )}
+
+            <button
+              type="button"
+              onClick={onManage}
+              className="h-11 w-full rounded-lg border border-line-selected bg-card px-4 text-body-m font-semibold text-link hover:bg-selected sm:w-auto sm:self-start"
+            >
+              {MANAGE_SUBSCRIPTION}
+            </button>
+          </>
+        )}
       </div>
-      {accountsFailed && (
-        <p className="text-body-s text-danger">
-          {ACCOUNTS_LOAD_FAILED}{" "}
-          <button type="button" onClick={onRetry} className="min-h-11 px-1 font-semibold underline">
-            Try again
-          </button>
-        </p>
-      )}
-      <button
-        type="button"
-        onClick={onOpen}
-        className="-mx-2 min-h-11 self-end rounded-lg px-2 text-body-m text-ink underline underline-offset-4 hover:text-link"
-      >
-        {GO_TO_BILLING} ›
-      </button>
+      {/* Minty with the cards: decoration in the header's side area, from 640px only (Part
+          13.11 "allowed with care", 120-160). */}
+      <Image
+        src="/portal/minty-cards.png"
+        alt=""
+        width={160}
+        height={232}
+        unoptimized
+        className="hidden w-[128px] shrink-0 self-end sm:block lg:w-[144px]"
+      />
     </section>
+  );
+}
+
+/**
+ * A Page banner per thing that needs the payer (`attentionItems`): the tone, its icon, the issue
+ * and the action in words, and the action as a button. Nothing is drawn when nothing is due.
+ */
+export function AttentionBanners({
+  items,
+  onAction,
+}: {
+  items: AttentionItem[];
+  onAction: (href: string) => void;
+}) {
+  if (items.length === 0) return null;
+  return (
+    <ul className="flex flex-col gap-3" aria-label="Needs your attention">
+      {items.map((item) => (
+        <li
+          key={item.kind}
+          data-kind={item.kind}
+          className={`flex flex-col gap-2 rounded-lg px-4 py-3 text-body-m sm:flex-row sm:items-center sm:gap-3 ${
+            item.tone === "danger" ? "bg-danger-bg text-danger" : "bg-warning-bg text-warning"
+          }`}
+        >
+          <p className="flex min-w-0 flex-1 items-start gap-3">
+            <span className="material-symbols-rounded shrink-0" aria-hidden>
+              {item.tone === "danger" ? "error" : "warning"}
+            </span>
+            <span>{item.text}</span>
+          </p>
+          <button
+            type="button"
+            onClick={() => onAction(item.action.href)}
+            className="ml-9 min-h-11 self-start rounded-lg px-1 font-semibold underline underline-offset-2 hover:bg-card/60 sm:ml-0 sm:self-center"
+          >
+            {item.action.label}
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+const MODULE_CHIP: Record<string, { look: string; glyph: string }> = {
+  PETTY_CASH: { look: "bg-module-pettycash-wash text-module-pettycash-ink", glyph: "point_of_sale" },
+  PAYMENT_REQUEST: { look: "bg-module-payment-wash text-module-payment-ink", glyph: "request_quote" },
+};
+
+/** The module's identity chip: its wash, its ink and its glyph (identity, never status). */
+export function ModuleChip({ code, name }: { code: string; name: string }) {
+  const chip = MODULE_CHIP[code] ?? { look: "bg-neutral-bg text-neutral", glyph: "widgets" };
+  return (
+    <span
+      className={`inline-flex h-9 shrink-0 items-center gap-2 rounded-full pl-2 pr-3 text-body-m font-semibold ${chip.look}`}
+    >
+      <span className="material-symbols-rounded" aria-hidden>
+        {chip.glyph}
+      </span>
+      {name}
+    </span>
   );
 }
 
@@ -155,108 +312,63 @@ function UpdateLine({ update }: { update: OverviewUpdate }) {
       <span className={`text-body-s ${update.tone === "failed" ? "font-bold text-danger" : ""}`}>
         {update.text}
       </span>
-      {update.emphasis && (
-        <span className="text-body-s font-bold text-warning">{update.emphasis}</span>
-      )}
+      {update.emphasis && <span className="text-body-s font-bold text-ink">{update.emphasis}</span>}
     </li>
   );
 }
 
 /**
- * The current position (Part 15.19, "know that what I pay is right"): at most three equal cards
- * over the panels - the modules being paid for, the next bill (amount and date), and the soonest
- * trial end while a trial runs. Only values the page already has: the next bill's card goes when
- * its amount is unknown (the accounts read failed), the trial's when nothing is on trial.
+ * The modules: a row per module - its identity chip, then each state it is in across the
+ * payer's companies as a pill with the count beside it in plain text - and, under them, the
+ * line per company that needs the payer to know something (failures first, then trials).
  */
-export function CurrentPositionCards({
-  activeModules,
-  next,
-  trialEnds,
-}: {
-  activeModules: number;
-  next: NextBilling;
-  trialEnds: string | null;
-}) {
-  const cards: { label: string; value: string; sub?: string | null }[] = [
-    { label: "Active modules", value: String(activeModules) },
-  ];
-  if (next.amount) cards.push({ label: "Next bill", value: next.amount, sub: next.date });
-  if (trialEnds) cards.push({ label: "Trial ends", value: trialEnds });
-  return (
-    <ul className="grid w-full grid-cols-1 gap-3 sm:grid-cols-3">
-      {cards.map((card) => (
-        <li key={card.label} className={`${CARD} flex min-w-0 flex-col gap-1`}>
-          <p className="text-body-s text-ink-muted">{card.label}</p>
-          <p className="text-title-l font-bold text-ink" translate="no">
-            {card.value}
-          </p>
-          {card.sub && <p className="text-body-s text-ink-2">{card.sub}</p>}
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-function Figure({ label, value, tone }: { label: string; value: number; tone: "grey" | "orange" }) {
-  return (
-    <div className="flex min-w-[150px] flex-col items-center gap-1">
-      <p className="text-body-l text-ink">{label}</p>
-      <p
-        className={`text-display-l font-bold leading-none ${
-          tone === "orange" ? "text-danger" : "text-ink-muted"
-        }`}
-      >
-        {value}
-      </p>
-      <p className="text-body-s text-ink-muted">{entityCount(value).replace(/^\d+\s/, "")}</p>
-    </div>
-  );
-}
-
-export function SubscriptionOverviewCard({
+export function ModulesSection({
+  rows,
   overview,
   updatesExpanded,
   onToggleUpdates,
-  onManage,
 }: {
+  rows: ModuleSummaryRow[];
   overview: Overview;
-  /** Every update line on show, rather than the first five. */
   updatesExpanded: boolean;
   onToggleUpdates: () => void;
-  onManage: () => void;
 }) {
   const more = moreUpdatesLabel(overview.updates);
   return (
-    <section aria-label={SUBSCRIPTION_OVERVIEW} className={`${CARD} flex flex-col gap-8`}>
-      <div className="flex flex-wrap items-start justify-between gap-6">
-        <div className="flex flex-col gap-7">
-          <h2 className="text-title-l font-semibold text-ink">{SUBSCRIPTION_OVERVIEW}</h2>
-          <div className="flex flex-wrap gap-6">
-            <Figure label={ACTIVE_SUBSCRIPTIONS} value={overview.active} tone="grey" />
-            <Figure label={TRIAL_ENDING} value={overview.trialEnding} tone="orange" />
-          </div>
-        </div>
-        {/* width/height are the file's own pixels (the ratio next/image needs); the drawn
-            width is the class, and preflight's `img { height: auto }` gives the height.
-            MIRRORED (the user's call, 2026-09-25): the file's Minty faces right, out of the
-            card; turned, it faces the figures it is counting. The cap's lettering reads
-            mirrored as a result. */}
-        <Image
-          src="/portal/minty-counting.png"
-          alt=""
-          width={243}
-          height={210}
-          unoptimized
-          className="hidden w-[212px] shrink-0 -scale-x-100 sm:block"
-        />
-      </div>
+    <section aria-labelledby="overview-modules" className={SECTION}>
+      <SectionHeading id="overview-modules" title={MODULES} />
+      {rows.length === 0 ? (
+        <p className="text-body-m text-ink-2">{NO_MODULES}</p>
+      ) : (
+        <ul className="flex flex-col divide-y divide-line-subtle rounded-lg border border-line" aria-label={MODULES}>
+          {rows.map((row) => (
+            <li
+              key={row.code}
+              data-module={row.code}
+              className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:gap-6 sm:px-5"
+            >
+              <span className="sm:w-48">
+                <ModuleChip code={row.code} name={row.name} />
+              </span>
+              <span className="flex min-w-0 flex-1 flex-wrap items-center gap-x-5 gap-y-2">
+                {row.states.map((state) => (
+                  <span key={state.key} className="inline-flex items-center gap-2" data-state={state.key}>
+                    <StatusPill label={state.label} tone={state.tone} />
+                    <span className="text-body-s text-ink-2">{state.count}</span>
+                  </span>
+                ))}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
 
       <div className="flex flex-col gap-3">
-        <h3 className="text-body-l text-ink">{SUBSCRIPTION_UPDATES}</h3>
+        <h3 className="text-title-m text-ink">{SUBSCRIPTION_UPDATES}</h3>
         {overview.updates.length === 0 ? (
           <p className="text-body-s text-ink-muted">{NOTHING_TO_UPDATE}</p>
         ) : (
-          <ul className="flex flex-col gap-2">
+          <ul className="flex flex-col gap-2" aria-label={SUBSCRIPTION_UPDATES}>
             {visibleUpdates(overview.updates, updatesExpanded).map((update, i) => (
               <UpdateLine
                 key={`${update.entityId}-${update.module ?? "failed"}-${i}`}
@@ -276,13 +388,76 @@ export function SubscriptionOverviewCard({
           </button>
         )}
       </div>
+    </section>
+  );
+}
 
-      <button
-        type="button"
-        onClick={onManage}
-        className="mx-auto h-11 rounded-lg bg-action px-4 text-body-m font-semibold text-white hover:bg-action-hover active:bg-action-pressed"
-      >
-        {MANAGE_SUBSCRIPTION}
+/**
+ * The card the shown account charges: its network's mark, drawn large, the last four and the
+ * expiry - an expired or expiring card says so in a pill. With no account at all, or no card,
+ * the billing page's own panels.
+ */
+export function PaymentMethodSection({
+  account,
+  hasAccounts,
+  accountsFailed,
+  onOpenAccount,
+  onAdd,
+  onOpen,
+}: {
+  account: BillingAccount | null;
+  /** The accounts were read and there is at least one. */
+  hasAccounts: boolean;
+  accountsFailed: boolean;
+  onOpenAccount: () => void;
+  onAdd: (accountId: string) => void;
+  onOpen: () => void;
+}) {
+  const card = account?.card ?? null;
+  const expiry = card ? cardExpiry(card) : null;
+  return (
+    <section aria-labelledby="overview-payment" className={SECTION}>
+      <SectionHeading id="overview-payment" title={PAYMENT_METHOD} />
+      {accountsFailed ? null : !hasAccounts || !account ? (
+        <NoAccountPanel onOpen={onOpenAccount} />
+      ) : !card ? (
+        <NoCardPanel onAdd={() => onAdd(account.id)} />
+      ) : (
+        <div className="flex items-center gap-4" data-card={card.id}>
+          <span className="flex h-16 w-24 shrink-0 items-center justify-center rounded-lg border border-line bg-card px-2">
+            <CardBrand brand={card.brand} label={card.brand_label} fit="mark" className="w-[72px]" />
+          </span>
+          <div className="flex min-w-0 flex-col gap-1">
+            <p className="truncate text-title-m font-semibold text-ink">{cardTitle(card)}</p>
+            <p className="flex flex-wrap items-center gap-2 text-body-m text-ink-2">
+              {expiry ? `Expires ${expiry}` : null}
+              {card.expired ? (
+                <StatusPill label="Expired" tone="danger" />
+              ) : card.expires_soon ? (
+                <StatusPill label="Expiring soon" tone="warning" />
+              ) : null}
+            </p>
+          </div>
+        </div>
+      )}
+      <button type="button" onClick={onOpen} className={`${TEXT_LINK} self-start`}>
+        {GO_TO_BILLING} ›
+      </button>
+    </section>
+  );
+}
+
+/**
+ * The invoices: the landing reads no invoices (they are the billing page's own read), so this
+ * says where they are and leads there.
+ */
+export function InvoicesSection({ onOpen }: { onOpen: () => void }) {
+  return (
+    <section aria-labelledby="overview-invoices" className={SECTION}>
+      <SectionHeading id="overview-invoices" title={INVOICES} />
+      <p className="text-body-m text-ink-2">{INVOICES_NOTE}</p>
+      <button type="button" onClick={onOpen} className={`${TEXT_LINK} self-start`}>
+        {SEE_ALL_INVOICES} ›
       </button>
     </section>
   );

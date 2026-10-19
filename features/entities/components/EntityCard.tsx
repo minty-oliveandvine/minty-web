@@ -1,8 +1,9 @@
 /**
- * One company on the select-company list - Flask's row (`templates/entity/index.html`), moved
- * as it looks: the "Setup in progress" pill over its top edge, the name, then the free-trial
- * badge, one badge per module that is on, the last-opened clock and the chevron. The whole row
- * leads into the company.
+ * One company on the select-company list - Flask's row (`templates/entity/index.html`): the
+ * name, then the free-trial badge, one chip per module that is on (in the module's identity
+ * wash), the last-opened clock and the chevron. A company in "Needs you" also says WHY and WHAT
+ * TO DO, in words, under its name (`needsYou`; it was a "Setup in progress" pill until
+ * 2026-10-19). The whole row leads into the company.
  */
 
 import Image from "next/image";
@@ -10,11 +11,10 @@ import Image from "next/image";
 import type { EntityRow } from "@/features/entities/api/entities";
 import {
   enterHref,
-  isSettingUp,
   lastAccessedLabel,
   lastOpenedLabel,
+  needsYou,
   NOT_OPENED_YET,
-  SETUP_IN_PROGRESS,
   trialLabel,
 } from "@/features/entities/lib/entityRows";
 
@@ -94,24 +94,33 @@ function LastOpened({ row }: { row: EntityRow }) {
 
 export function EntityCard({ row }: { row: EntityRow }) {
   const trial = trialLabel(row);
+  const need = needsYou(row);
   return (
-    // The pill hangs off this wrapper, not the link, so it is hidden with the card it labels.
-    <li className="relative">
-      {isSettingUp(row) ? (
-        <span className="absolute -top-2 left-3 z-10 rounded-full bg-selected px-2.5 py-0.5 text-label font-medium text-link">
-          {SETUP_IN_PROGRESS}
-        </span>
-      ) : null}
+    <li>
       <a
         href={enterHref(row)}
-        className="flex min-h-11 w-full items-center justify-between gap-2 rounded-lg border border-line bg-card px-5 py-4 font-semibold text-ink transition-[background-color,transform] hover:-translate-y-0.5 hover:bg-hover"
+        // Phone: name (wrapping, never clipped) + chevron on the first line, the chips under it;
+        // from 640px one row.
+        className="flex min-h-11 w-full flex-wrap items-center justify-between gap-x-2 gap-y-2 rounded-lg border border-line bg-card px-5 py-4 font-semibold text-ink transition-[background-color,transform] hover:-translate-y-0.5 hover:bg-hover sm:flex-nowrap"
       >
-        <span className="min-w-0 flex-1 truncate text-title-m font-semibold">{row.name}</span>
-        <span className="flex shrink-0 items-center gap-1.5">
+        <span className="flex min-w-0 flex-1 flex-col gap-1">
+          <span className="break-words text-title-m font-semibold sm:truncate">{row.name}</span>
+          {need ? (
+            <span className="flex items-start gap-1.5 text-body-s font-semibold text-warning" data-needs>
+              <span className="material-symbols-rounded shrink-0" aria-hidden>
+                warning
+              </span>
+              <span>
+                {need.reason} — {need.action}
+              </span>
+            </span>
+          ) : null}
+        </span>
+        <span className="order-last flex w-full flex-wrap items-center gap-1.5 sm:order-none sm:w-auto sm:shrink-0 sm:flex-nowrap">
           {trial ? <TrialBadge label={trial} /> : null}
           {row.modules.includes("PETTY_CASH") ? (
             <span
-              className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-warning-bg"
+              className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-module-pettycash-wash"
               role="img"
               title="Petty Cash"
               aria-label="Petty Cash module"
@@ -128,7 +137,7 @@ export function EntityCard({ row }: { row: EntityRow }) {
           ) : null}
           {row.modules.includes("PAYMENT_REQUEST") ? (
             <span
-              className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-info-bg text-info"
+              className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-module-payment-wash text-module-payment-ink"
               role="img"
               title="Bills"
               aria-label="Bills module"
@@ -139,13 +148,13 @@ export function EntityCard({ row }: { row: EntityRow }) {
             </span>
           ) : null}
           <LastOpened row={row} />
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" className="text-ink" aria-hidden>
-            <path
-              d="M10.8234 9.99945L6.98561 13.8395L8.07324 14.9434L13.0142 9.99945L8.07324 5.05555L6.98561 6.15938L10.8234 9.99945Z"
-              fill="currentColor"
-            />
-          </svg>
         </span>
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" className="shrink-0 text-ink" aria-hidden>
+          <path
+            d="M10.8234 9.99945L6.98561 13.8395L8.07324 14.9434L13.0142 9.99945L8.07324 5.05555L6.98561 6.15938L10.8234 9.99945Z"
+            fill="currentColor"
+          />
+        </svg>
       </a>
     </li>
   );
