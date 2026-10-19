@@ -2,14 +2,16 @@
  * A company's settings chrome - the pill row and the way back - spelled once for every settings
  * page this app draws (the Module tab, Users and Entity & Integration). Petty Cash
  * Settings and Payment Settings stay in their own apps (each app holds only its own settings),
- * so those pills go through Flask, which mints the payments app's token on the way.
+ * so those pills go through Flask, which mints each app's token on the way (Petty Cash's through
+ * `/handoff/petty-cash-web`, lib/mintyEntry.ts).
  *
  * A module's settings pill hides when that module is off - the same rule as Flask's pill rows and
  * minty-payment-request-web's `SettingsPills`.
  */
 
 import { env } from "@/lib/env";
-import { companySettingsPath, type CompanySettingsTab } from "@/lib/hubPaths";
+import { companyPath, companySettingsPath, type CompanySettingsTab } from "@/lib/hubPaths";
+import { pettyCashWebUrl } from "@/lib/mintyEntry";
 import type { ModuleClaims } from "@/lib/moduleClaims";
 
 export type SettingsTab = {
@@ -31,13 +33,10 @@ export const SETTINGS_TAB_LABELS: Record<CompanySettingsTab, string> = {
 /**
  * The way back: a plain click returns to the page the person came from, whichever app
  * (components/ui/BackLink.tsx, lib/backLink.ts). The href is the fallback for a new tab: Petty
- * Cash's dashboard (Flask's `/entity/<id>/petty-cash`).
+ * Cash's dashboard, on the Petty Cash app (Flask's hand-off picks it when given no page).
  */
 export function settingsBackLink(entityId: string): { href: string; label: string } {
-  return {
-    href: `${env.PETTY_CASH_URL}/entity/${encodeURIComponent(entityId)}/petty-cash`,
-    label: "Back",
-  };
+  return { href: pettyCashWebUrl(entityId), label: "Back" };
 }
 
 export function settingsTabs(
@@ -56,7 +55,8 @@ export function settingsTabs(
     tab(SETTINGS_TAB_LABELS.integration, "integration", hub("integration")),
   ];
   if (access.pettyCash) {
-    tabs.push(tab("Petty Cash Settings", null, `${flask}/entity/${id}/settings/petty-cash`));
+    const page = companyPath(company.id, company.name, "/settings/petty-cash");
+    tabs.push(tab("Petty Cash Settings", null, pettyCashWebUrl(company.id, page)));
   }
   if (access.billing) {
     tabs.push(tab("Payment Request Settings", null, `${flask}/entity/${id}/settings/payment-request`));

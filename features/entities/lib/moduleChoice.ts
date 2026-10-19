@@ -5,11 +5,11 @@
  * The modules are the DATABASE's, from the entity list's row (`modules`, fail-closed on Flask's
  * side) - never the token's claims, which can be half an hour stale. Each module is entered
  * through Minty's `/entity/<id>/enter` (`lib/mintyEntry.ts`): Flask rebuilds its session from the
- * token and goes on - to Petty Cash's dashboard, or to `/entity/<id>/payment-request`, which mints
- * the payments app's token and sends the browser there.
+ * token and goes on - to `/handoff/petty-cash-web` or `/entity/<id>/payment-request`, each of
+ * which mints its app's token and sends the browser there.
  */
 
-import { mintyEntryUrl } from "@/lib/mintyEntry";
+import { mintyEntryUrl, pettyCashWebUrl } from "@/lib/mintyEntry";
 
 /** The page's heading, and its browser tab's title (lib/metadata.ts). */
 export const MODULE_CHOICE_TITLE = "Choose Module Type";
@@ -24,7 +24,7 @@ export function moduleChoices(entityId: string, modules: readonly string[]): Mod
   const id = encodeURIComponent(entityId);
   const choices: ModuleChoice[] = [];
   if (modules.includes("PETTY_CASH")) {
-    choices.push({ code: "PETTY_CASH", label: "Petty Cash", href: mintyEntryUrl(`/entity/${id}/petty-cash`, entityId) });
+    choices.push({ code: "PETTY_CASH", label: "Petty Cash", href: pettyCashWebUrl(entityId) });
   }
   if (modules.includes("PAYMENT_REQUEST")) {
     choices.push({

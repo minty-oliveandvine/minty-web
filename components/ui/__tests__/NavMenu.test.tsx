@@ -15,6 +15,7 @@ import { getAuth, setAuth } from "@/lib/auth";
 import { DISCARD_CHANGES, GO_BACK_UPPER, LEAVE_TITLE } from "@/components/ui/LeaveDialog";
 import { useLeaveGuard } from "@minty/shared/leaveGuard";
 import { env } from "@/lib/env";
+import { pettyCashWebUrl } from "@/lib/mintyEntry";
 import { _setViewerLoaderForTests } from "@/lib/viewer";
 
 const TOKEN = "h.eyJ1c2VyX2lkIjoidTEifQ.s";
@@ -68,12 +69,11 @@ describe("NavMenu", () => {
 
     const menu = await openMenu();
     const petty = within(menu.getByRole("group", { name: "Petty Cash" }));
-    expect(petty.getByRole("link", { name: "Dashboard" })).toHaveAttribute(
+    // Petty Cash is its own app since Step 5: Flask's hand-off mints its token for this company
+    expect(petty.getByRole("link", { name: "Dashboard" })).toHaveAttribute("href", pettyCashWebUrl("e1"));
+    expect(petty.getByRole("link", { name: "Reports" })).toHaveAttribute(
       "href",
-      `${env.PETTY_CASH_URL}/entity/e1/enter?token=${encodeURIComponent(TOKEN)}`,
-    );
-    expect(petty.getByRole("link", { name: "Reports" }).getAttribute("href")).toContain(
-      encodeURIComponent("/entity/e1/petty-cash/reports"),
+      pettyCashWebUrl("e1", "/entity/e1/olive-shop/petty-cash/reports"),
     );
     // Bills names THIS company: the payments app's bare `/` opens whichever company ITS cookie
     // last held, which is another company's list after a visit there.

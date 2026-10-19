@@ -14,6 +14,8 @@ describe("siblingUrl", () => {
     ["payment-request", "my", "https://pr-feat-x-my.dailyminty.com"],
     ["onboarding", "my", "https://pr-feat-x-my.dailyminty.com"],
     ["www", "onboarding", "https://pr-feat-x-onboarding.dailyminty.com"],
+    ["pettycash", "my", "https://pr-feat-x-my.dailyminty.com"],
+    ["my", "pettycash", "https://pr-feat-x-pettycash.dailyminty.com"],
   ] as const)("maps pr-feat-x-%s to its %s sibling", (own, sub, expected) => {
     expect(siblingUrl(PRW, sub, `pr-feat-x-${own}.dailyminty.com`)).toBe(expected);
   });
@@ -44,6 +46,7 @@ describe("siblingUrl", () => {
     ["a trailing hyphen", "pr-feat--my.dailyminty.com"],
     ["a 41-character slug", `pr-${"a".repeat(41)}-my.dailyminty.com`],
     ["an unknown app", "pr-feat-x-admin.dailyminty.com"],
+    ["the retired petty-cash label", "pr-feat-x-petty-cash.dailyminty.com"],
     ["empty", ""],
     ["missing", undefined],
     ["null", null],
