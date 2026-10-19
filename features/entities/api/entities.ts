@@ -27,6 +27,18 @@ export type EntityRow = {
   /** ISO instant (UTC) of the last time anyone opened it, or null when nobody has. */
   last_accessed_at: string | null;
   last_accessed_by: string | null;
+  /**
+   * The three below arrived on 2026-10-19; OPTIONAL so an older Flask still draws the list -
+   * missing reads as none (no role shown, no trial ending, no failed payment).
+   *
+   * The person's role in this company (`entity_role`: `entity_base`, `cashier`, `shop_manager`,
+   * `accountant`, `admin`, `super_admin`); null for a superuser who is not a member.
+   */
+  role?: string | null;
+  /** "YYYY-MM-DD": the earliest end of a free trial still running here, or null. */
+  trial_ends_on?: string | null;
+  /** A subscription here is past due - its last charge was declined. */
+  payment_failed?: boolean;
 };
 
 /** Flask's flash categories, already read the way its own toasts read them. */

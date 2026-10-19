@@ -4,6 +4,7 @@
  * the list moved as it looks.
  */
 
+import { daysFromToday, TRIAL_SOON_DAYS } from "@/lib/calendarDays";
 import { env } from "@/lib/env";
 import { mintyEnterCompanyUrl } from "@/lib/mintyEntry";
 
@@ -54,27 +55,81 @@ export function sortRows(rows: EntityRow[]): EntityRow[] {
 }
 
 /**
- * Why a company needs the person, and what to do - in words, from the list's own fields. Only
- * two states the list carries are actionable: a company still in the onboarding wizard, and one
- * whose Xero link was cut (`disconnected` - publishing stops until it is reconnected, in the
- * company's Settings). A trial's end and a failed payment are not on this read.
+ * Why a company needs the person, and what to do - in words, from the list's own fields. A card
+ * says ONE reason, the most urgent it has: a payment that failed (its modules stop - Danger),
+ * a free trial ending within `TRIAL_SOON_DAYS` (today counts; one already past does not), a
+ * company still in the onboarding wizard, then one whose Xero link was cut (`disconnected` -
+ * publishing stops until it is reconnected, in the company's Settings). Only the payer or an
+ * admin can act on the first two, so the card only says so: it still leads into the company,
+ * as every card does. `payment_failed` and `trial_ends_on` are optional on the read (an older
+ * Flask sends neither), and missing means none.
  */
-export type NeedsYou = { reason: string; action: string };
+export type NeedsYouTone = "danger" | "warning";
+export type NeedsYou = { reason: string; action: string; tone: NeedsYouTone };
 
-export function needsYou(row: EntityRow): NeedsYou | null {
-  if (row.status === "onboarding") return { reason: "Setup not finished", action: "continue setup" };
+function trialEndsText(days: number): string {
+  if (days === 0) return "Trial ends today";
+  return days === 1 ? "Trial ends in 1 day" : `Trial ends in ${days} days`;
+}
+
+export function needsYou(row: EntityRow, today: Date = new Date()): NeedsYou | null {
+  if (row.payment_failed === true) {
+    return { reason: "Payment failed", action: "update the payment method", tone: "danger" };
+  }
+  const left = daysFromToday(row.trial_ends_on ?? null, today);
+  if (left !== null && left >= 0 && left <= TRIAL_SOON_DAYS) {
+    return { reason: trialEndsText(left), action: "choose a plan", tone: "warning" };
+  }
+  if (row.status === "onboarding") {
+    return { reason: "Setup not finished", action: "continue setup", tone: "warning" };
+  }
   if (row.status === "disconnected") {
-    return { reason: "Xero is disconnected", action: "reconnect it in Settings" };
+    return { reason: "Xero is disconnected", action: "reconnect it in Settings", tone: "warning" };
   }
   return null;
 }
 
-/** The two groups, each in the order it was given: those needing the person, then the rest. */
-export function groupRows(rows: EntityRow[]): { needsYou: EntityRow[]; others: EntityRow[] } {
+/** How urgent a reason is: Danger (a failed payment) above every Warning. */
+const URGENCY: Record<NeedsYouTone, number> = { danger: 0, warning: 1 };
+
+/**
+ * The two groups: those needing the person, most urgent first (a failed payment above a trial
+ * ending - the brief's "urgent from routine"), keeping the order given within the same urgency;
+ * then the rest, in the order given.
+ */
+export function groupRows(
+  rows: EntityRow[],
+  today: Date = new Date(),
+): { needsYou: EntityRow[]; others: EntityRow[] } {
+  const flagged = rows
+    .map((row, index) => ({ row, index, need: needsYou(row, today) }))
+    .filter((item): item is { row: EntityRow; index: number; need: NeedsYou } => item.need !== null)
+    .sort((a, b) => URGENCY[a.need.tone] - URGENCY[b.need.tone] || a.index - b.index);
   return {
-    needsYou: rows.filter((row) => needsYou(row) !== null),
-    others: rows.filter((row) => needsYou(row) === null),
+    needsYou: flagged.map((item) => item.row),
+    others: rows.filter((row) => needsYou(row, today) === null),
   };
+}
+
+/**
+ * The person's role here, as Flask names it on screen (`blueprints/shared/enums.py`
+ * `ENTITY_ROLE_LABELS` - the words the Users tab and My Profile show, which reach this app
+ * already labelled there). Null for no role or one this app does not know: nothing is shown
+ * rather than a code.
+ */
+const ROLE_LABELS: Record<string, string> = {
+  entity_base: "Member",
+  cashier: "Cashier",
+  shop_manager: "Shop Manager",
+  accountant: "Accountant",
+  admin: "Admin",
+  super_admin: "Super Admin",
+  // Flask's GET /api/me/entities says this for a system superadmin with no membership there
+  superadmin: "Super Admin",
+};
+
+export function roleLabel(role: string | null | undefined): string | null {
+  return role ? (ROLE_LABELS[role] ?? null) : null;
 }
 
 const MONTHS =["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];

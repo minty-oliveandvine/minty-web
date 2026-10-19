@@ -563,10 +563,13 @@ export function PaymentMethodsPanel({
  * the bearer and saved, not linked - with "—" where it has none (never sent, or void); "Billing
  * Breakdown · Download csv" saves it company by company. A refusal is the API's sentence under
  * the table. The Inv# PREVIEWS that same PDF (`onPreview`, `InvoicePreviewDialog`) - to look at,
- * never a download - where there is one, and is plain text where there is not.
+ * never a download - where there is one, and is plain text where there is not. A read that
+ * failed says so here, with Try again (`loadError`, 2026-10-19) - it is never "nothing billed".
  */
 export function InvoiceHistoryTable({
   invoices,
+  loadError = null,
+  onReload,
   amountHeader,
   paging,
   onPage,
@@ -583,6 +586,9 @@ export function InvoiceHistoryTable({
   retryNotice,
 }: {
   invoices: InvoiceLine[];
+  /** The invoices could not be read: said here, with Try again - never "Nothing has been billed yet." */
+  loadError?: string | null;
+  onReload: () => void;
   amountHeader: string;
   paging: {
     page: number;
@@ -621,6 +627,17 @@ export function InvoiceHistoryTable({
         <p role="status" className="text-body-l text-ink-muted">
           {LOADING_INVOICES}
         </p>
+      ) : loadError ? (
+        <div role="alert" className="flex flex-col items-start gap-3 text-body-m text-danger">
+          {loadError}
+          <button
+            type="button"
+            onClick={onReload}
+            className="h-11 rounded-lg border border-line-selected bg-card px-4 text-body-m font-semibold text-link hover:bg-selected"
+          >
+            Try again
+          </button>
+        </div>
       ) : invoices.length === 0 ? (
         <p className="text-body-l text-ink-muted">{NO_INVOICES}</p>
       ) : (

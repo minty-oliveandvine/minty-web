@@ -7,7 +7,8 @@ import { clearAuth, setAuth } from "@/lib/auth";
 import { env } from "@/lib/env";
 import { HUB_PATHS } from "@/lib/hubPaths";
 
-import { LIST } from "@/features/entities/__fixtures__/entities";
+import { LIST, NEEDS_YOU } from "@/features/entities/__fixtures__/entities";
+import type { EntityRow } from "@/features/entities/api/entities";
 import {
   createEntityHref,
   enterHref,
@@ -16,6 +17,7 @@ import {
   lastAccessedLabel,
   lastOpenedLabel,
   needsYou,
+  roleLabel,
   sortRows,
   trialLabel,
 } from "@/features/entities/lib/entityRows";
@@ -66,13 +68,83 @@ describe("entityRows", () => {
   it("says why a company needs the person, and lifts those out, each group keeping its order", () => {
     const [onboarding, five, six] = LIST.entities;
     const cut = { ...six, status: "disconnected" as const };
-    expect(needsYou(onboarding)).toEqual({ reason: "Setup not finished", action: "continue setup" });
-    expect(needsYou(cut)).toEqual({ reason: "Xero is disconnected", action: "reconnect it in Settings" });
-    // a trial is not a reason: the list carries no trial end to act on
+    expect(needsYou(onboarding)).toEqual({
+      reason: "Setup not finished",
+      action: "continue setup",
+      tone: "warning",
+    });
+    expect(needsYou(cut)).toEqual({
+      reason: "Xero is disconnected",
+      action: "reconnect it in Settings",
+      tone: "warning",
+    });
+    // a trial with no end on the read is not a reason
     expect(needsYou(five)).toBeNull();
     const groups = groupRows([five, cut, onboarding, six]);
     expect(groups.needsYou.map((r) => r.id)).toEqual(["e-scenario-6", "e-scenario"]);
     expect(groups.others.map((r) => r.id)).toEqual(["e-scenario-5", "e-scenario-6"]);
+  });
+
+  it("a failed payment comes first and is Danger; a trial ending within seven days next", () => {
+    const today = new Date("2026-10-19T04:00:00Z");
+    const [onboarding, five] = LIST.entities;
+    const failed = { ...onboarding, payment_failed: true, trial_ends_on: "2026-10-20" };
+    expect(needsYou(failed, today)).toEqual({
+      reason: "Payment failed",
+      action: "update the payment method",
+      tone: "danger",
+    });
+    // a trial ending soon outranks setup, and says how many days are left
+    const ending = (on: string) => needsYou({ ...onboarding, trial_ends_on: on }, today);
+    expect(ending("2026-10-22")).toEqual({
+      reason: "Trial ends in 3 days",
+      action: "choose a plan",
+      tone: "warning",
+    });
+    expect(ending("2026-10-20")?.reason).toBe("Trial ends in 1 day");
+    expect(ending("2026-10-19")?.reason).toBe("Trial ends today");
+    expect(ending("2026-10-26")?.reason).toBe("Trial ends in 7 days");
+    // eight days out, or already past, is not a trial reason: setup is said instead
+    expect(ending("2026-10-27")?.reason).toBe("Setup not finished");
+    expect(ending("2026-10-18")?.reason).toBe("Setup not finished");
+    expect(needsYou({ ...five, trial_ends_on: "2026-10-27" }, today)).toBeNull();
+    expect(needsYou({ ...five, trial_ends_on: "not a date" }, today)).toBeNull();
+  });
+
+  it("an older Flask without the new fields still draws: missing is none", () => {
+    const today = new Date("2026-10-19T04:00:00Z");
+    const [onboarding, five] = LIST.entities;
+    const old = ({ role, trial_ends_on, payment_failed, ...rest }: EntityRow): EntityRow => {
+      void role;
+      void trial_ends_on;
+      void payment_failed;
+      return rest;
+    };
+    expect(needsYou(old(five), today)).toBeNull();
+    expect(needsYou(old(onboarding), today)?.reason).toBe("Setup not finished");
+    expect(roleLabel(old(five).role)).toBeNull();
+    const groups = groupRows([old(five), old(onboarding)], today);
+    expect(groups.needsYou.map((r) => r.id)).toEqual(["e-scenario"]);
+  });
+
+  it("every reason in one list: Needs you runs most urgent first (a failed payment above a trial ending), last used within the same reason; a trial weeks away stays out", () => {
+    const groups = groupRows(sortRows(NEEDS_YOU.entities));
+    expect(groups.needsYou.map((r) => r.id)).toEqual(["e-payment-failed", "e-trial-soon", "e-scenario"]);
+    expect(groups.others.map((r) => r.id)).toContain("e-trial-later");
+  });
+
+  it("names the person's role as Flask does, and nothing for a role it does not know", () => {
+    expect(roleLabel("admin")).toBe("Admin");
+    expect(roleLabel("entity_base")).toBe("Member");
+    expect(roleLabel("shop_manager")).toBe("Shop Manager");
+    expect(roleLabel("super_admin")).toBe("Super Admin");
+    // Flask's word for a system superadmin who is not a member of the company
+    expect(roleLabel("superadmin")).toBe("Super Admin");
+    expect(roleLabel("cashier")).toBe("Cashier");
+    expect(roleLabel("accountant")).toBe("Accountant");
+    expect(roleLabel("owner")).toBeNull();
+    expect(roleLabel(null)).toBeNull();
+    expect(roleLabel(undefined)).toBeNull();
   });
 
   it("reads the last opening in the viewer's zone, as Flask's page did", () => {

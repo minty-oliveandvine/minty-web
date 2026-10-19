@@ -47,12 +47,22 @@ every company. Flask sends them onboarding first, then most recently opened; min
 (`lib/entityRows.sortRows`, 2026-10-19 - it was "Setup in progress" first then A→Z from
 2026-10-05): **last used first** (`last_accessed_at`, anyone's opening), then the never-opened
 A→Z (case-insensitive, "Scenario 2" before "Scenario 10"); `groupRows` then lifts the companies
-that need the person into **Needs you**, each group keeping that order. **Why a company needs
-the person** (`needsYou`) comes only from the list's own fields: `onboarding` → "Setup not
-finished — continue setup", `disconnected` → "Xero is disconnected — reconnect it in Settings".
-A trial ending or a failed payment would be reasons too, but this read carries no trial end and
-no payment state - nor the person's role, so the cards show none. Flask's own Jinja list keeps
-its order. Per card (`components/EntityCard`): the name and, in Needs you, the reason line,  the free-trial badge (the design's own tag, named
+that need the person into **Needs you**, most urgent first there (a failed payment, Danger, above
+every Warning reason), last used within the same urgency; the other group keeps that order. **Why a company needs
+the person** (`needsYou`) comes only from the list's own fields, ONE reason per card, the most
+urgent it has (2026-10-19): `payment_failed` → "Payment failed — update the payment method"
+(Danger, `error` icon), `trial_ends_on` within `TRIAL_SOON_DAYS` = 7 days (today counts, a past
+day does not) → "Trial ends in N days — choose a plan", `onboarding` → "Setup not finished —
+continue setup", `disconnected` → "Xero is disconnected — reconnect it in Settings" (the last
+three Warning). The card still only leads into the company - only a payer or an admin can act
+on the first two, so nothing new is offered. `role`, `trial_ends_on` and `payment_failed` are
+on every entity Flask sends since 2026-10-19; they are OPTIONAL in `api/entities.ts`, so an
+older Flask still draws the list (missing = no role, no trial ending, no failed payment).
+`TRIAL_SOON_DAYS` and the day count (`daysFromToday`, Hong Kong calendar days) live in `@/lib/calendarDays`, shared with
+the subscription feature's banner, since a feature cannot import another. Flask's own Jinja list
+keeps its order. Per card (`components/EntityCard`): the name, the person's **role** in plain
+secondary text (`roleLabel`, Flask's `ENTITY_ROLE_LABELS` words - "Admin", "Member", "Shop
+Manager"…; nothing for an unknown or missing role) and, in Needs you, the reason line, the free-trial badge (the design's own tag, named
 "Free trial: <modules>"), one badge per module that is on, the last-opened clock ("9 Jun 5:42
 PM" in the viewer's zone, "By <name>" on hover, grey "Not opened yet" when nobody has) and the
 chevron; the module badges wear the module identity washes (Part 13). Search is Flask's:

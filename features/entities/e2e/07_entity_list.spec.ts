@@ -16,7 +16,7 @@ import {
   requireApp,
   storedScope,
 } from "../../../e2e/helpers";
-import { LIST } from "../__fixtures__/entities";
+import { LIST, NEEDS_YOU } from "../__fixtures__/entities";
 import type { EntityListAnswer } from "../api/entities";
 
 const STUB_CREDS = {
@@ -99,6 +99,32 @@ test.describe("the entity list", () => {
     await expect(cards).toHaveCount(1);
     await main.getByRole("textbox", { name: "Search company" }).fill("no such company");
     await expect(main.getByText("No companies found.")).toBeVisible();
+  });
+
+  test("a failed payment and a trial ending soon need the person, with their role, at 360 to 1440", async ({
+    page,
+  }) => {
+    await stubFlask(page, NEEDS_YOU);
+    await handoff(page, creds(), "/entities");
+    const main = page.getByRole("main");
+    const needing = main.getByRole("list", { name: "Needs you" });
+    for (const width of [360, 768, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      const failed = needing.getByRole("link", { name: /^Payment Failed Limited/ });
+      await expect(failed.getByText("Payment failed — update the payment method")).toBeVisible();
+      await expect(failed).toHaveAttribute("href", /\/entity\/e-payment-failed\/enter\?/);
+      const soon = needing.getByRole("link", { name: /^Trial Ending Soon Limited/ });
+      await expect(soon.getByText("Trial ends in 3 days — choose a plan")).toBeVisible();
+      await expect(soon.getByText("Member", { exact: true })).toBeVisible();
+      // twenty days out stays with the rest
+      await expect(
+        main.getByRole("list", { name: "Your businesses" }).getByRole("link", { name: /^Trial Ending Later/ }),
+      ).toBeVisible();
+      // nothing sideways at any width
+      expect(
+        await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+      ).toBe(true);
+    }
   });
 
   test("needs you first, then last used first, kept while searching, at phone to desktop widths", async ({

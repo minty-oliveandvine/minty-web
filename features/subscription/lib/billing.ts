@@ -17,6 +17,8 @@
  * `docs/features/subscriptions.md` §15 (the estimated amount of the next bill).
  */
 
+import { daysFromToday, TRIAL_SOON_DAYS } from "@/lib/calendarDays";
+
 import type {
   BillingAccount,
   InvoiceRow,
@@ -28,7 +30,6 @@ import type {
 } from "@/features/subscription/api/payerPortal";
 
 import { BILLING, PORTAL } from "@/features/subscription/lib/paths";
-import { utcDay } from "@/features/subscription/lib/subscriptionSummary";
 
 /**
  * What both pages read the account from: the payer, the billing anchor and every company.
@@ -327,6 +328,45 @@ export function invoiceLines(invoices: InvoiceRow[], today: Date = new Date()): 
   });
 }
 
+/**
+ * The landing's Invoices section (Part 15.6b, 2026-10-19): the shown account's last three, each
+ * with its date, reference and period, the amount as plain text and its status as a pill - a
+ * declined charge is "Payment failed" (Danger, as `invoiceLines` reads it), a paid one Success,
+ * anything else (a draft, a void one) Neutral in the API's own word.
+ */
+export const RECENT_INVOICES = 3;
+export const NO_INVOICES_YET = "No invoices yet.";
+export const INVOICES_LOAD_FAILED = "Your invoices didn't load. Mind trying again?";
+
+export type RecentInvoice = {
+  id: string;
+  reference: string;
+  /** When it was raised - the API's own words ("26 Jul 2026"). */
+  date: string | null;
+  /** "28 Jun 2026 – 28 Jul 2026", or null when the invoice names no period. */
+  period: string | null;
+  amount: string;
+  status: { label: string; tone: StatusTone };
+};
+
+export function invoiceStatus(inv: InvoiceRow): { label: string; tone: StatusTone } {
+  if (FAILED_INVOICE_STATUSES.includes(inv.status)) return { label: "Payment failed", tone: "danger" };
+  if (inv.status === "paid") return { label: inv.status_label || "Paid", tone: "success" };
+  return { label: inv.status_label || inv.status, tone: "neutral" };
+}
+
+/** The newest `RECENT_INVOICES` (the API answers newest first), as the landing shows them. */
+export function recentInvoices(invoices: InvoiceRow[]): RecentInvoice[] {
+  return invoices.slice(0, RECENT_INVOICES).map((inv) => ({
+    id: inv.id,
+    reference: inv.reference,
+    date: inv.date,
+    period: inv.period_start && inv.period_end ? `${inv.period_start} – ${inv.period_end}` : null,
+    amount: inv.amount,
+    status: invoiceStatus(inv),
+  }));
+}
+
 /** How many invoices a page of 08-B's table holds - the payer picks (the user's call). */
 export const INVOICE_PAGE_SIZES = [10, 50, 100] as const;
 export type InvoicePageSize = (typeof INVOICE_PAGE_SIZES)[number];
@@ -390,14 +430,6 @@ export function visibleUpdates(updates: OverviewUpdate[], expanded: boolean): Ov
   return expanded ? updates : updates.slice(0, UPDATES_SHOWN);
 }
 
-function daysUntil(iso: string | null, today: Date): number | null {
-  const day = utcDay(iso);
-  if (!day) return null;
-  const from = utcDay(today.toISOString());
-  if (!from) return null;
-  return Math.round((day.getTime() - from.getTime()) / 86_400_000);
-}
-
 function trialing(entity: PortalEntity): PortalModule[] {
   return entity.modules.filter((m) => m.status === "trialing");
 }
@@ -426,7 +458,7 @@ export function overview(list: PayerAccount | null, today: Date): Overview {
     if (entity.modules.some((m) => m.status === "active" || m.status === "cancelled")) active += 1;
 
     const ending = trialing(entity).flatMap((trial) => {
-      const left = daysUntil(trial.date_iso, today);
+      const left = daysFromToday(trial.date_iso, today);
       return left !== null && left <= TRIAL_ENDING_DAYS ? [{ trial, left }] : [];
     });
     if (ending.length > 0) trialEnding += 1;
@@ -489,10 +521,11 @@ export type AttentionItem = {
 };
 
 /**
- * How near a trial's end must be to earn a banner. Shorter than `TRIAL_ENDING_DAYS` (which
- * lists every running trial under Subscription updates): a banner is for what is due now.
+ * How near a trial's end must be to earn a banner (`@/lib/calendarDays`, shared with the
+ * company list's "Needs you"). Shorter than `TRIAL_ENDING_DAYS` (which lists every running
+ * trial under Subscription updates): a banner is for what is due now.
  */
-export const TRIAL_SOON_DAYS = 7;
+export { TRIAL_SOON_DAYS };
 
 export const UP_TO_DATE = "Up to date";
 export const ON_FREE_TRIAL = "On free trial";
@@ -571,7 +604,7 @@ export function attentionItems(
 
   const soon = entities
     .flatMap((entity) =>
-      trialing(entity).map((trial) => ({ entity, trial, left: daysUntil(trial.date_iso, today) })),
+      trialing(entity).map((trial) => ({ entity, trial, left: daysFromToday(trial.date_iso, today) })),
     )
     .filter((t): t is typeof t & { left: number } => t.left !== null && t.left >= 0 && t.left <= TRIAL_SOON_DAYS)
     .sort((a, b) => a.left - b.left);

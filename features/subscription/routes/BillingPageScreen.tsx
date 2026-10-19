@@ -95,6 +95,8 @@ export function BillingPageScreen(args: UseBillingPageArgs) {
           />
           <InvoiceHistoryTable
             invoices={b.invoices}
+            loadError={b.invoicesError}
+            onReload={b.reloadInvoices}
             amountHeader={b.invoiceHeader}
             paging={b.invoicePaging}
             onPage={b.goToInvoicePage}

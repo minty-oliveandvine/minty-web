@@ -5,9 +5,16 @@
  * `?fixture=` switch (`hooks/useEntityList`).
  */
 
+import { hkIsoDate } from "@/lib/calendarDays";
+
 import type { EntityListAnswer, EntityRow } from "@/features/entities/api/entities";
 
 const HOUR = 3_600_000;
+
+/** A Hong Kong calendar day `days` from today ("YYYY-MM-DD", as `needsYou` counts). */
+function dayIn(days: number): string {
+  return hkIsoDate(new Date(Date.now() + days * 24 * HOUR));
+}
 
 /** An instant `hours` ago - so a fixture's "last opened" never drifts into the future. */
 function hoursAgo(hours: number): string {
@@ -22,6 +29,9 @@ function row(overrides: Partial<EntityRow> & Pick<EntityRow, "id" | "name">): En
     trial_module_names: [],
     last_accessed_at: hoursAgo(2),
     last_accessed_by: "Olive Vine",
+    role: "admin",
+    trial_ends_on: null,
+    payment_failed: false,
     ...overrides,
   };
 }
@@ -55,6 +65,7 @@ export const LIST: EntityListAnswer = {
     row({
       id: "e-scenario-10",
       name: "Digitalisation - Scenario 10 - Resume Module After A Renewal",
+      role: "entity_base",
       last_accessed_at: hoursAgo(3),
     }),
     row({
@@ -82,11 +93,49 @@ export const LIST: EntityListAnswer = {
   notices: [],
 };
 
+/**
+ * Every "Needs you" reason at once, on top of LIST (2026-10-19): a declined payment (opened
+ * LAST, so the group keeps last-used order rather than urgency), a trial ending in three days,
+ * and one ending in twenty - outside `TRIAL_SOON_DAYS`, so it stays in "Your businesses".
+ */
+export const NEEDS_YOU: EntityListAnswer = {
+  entities: [
+    ...LIST.entities,
+    row({
+      id: "e-payment-failed",
+      name: "Payment Failed Limited",
+      payment_failed: true,
+      // a trial ending too: the failed payment is the more urgent, so it is the one said
+      trial_ends_on: dayIn(2),
+      last_accessed_at: hoursAgo(9),
+    }),
+    row({
+      id: "e-trial-soon",
+      name: "Trial Ending Soon Limited",
+      modules: ["PAYMENT_REQUEST"],
+      trial_modules: ["PAYMENT_REQUEST"],
+      trial_module_names: ["Payment Request"],
+      trial_ends_on: dayIn(3),
+      role: "entity_base",
+      last_accessed_at: hoursAgo(7),
+    }),
+    row({
+      id: "e-trial-later",
+      name: "Trial Ending Later Limited",
+      trial_modules: ["PETTY_CASH"],
+      trial_module_names: ["Petty Cash"],
+      trial_ends_on: dayIn(20),
+      last_accessed_at: hoursAgo(8),
+    }),
+  ],
+  notices: [],
+};
+
 export const EMPTY: EntityListAnswer = { entities: [], notices: [] };
 
-export const FIXTURES = { LIST, EMPTY } as const;
+export const FIXTURES = { LIST, NEEDS_YOU, EMPTY } as const;
 export type EntityFixture = keyof typeof FIXTURES;
 
 export function isEntityFixture(name: string | null | undefined): name is EntityFixture {
-  return name === "LIST" || name === "EMPTY";
+  return name === "LIST" || name === "NEEDS_YOU" || name === "EMPTY";
 }

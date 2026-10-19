@@ -23,10 +23,13 @@ import {
   CHANGE_BILLING_ACCOUNT,
   ESTIMATED,
   GO_TO_BILLING,
+  LOADING_INVOICES,
   MANAGE_SUBSCRIPTION,
   NEXT_BILLING_DATE,
   NOTHING_TO_UPDATE,
+  NO_INVOICES_YET,
   OVERVIEW_TITLE,
+  RECENT_INVOICES,
   SUBSCRIPTION_UPDATES,
   cardExpiry,
   cardTitle,
@@ -40,6 +43,7 @@ import {
   type StatusTone,
 } from "@/features/subscription/lib/billing";
 import { ACCOUNTS_LOAD_FAILED, CHOOSE_ACCOUNT } from "@/features/subscription/lib/billingAccounts";
+import type { RecentInvoicesState } from "@/features/subscription/hooks/useBillingOverview";
 
 export const NEXT_BILL = "Next bill";
 export const MODULES = "Modules";
@@ -47,8 +51,7 @@ export const PAYMENT_METHOD = "Payment method";
 export const INVOICES = "Invoices";
 export const SEE_ALL_INVOICES = "See all invoices";
 export const NO_MODULES = "No module is being paid for or on a trial yet.";
-export const INVOICES_NOTE =
-  "Every invoice for this billing account, with its PDF and billing breakdown, is on the billing page.";
+export const RECENT_INVOICES_LABEL = "Latest invoices";
 
 const PILL: Record<StatusTone, string> = {
   success: "bg-success-bg text-success",
@@ -448,14 +451,73 @@ export function PaymentMethodSection({
 }
 
 /**
- * The invoices: the landing reads no invoices (they are the billing page's own read), so this
- * says where they are and leads there.
+ * The invoices (Part 15.6b's fifth level): the shown account's last three, newest first - the
+ * reference and when it was raised (and for which period), the amount as plain text and the
+ * status as a pill - then *See all invoices*, the billing page, where each one's PDF and
+ * breakdown are. A row stacks on a phone, never scrolling sideways. While the read is out three
+ * skeleton rows hold the space; a failed read says so here, with Try again.
  */
-export function InvoicesSection({ onOpen }: { onOpen: () => void }) {
+export function InvoicesSection({
+  invoices,
+  onRetry,
+  onOpen,
+}: {
+  invoices: RecentInvoicesState;
+  onRetry: () => void;
+  onOpen: () => void;
+}) {
   return (
-    <section aria-labelledby="overview-invoices" className={SECTION}>
+    <section
+      aria-labelledby="overview-invoices"
+      aria-busy={invoices.status === "loading" || undefined}
+      className={SECTION}
+    >
       <SectionHeading id="overview-invoices" title={INVOICES} />
-      <p className="text-body-m text-ink-2">{INVOICES_NOTE}</p>
+      {invoices.status === "loading" ? (
+        <ul className="flex flex-col gap-2" role="status" aria-label={LOADING_INVOICES}>
+          {Array.from({ length: RECENT_INVOICES }).map((_, i) => (
+            <li key={i} className="flex animate-pulse flex-col gap-2 rounded-lg border border-line bg-card px-4 py-3">
+              <span className="h-5 w-[160px] max-w-full rounded bg-neutral-bg" />
+              <span className="h-4 w-[220px] max-w-full rounded bg-sunk" />
+            </li>
+          ))}
+        </ul>
+      ) : invoices.status === "error" ? (
+        <div role="alert" className="flex flex-col items-start gap-3 text-body-m text-danger">
+          {invoices.error}
+          <button
+            type="button"
+            onClick={onRetry}
+            className="h-11 rounded-lg border border-line-selected bg-card px-4 text-body-m font-semibold text-link hover:bg-selected"
+          >
+            Try again
+          </button>
+        </div>
+      ) : invoices.rows.length === 0 ? (
+        <p className="text-body-m text-ink-2">{NO_INVOICES_YET}</p>
+      ) : (
+        <ul className="flex flex-col gap-2" aria-label={RECENT_INVOICES_LABEL}>
+          {invoices.rows.map((inv) => (
+            <li
+              key={inv.id}
+              data-invoice={inv.id}
+              className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2 rounded-lg border border-line bg-card px-4 py-3"
+            >
+              <div className="flex min-w-0 flex-1 basis-[180px] flex-col gap-0.5">
+                <p className="break-words text-body-m font-semibold text-ink">{inv.reference}</p>
+                <p className="break-words text-body-s text-ink-2">
+                  {[inv.date, inv.period].filter(Boolean).join(" · ")}
+                </p>
+              </div>
+              {/* The amount is plain text in every state; only the pill carries the tone. */}
+              <div className="flex shrink-0 flex-wrap items-center gap-3">
+                <span className="text-body-m tabular-nums text-ink">{inv.amount}</span>
+                <StatusPill label={inv.status.label} tone={inv.status.tone} />
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
       <button type="button" onClick={onOpen} className={`${TEXT_LINK} self-start`}>
         {SEE_ALL_INVOICES} ›
       </button>

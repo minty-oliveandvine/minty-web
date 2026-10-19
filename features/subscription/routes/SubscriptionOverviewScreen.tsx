@@ -108,7 +108,7 @@ export function SubscriptionOverviewScreen(args: UseBillingOverviewArgs) {
                 onAdd={(accountId) => o.go(BILLING.add(accountId))}
                 onOpen={o.goToBilling}
               />
-              <InvoicesSection onOpen={o.goToBilling} />
+              <InvoicesSection invoices={o.invoices} onRetry={o.retryInvoices} onOpen={o.goToBilling} />
             </div>
           </>
         )

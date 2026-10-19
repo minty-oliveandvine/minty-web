@@ -13,7 +13,7 @@ import { env } from "@/lib/env";
 import { _resetHandoffForTests } from "@/lib/handoff";
 import { _setViewerLoaderForTests } from "@/lib/viewer";
 
-import { EMPTY, LIST } from "@/features/entities/__fixtures__/entities";
+import { EMPTY, LIST, NEEDS_YOU } from "@/features/entities/__fixtures__/entities";
 import type { EntityListAnswer } from "@/features/entities/api/entities";
 import { EntityListScreen } from "@/features/entities/routes/EntityListScreen";
 
@@ -121,6 +121,42 @@ describe("EntityListScreen", () => {
       "Xero is disconnected — reconnect it in Settings",
     );
     expect(screen.queryByRole("textbox", { name: "Search company" })).toBeNull();
+  });
+
+  it("a failed payment (Danger) and a trial ending soon need the person; each card names their role", async () => {
+    serve(NEEDS_YOU);
+    show();
+    const needing = await screen.findByRole("list", { name: "Needs you" });
+    const cards = within(needing).getAllByRole("link");
+    // most urgent first inside the group (a failed payment above a trial ending), last used within
+    // the same urgency
+    expect(cards.map((c) => c.getAttribute("href")?.match(/entity\/([^/]+)\/enter/)?.[1])).toEqual([
+      "e-payment-failed",
+      "e-trial-soon",
+      "e-scenario",
+    ]);
+    const failed = within(needing).getByRole("link", { name: /^Payment Failed Limited/ });
+    expect(failed).toHaveTextContent("Payment failed — update the payment method");
+    // the failed payment is the one reason said, though its trial ends in two days too
+    expect(failed).not.toHaveTextContent(/Trial ends/);
+    const reason = failed.querySelector("[data-needs]");
+    expect(reason).toHaveAttribute("data-tone", "danger");
+    expect(reason).toHaveClass("text-danger");
+    expect(reason?.querySelector(".material-symbols-rounded")).toHaveTextContent("error");
+    // the card still leads into the company - no new action
+    expect(failed.getAttribute("href")).toContain("/entity/e-payment-failed/enter");
+
+    const soon = within(needing).getByRole("link", { name: /^Trial Ending Soon Limited/ });
+    expect(soon).toHaveTextContent("Trial ends in 3 days — choose a plan");
+    expect(soon.querySelector("[data-needs]")).toHaveAttribute("data-tone", "warning");
+    // the role, as plain secondary text
+    expect(soon.querySelector("[data-role]")).toHaveTextContent("Member");
+    expect(failed.querySelector("[data-role]")).toHaveTextContent("Admin");
+
+    // twenty days out is not yet a reason
+    expect(list().getByRole("link", { name: /^Trial Ending Later Limited/ })).not.toHaveTextContent(
+      /Trial ends/,
+    );
   });
 
   it("with nothing needing the person, no Needs you group at all", async () => {

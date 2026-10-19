@@ -3,7 +3,8 @@
  * name, then the free-trial badge, one chip per module that is on (in the module's identity
  * wash), the last-opened clock and the chevron. A company in "Needs you" also says WHY and WHAT
  * TO DO, in words, under its name (`needsYou`; it was a "Setup in progress" pill until
- * 2026-10-19). The whole row leads into the company.
+ * 2026-10-19), and every card names the person's role there in plain secondary text
+ * (`roleLabel`). The whole row leads into the company.
  */
 
 import Image from "next/image";
@@ -15,6 +16,7 @@ import {
   lastOpenedLabel,
   needsYou,
   NOT_OPENED_YET,
+  roleLabel,
   trialLabel,
 } from "@/features/entities/lib/entityRows";
 
@@ -95,6 +97,7 @@ function LastOpened({ row }: { row: EntityRow }) {
 export function EntityCard({ row }: { row: EntityRow }) {
   const trial = trialLabel(row);
   const need = needsYou(row);
+  const role = roleLabel(row.role);
   return (
     <li>
       <a
@@ -105,10 +108,20 @@ export function EntityCard({ row }: { row: EntityRow }) {
       >
         <span className="flex min-w-0 flex-1 flex-col gap-1">
           <span className="break-words text-title-m font-semibold sm:truncate">{row.name}</span>
+          {role ? (
+            <span className="text-body-s font-normal text-ink-2" data-role>
+              {role}
+            </span>
+          ) : null}
           {need ? (
-            <span className="flex items-start gap-1.5 text-body-s font-semibold text-warning" data-needs>
+            // A failed payment is Danger, the rest Warning (Part 13 status tones) - icon and words.
+            <span
+              className={`flex items-start gap-1.5 text-body-s font-semibold ${need.tone === "danger" ? "text-danger" : "text-warning"}`}
+              data-needs
+              data-tone={need.tone}
+            >
               <span className="material-symbols-rounded shrink-0" aria-hidden>
-                warning
+                {need.tone === "danger" ? "error" : "warning"}
               </span>
               <span>
                 {need.reason} — {need.action}

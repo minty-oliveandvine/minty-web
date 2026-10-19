@@ -462,12 +462,17 @@ describe("useBillingPage", () => {
     });
   });
 
-  it("keeps the page when the invoices fail - they are not its subject", async () => {
+  it("keeps the page when the invoices fail - they are not its subject - and says they failed", async () => {
+    const errors = vi.spyOn(console, "error").mockImplementation(() => {});
     serve(accountsFor(WALLET_TWO), {}, { invoices: false });
     const { result } = renderHook(() => useBillingPage());
     await waitFor(() => expect(result.current.status).toBe("ready"));
     expect(result.current.rows).toHaveLength(2);
     expect(result.current.invoices).toEqual([]);
+    // never quiet: the table's failure is named, and logged
+    await waitFor(() => expect(result.current.invoicesError).toBe("nope"));
+    expect(errors).toHaveBeenCalledWith("[billing] the account's invoices could not be read", expect.anything());
+    errors.mockRestore();
   });
 
   it("but a failed accounts read IS the page's failure, and retries", async () => {

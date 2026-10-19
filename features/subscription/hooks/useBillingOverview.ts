@@ -23,6 +23,9 @@
  * takes the accounts the sheet came back with, shows the new one, and says where the company
  * went when it was opened for one.
  *
+ * THE INVOICES SECTION reads apart (`loadRecentInvoices`): the shown account's last three, through
+ * the billing page's own client, once the page is up. It fails on its own, in its own words.
+ *
  * Landings: *Manage Subscription* → the list (04-A); *Go to payment details and invoices* → the
  * shown account's page (08-B). `fixture`: dev-only, `?fixture=A|B|F`.
  */
@@ -35,24 +38,30 @@ import { ApiError } from "@/lib/apiClient";
 import {
   fetchAllPayerSubscriptions,
   fetchBillingAccounts,
+  fetchPayerInvoices,
   markTransferSeen,
   moveCompanyToAccount,
   type BillingAccount,
   type BillingAccounts,
+  type InvoiceRow,
   type TransferOutcomeRow,
 } from "@/features/subscription/api/payerPortal";
 import {
   BILLING_LOAD_FAILED,
+  INVOICES_LOAD_FAILED,
+  RECENT_INVOICES,
   attentionItems,
   moduleRows,
   nextBilling,
   overview,
   positionPill,
+  recentInvoices,
   type AttentionItem,
   type ModuleSummaryRow,
   type NextBilling,
   type Overview,
   type PayerAccount,
+  type RecentInvoice,
   type StatusTone,
 } from "@/features/subscription/lib/billing";
 import type { OpenedAccount } from "@/features/subscription/hooks/useCardForm";
@@ -75,6 +84,15 @@ export type UseBillingOverviewArgs = {
 };
 
 export type OverviewNotice = { text: string; tone: "ok" | "failed" };
+
+/**
+ * The Invoices section's own read: the shown account's last `RECENT_INVOICES`. Its failure is
+ * the section's alone - it says so, with Try again - never the page's.
+ */
+export type RecentInvoicesState =
+  | { status: "loading"; rows: RecentInvoice[]; error: null }
+  | { status: "ready"; rows: RecentInvoice[]; error: null }
+  | { status: "error"; rows: RecentInvoice[]; error: string };
 
 export type UseBillingOverviewResult = {
   status: OverviewStatus;
@@ -110,6 +128,9 @@ export type UseBillingOverviewResult = {
   moveCompany: (entityId: string, accountId: string) => Promise<void>;
   /** Done on the sheet's success card: an account was opened (and a company moved onto it?). */
   accountOpened: (opened: OpenedAccount) => void;
+  /** The shown account's last three invoices (newest first), or why they are not here. */
+  invoices: RecentInvoicesState;
+  retryInvoices: () => void;
   goToBilling: () => void;
   manageSubscriptions: () => void;
   /** Where an attention item's action, or the no-card panel's, goes. */
@@ -149,6 +170,32 @@ async function loadPage(
     fetchBillingAccounts({ signal }).catch(() => null),
   ]);
   return { list, accounts, today: null };
+}
+
+/**
+ * The shown account's newest invoices - one page of `RECENT_INVOICES` from the billing page's own
+ * client (`/api/me/invoices?account=&per_page=3`, newest first). With no account to name (none
+ * yet, or the accounts did not load) it asks for the payer's.
+ */
+async function loadRecentInvoices(
+  fixture: string | null | undefined,
+  accountId: string | null,
+  signal: AbortSignal,
+): Promise<InvoiceRow[]> {
+  if (process.env.NODE_ENV !== "production" && fixture) {
+    const f = await import("@/features/subscription/__fixtures__/subscriptions");
+    if (f.isListFixture(fixture)) {
+      const b = await import("@/features/subscription/__fixtures__/billing");
+      // B is the payer with no billing account: nothing has been billed.
+      return fixture === "B" ? [] : b.FIXTURE_INVOICES.slice(0, RECENT_INVOICES);
+    }
+  }
+  const page = await fetchPayerInvoices({
+    signal,
+    accountId: accountId ?? undefined,
+    perPage: RECENT_INVOICES,
+  });
+  return page.invoices;
 }
 
 function sentence(err: unknown, fallback: string): string {
@@ -229,6 +276,35 @@ export function useBillingOverview({
 
   const accountsFailed = status === "ready" && accounts === null;
   const account = useMemo(() => pickAccount(accounts, { id: accountId }), [accounts, accountId]);
+
+  // The Invoices section: read once the page knows which account it shows, and again on its
+  // own Try again (or the page's). Keyed by the account, so another account's rows never show.
+  const shownId = account?.id ?? null;
+  const [invoiceTry, setInvoiceTry] = useState(0);
+  const [recent, setRecent] = useState<{
+    key: string;
+    rows: InvoiceRow[] | null;
+    error: string | null;
+  } | null>(null);
+  const invoiceKey = `${generation}:${invoiceTry}:${shownId ?? ""}`;
+  useEffect(() => {
+    if (status !== "ready") return;
+    const controller = new AbortController();
+    loadRecentInvoices(fixture, shownId, controller.signal)
+      .then((rows) => {
+        if (!controller.signal.aborted) setRecent({ key: invoiceKey, rows, error: null });
+      })
+      .catch((err: unknown) => {
+        if (controller.signal.aborted) return;
+        setRecent({ key: invoiceKey, rows: null, error: sentence(err, INVOICES_LOAD_FAILED) });
+      });
+    return () => controller.abort();
+  }, [status, fixture, shownId, invoiceKey]);
+  const invoices = useMemo((): RecentInvoicesState => {
+    if (!recent || recent.key !== invoiceKey) return { status: "loading", rows: [], error: null };
+    if (recent.error !== null) return { status: "error", rows: [], error: recent.error };
+    return { status: "ready", rows: recentInvoices(recent.rows ?? []), error: null };
+  }, [recent, invoiceKey]);
   const next = useMemo(
     () => (accounts ? accountBilling(accounts, account) : nextBilling(list)),
     [accounts, account, list],
@@ -343,6 +419,8 @@ export function useBillingOverview({
     outcome,
     dismissOutcome,
     closeOutcome,
+    invoices,
+    retryInvoices: useCallback(() => setInvoiceTry((n) => n + 1), []),
     goToBilling: useCallback(
       () => router.push(BILLING.account({ id: account?.id ?? null })),
       [router, account],

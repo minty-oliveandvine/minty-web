@@ -239,6 +239,35 @@ describe("the billing page", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  it("08-B: invoices that fail to load say so with Try again - never \"Nothing has been billed yet.\"", async () => {
+    let fail = true;
+    const errors = vi.spyOn(console, "error").mockImplementation(() => {});
+    fetchMock.mockImplementation(async (input) => {
+      const url = new URL(String(input));
+      if (url.pathname === "/api/me/billing/accounts") return reply(200, accountsFor(WALLET_TWO));
+      if (url.pathname === "/api/me/invoices") {
+        return fail ? reply(500, { error: "Could not load your invoices." }) : reply(200, invoicePage());
+      }
+      return reply(404, { error: "not_found" });
+    });
+    const user = userEvent.setup();
+    render(<BillingPageScreen />);
+    const invoices = await screen.findByRole("region", { name: "Invoice History" });
+    const alert = await within(invoices).findByRole("alert");
+    expect(alert).toHaveTextContent(/.+/);
+    expect(within(invoices).queryByText("Nothing has been billed yet.")).toBeNull();
+    // the account itself stays up: only the table failed
+    expect(screen.getByRole("region", { name: "Next billing" })).toBeVisible();
+    // logged, like the app's other failed reads
+    expect(errors).toHaveBeenCalled();
+
+    fail = false;
+    await user.click(within(alert).getByRole("button", { name: "Try again" }));
+    expect(await within(invoices).findByText("#11241234113")).toBeInTheDocument();
+    expect(within(invoices).queryByRole("alert")).toBeNull();
+    errors.mockRestore();
+  });
+
   it("08-B: Invoice PDF saves our own document, one download at a time; a refusal is the API's sentence", async () => {
     const user = userEvent.setup();
     saved.length = 0;
@@ -850,6 +879,10 @@ describe("08-A, the portal's landing", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
     push.mockReset();
     const invoices = screen.getByRole("region", { name: "Invoices" });
+    // The fixture's last three: 08-K's declined renewal first, in Danger.
+    const latest = await within(invoices).findByRole("list", { name: "Latest invoices" });
+    expect(within(latest).getAllByRole("listitem")).toHaveLength(3);
+    expect(within(latest).getAllByRole("listitem")[0]).toHaveTextContent("Payment failed");
     await user.click(within(invoices).getByRole("button", { name: /See all invoices/ }));
     expect(push).toHaveBeenCalledWith("/subscription/billing?account=acc-company-a");
 
@@ -865,6 +898,102 @@ describe("08-A, the portal's landing", () => {
       "href",
       "/entities",
     );
+  });
+
+  describe("the Invoices section: the shown account's last three", () => {
+    const listPage = {
+      ...LIST_FIXTURES.A.page,
+      total: LIST_FIXTURES.A.page.entities.length,
+      page: 1,
+      pages: 1,
+      per_page: 100,
+      sort: "entity",
+      direction: "asc",
+      query: "",
+    };
+    // Reads the landing's three answers; `invoices` decides the third.
+    function serveOverview(invoices: () => Response) {
+      fetchMock.mockImplementation(async (input) => {
+        const path = new URL(String(input)).pathname;
+        if (path === "/api/me/billing/accounts") return reply(200, ACCOUNTS);
+        if (path === "/api/me/invoices") return invoices();
+        return reply(200, listPage);
+      });
+    }
+    const invoiceCalls = () =>
+      fetchMock.mock.calls
+        .map(([input]) => new URL(String(input)))
+        .filter((url) => url.pathname === "/api/me/invoices");
+
+    it("asks for three of the shown account's, newest first, and shows no more than three", async () => {
+      const older = { ...INVOICES[2], id: "in_4", reference: "#100000004" };
+      const failed = { ...INVOICES[0], id: "in_f", reference: "#100000009", status: "open", status_label: "Unpaid", paid: null };
+      serveOverview(() => reply(200, invoicePage([failed, ...INVOICES, older])));
+      render(<SubscriptionOverviewScreen today={TODAY} />);
+      const section = await screen.findByRole("region", { name: "Invoices" });
+      const latest = await within(section).findByRole("list", { name: "Latest invoices" });
+      const rows = within(latest).getAllByRole("listitem");
+      expect(rows.map((r) => r.getAttribute("data-invoice"))).toEqual(["in_f", "in_1", "in_2"]);
+      const [url] = invoiceCalls();
+      expect(url.searchParams.get("account")).toBe("acc-company-a");
+      expect(url.searchParams.get("per_page")).toBe("3");
+
+      // the date and period, the amount as plain text, the status as a pill in its tone
+      expect(rows[1]).toHaveTextContent("#11241234113");
+      expect(rows[1]).toHaveTextContent(`${INVOICES[0].date} · ${INVOICES[0].period_start} – ${INVOICES[0].period_end}`);
+      expect(within(rows[1]).getByText("Paid")).toHaveAttribute("data-tone", "success");
+      expect(within(rows[0]).getByText("Payment failed")).toHaveAttribute("data-tone", "danger");
+      const amount = within(rows[0]).getByText(INVOICES[0].amount);
+      expect(amount).toHaveClass("text-ink");
+      expect(amount).not.toHaveClass("text-danger");
+
+      push.mockReset();
+      await userEvent.setup().click(within(section).getByRole("button", { name: /See all invoices/ }));
+      expect(push).toHaveBeenCalledWith("/subscription/billing?account=acc-company-a");
+    });
+
+    it("nothing billed yet says so", async () => {
+      serveOverview(() => reply(200, invoicePage([])));
+      render(<SubscriptionOverviewScreen today={TODAY} />);
+      const section = await screen.findByRole("region", { name: "Invoices" });
+      expect(await within(section).findByText("No invoices yet.")).toBeInTheDocument();
+      expect(within(section).getByRole("button", { name: /See all invoices/ })).toBeInTheDocument();
+    });
+
+    it("holds skeleton rows while it reads; a failed read says so, and Try again reads again", async () => {
+      let fail = true;
+      let release = () => {};
+      const held = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      fetchMock.mockImplementation(async (input) => {
+        const path = new URL(String(input)).pathname;
+        if (path === "/api/me/billing/accounts") return reply(200, ACCOUNTS);
+        if (path === "/api/me/invoices") {
+          await held;
+          return fail ? reply(500, { error: "Could not load your invoices." }) : reply(200, invoicePage());
+        }
+        return reply(200, listPage);
+      });
+      const user = userEvent.setup();
+      render(<SubscriptionOverviewScreen today={TODAY} />);
+      const section = await screen.findByRole("region", { name: "Invoices" });
+      expect(within(section).getByRole("status")).toBeInTheDocument();
+      expect(section).toHaveAttribute("aria-busy", "true");
+      release();
+
+      // the section's own failure: the page and its other sections stay up
+      const alert = await within(section).findByRole("alert");
+      expect(alert).toHaveTextContent(/.+/);
+      expect(screen.getByRole("region", { name: "Modules" })).toBeVisible();
+      expect(screen.getByRole("region", { name: "Billing account" })).toBeVisible();
+
+      fail = false;
+      await user.click(within(alert).getByRole("button", { name: "Try again" }));
+      expect(await within(section).findByText("#11241234113")).toBeInTheDocument();
+      expect(within(section).queryByRole("alert")).toBeNull();
+      expect(invoiceCalls()).toHaveLength(2);
+    });
   });
 
   it("no banner when nothing needs the payer, and the calm pill", async () => {

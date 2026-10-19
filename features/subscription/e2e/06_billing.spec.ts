@@ -240,6 +240,51 @@ test.describe("billing", () => {
     expect(invoiceQueries).toContain("acc-vine");
   });
 
+  test("08-A: the shown account's last three invoices, stacked on a phone; a failed read says so", async ({
+    page,
+  }) => {
+    const { invoiceQueries, invoicePages } = await stubBilling(page, WALLET_TWO);
+    // More than three on the account: the landing asks for three and shows three.
+    let failing = false;
+    await page.route(`${SUBSCRIPTION_API_URL}/api/me/invoices?*`, (route) => {
+      const params = new URL(route.request().url()).searchParams;
+      invoiceQueries.push(params.get("account") ?? "");
+      invoicePages.push(`${params.get("page")}/${params.get("per_page")}`);
+      return failing
+        ? route.fulfill(json({ error: "Could not load your invoices." }, 500))
+        : route.fulfill(json(invoicePage([FAILED_INVOICES[0], ...INVOICES, FAILED_INVOICES[1]].slice(0, 3))));
+    });
+    await handoff(page, creds(), "/subscription", { entity_id: "" });
+
+    const section = body(page).getByRole("region", { name: "Invoices" });
+    const rows = section.getByRole("list", { name: "Latest invoices" }).getByRole("listitem");
+    for (const width of [360, 768, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      await expect(rows).toHaveCount(3);
+      await expect(rows.first()).toContainText(FAILED_INVOICES[0].reference);
+      await expect(rows.first().getByText("Payment failed")).toHaveAttribute("data-tone", "danger");
+      await expect(rows.nth(1).getByText("Paid")).toHaveAttribute("data-tone", "success");
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    }
+    expect(invoiceQueries[0]).toBe("acc-company-a");
+    expect(invoicePages[0]).toBe("null/3");
+
+    // A failed read is the section's: it says so, and Try again reads again.
+    failing = true;
+    await page.reload();
+    const alert = section.getByRole("alert");
+    await expect(alert).toBeVisible();
+    await expect(body(page).getByRole("region", { name: "Modules" })).toBeVisible();
+    failing = false;
+    await alert.getByRole("button", { name: "Try again" }).click();
+    await expect(rows).toHaveCount(3);
+
+    await section.getByRole("button", { name: /See all invoices/ }).click();
+    await page.waitForURL(
+      (u) => u.pathname === "/subscription/billing" && u.searchParams.get("account") === "acc-company-a",
+    );
+  });
+
   test("Change billing account: a company moves in two steps, and the card says where", async ({
     page,
   }) => {

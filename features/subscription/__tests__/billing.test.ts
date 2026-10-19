@@ -18,6 +18,9 @@ import {
 import { ENTITIES, subscriptionsPage } from "@/features/subscription/__fixtures__/subscriptions";
 import type { InvoiceRow, PortalModule } from "@/features/subscription/api/payerPortal";
 import {
+  RECENT_INVOICES,
+  invoiceStatus,
+  recentInvoices,
   CARDS_SHOWN,
   TRIAL_ENDING_DAYS,
   TRIAL_SOON_DAYS,
@@ -313,6 +316,26 @@ describe("the position (08-A as a Decision dashboard)", () => {
   const account = ACCOUNTS.accounts[1]; // Vine: an Amex, nothing owed
   const kinds = (items: ReturnType<typeof attentionItems>) => items.map((i) => i.kind);
 
+  it("counts Hong Kong's days, as every other count on the page does - 17:00 UTC is tomorrow there", () => {
+    const lateUtc = new Date("2026-10-19T17:00:00Z"); // 20 Oct 01:00 in Hong Kong
+    const endingOn = (day: string) =>
+      subscriptionsPage([
+        {
+          ...base,
+          entity_id: "e-hk",
+          entity_name: "HK Limited",
+          modules: [{ ...base.modules[0], status: "trialing" as const, date: day, date_iso: day }],
+        },
+      ]);
+    // 27 Oct is 7 days from Hong Kong's 20th (8 from UTC's 19th): a banner
+    expect(kinds(attentionItems(endingOn("2026-10-27"), null, lateUtc))).toEqual(["trial_ending"]);
+    expect(attentionItems(endingOn("2026-10-27"), null, lateUtc)[0].text).toContain("ends in 7 days");
+    expect(attentionItems(endingOn("2026-10-28"), null, lateUtc)).toEqual([]);
+    // and the Subscription updates line says the same count
+    expect(overview(endingOn("2026-10-22"), lateUtc).updates[0].emphasis).toBe("2 days");
+    expect(overview(endingOn("2026-10-20"), lateUtc).updates[0].text).toBe("trial ends today");
+  });
+
   it("says nothing when nothing needs the payer", () => {
     const calm = subscriptionsPage([entity("calm", [{ status: "active" }])]);
     expect(attentionItems(calm, account, TODAY)).toEqual([]);
@@ -391,5 +414,38 @@ describe("the position (08-A as a Decision dashboard)", () => {
     ]);
     // A module in none of the four states has no row at all.
     expect(moduleRows(subscriptionsPage([entity("x", [{ status: "ended" }])]))).toEqual([]);
+  });
+
+  it("the landing's invoices: the newest three, the amount as written, a pill in the status's tone", () => {
+    const rows = [FAILED_INVOICES[0], ...INVOICES, FAILED_INVOICES[1]];
+    const recent = recentInvoices(rows);
+    expect(RECENT_INVOICES).toBe(3);
+    expect(recent.map((r) => r.id)).toEqual(["in_failed", "in_1", "in_2"]);
+    expect(recent[1]).toEqual({
+      id: "in_1",
+      reference: "#11241234113",
+      date: INVOICES[0].date,
+      period: `${INVOICES[0].period_start} – ${INVOICES[0].period_end}`,
+      amount: "HK$19,383",
+      status: { label: "Paid", tone: "success" },
+    });
+    // a declined charge is "Payment failed", Danger - open or given up
+    expect(invoiceStatus(FAILED_INVOICES[0])).toEqual({ label: "Payment failed", tone: "danger" });
+    expect(invoiceStatus({ ...INVOICES[0], status: "uncollectible", status_label: "Unpaid" })).toEqual({
+      label: "Payment failed",
+      tone: "danger",
+    });
+    // anything else is Neutral, in the API's own word
+    expect(invoiceStatus({ ...INVOICES[0], status: "void", status_label: "Voided" })).toEqual({
+      label: "Voided",
+      tone: "neutral",
+    });
+    expect(invoiceStatus({ ...INVOICES[0], status: "draft", status_label: "" })).toEqual({
+      label: "draft",
+      tone: "neutral",
+    });
+    // no period named, none shown
+    expect(recentInvoices([{ ...INVOICES[0], period_start: null }])[0].period).toBeNull();
+    expect(recentInvoices([])).toEqual([]);
   });
 });

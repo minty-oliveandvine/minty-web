@@ -14,7 +14,7 @@
  *   person are lifted into their own group (`groupRows`), each group keeping that order.
  * - Search is Flask's `filterCompanies`: case-insensitive, anywhere in the name, as typed - and
  *   offered only from `SEARCH_FROM` companies (Part 15.8: more than six).
- * - `fixture`: dev-only, `?fixture=LIST|EMPTY` (`__fixtures__/entities.ts`).
+ * - `fixture`: dev-only, `?fixture=LIST|NEEDS_YOU|EMPTY` (`__fixtures__/entities.ts`).
  */
 
 import { useRouter } from "next/navigation";

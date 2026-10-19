@@ -240,7 +240,7 @@ PDF shares), `billingAccounts.test.ts` (which account a page shows, the
 Bill-to block and its address lines, who may move where and why not, the new account's
 identity and its 255 limit, 08-C's fields: what stops Save, what Stripe's address form opens
 on and which countries it offers, what is sent), `useBillingPage.test.tsx` (one
-account's two reads and what survives the invoices failing, the account asked for / a company's
+account's two reads and what survives the invoices failing (named in `invoicesError`, logged), the account asked for / a company's
 / the oldest, Show more, the card the account charges switched from the answer, its own card
 refused removal and another one removed and read again, a refused removal, the card that just
 arrived on it and making it the one it charges, a payer with no account and the sheet that
@@ -378,7 +378,11 @@ docs/features/company-settings.md). What is on it:
 
   When both cards carry the same _Manage Subscription_ (frames B and C), it is drawn once,
   centred. A closing trial is still a trial: the access gate ends it, never the date. Days count
-  calendar days (the `YYYY-MM-DD` of both sides), floored at zero.
+  calendar days (the `YYYY-MM-DD` of both sides, today's in HONG KONG since 2026-10-19 -
+  `@/lib/calendarDays`' `daysFromToday`; it was UTC's, a day behind from 00:00 to 08:00 HKT),
+  floored at zero. The landing's own counts (`attentionItems`' trial banner and `overview`'s
+  "trial ends in N days" lines, `lib/billing.ts`) use the same `daysFromToday`, so one page
+  never shows two counts.
 
 - **Card looks = the onboarding card** (2026-10-02, the user: "make module settings the same as
   onboarding card design"). `ModuleCardShell` (`components/ModuleCard.tsx`) copies
@@ -626,9 +630,16 @@ re-homed and redrawn to Figma section "04 · Manage Subscriptions — the payer 
   "3 days" no longer orange), and side by side from `md` **Payment method** (the shown
   account's card, `CardBrand` large, last four, expiry, an Expired / Expiring soon pill;
   `NoAccountPanel` / `NoCardPanel` otherwise; _Go to payment details and invoices_) and
-  **Invoices** (a note and _See all invoices_ → the account's page). Still the page's two reads:
-  the landing reads no invoices and no prices, so the last three invoices and a price per
-  module are NOT shown (they would need `/api/me/invoices` on this page and a price on
+  **Invoices** (_See all invoices_ → the account's page). Since 2026-10-19 the section shows the
+  shown account's **last three invoices** (`recentInvoices`): a row each - the reference, the
+  date it was raised · its period, the amount as plain text and a status pill (`invoiceStatus`:
+  a declined charge, `open`/`uncollectible`, is "Payment failed" Danger; `paid` Success; a draft
+  or void one Neutral in the API's word). It is a THIRD read, the section's own
+  (`useBillingOverview`'s `loadRecentInvoices`: the billing page's `fetchPayerInvoices` with
+  `account=<shown>&per_page=3`, newest first; payer-wide when no account is known), made once
+  the page is up: three skeleton rows meanwhile, "No invoices yet." when there are none, and a
+  failed read says so in the section with _Try again_ - the page stays up. Rows wrap, never
+  scroll sideways, on a phone. A price per module is still NOT shown (it would need a price on
   `/api/me/subscriptions`' modules).
 - **Money buttons name the money** (same round): _Activate Subscription_ and _Confirm
   Subscription Change_ on the open row, the change modal's confirm opened from the list (not a
@@ -1387,7 +1398,10 @@ schema change), which 08-C writes.
   disabled, and only what Stripe lets a saved card change — the name on it and its expiry
   ("Only the name on the card and its expiry date can be changed. To use a different number, add
   a new card."). _Save changes_ is dead until something is different.
-- **Invoice History**: Inv#, Amount (the currency named once in the header), Paid date,
+- **Invoice History** (a failed read is said IN the table with _Try again_ - `invoicesError` /
+  `reloadInvoices`, logged as `[billing] the account's invoices could not be read`; until
+  2026-10-19 it was an empty table reading "Nothing has been billed yet.", which hid the failure):
+  Inv#, Amount (the currency named once in the header), Paid date,
   **Invoice PDF** and **Billing Breakdown**, _Download csv_ (the two download columns centred,
   as the design sets them). **The Invoice PDF is our own document** (Figma 09-A, 2026-09-29 -
   it had linked Stripe's hosted invoice page): `GET /api/me/invoices/{id}/pdf`, saved as
