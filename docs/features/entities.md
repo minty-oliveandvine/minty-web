@@ -85,8 +85,9 @@ module switched on goes straight into it, and **two come back here**, to "Choose
 minty-payment-request-web's `/module-selection` until 2026-10-05 and looks as it did: the mark,
 the company, two doors (`components/ModuleChoiceButton.tsx`, Minty peeking out on hover). The
 doors are the DATABASE's modules - the list's row, `GET /api/me/entities` - never the token's
-claims; each enters its module through Minty's `/enter` (`lib/moduleChoice.ts`): Petty Cash's
-dashboard, or `/entity/<id>/payment-request`, which mints the payments app's token. Opened some
+claims; each enters its module through Minty's `/enter` (`lib/moduleChoice.ts`): on to
+`/handoff/petty-cash-web` (minty-petty-cash-web's dashboard, Step 5) or
+`/entity/<id>/payment-request`, each minting its app's token. Opened some
 other way (a bookmark), one module goes straight in and none says so with the way to the
 Module tab; a failed read says so, logs it and offers Try again. The company comes from the
 address (`components/ui/CompanyFromAddress`), a wrong name corrected in place. Header: Back

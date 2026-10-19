@@ -20,9 +20,9 @@ import { mintyFetch } from "@/lib/apiClient";
 import { getAuth } from "@/lib/auth";
 import { env } from "@/lib/env";
 import { previewSetSlug, siblingUrl } from "@/lib/previewSibling";
-import { COMPANY_SETTINGS_PATTERN, companySettingsPath, HUB_PATHS } from "@/lib/hubPaths";
+import { COMPANY_SETTINGS_PATTERN, companyPath, companySettingsPath, HUB_PATHS } from "@/lib/hubPaths";
 import { logOut } from "@/lib/logout";
-import { mintyEntryUrl } from "@/lib/mintyEntry";
+import { mintyEntryUrl, pettyCashWebUrl } from "@/lib/mintyEntry";
 import { getModuleClaims } from "@/lib/moduleClaims";
 import { guardLeave } from "@minty/shared/leaveGuard";
 
@@ -45,7 +45,9 @@ export const sidebarHost: SidebarHost = {
 
   /**
    * This app IS the hub, so most of these are its own pages. Petty Cash goes into Minty through
-   * `/entity/<id>/enter`, whose token re-establishes the Flask session; Bills the same way, on to
+   * `/entity/<id>/enter`, whose token re-establishes the Flask session, on to Flask's
+   * `/handoff/petty-cash-web`, which mints the Petty Cash app's token (lib/mintyEntry.ts's
+   * `pettyCashWebUrl`; Flask's own Petty Cash pages are retired, Step 5); Bills the same way, on to
    * Minty's `entity.go_to_bills`, which hands the payments app a token for THIS company - that
    * app's bare `/` opens the company in its own cookie, which may be another one. Except inside
    * a branch preview set, where Bills stays in the set (lib/previewSibling.ts): Minty's hand-over
@@ -54,8 +56,9 @@ export const sidebarHost: SidebarHost = {
   links: {
     entities: () => HUB_PATHS.entities,
     subscriptions: () => HUB_PATHS.subscription,
-    pettyCashDashboard: () => mintyEntryUrl(),
-    pettyCashReports: (entityId) => mintyEntryUrl(`/entity/${entityId}/petty-cash/reports`),
+    pettyCashDashboard: () => pettyCashWebUrl(getAuth()?.entityId ?? ""),
+    pettyCashReports: (entityId) =>
+      pettyCashWebUrl(entityId, companyPath(entityId, getAuth()?.entityName ?? "", "/petty-cash/reports")),
     bills: () => billsHref(typeof window === "undefined" ? null : window.location.host),
     settings: () => companySettingsPath(getAuth()?.entityId ?? "", getAuth()?.entityName ?? ""),
     profile: () => HUB_PATHS.profile,

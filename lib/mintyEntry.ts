@@ -42,3 +42,19 @@ export function mintyEnterCompanyUrl(entityId: string): string {
 export function mintyModulesUrl(entityId: string): string {
   return entityId ? mintyEntryUrl(`/entity/${entityId}/modules`) : mintyEntryUrl();
 }
+
+/**
+ * Into minty-petty-cash-web for one company (Step 5, 2026-10-19), the way Bills reaches the
+ * payments app: `/enter` rebuilds the Flask session, then Flask's login-gated
+ * `/handoff/petty-cash-web` mints that app's token for THIS company and lands it on `next` - a
+ * path on the Petty Cash app (`companyPath(id, name, "/petty-cash/reports")`); with none, Flask
+ * picks the company's dashboard. `return_origin` names this page's origin, so inside a branch
+ * preview set Flask hands back to the set's Petty Cash app (`lib/handoff.ts` does the same).
+ * Flask, never this app, knows the Petty Cash app's address: no `PETTY_CASH_WEB_URL` here.
+ */
+export function pettyCashWebUrl(entityId: string, next?: string): string {
+  const qs = new URLSearchParams({ entity_id: entityId });
+  if (next) qs.set("next", next);
+  if (typeof window !== "undefined") qs.set("return_origin", window.location.origin);
+  return mintyEntryUrl(`/handoff/petty-cash-web?${qs.toString()}`, entityId);
+}

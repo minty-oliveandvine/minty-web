@@ -1,6 +1,6 @@
 // A company's module choice (phase 2): the database's modules decide the doors, each door enters
-// its module through Minty's /enter, one module goes straight in, none says so, and a failed read
-// says so and can be tried again.
+// its module through Minty's /enter (Petty Cash on to its own app's hand-off), one module goes
+// straight in, none says so, and a failed read says so and can be tried again.
 
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -9,6 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { setAuth } from "@/lib/auth";
 import { env } from "@/lib/env";
 import { _resetHandoffForTests } from "@/lib/handoff";
+import { pettyCashWebUrl } from "@/lib/mintyEntry";
 import { _setViewerLoaderForTests } from "@/lib/viewer";
 
 import { LIST } from "@/features/entities/__fixtures__/entities";
@@ -34,7 +35,7 @@ describe("moduleChoices", () => {
 
   it("offers the modules switched on, each entered through Minty", () => {
     expect(moduleChoices(ID, ["PAYMENT_REQUEST", "PETTY_CASH"])).toEqual([
-      { code: "PETTY_CASH", label: "Petty Cash", href: enter(`/entity/${ID}/petty-cash`) },
+      { code: "PETTY_CASH", label: "Petty Cash", href: pettyCashWebUrl(ID) },
       { code: "PAYMENT_REQUEST", label: "Payment Request", href: enter(`/entity/${ID}/payment-request`) },
     ]);
     expect(moduleChoices(ID, [])).toEqual([]);
@@ -61,7 +62,7 @@ describe("ModuleChoiceScreen", () => {
     serve([row(["PETTY_CASH", "PAYMENT_REQUEST"])]);
     render(<ModuleChoiceScreen entityId={ID} entityName="Olive & Vine" />);
 
-    expect(await screen.findByRole("link", { name: "Petty Cash" })).toHaveAttribute("href", enter(`/entity/${ID}/petty-cash`));
+    expect(await screen.findByRole("link", { name: "Petty Cash" })).toHaveAttribute("href", pettyCashWebUrl(ID));
     expect(screen.getByRole("link", { name: "Payment Request" })).toHaveAttribute(
       "href",
       enter(`/entity/${ID}/payment-request`),

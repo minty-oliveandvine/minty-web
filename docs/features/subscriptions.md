@@ -351,8 +351,9 @@ docs/features/company-settings.md). What is on it:
   Minty's `/entity/{id}`; the `?from=bills` "‹ Payments" went 2026-10-05), "Settings", `corporate_fare` + the company, the viewer's initials
   (`viewer` on the page model) and the side menu - since 2026-09-29 the Figma 02 design on every
   page (`entities.md`): the person (the way to My Profile), _Select Entity_, _Manage
-  subscriptions_, a Petty Cash section (Dashboard, Reports - into Minty through
-  `/entity/{id}/enter` with the cookie token) and a Payment Request section (Bills), each only
+  subscriptions_, a Petty Cash section (Dashboard, Reports - into minty-petty-cash-web through
+  `/entity/{id}/enter` with the cookie token and Flask's `/handoff/petty-cash-web`,
+  `lib/mintyEntry.ts::pettyCashWebUrl`) and a Payment Request section (Bills), each only
   when that module is on, the cat, _Settings_ (this page) and _Logout_ (Minty's `/logout`). Below it, in the same
   1024px column, a sticky pill row with minty-payment-request-web's `SettingsPills` classes — Users ·
   Entity & Integration · Petty Cash Settings · Payment Request Settings · **Modules** (the pills' labels since 2026-10-05; "Payment Settings" and "Module" before) —

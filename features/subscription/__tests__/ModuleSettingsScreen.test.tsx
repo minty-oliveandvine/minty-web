@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ToastProvider } from "@/components/ui/Toast";
 import { setAuth } from "@/lib/auth";
 import { env } from "@/lib/env";
+import { pettyCashWebUrl } from "@/lib/mintyEntry";
 
 import { ACCOUNTS } from "@/features/subscription/__fixtures__/billing";
 import {
@@ -74,10 +75,7 @@ describe("ModuleSettingsScreen", () => {
 
     expect(screen.getByRole("heading", { level: 1, name: "Settings" })).toBeInTheDocument();
     // "Back" goes where the person came from; its href is the new-tab fallback
-    expect(screen.getByRole("link", { name: "Back" })).toHaveAttribute(
-      "href",
-      `${env.PETTY_CASH_URL}/entity/e1/petty-cash`,
-    );
+    expect(screen.getByRole("link", { name: "Back" })).toHaveAttribute("href", pettyCashWebUrl("e1"));
     expect(screen.getByText("Olive & Vine Limited")).toBeInTheDocument();
     // the initials: My Profile (a link to the page here - no sidebar around a lone screen)
     expect(screen.getByRole("link", { name: "Olive Vine, My Profile" })).toHaveTextContent("OV");

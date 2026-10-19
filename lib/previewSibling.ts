@@ -17,12 +17,13 @@
  *
  * The shape matches Flask's and the Django APIs' `PREVIEW_ORIGIN_REGEX` (minty-infra
  * `services.tf`): slug = 1-40 of [a-z0-9-], no leading or trailing hyphen. The app is read from
- * the END of the label, so a slug may itself contain an app's name.
+ * the END of the label, so a slug may itself contain an app's name. Petty Cash's label is
+ * `pettycash` (the package's v0.5 rename of `petty-cash`, Step 5 2026-10-19).
  */
-export type PreviewApp = "my" | "payment-request" | "onboarding" | "www";
+export type PreviewApp = "my" | "payment-request" | "onboarding" | "pettycash" | "www";
 
 const SET_HOST =
-  /^pr-([a-z0-9](?:[a-z0-9-]{0,38}[a-z0-9])?)-(?:my|payment-request|onboarding|www)\.dailyminty\.com$/;
+  /^pr-([a-z0-9](?:[a-z0-9-]{0,38}[a-z0-9])?)-(?:my|payment-request|onboarding|pettycash|www)\.dailyminty\.com$/;
 
 /** The slug of the preview set `host` belongs to, or null when it is not a set host. */
 export function previewSetSlug(host: string | null | undefined): string | null {
