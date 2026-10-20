@@ -84,5 +84,5 @@ the silent loss survived. It now asserts the refusal.
 
 - `minty-payment-request-web/docs/features/payment-requests.md` — the same convention there,
   including the attachment drop zones.
-- `Minty/docs/features/required-field-marks.md` — Flask's ~33 unmarked fields, audited the
-  same day and deliberately left alone.
+- Flask's ~33 unmarked fields (audited the same day, deliberately left alone) went with its
+  pages on 2026-10-20: Flask draws no forms any more.
