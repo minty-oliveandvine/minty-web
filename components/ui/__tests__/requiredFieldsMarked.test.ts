@@ -29,7 +29,7 @@ const MARKED: Record<string, string[]> = {
 
 /** Announced on the control instead: these fields have no visible label to hang a mark on. */
 const ANNOUNCED_ONLY: Record<string, string> = {
-  "features/profile/components/DetailsCard.tsx": 'aria-label="Email"',
+  // My Profile's email (aria-required) is @minty/shared/profile's since v0.6, tested there.
   "features/auth/components/CodeInput.tsx": 'aria-label="Your 6-digit code"',
 };
 

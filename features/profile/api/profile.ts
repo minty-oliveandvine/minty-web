@@ -6,35 +6,16 @@
  * `entityId` names the company the profile was opened from (`?entity=`): the answer then says
  * the company, the person's role there and its modules. Flask refuses a company the person may
  * not see (403) - the cookie's company is the only one ever sent.
+ *
+ * The profile itself is drawn by `@minty/shared/profile` (v0.6, the owner 2026-10-20: one
+ * implementation for every app); `profileApi` is this app's part of it.
  */
+
+import type { Profile, ProfileApi, ProfileChanges } from "@minty/shared/profile";
 
 import { mintyFetch } from "@/lib/apiClient";
 
-export type ProfileUser = {
-  id: string;
-  first_name: string;
-  last_name: string;
-  /** "First Last", or the email when the account has no name. */
-  name: string;
-  /** The avatar's letters; "?" with no name at all. */
-  initials: string;
-  email: string;
-};
-
-export type ProfileCompany = {
-  id: string;
-  name: string;
-  /** `entity_role`, or null for a superuser who is not a member. */
-  role: string | null;
-  /** "Shop Manager" - Flask's own words for the role. */
-  role_label: string | null;
-  /** Module codes switched on: `PETTY_CASH`, `PAYMENT_REQUEST`. */
-  modules: string[];
-};
-
-export type Profile = { user: ProfileUser; entity: ProfileCompany | null };
-
-export type ProfileChanges = Partial<Pick<ProfileUser, "first_name" | "last_name" | "email">>;
+export type { Profile, ProfileChanges, ProfileCompany, ProfileUser } from "@minty/shared/profile";
 
 const query = (entityId: string | null | undefined) => ({ entity: entityId || undefined });
 
@@ -54,3 +35,9 @@ export function saveProfile(changes: ProfileChanges, entityId?: string | null): 
     query: query(entityId),
   });
 }
+
+/** The two calls, as the packaged panel takes them. Module-level: a new object reads again. */
+export const profileApi: ProfileApi = {
+  load: (entityId, signal) => fetchProfile({ entityId, signal }),
+  save: (changes, entityId) => saveProfile(changes, entityId),
+};

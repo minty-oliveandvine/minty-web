@@ -67,9 +67,8 @@ describe("ProfileScreen", () => {
     expect(details().getByText("John")).toBeInTheDocument();
     expect(details().getByText("Birmingha")).toBeInTheDocument();
     expect(details().getByText("john.doe@oliveandvinehk.com")).toBeInTheDocument();
-    const change = details().getByRole("link", { name: /Change password/ });
-    expect(change).toHaveAttribute("href", "https://identity.xero.com/account");
-    expect(change).toHaveAttribute("target", "_blank");
+    // no PASSWORD row: Minty holds no password (the owner, 2026-10-20)
+    expect(details().queryByText(/password/i)).toBeNull();
   });
 
   it("10-B's head: a SuperMinty company, with the caped cat", async () => {

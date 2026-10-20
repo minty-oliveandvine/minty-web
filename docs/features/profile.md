@@ -2,7 +2,10 @@
 
 The person's own page (Figma 10-A / 10-B, `43YI3MYtTfX5Xzz6dRoRuT` 1410:3314 / 1410:3364),
 moved from minty-payment-request-web on 2026-09-29 with the new design, and drawn in two places - one
-body (`components/ProfileBody.tsx`), so the two cannot drift:
+body, so the two cannot drift. **Since v0.6 that body is `@minty/shared/profile`'s** (the owner,
+2026-10-20: one implementation for every app, in two designs - this branch draws the original,
+`look="classic"`); this feature keeps only its Flask calls (`api/profile.ts` `profileApi`), the
+page's titlebar and back arrow, and the dev-only `?fixture=` switch:
 
 - **the sidebar's My Profile** (`routes/ProfilePanel.tsx`) on every page of this app - the user's
   call, 2026-09-29: one sidebar, two views (`components/ui/Sidebar.tsx`). It slides over the page;
@@ -14,7 +17,7 @@ body (`components/ProfileBody.tsx`), so the two cannot drift:
   that still use it. A phone gets it as drawn, a wider screen the same column centred at up to
   560 px.
 
-**The other apps carry the sidebar since 2026-09-30** (the user's "build it now and transfer
+**History - the other apps carried copies from 2026-09-30** (the user's "build it now and transfer
 later to shared"): minty-payment-request-web holds COPIES of `components/ui/{Sidebar,SideMenu,ViewerBadge,NavMenu}.tsx`,
 `lib/viewer.ts`, this feature (without the page) and the Subscriptions Overview, at the same
 paths, with everything app-specific in its `components/ui/sidebarHost.ts` - they are lifted into
@@ -42,8 +45,8 @@ Opened inside a company (the cookie names one): the company, its plan under it �
 Request" in its blue, "Petty Cash" in its amber (`#ea9713`, the pair the subscription screens
 draw the two modules in), or "SuperMinty" in teal with the caped cat for both — and the person's role there
 ("Shop Manager"). Opened from the entity list there is no company, so none of the three is
-shown. Then the avatar and the name; the details card (first name, last name, email, PASSWORD ·
-Change); the subscription feature's "Subscriptions Overview" in the page's slot; Log Out.
+shown. Then the avatar and the name; the details card (first name, last name, email - no PASSWORD
+row since 2026-10-20); the subscription feature's "Subscriptions Overview" in the page's slot; Log Out.
 
 All of it is one read: Flask's `GET /api/me/profile[?entity=<id>]`
 (`blueprints/user_management/routes/me_api.py`) — identity is Flask's until minty-accounts-api
@@ -59,9 +62,9 @@ its own words, shown in the card with what was typed; the sign-in username moves
 only when it WAS the email. After a save the header and the side menu show the new name at once
 (`primeViewer`) — minty-payment-request-web's badge kept the old initials until the next token.
 
-**Decided by the user, 2026-09-29:** PASSWORD · _Change_ opens the Xero account page, as the old
-profile did (most people sign in with an email code or with Xero, and Minty holds no password
-for them). "Sign out of Minty for good" is NOT on this page — Flask's API stays
+**No PASSWORD row (the owner, 2026-10-20):** Minty holds no password - people sign in with an
+email code or with Xero - so the row that opened the Xero account page (the user's call of
+2026-09-29) is gone, in both designs. "Sign out of Minty for good" is NOT on this page — Flask's API stays
 (`DELETE /minty/api/users/me`); minty-payment-request-api's `PUT|DELETE /api/v1/profile/me` and
 `GET /api/v1/auth/me` were removed on 2026-10-01 with that app's profile page (the user's call,
 reversing the "its APIs stay" of 09-29 for minty-payment-request-api only).

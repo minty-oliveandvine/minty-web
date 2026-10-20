@@ -12,12 +12,13 @@ every page of this app (`ProfilePanel`), and the `/profile` page for Minty's `/p
 
 ```
 index.ts        the ONLY public surface: ProfilePage + ProfilePanel (each with its one slot) + PROFILE_BASE_PATH
-api/            profile.ts - Flask's GET / PATCH /api/me/profile, typed (mintyFetch)
-hooks/          useProfile - the read (with the cookie's company), the details card's edit and save
-lib/            profileView (pure: the plan label, the back arrow, what a save sends), paths
-components/     ProfileBody (head, card, slot, Log Out - the page's and the panel's), ProfileParts (the two
-                titlebars, head, Log Out, states), DetailsCard
-routes/         ProfilePage (Suspense + the query string) -> ProfileScreen (the page); ProfilePanel (the sidebar's view)
+api/            profile.ts - Flask's GET / PATCH /api/me/profile (mintyFetch), and profileApi for the package
+lib/            profileView (pure: the page title, the back arrow), paths
+components/     ProfileParts - the /profile page's titlebar only
+routes/         ProfilePage (Suspense + the query string) -> ProfileScreen (the page: the package's
+                useProfile + ProfileBody); ProfilePanel (the package's panel, with this app's api and toast)
+(@minty/shared/profile, v0.6, in the original look here: the body - head, details card, Log Out, states -
+ useProfile, the panel and its titlebar, the plan label and what a save sends; the Subscriptions Overview card too)
 __fixtures__/   SCOPED / SUPERMINTY / UNSCOPED - Vitest, Playwright and ?fixture=
 __tests__/      Vitest: the rules, the screen, the composition guard
 e2e/            Playwright: 08_profile.spec.ts, over a stubbed Flask and billing API

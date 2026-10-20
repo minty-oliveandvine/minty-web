@@ -7,6 +7,11 @@ same week had produced a third byte-identical copy of the design tokens.
 
 It is for the **Next.js apps only**. Flask keeps its own sidebar and CSS and is not a consumer.
 
+**Two designs since v0.6 (the owner, 2026-10-20):** `main` draws the **original** -
+`<SidebarProvider look="classic">` in `app/layout.tsx` - and `development` the redesign (`v2`),
+from the same code. My Profile and its Subscriptions Overview are `@minty/shared/profile`'s, in
+the provider's look, with no PASSWORD row.
+
 | Consumer | takes |
 |---|---|
 | `minty-web` (here) | the tokens **and** the components |

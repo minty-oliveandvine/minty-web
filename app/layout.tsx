@@ -39,7 +39,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="en" className={`${inter.variable} ${jakarta.variable}`}>
       <body className="m-0 min-w-0 overflow-x-clip antialiased">
         <ToastProvider>
-          <SidebarProvider profile={<ProfilePanel subscriptions={<SubscriptionsOverviewCard />} />}>
+          <SidebarProvider look="classic" profile={<ProfilePanel subscriptions={<SubscriptionsOverviewCard />} />}>
             <TermsGate>{children}</TermsGate>
           </SidebarProvider>
         </ToastProvider>

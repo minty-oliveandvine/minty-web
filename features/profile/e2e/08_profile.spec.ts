@@ -117,10 +117,8 @@ test.describe("My Profile", () => {
     await expect(
       main.getByRole("region", { name: "Your details" }).getByText("john.doe@oliveandvinehk.com"),
     ).toBeVisible();
-    await expect(main.getByRole("link", { name: /Change password/ })).toHaveAttribute(
-      "href",
-      "https://identity.xero.com/account",
-    );
+    // no PASSWORD row: Minty holds no password (the owner, 2026-10-20)
+    await expect(main.getByText(/password/i)).toHaveCount(0);
 
     const overview = main.getByRole("region", { name: "Subscriptions Overview" });
     await expect(overview.getByRole("link", { name: "Manage Subscription" })).toHaveAttribute(
