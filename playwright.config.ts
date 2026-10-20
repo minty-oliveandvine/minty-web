@@ -1,5 +1,5 @@
 // Browser tests for minty-web. They run against a stack that is ALREADY UP (this app :3000,
-// minty-subscription-api :8000, Minty :8010) -- nothing is started here, for the reasons the
+// minty-subscription-api :8001, Minty :8000) -- nothing is started here, for the reasons the
 // minty-onboarding-web and minty-payment-request-web suites give: the stack has five moving parts, and a config
 // that starts one of them starts the wrong one. See e2e/README.md.
 //

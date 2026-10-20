@@ -7,7 +7,7 @@ npm run test:e2e                  # against a stack that is already running
 ```
 
 Real browser, stack already up (this app :3000 `npm run dev`, minty-subscription-api :8000, Minty
-:8010). **Nothing is started here.** Specs skip with a reason when a service or the credentials
+:8000). **Nothing is started here.** Specs skip with a reason when a service or the credentials
 are missing.
 
 Two folders, one runner (`playwright.config.ts`): `e2e/` holds the shell's specs; each
@@ -38,7 +38,7 @@ Run the seed in the Minty repo before every run. Never commit any of these value
 run time (mm:ss) with the result.
 
 Two traps. The stubbed specs (`02`, `03`, `05`, `06`) intercept the URL the BROWSER calls, which is the
-app's `SUBSCRIPTION_API_URL` (default `http://localhost:8000`): leave `E2E_SUBSCRIPTION_API_URL`
+app's `SUBSCRIPTION_API_URL` (default `http://localhost:8001`): leave `E2E_SUBSCRIPTION_API_URL`
 at its default, or set both to the same host - with them apart the stubs miss and the real API
 answers the fixture assertions. And the browser must open the app on the origin the API allows
 (`E2E_BASE_URL` = `http://localhost:3000`, as `CORS_ALLOWED_ORIGINS` names it); on
