@@ -94,13 +94,19 @@ export function flaskDestination(redirectUrl: unknown): string {
   return flask.toString();
 }
 
-/** Flask's Xero sign-in: a navigation (OAuth), never a fetch. Flask checks `next` itself. */
-export function xeroSignInUrl(args: { invite?: string; next?: string }): string {
+/**
+ * Flask's Xero sign-in: a navigation (OAuth), never a fetch. Flask checks `next` itself.
+ * `origin` is this page's, named as `return_origin` when given - passed in, never read from
+ * `window` here, because the link is rendered: the server cannot know it, so the page adds it
+ * after mount (LoginScreen) and the server's HTML and the hydration agree.
+ */
+export function xeroSignInUrl(args: { invite?: string; next?: string }, origin?: string): string {
   const qs = new URLSearchParams();
   if (args.invite) qs.set("invite", args.invite);
   if (args.next) qs.set("next", args.next);
   const query = qs.toString();
-  return withReturnOrigin(`${env.PETTY_CASH_URL}/xero_auth${query ? `?${query}` : ""}`);
+  const url = `${env.PETTY_CASH_URL}/xero_auth${query ? `?${query}` : ""}`;
+  return origin ? withReturnOrigin(url, origin) : url;
 }
 
 export type SignInNotice = { category: "success" | "error" | "warning" | "info"; message: string };

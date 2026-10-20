@@ -6,6 +6,7 @@
 
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ToastProvider } from "@/components/ui/Toast";
@@ -177,14 +178,29 @@ describe("LoginScreen", () => {
     error.mockRestore();
   });
 
-  it("Xero is a navigation to Flask that keeps the invitation and next", () => {
+  it("Xero is a navigation to Flask that keeps the invitation and next", async () => {
     flask({ "/legal/invite-terms-status": () => json({ terms_required: true }) });
     show("invite=secret&email=ivy%40example.com&next=%2Fentity");
 
-    expect(screen.getByRole("link", { name: /Log in with Xero/ })).toHaveAttribute(
-      "href",
-      `${env.PETTY_CASH_URL}/xero_auth?invite=secret&next=%2Fentity&return_origin=${encodeURIComponent(window.location.origin)}`,
+    await waitFor(() =>
+      expect(screen.getByRole("link", { name: /Log in with Xero/ })).toHaveAttribute(
+        "href",
+        `${env.PETTY_CASH_URL}/xero_auth?invite=secret&next=%2Fentity&return_origin=${encodeURIComponent(window.location.origin)}`,
+      ),
     );
+  });
+
+  // The server cannot know the browser's origin, so the first render - the server's HTML and the
+  // browser's hydration alike - must not name one: naming it during render made React report a
+  // mismatch it never patches, and the link kept the server's address (2026-10-20).
+  it("Xero's first render names no origin, so the server's HTML and hydration agree", () => {
+    const html = renderToString(
+      <ToastProvider>
+        <LoginScreen arrival={readArrival(new URLSearchParams("invite=secret&email=ivy%40example.com"), {})} />
+      </ToastProvider>,
+    );
+    const href = /href="([^"]*xero_auth[^"]*)"/.exec(html)?.[1].replace(/&amp;/g, "&");
+    expect(href).toBe(`${env.PETTY_CASH_URL}/xero_auth?invite=secret`);
   });
 
   it("shows what Flask flashed on the way here", async () => {

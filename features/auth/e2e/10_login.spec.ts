@@ -5,7 +5,7 @@
 
 import { expect, test, type Page } from "@playwright/test";
 
-import { PETTY_CASH_URL, requireApp } from "../../../e2e/helpers";
+import { BASE_URL, PETTY_CASH_URL, requireApp } from "../../../e2e/helpers";
 
 type Asked = { path: string; body: unknown }[];
 
@@ -55,7 +55,10 @@ test.describe("sign-in", () => {
     await page.keyboard.insertText("123456");
     await page.getByRole("button", { name: "Verify" }).click();
 
-    await expect(page).toHaveURL(`${PETTY_CASH_URL}/auth/email/handoff?h=signed`);
+    // Flask's hand-off, naming this page's origin as return_origin (lib/handoff.ts withReturnOrigin)
+    await expect(page).toHaveURL(
+      `${PETTY_CASH_URL}/auth/email/handoff?h=signed&return_origin=${encodeURIComponent(new URL(BASE_URL).origin)}`,
+    );
     expect(asked.find((a) => a.path === "/auth/email/request-code")?.body).toEqual({
       email: "jane@example.com",
       mode: "login",

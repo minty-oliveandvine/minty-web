@@ -16,7 +16,7 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState, useSyncExternalStore, type FormEvent } from "react";
 
 import { RequiredMark } from "@/components/ui/RequiredMark";
 import { TermsModal } from "@/components/ui/TermsModal";
@@ -55,6 +55,9 @@ export const LOGIN_COPY = {
   termsUnavailable: "I couldn't load the Terms of Use just now. Mind trying again?",
 } as const;
 
+const noSubscribe = () => () => {};
+const readOrigin = (): string | undefined => window.location.origin;
+const serverNoOrigin = (): string | undefined => undefined;
 
 export function LoginScreen({ arrival }: { arrival: Arrival }) {
   const router = useRouter();
@@ -66,6 +69,12 @@ export function LoginScreen({ arrival }: { arrival: Arrival }) {
       window.history.replaceState(window.history.state, "", window.location.pathname);
     }
   }, []);
+
+  // This page's origin for the Xero link's `return_origin`: none in the server's HTML and the
+  // hydration (they must agree), the browser's right after. Read during render it made the two
+  // differ - a hydration mismatch React does not patch, so the link kept the server's address
+  // and left a preview set.
+  const origin = useSyncExternalStore(noSubscribe, readOrigin, serverNoOrigin);
 
   const signup = arrival.mode === "signup";
   const invited = arrival.mode === "invite";
@@ -253,7 +262,7 @@ export function LoginScreen({ arrival }: { arrival: Arrival }) {
         <span className="h-px flex-1 bg-line-subtle" />
       </div>
 
-      <a className={AUTH_GHOST} href={xeroSignInUrl({ invite: arrival.invite, next: arrival.next })}>
+      <a className={AUTH_GHOST} href={xeroSignInUrl({ invite: arrival.invite, next: arrival.next }, origin)}>
         {LOGIN_COPY.xero}
         <Image src="/auth/xero-logo.webp" alt="" width={20} height={20} unoptimized className="h-5 w-5 rounded-full object-cover" />
       </a>
