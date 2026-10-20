@@ -117,10 +117,8 @@ test.describe("My Profile", () => {
     await expect(
       main.getByRole("region", { name: "Your details" }).getByText("john.doe@oliveandvinehk.com"),
     ).toBeVisible();
-    await expect(main.getByRole("link", { name: /Change password/ })).toHaveAttribute(
-      "href",
-      "https://identity.xero.com/account",
-    );
+    // no PASSWORD row: Minty holds no password (the owner, 2026-10-20)
+    await expect(main.getByText(/password/i)).toHaveCount(0);
 
     const overview = main.getByRole("region", { name: "Subscriptions Overview" });
     await expect(overview.getByRole("link", { name: "Manage Subscription" })).toHaveAttribute(
@@ -184,9 +182,11 @@ test.describe("My Profile", () => {
     await expect(panel.getByRole("heading", { level: 2, name: "John Birmingha" })).toBeVisible();
 
     // on a phone the panel fills the screen (10-A is drawn at 375), and its own close is the
-    // way out - there is nothing beside it to click (the region sits inside its 1 px border)
+    // way out - there is nothing beside it to click (the region sits inside its 1 px LEFT border:
+    // since @minty/shared v0.4 the sheet draws `border-l` only, where v0.1-v0.3 had a border all
+    // round - 388 was that 2 px)
     await page.setViewportSize({ width: 390, height: 844 });
-    await expect.poll(async () => Math.round((await panel.boundingBox())?.width ?? 0)).toBe(388);
+    await expect.poll(async () => Math.round((await panel.boundingBox())?.width ?? 0)).toBe(389);
     await panel.getByRole("button", { name: "Close My Profile" }).click();
     await expect(panel).toBeHidden();
   });
@@ -228,16 +228,16 @@ test.describe("My Profile", () => {
         };
       });
 
-    // wider than 10-A's 375 on a desktop (the region sits inside the panel's 1 px border); the
-    // panel animates its width as it opens, so wait for it to settle
-    await expect.poll(async () => Math.round((await panel.boundingBox())?.width ?? 0)).toBe(438);
+    // wider than 10-A's 375 on a desktop (the region sits inside the panel's 1 px left border, as
+    // above); the panel animates its width as it opens, so wait for it to settle
+    await expect.poll(async () => Math.round((await panel.boundingBox())?.width ?? 0)).toBe(439);
     let measured = await fits();
     expect(measured.sideways).toBe(0);
     expect(measured.catPastEdge).toBeLessThanOrEqual(0);
 
-    // and on a phone, where the panel is the whole screen
+    // and on a phone, where the panel is the whole screen (less its 1 px left border)
     await page.setViewportSize({ width: 375, height: 812 });
-    await expect.poll(async () => Math.round((await panel.boundingBox())?.width ?? 0)).toBe(373);
+    await expect.poll(async () => Math.round((await panel.boundingBox())?.width ?? 0)).toBe(374);
     measured = await fits();
     expect(measured.sideways).toBe(0);
     expect(measured.catPastEdge).toBeLessThanOrEqual(0);

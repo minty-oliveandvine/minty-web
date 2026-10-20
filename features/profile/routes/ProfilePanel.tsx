@@ -2,35 +2,21 @@
 
 /**
  * My Profile in the sidebar - the view the header's initials open, and the menu's name switches
- * to (the user's call, 2026-09-29: one sidebar, two views - `components/ui/Sidebar.tsx`). The
- * same body as the `/profile` page (`ProfileBody`) under the panel's own titlebar: ‹ back to
- * the menu, "My Profile", and a close - on a phone the panel fills the screen, so there is
- * nothing beside it to click.
- *
- * The sidebar mounts it only once the view is asked for, so nothing is read before then. The
- * `subscriptions` slot is the shell's to fill (`app/layout.tsx`), as on the page.
+ * to (the user's call, 2026-09-29: one sidebar, two views). The panel is `@minty/shared/profile`'s
+ * (v0.6, the owner 2026-10-20: one implementation for every app, in the sidebar's look); this app
+ * hands it its Flask calls and its toast. The `subscriptions` slot is the shell's to fill
+ * (`app/layout.tsx`).
  */
 
+import { ProfilePanel as SharedProfilePanel } from "@minty/shared/profile";
 import type { ReactNode } from "react";
 
-import { useSidebar } from "@/components/ui/Sidebar";
+import "@/components/ui/sidebarHost";
+import { useToast } from "@/components/ui/Toast";
 
-import { ProfileBody } from "@/features/profile/components/ProfileBody";
-import { ProfilePanelTitlebar } from "@/features/profile/components/ProfileParts";
-import { useProfile } from "@/features/profile/hooks/useProfile";
+import { profileApi } from "@/features/profile/api/profile";
 
 export function ProfilePanel({ subscriptions }: { subscriptions?: ReactNode }) {
-  const p = useProfile();
-  const sidebar = useSidebar();
-
-  return (
-    // flex-1, not just min-h-full: the sheet's <section> has only a min-height, so a percentage
-    // min-height resolves to auto and the panel stopped at its content, the sheet showing below.
-    <div className="flex min-h-full flex-1 flex-col bg-canvas">
-      <ProfilePanelTitlebar onBack={sidebar?.showMenu} onClose={sidebar?.close} />
-      <div className="flex flex-col px-4 pb-[max(2.5rem,env(safe-area-inset-bottom,0px))]">
-        <ProfileBody model={p} subscriptions={subscriptions} />
-      </div>
-    </div>
-  );
+  const { showToast } = useToast();
+  return <SharedProfilePanel api={profileApi} notify={showToast} subscriptions={subscriptions} />;
 }

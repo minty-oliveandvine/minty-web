@@ -1,19 +1,13 @@
-// My Profile's rules: the plan under the company, where the back arrow goes, and what a save
-// sends.
+// My Profile's page rules: where it mounts and where its back arrow goes. The plan and what a
+// save sends are @minty/shared/profile's (v0.6), tested there.
 
 import { afterEach, describe, expect, it } from "vitest";
 
 import { clearAuth, setAuth } from "@/lib/auth";
 import { HUB_PATHS } from "@/lib/hubPaths";
 
-import { SCOPED, SUPERMINTY } from "@/features/profile/__fixtures__/profile";
 import { PROFILE_BASE_PATH } from "@/features/profile/lib/paths";
-import {
-  backHref,
-  changesFrom,
-  EMAIL_REQUIRED,
-  planLabel,
-} from "@/features/profile/lib/profileView";
+import { backHref } from "@/features/profile/lib/profileView";
 
 describe("profileView", () => {
   afterEach(() => clearAuth());
@@ -22,41 +16,9 @@ describe("profileView", () => {
     expect(PROFILE_BASE_PATH).toBe(HUB_PATHS.profile);
   });
 
-  it("names the plan: SuperMinty for both modules, else the one module in its colour, else nothing", () => {
-    expect(planLabel(SUPERMINTY.entity)).toMatchObject({ text: "SuperMinty", cat: true });
-    expect(planLabel(SCOPED.entity)).toMatchObject({
-      text: "Payment Request",
-      tone: "text-ink",
-      cat: false,
-    });
-    // Petty Cash's amber, the one the subscription screens pair with Payment Request's blue
-    expect(planLabel({ ...SCOPED.entity!, modules: ["PETTY_CASH"] })).toMatchObject({
-      text: "Petty Cash",
-      tone: "text-ink",
-      cat: false,
-    });
-    expect(planLabel({ ...SCOPED.entity!, modules: [] })).toBeNull();
-    expect(planLabel(null)).toBeNull();
-  });
-
   it("the back arrow's new-tab fallback: the list, or the company it was opened from", () => {
     expect(backHref("")).toBe("/entities"); // no company: nothing to go back into
     setAuth("h.eyJ1c2VyX2lkIjoidTEifQ.s", "e1", "Olive Shop");
     expect(backHref("e1")).toContain(encodeURIComponent("/entity/e1/modules"));
-  });
-
-  it("sends only what changed, and refuses an emptied email before anything is sent", () => {
-    const saved = { first_name: "John", last_name: "Birmingha", email: "j@x.com" };
-    expect(changesFrom({ ...saved }, saved)).toEqual({ changes: {}, error: null });
-    expect(changesFrom({ ...saved, first_name: " Jon " }, saved)).toEqual({
-      changes: { first_name: " Jon " },
-      error: null,
-    });
-    // trailing spaces alone are no change: the server trims what it stores
-    expect(changesFrom({ ...saved, last_name: "Birmingha " }, saved).changes).toEqual({});
-    expect(changesFrom({ ...saved, email: "   " }, saved)).toEqual({
-      changes: {},
-      error: EMAIL_REQUIRED,
-    });
   });
 });
