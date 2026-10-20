@@ -22,8 +22,8 @@ import { RequiredMark } from "@/components/ui/RequiredMark";
 import { TermsModal } from "@/components/ui/TermsModal";
 import { ApiError } from "@/lib/apiClient";
 import { EMAIL_ASCII_HINT, isEmail, useEmailInput } from "@/lib/emailInput";
-import { env } from "@/lib/env";
-import type { OwedTerms } from "@/lib/terms";
+import type { LegalDocumentBody } from "@/lib/legal/document";
+import { LEGAL_PATHS } from "@/lib/legal/paths";
 
 import { requestCode, inviteOwesTerms, signUpTerms, xeroSignInUrl } from "@/features/auth/api/signIn";
 import {
@@ -55,7 +55,6 @@ export const LOGIN_COPY = {
   termsUnavailable: "I couldn't load the Terms of Use just now. Mind trying again?",
 } as const;
 
-const noop = () => {};
 
 export function LoginScreen({ arrival }: { arrival: Arrival }) {
   const router = useRouter();
@@ -79,7 +78,7 @@ export function LoginScreen({ arrival }: { arrival: Arrival }) {
 
   // The Terms: owed on sign-up always; on an invitation unless Flask says this invitee agreed.
   const [termsOwed, setTermsOwed] = useState(signup || invited);
-  const [terms, setTerms] = useState<OwedTerms | null>(null);
+  const [terms, setTerms] = useState<LegalDocumentBody | null>(null);
   const [termsOpen, setTermsOpen] = useState(false);
   const [agreedVersion, setAgreedVersion] = useState("");
   useEffect(() => {
@@ -226,11 +225,11 @@ export function LoginScreen({ arrival }: { arrival: Arrival }) {
             />
             <span>
               I agree to the{" "}
-              <a className={AUTH_LINK} href={`${env.PETTY_CASH_URL}/legal/terms`} target="_blank" rel="noopener noreferrer">
+              <a className={AUTH_LINK} href={LEGAL_PATHS.terms} target="_blank" rel="noopener noreferrer">
                 Terms of Use
               </a>{" "}
               and{" "}
-              <a className={AUTH_LINK} href={`${env.PETTY_CASH_URL}/legal/privacy`} target="_blank" rel="noopener noreferrer">
+              <a className={AUTH_LINK} href={LEGAL_PATHS.privacy} target="_blank" rel="noopener noreferrer">
                 Privacy Policy
               </a>
               .
@@ -279,10 +278,9 @@ export function LoginScreen({ arrival }: { arrival: Arrival }) {
 
       {termsOpen && terms ? (
         <TermsModal
-          terms={terms}
+          document={terms}
           agree={async (version) => setAgreedVersion(version)}
           onAccepted={() => setTermsOpen(false)}
-          onChanged={noop}
           onCancel={() => setTermsOpen(false)}
         />
       ) : null}

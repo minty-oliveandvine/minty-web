@@ -21,11 +21,21 @@ export const HUB_HOME = HUB_PATHS.entities;
 
 /**
  * The pages that stand without a person: the landing (where a token arrives), sign-in
- * (`/login` and `/signup`, features/auth - phase 2) and the maintenance page. proxy.ts lets them
- * through without the cookie, and the Terms gate (`components/ui/TermsGate.tsx`) asks nothing on
- * them - there is nobody to ask yet.
+ * (`/login` and `/signup`, features/auth - phase 2), the maintenance page, and the legal
+ * documents (`/terms`, `/privacy` and their archived versions - this app's own since 2026-10-12,
+ * lib/legal/). proxy.ts lets them through without the cookie, and the Terms gate
+ * (`components/ui/TermsGate.tsx`) asks nothing on them - on the legal pages because there is
+ * nobody to ask yet, and because it must never cover the very document it is asking someone to
+ * read.
  */
-export const OPEN_PATHS = ["/landing", "/login", "/signup", "/maintenance"] as const;
+export const OPEN_PATHS = [
+  "/landing",
+  "/login",
+  "/signup",
+  "/maintenance",
+  "/terms",
+  "/privacy",
+] as const;
 
 export function isOpenPath(pathname: string): boolean {
   return OPEN_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));

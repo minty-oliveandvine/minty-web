@@ -1,9 +1,13 @@
 "use client";
 
 /**
- * The Terms & Conditions panel over a page of this app - Flask's panel
- * (Minty `templates/legal/_terms_panel.html` + `_terms_script.html`) ported as it looks, in the
- * modal it takes over the Select Company list. There is no Terms frame in Figma.
+ * The Terms & Conditions panel over a page of this app - a port of Flask's panel
+ * (Minty `templates/legal/_terms_panel.html` + `_terms_script.html`), deleted when the documents
+ * moved here (2026-10-12), so this is now the only Terms panel there is. No Terms frame in Figma.
+ *
+ * It is handed the DOCUMENT it shows (`lib/legal/`), not a reference to fetch: the date, the
+ * draft notice and the wording then all describe the same bytes, and the fingerprint its caller
+ * checked against Flask is the fingerprint of what is on screen.
  *
  * A GATE, not a dialog: no close button, no click-outside, no Escape. The only ways out are
  * Accept & Continue (Flask records it) and Cancel (log out) - someone who will not agree has
@@ -23,9 +27,10 @@ import Image from "next/image";
 import { useEffect, useId, useRef, useState } from "react";
 
 import { ApiError } from "@/lib/apiClient";
-import { env } from "@/lib/env";
+import type { LegalDocumentBody } from "@/lib/legal/document";
+import { LEGAL_PATHS } from "@/lib/legal/paths";
 import { logOut } from "@/lib/logout";
-import { acceptTerms, type OwedTerms } from "@/lib/terms";
+import { acceptTerms } from "@/lib/terms";
 
 import styles from "./TermsModal.module.css";
 
@@ -47,25 +52,30 @@ const FOCUSABLE =
   'a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 export type TermsModalProps = {
-  terms: OwedTerms;
+  /** The document on screen - this app's own (`lib/legal/registry.server.ts`). */
+  document: LegalDocumentBody;
+  /** They agreed to an older version: say so, and link to the one they agreed to. */
+  is_update?: boolean;
+  previous_version?: string | null;
   /** Recorded: the gate lifts and the person stays on the page they are on. */
   onAccepted: () => void;
   /** 409 - the Terms changed while this sat open: read them again and ask again. */
-  onChanged: () => void;
-  /** What agreeing does with the version on screen. Default: record it (`acceptTerms`). */
-  agree?: (version: string) => Promise<void>;
+  onChanged?: () => void;
+  /** What agreeing does with the version and fingerprint on screen. Default: record it. */
+  agree?: (version: string, documentHash: string) => Promise<void>;
   /** Cancel. Default: log out - at the gate, someone who will not agree cannot stay. */
   onCancel?: () => void;
 };
 
 export function TermsModal({
-  terms,
+  document: doc,
+  is_update = false,
+  previous_version = null,
   onAccepted,
   onChanged,
   agree = acceptTerms,
   onCancel = logOut,
 }: TermsModalProps) {
-  const { document: doc, is_update, previous_version, links } = terms;
   const titleId = useId();
   const hintId = useId();
   const dialog = useRef<HTMLDivElement>(null);
@@ -136,7 +146,7 @@ export function TermsModal({
     setBusy(true);
     setError("");
     try {
-      await agree(doc.version);
+      await agree(doc.version, doc.sha256);
       onAccepted();
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) return; // off to Flask for a fresh token
@@ -144,7 +154,7 @@ export function TermsModal({
       if (err instanceof ApiError && err.status === 409) {
         // Changed while this sat open: agree to what is live now, not to replaced wording.
         setTicked(false);
-        onChanged();
+        onChanged?.();
         return;
       }
       setError(err instanceof ApiError ? err.message : TERMS_COPY.unreachable);
@@ -173,9 +183,9 @@ export function TermsModal({
                 <div className={styles.note}>
                   You previously agreed to version <strong>{previous_version}</strong>. You can read
                   the version you agreed to before{" "}
-                  {links.previous ? (
+                  {previous_version ? (
                     <a
-                      href={`${env.PETTY_CASH_URL}${links.previous}`}
+                      href={LEGAL_PATHS.termsVersion(previous_version)}
                       target="_blank"
                       rel="noopener noreferrer"
                     >
@@ -209,7 +219,8 @@ export function TermsModal({
                 role="region"
                 aria-label="The Terms & Conditions"
                 tabIndex={0}
-                // Flask's legal.render escapes the source before applying any markup.
+                // lib/legal/render.ts escapes the source before applying any markup - the
+                // whole reason this is safe. Read its header before touching either.
                 dangerouslySetInnerHTML={{ __html: doc.html }}
               />
             </div>
@@ -225,19 +236,11 @@ export function TermsModal({
               />
               <span>
                 I have read and agree to the{" "}
-                <a
-                  href={`${env.PETTY_CASH_URL}${links.terms}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
+                <a href={LEGAL_PATHS.terms} target="_blank" rel="noopener noreferrer">
                   Terms &amp; Conditions
                 </a>{" "}
                 and{" "}
-                <a
-                  href={`${env.PETTY_CASH_URL}${links.privacy}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
+                <a href={LEGAL_PATHS.privacy} target="_blank" rel="noopener noreferrer">
                   Privacy Policy
                 </a>
                 .

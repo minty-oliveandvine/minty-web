@@ -109,6 +109,11 @@ export async function requireStack(): Promise<void> {
  * TermsGate.tsx) ourselves. `handoff` answers "nothing owed" unless a spec says otherwise: the
  * gate is 09_terms.spec.ts's subject, every other spec is about its own page, and the shared
  * e2e account owes an acceptance that nobody may give on it.
+ *
+ * Only the VERSION comes from here. The document itself is this app's own since 2026-10-12
+ * (app/api/legal/[kind]/[version]), so an answer that owes something must name a version this
+ * app holds and carry its real `sha256`, or the gate fails open and draws nothing -
+ * 09_terms.spec.ts reads both from the app for exactly that reason.
  */
 export async function answerTerms(page: Page, answer: unknown = { owed: false }): Promise<void> {
   await page.route(`${PETTY_CASH_URL}/api/me/terms`, (route) =>

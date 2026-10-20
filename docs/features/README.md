@@ -4,7 +4,9 @@
 with one feature: subscriptions — the payer portal and a company's module settings page, over
 `minty-subscription-api`. Since 2026-09-29 it also has the entity list ("Select Company", the hub's
 first page) and My Profile, over Flask's bearer routes — Part 3 step 4, pulled forward; since
-phase 2 (2026-10-05) also sign-in (`/login`); the dashboard follows in Part 3. Written for
+phase 2 (2026-10-05) also sign-in (`/login`); and since 2026-10-12 the legal documents
+themselves - the Terms of Use and the Privacy Policy, their pages and their fingerprints, moved
+out of Flask; the dashboard follows in Part 3. Written for
 someone new to the codebase; the plan (`Minty/docs/modernisation/modernisation_plan.md`) and
 the sibling repos' `docs/features/` folders are linked, not repeated.
 
@@ -18,6 +20,7 @@ the sibling repos' `docs/features/` folders are linked, not repeated.
 | Toasts - `components/ui/Toast.tsx` is the reference every app copies | `Minty/docs/features/toasts.md` - the system-wide rule and the other three apps' copies |
 | Manual QA checklist - a hand-run checklist over every feature above, to run before a release | [qa-checklist.md](qa-checklist.md) |
 | Required fields: the red `*`, the `aria-required` half, where it deliberately does not appear, and the card-expiry bug fixed with it | [required-fields.md](required-fields.md) |
+| The legal documents: the Terms of Use and Privacy Policy, their versions and pinned fingerprints, the renderer, the public pages, and the split with Flask | [legal.md](legal.md) — Minty's `docs/features/legal-terms.md` holds the consent record's half |
 
 Running it: `npm run dev` on 3000 with `.env.local` (the three URLs in
 `.env.example`); tests `npm test` (Vitest, 29 on 2026-09-21) and `npm run test:e2e` (Playwright,

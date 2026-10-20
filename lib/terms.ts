@@ -1,10 +1,16 @@
 /**
- * The Terms & Conditions a person still owes, and agreeing to them - Flask's `GET /api/me/terms`
- * and `POST /api/me/terms/accept` (Minty `blueprints/legal/routes/hub.py`). Everything they
- * decide is Flask's own Terms panel's: what is owed, whether it is a re-acceptance, and the
- * checks an agreement passes (ticked; still the live version). The document's fingerprint and
- * where the agreement was given (`source = "hub"`) are recorded there - nothing of it is sent
- * from here but the tick and the version on screen.
+ * Whether a person still owes an acceptance of the Terms & Conditions, and recording that they
+ * agreed - Flask's `GET /api/me/terms` and `POST /api/me/terms/accept` (Minty
+ * `blueprints/legal/routes/hub.py`).
+ *
+ * THE SPLIT, since the documents moved here (2026-10-12): **Flask names the version, this app
+ * supplies the text.** Flask still owns the record (`terms_consent`), the checks an agreement
+ * passes (ticked; still the live version) and the fingerprint it stamps - it never takes a hash
+ * from a client. What it no longer sends is the document itself: the wording and the public links
+ * are this app's (`lib/legal/`), so the answer here carries only the version, its fingerprint and
+ * whether this is a re-acceptance. The caller fetches the matching document from
+ * `lib/legal/client.ts` and MUST refuse to show one whose `sha256` differs from the one below -
+ * a document Flask would misrecord must never be put in front of anyone.
  *
  * Asked once per TOKEN: once the answer is "nothing owed", or the person has just agreed, this
  * token is not asked again. A token lives 30 minutes, so a Terms revamp reaches everyone within
@@ -18,9 +24,8 @@ export type TermsDocument = {
   version: string;
   /** As the registry spells it; null when the version has no recorded date. */
   effective_date: string | null;
-  /** The document as markup - Flask's `legal.render`, which escapes the source before
-   * applying any, so it is safe to inject. */
-  html: string;
+  /** SHA-256 of the wording Flask will record. The document shown must match it. */
+  sha256: string | null;
   show_draft_notice: boolean;
 };
 
@@ -30,8 +35,6 @@ export type OwedTerms = {
   /** They agreed to an older version: asked again, and told which. */
   is_update: boolean;
   previous_version: string | null;
-  /** Paths on Flask - public pages, so a person held at the gate can read what they are asked. */
-  links: { terms: string; privacy: string; previous: string | null };
 };
 
 export type TermsStatus = { owed: false } | OwedTerms;
@@ -46,9 +49,9 @@ export function termsSettled(token: string): boolean {
 }
 
 function readStatus(body: unknown): TermsStatus {
-  const answer = (body ?? {}) as { owed?: unknown; document?: { html?: unknown }; links?: unknown };
+  const answer = (body ?? {}) as { owed?: unknown; document?: { version?: unknown } };
   if (answer.owed === false) return { owed: false };
-  if (answer.owed === true && typeof answer.document?.html === "string" && answer.links) {
+  if (answer.owed === true && typeof answer.document?.version === "string") {
     return answer as unknown as OwedTerms;
   }
   // Never read an answer we cannot understand as "nothing owed": the gate is told it failed.
@@ -69,15 +72,20 @@ export async function fetchTerms(signal?: AbortSignal): Promise<TermsStatus> {
 }
 
 /**
- * Agree to `version` - the one on screen. Rejects with the API's `ApiError`: 400 when not
- * ticked, 409 when the Terms changed under the reader (re-read and ask again), 500 when Flask
- * has no document; a 401 goes back through Flask for a fresh token, as any page's call does.
+ * Agree to `version` - the one on screen - naming the fingerprint of the document that was
+ * actually shown. Flask compares that hash to its own manifest and refuses a mismatch (409
+ * `document_mismatch`): it is a canary against a stale bundle filing a consent row against
+ * wording nobody read, never the hash it stores.
+ *
+ * Rejects with the API's `ApiError`: 400 when not ticked, 409 when the Terms changed under the
+ * reader (re-read and ask again), 500 when Flask has no manifest entry; a 401 goes back through
+ * Flask for a fresh token, as any page's call does.
  */
-export async function acceptTerms(version: string): Promise<void> {
+export async function acceptTerms(version: string, documentHash: string): Promise<void> {
   const token = currentToken();
   await mintyFetch("/api/me/terms/accept", {
     method: "POST",
-    json: { accepted: true, terms_version: version },
+    json: { accepted: true, terms_version: version, document_hash: documentHash },
   });
   settledFor = token;
 }
