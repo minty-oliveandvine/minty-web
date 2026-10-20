@@ -7,8 +7,8 @@
  * next.config.ts passes the raw value through; the default and the trailing-slash strip live
  * here, once.
  *
- * Defaults are the local stack's ports (Minty/docker/stack/docker-compose.yml): Subscription API
- * 8000, Petty Cash (Flask) 8010, Payment Request web 3020. The deployed app sets all three
+ * Defaults are the owner's local ports (2026-10-16, Documents\dev.ps1): Subscription API 8001,
+ * Petty Cash (Flask, accounts-api) 8000, Payment Request web 3020. The deployed app sets all three
  * explicitly. No environment-name switch (minty-payment-request-web's `mintyEnv.ts` grew one
  * and its apex default became a landmine) - one variable, one URL.
  */
@@ -20,9 +20,9 @@ function url(raw: string | undefined, fallback: string): string {
 
 export const env = {
   /** minty-subscription-api - every API call this app makes. */
-  SUBSCRIPTION_API_URL: url(process.env.SUBSCRIPTION_API_URL, "http://localhost:8000"),
+  SUBSCRIPTION_API_URL: url(process.env.SUBSCRIPTION_API_URL, "http://localhost:8001"),
   /** Petty Cash (the Flask app) - login, the re-handoff, the entity list's and the profile's reads. */
-  PETTY_CASH_URL: url(process.env.PETTY_CASH_URL, "http://localhost:8010"),
+  PETTY_CASH_URL: url(process.env.PETTY_CASH_URL, "http://localhost:8000"),
   /**
    * minty-payment-request-web. Only the side menu's Bills inside a branch preview set reads it
    * (moved onto the set's host); everywhere else Bills goes through Minty's hand-over (2026-10-15).

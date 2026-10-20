@@ -18,8 +18,8 @@ const b64url = (input: Buffer | string) =>
 export type Credentials = { secret: string; userId: string; entityId: string; entityName: string };
 
 export const BASE_URL = process.env.E2E_BASE_URL || "http://localhost:3000";
-export const SUBSCRIPTION_API_URL = process.env.E2E_SUBSCRIPTION_API_URL || "http://localhost:8000";
-export const PETTY_CASH_URL = process.env.E2E_PETTY_CASH_URL || "http://localhost:8010";
+export const SUBSCRIPTION_API_URL = process.env.E2E_SUBSCRIPTION_API_URL || "http://localhost:8001";
+export const PETTY_CASH_URL = process.env.E2E_PETTY_CASH_URL || "http://localhost:8000";
 
 export function credentials(): Credentials | null {
   const secret = process.env.E2E_JWT_SECRET;
