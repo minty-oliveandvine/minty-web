@@ -240,7 +240,9 @@ PDF shares), `billingAccounts.test.ts` (which account a page shows, the
 Bill-to block and its address lines, who may move where and why not, the new account's
 identity and its 255 limit, 08-C's fields: what stops Save, what Stripe's address form opens
 on and which countries it offers, what is sent), `useBillingPage.test.tsx` (one
-account's two reads and what survives the invoices failing, the account asked for / a company's
+account's two reads and what survives the invoices failing (named in `invoicesError`, logged, said IN
+the table with _Try again_ - until 2026-10-19 an empty table reading "Nothing has been billed yet."
+hid the failure), the account asked for / a company's
 / the oldest, Show more, the card the account charges switched from the answer, its own card
 refused removal and another one removed and read again, a refused removal, the card that just
 arrived on it and making it the one it charges, a payer with no account and the sheet that
@@ -378,7 +380,9 @@ docs/features/company-settings.md). What is on it:
 
   When both cards carry the same _Manage Subscription_ (frames B and C), it is drawn once,
   centred. A closing trial is still a trial: the access gate ends it, never the date. Days count
-  calendar days (the `YYYY-MM-DD` of both sides), floored at zero.
+  calendar days (the `YYYY-MM-DD` of both sides, today's in HONG KONG since 2026-10-19 -
+  `@/lib/calendarDays`' `daysFromToday`; it was UTC's, a day behind from 00:00 to 08:00 HKT),
+  floored at zero.
 
 - **Card looks = the onboarding card** (2026-10-02, the user: "make module settings the same as
   onboarding card design"). `ModuleCardShell` (`components/ModuleCard.tsx`) copies

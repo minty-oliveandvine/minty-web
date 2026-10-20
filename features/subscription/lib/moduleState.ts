@@ -31,6 +31,8 @@
  * ends a trial, never the date (Minty's `subscription-restart-screen` note).
  */
 
+import { daysFromToday } from "@/lib/calendarDays";
+
 import type { ModuleCard, ModuleCode } from "@/features/subscription/api/moduleSettings";
 
 export type ModuleState =
@@ -96,28 +98,13 @@ export const TRIAL_DAYS = 30;
  */
 export const TRIAL_URGENT_DAYS = 7;
 
-/** `YYYY-MM-DD` of an ISO date or datetime, or null when it does not start with one. */
-function isoDay(value: string | null | undefined): string | null {
-  if (!value) return null;
-  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(value);
-  return m ? `${m[1]}-${m[2]}-${m[3]}` : null;
-}
-
-function utcMidnight(day: string): number {
-  const [y, m, d] = day.split("-").map(Number);
-  return Date.UTC(y, m - 1, d);
-}
-
 /**
- * Whole days from `today` to the day part of `until`, floored at zero. Both sides are read as
- * calendar days (the API's dates are the business day already), never as instants - a
- * `Date` difference would drift by one across the HKT/UTC boundary.
+ * Whole days from `today` to the day part of `until`, floored at zero (`daysFromToday`, which
+ * the select-company list shares, is the count itself).
  */
 export function daysUntil(until: string | null | undefined, today: Date): number | null {
-  const end = isoDay(until);
-  if (!end) return null;
-  const start = utcMidnight(today.toISOString().slice(0, 10));
-  return Math.max(0, Math.round((utcMidnight(end) - start) / 86_400_000));
+  const days = daysFromToday(until, today);
+  return days === null ? null : Math.max(0, days);
 }
 
 /** "1 day" / "N days". */

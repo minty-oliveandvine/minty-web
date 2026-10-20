@@ -10,7 +10,9 @@
  *
  * TWO READS, AND A FAILURE IN THE SECOND DOES NOT TAKE THE PAGE DOWN: the accounts
  * (`/api/me/billing/accounts`) are the page's subject, so their failure is the page's; the
- * account's invoices (`/api/me/invoices?account=`) fill the table, and failing leaves it quiet.
+ * account's invoices (`/api/me/invoices?account=`) fill the table, and failing says so IN the
+ * table, with Try again (`invoicesError`, `reloadInvoices`; logged - it was an empty "Nothing has
+ * been billed yet." until 2026-10-19, which hid the failure).
  * They are read apart, so turning a page of the table - 10, 50 or 100 invoices to a page, the
  * payer's pick - reads that page alone, never the accounts (a Stripe read at the API) again.
  *
@@ -68,6 +70,7 @@ import {
   BILLING_LOAD_FAILED,
   CARD_ACTION_FAILED,
   INVOICE_PDF_FAILED,
+  INVOICES_LOAD_FAILED,
   RETRY_FAILED,
   amountHeader,
   cardMenu,
@@ -149,6 +152,10 @@ export type UseBillingPageResult = {
   busy: boolean;
   actionError: string | null;
   invoices: InvoiceLine[];
+  /** The invoices could not be read: the table says so, never "Nothing has been billed yet." */
+  invoicesError: string | null;
+  /** Try again on that: the same page of the same account's invoices, read again. */
+  reloadInvoices: () => void;
   invoiceHeader: string;
   /** The table's paging: the page on show, how many there are, and how many rows to a page. */
   invoicePaging: InvoicePaging;
@@ -219,6 +226,8 @@ type InvoicePage = {
   rows: InvoiceRow[];
   total: number;
   pages: number;
+  /** Why this page could not be read, in the API's words when it gave some; null when it was. */
+  error: string | null;
 };
 
 /** One of an invoice's downloads, as the page tells it: the row it is preparing, and why not. */
@@ -292,13 +301,34 @@ async function loadInvoices(
         rows: rows.slice((page - 1) * perPage, page * perPage),
         total: rows.length,
         pages: Math.max(1, Math.ceil(rows.length / perPage)),
+        error: null,
       };
     }
   }
-  // Decoration around the account: a failure leaves the table empty, never the page.
+  // The table's own read: a failure is the table's, said there with Try again - never the page's,
+  // and never an empty table that would read as "nothing billed".
   return fetchPayerInvoices({ signal, accountId, page, perPage })
-    .then((r) => ({ accountId, page, perPage, rows: r.invoices, total: r.total, pages: r.pages }))
-    .catch(() => ({ accountId, page, perPage, rows: [], total: 0, pages: 1 }));
+    .then((r) => ({
+      accountId,
+      page,
+      perPage,
+      rows: r.invoices,
+      total: r.total,
+      pages: r.pages,
+      error: null,
+    }))
+    .catch((err: unknown) => {
+      if (!signal.aborted) console.error("[billing] the account's invoices could not be read", err);
+      return {
+        accountId,
+        page,
+        perPage,
+        rows: [],
+        total: 0,
+        pages: 1,
+        error: sentence(err, INVOICES_LOAD_FAILED),
+      };
+    });
 }
 
 export function useBillingPage({
@@ -318,6 +348,7 @@ export function useBillingPage({
     page: 1,
   });
   const [perPage, setPerPage] = useState<InvoicePageSize>(10);
+  const [invoiceTry, setInvoiceTry] = useState(0);
   const [pdfBusy, setPdfBusy] = useState<string | null>(null);
   const [pdfError, setPdfError] = useState<string | null>(null);
   const [preview, setPreview] = useState<InvoicePreview | null>(null);
@@ -364,7 +395,7 @@ export function useBillingPage({
   const shownId = account?.id ?? null;
   const page = paging.accountId === shownId ? paging.page : 1;
 
-  // The account's invoices, one page at a time.
+  // The account's invoices, one page at a time - and again on the table's Try again.
   useEffect(() => {
     if (!shownId) return;
     const controller = new AbortController();
@@ -373,7 +404,7 @@ export function useBillingPage({
       if (!controller.signal.aborted) setInvoicePage(got);
     })();
     return () => controller.abort();
-  }, [fixture, shownId, page, perPage, generation]);
+  }, [fixture, shownId, page, perPage, generation, invoiceTry]);
 
   // Another account's page (or none yet) shows no rows rather than the last account's; the
   // same account's last page stays up while the next one arrives.
@@ -639,6 +670,12 @@ export function useBillingPage({
     busy,
     actionError,
     invoices: lines,
+    invoicesError: invoicePaging.loading ? null : (current?.error ?? null),
+    // The failed page is dropped first, so the table says it is loading while it asks again.
+    reloadInvoices: useCallback(() => {
+      setInvoicePage(null);
+      setInvoiceTry((n) => n + 1);
+    }, []),
     invoiceHeader: amountHeader(invoices),
     invoicePaging,
     goToInvoicePage,

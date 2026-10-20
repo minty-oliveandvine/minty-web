@@ -166,10 +166,13 @@ describe("resolveModuleState", () => {
 });
 
 describe("daysUntil", () => {
-  it("counts calendar days, never negative, singular at one", () => {
+  it("counts Hong Kong calendar days, never negative, singular at one", () => {
+    // 23:30 UTC on 21 Sep is 07:30 on 22 Sep in Hong Kong - today is the 22nd (2026-10-19; it
+    // was UTC's 21st before)
     const today = new Date("2026-09-21T23:30:00.000Z");
-    expect(daysUntil("2026-09-24", today)).toBe(3);
-    expect(daysUntil("2026-09-22T01:00:00+08:00", today)).toBe(1);
+    expect(daysUntil("2026-09-24", today)).toBe(2);
+    expect(daysUntil("2026-09-23T01:00:00+08:00", today)).toBe(1);
+    expect(daysUntil("2026-09-22", today)).toBe(0);
     expect(daysUntil("2026-09-21", today)).toBe(0);
     expect(daysUntil("2026-09-01", today)).toBe(0);
     expect(daysUntil(null, today)).toBeNull();

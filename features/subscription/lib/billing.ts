@@ -260,6 +260,8 @@ export const RETRY_PAYMENT = "Retry payment";
 export const RETRYING = "Retrying…";
 export const RETRY_FAILED = "That retry didn't go through. Mind trying again?";
 export const INVOICE_PDF_FAILED = "I couldn't prepare that invoice's PDF. Mind trying again?";
+/** The invoice table's read failed - said in the table with Try again, never "Nothing has been billed yet." */
+export const INVOICES_LOAD_FAILED = "Your invoices didn't load. Mind trying again?";
 /** The Inv# preview, until its first page is on screen. */
 export const PREPARING_INVOICE = "Preparing the invoice…";
 /** The PDF arrived but pdf.js could not draw it. */
