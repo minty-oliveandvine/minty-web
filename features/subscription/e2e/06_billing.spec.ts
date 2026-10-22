@@ -252,7 +252,9 @@ test.describe("billing", () => {
       invoicePages.push(`${params.get("page")}/${params.get("per_page")}`);
       return failing
         ? route.fulfill(json({ error: "Could not load your invoices." }, 500))
-        : route.fulfill(json(invoicePage([FAILED_INVOICES[0], ...INVOICES, FAILED_INVOICES[1]].slice(0, 3))));
+        : route.fulfill(
+            json(invoicePage([FAILED_INVOICES[0], ...INVOICES, FAILED_INVOICES[1]].slice(0, 3))),
+          );
     });
     await handoff(page, creds(), "/subscription", { entity_id: "" });
 
@@ -264,7 +266,9 @@ test.describe("billing", () => {
       await expect(rows.first()).toContainText(FAILED_INVOICES[0].reference);
       await expect(rows.first().getByText("Payment failed")).toHaveAttribute("data-tone", "danger");
       await expect(rows.nth(1).getByText("Paid")).toHaveAttribute("data-tone", "success");
-      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+        true,
+      );
     }
     expect(invoiceQueries[0]).toBe("acc-company-a");
     expect(invoicePages[0]).toBe("null/3");
@@ -281,7 +285,8 @@ test.describe("billing", () => {
 
     await section.getByRole("button", { name: /See all invoices/ }).click();
     await page.waitForURL(
-      (u) => u.pathname === "/subscription/billing" && u.searchParams.get("account") === "acc-company-a",
+      (u) =>
+        u.pathname === "/subscription/billing" && u.searchParams.get("account") === "acc-company-a",
     );
   });
 

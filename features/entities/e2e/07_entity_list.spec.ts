@@ -86,7 +86,9 @@ test.describe("the entity list", () => {
     );
     await expect(five.getByRole("img", { name: "Free trial: Petty Cash" })).toBeVisible();
     await expect(
-      main.getByRole("list", { name: "Needs you" }).getByText("Setup not finished — continue setup"),
+      main
+        .getByRole("list", { name: "Needs you" })
+        .getByText("Setup not finished — continue setup"),
     ).toBeVisible();
     // a page-level Secondary action, inside `main` - no floating "+" (Part 15.8)
     await expect(page.getByRole("link", { name: "Add a new entity" })).toHaveCount(0);
@@ -118,7 +120,9 @@ test.describe("the entity list", () => {
       await expect(soon.getByText("Member", { exact: true })).toBeVisible();
       // twenty days out stays with the rest
       await expect(
-        main.getByRole("list", { name: "Your businesses" }).getByRole("link", { name: /^Trial Ending Later/ }),
+        main
+          .getByRole("list", { name: "Your businesses" })
+          .getByRole("link", { name: /^Trial Ending Later/ }),
       ).toBeVisible();
       // nothing sideways at any width
       expect(
@@ -149,7 +153,9 @@ test.describe("the entity list", () => {
         "Scenario 9",
         "Scenario 8",
       ]);
-      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+        true,
+      );
     }
     await main.getByRole("textbox", { name: "Search company" }).fill("trial");
     await expect(cards).toHaveCount(3);

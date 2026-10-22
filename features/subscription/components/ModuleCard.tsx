@@ -19,9 +19,22 @@ import type { ModuleStatusLine, ModuleView } from "@/features/subscription/lib/m
  * 556x384 PNGs, `pettycash-icon.png` / `payment-icon.png`, and the same two accents).
  * `width`/`height` are the PNG's own pixels, not the drawn size.
  */
-export const MODULE_ART: Record<ModuleCode, { src: string; width: number; height: number; accent: string }> = {
-  PETTY_CASH: { src: "/modules/petty-cash.png", width: 556, height: 384, accent: "var(--mv2-module-petty)" },
-  PAYMENT_REQUEST: { src: "/modules/payment-request.png", width: 556, height: 384, accent: "var(--mv2-module-payment)" },
+export const MODULE_ART: Record<
+  ModuleCode,
+  { src: string; width: number; height: number; accent: string }
+> = {
+  PETTY_CASH: {
+    src: "/modules/petty-cash.png",
+    width: 556,
+    height: 384,
+    accent: "var(--mv2-module-petty)",
+  },
+  PAYMENT_REQUEST: {
+    src: "/modules/payment-request.png",
+    width: 556,
+    height: 384,
+    accent: "var(--mv2-module-payment)",
+  },
 };
 
 /** The card, outer edge to outer edge: 360 + 2 x 1px border (the selected ring draws over it). */
@@ -53,9 +66,7 @@ export function ModuleCardShell({
   const frame = selected
     ? "border-line-selected bg-selected ring-1 ring-line-selected"
     : "border-line bg-card";
-  const lift = onClick
-    ? "cursor-pointer hover:-translate-y-0.5"
-    : "";
+  const lift = onClick ? "cursor-pointer hover:-translate-y-0.5" : "";
   return (
     <article
       aria-label={name}

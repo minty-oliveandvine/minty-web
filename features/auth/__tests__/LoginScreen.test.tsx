@@ -52,7 +52,11 @@ function show(query = "", opts: { signup?: boolean } = {}) {
 
 // Flask names the live version (`/legal/current`); this app supplies that version's text from
 // its own registry (`/api/legal/terms/<version>`). Two reads, as the gate makes.
-const TERMS_LIVE = { terms_version: "beta-1", privacy_version: "beta-1", effective_date: "18 September 2026" };
+const TERMS_LIVE = {
+  terms_version: "beta-1",
+  privacy_version: "beta-1",
+  effective_date: "18 September 2026",
+};
 const TERMS_DOC = {
   kind: "terms",
   version: "beta-1",
@@ -85,12 +89,21 @@ describe("LoginScreen", () => {
     await userEvent.type(screen.getByLabelText(/^Email\s*\*?$/), "jane@example.com{Enter}");
 
     await waitFor(() => expect(push).toHaveBeenCalledWith("/login/confirm"));
-    expect(calls("/auth/email/request-code")).toEqual([{ email: "jane@example.com", mode: "login" }]);
-    expect(readConfirmContext()).toMatchObject({ email: "jane@example.com", login: true, next: "/profile" });
+    expect(calls("/auth/email/request-code")).toEqual([
+      { email: "jane@example.com", mode: "login" },
+    ]);
+    expect(readConfirmContext()).toMatchObject({
+      email: "jane@example.com",
+      login: true,
+      next: "/profile",
+    });
   });
 
   it("an address with no account is told so in Flask's words - and ONCE: the alert carries no link", async () => {
-    flask({ "/auth/email/request-code": () => json({ status: "error", message: "Please sign up first" }, 404) });
+    flask({
+      "/auth/email/request-code": () =>
+        json({ status: "error", message: "Please sign up first" }, 404),
+    });
     show();
 
     await userEvent.type(screen.getByLabelText(/^Email\s*\*?$/), "nobody@example.com");
@@ -157,15 +170,24 @@ describe("LoginScreen", () => {
 
     // the secret leaves the address bar at once
     expect(window.location.search).toBe("");
-    expect(screen.getByRole("status")).toHaveTextContent("This invitation was sent to ivy@example.com");
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "This invitation was sent to ivy@example.com",
+    );
     expect(screen.getByLabelText(/^Email\s*\*?$/)).toHaveAttribute("readonly");
     await waitFor(() => expect(screen.queryByRole("checkbox")).toBeNull());
     expect(calls("/legal/invite-terms-status")).toEqual([{ invite: "secret" }]);
 
     await userEvent.click(screen.getByRole("button", { name: LOGIN_COPY.sendLogin }));
     await waitFor(() => expect(push).toHaveBeenCalled());
-    expect(calls("/auth/email/request-code")).toEqual([{ email: "ivy@example.com", invite: "secret" }]);
-    expect(readConfirmContext()).toMatchObject({ invite: "secret", firstName: "Ivy", lastName: "Lee", login: false });
+    expect(calls("/auth/email/request-code")).toEqual([
+      { email: "ivy@example.com", invite: "secret" },
+    ]);
+    expect(readConfirmContext()).toMatchObject({
+      invite: "secret",
+      firstName: "Ivy",
+      lastName: "Lee",
+      login: false,
+    });
   });
 
   it("keeps the Terms box when Flask cannot say whether an invitee agreed - and says so in the console", async () => {
@@ -196,7 +218,9 @@ describe("LoginScreen", () => {
   it("Xero's first render names no origin, so the server's HTML and hydration agree", () => {
     const html = renderToString(
       <ToastProvider>
-        <LoginScreen arrival={readArrival(new URLSearchParams("invite=secret&email=ivy%40example.com"), {})} />
+        <LoginScreen
+          arrival={readArrival(new URLSearchParams("invite=secret&email=ivy%40example.com"), {})}
+        />
       </ToastProvider>,
     );
     const href = /href="([^"]*xero_auth[^"]*)"/.exec(html)?.[1].replace(/&amp;/g, "&");
@@ -205,7 +229,8 @@ describe("LoginScreen", () => {
 
   it("shows what Flask flashed on the way here", async () => {
     flask({
-      "/auth/notices": () => json({ notices: [{ category: "info", message: "Please log in to access this page." }] }),
+      "/auth/notices": () =>
+        json({ notices: [{ category: "info", message: "Please log in to access this page." }] }),
     });
     show("flash=signed.value");
 

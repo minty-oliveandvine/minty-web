@@ -12,7 +12,10 @@ import { profileApi } from "@/features/profile/api/profile";
 const fetchMock = vi.fn<typeof fetch>();
 const PROFILE = { user: { name: "Olive Vine", initials: "OV" } };
 const answer = () =>
-  new Response(JSON.stringify(PROFILE), { status: 200, headers: { "Content-Type": "application/json" } });
+  new Response(JSON.stringify(PROFILE), {
+    status: 200,
+    headers: { "Content-Type": "application/json" },
+  });
 
 /** Every call's URL, method and parsed body. */
 const calls = () =>
@@ -56,7 +59,12 @@ describe("the profile adapter", () => {
         body: { first_name: "Olive", email: "o@v.test" },
         entityHeader: null,
       },
-      { url: `${env.PETTY_CASH_URL}/api/me/profile`, method: "PATCH", body: { last_name: "Vine" }, entityHeader: null },
+      {
+        url: `${env.PETTY_CASH_URL}/api/me/profile`,
+        method: "PATCH",
+        body: { last_name: "Vine" },
+        entityHeader: null,
+      },
     ]);
   });
 

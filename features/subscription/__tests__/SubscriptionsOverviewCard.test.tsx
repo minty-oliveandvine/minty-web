@@ -20,8 +20,7 @@ function serve(body: unknown, status = 200) {
   );
 }
 
-const card = () =>
-  within(screen.getByRole("region", { name: "Subscriptions Overview" }));
+const card = () => within(screen.getByRole("region", { name: "Subscriptions Overview" }));
 
 describe("SubscriptionsOverviewCard", () => {
   beforeEach(() => {

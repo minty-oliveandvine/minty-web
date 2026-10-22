@@ -186,7 +186,9 @@ describe("errorSentence (through apiFetch)", () => {
     // owner 2026-10-21: one shared module (@minty/shared/apiClient) - any string in `error` was shown as it stood
     expect((await failure(json(409, { error: "invalid_state" }))).message).toBe(HOUSE_FALLBACK);
     expect((await failure(json(422, { detail: "Nope." }))).message).toBe(HOUSE_FALLBACK);
-    expect((await failure(json(400, { error: "<b>Bad</b> request here" }))).message).toBe(HOUSE_FALLBACK);
+    expect((await failure(json(400, { error: "<b>Bad</b> request here" }))).message).toBe(
+      HOUSE_FALLBACK,
+    );
   });
 
   it("a text body is kept as the error's body, with the fallback sentence", async () => {

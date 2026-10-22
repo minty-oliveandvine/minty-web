@@ -15,17 +15,28 @@ import { _setViewerLoaderForTests } from "@/lib/viewer";
 import { LIST } from "@/features/entities/__fixtures__/entities";
 import type { EntityRow } from "@/features/entities/api/entities";
 import { moduleChoices } from "@/features/entities/lib/moduleChoice";
-import { MODULE_CHOICE_COPY, ModuleChoiceScreen } from "@/features/entities/routes/ModuleChoiceScreen";
+import {
+  MODULE_CHOICE_COPY,
+  ModuleChoiceScreen,
+} from "@/features/entities/routes/ModuleChoiceScreen";
 
 const TOKEN = "h.eyJ1c2VyX2lkIjoidTEifQ.s";
 const ID = "360812e1-9f94-46a3-aa31-347e21afde8e";
 const fetchMock = vi.fn<typeof fetch>();
 const navigate = vi.fn<(url: string) => void>();
 
-const row = (modules: string[]): EntityRow => ({ ...LIST.entities[0], id: ID, name: "Olive & Vine", modules });
+const row = (modules: string[]): EntityRow => ({
+  ...LIST.entities[0],
+  id: ID,
+  name: "Olive & Vine",
+  modules,
+});
 const serve = (entities: EntityRow[], status = 200) =>
   fetchMock.mockResolvedValueOnce(
-    new Response(JSON.stringify({ entities, notices: [] }), { status, headers: { "Content-Type": "application/json" } }),
+    new Response(JSON.stringify({ entities, notices: [] }), {
+      status,
+      headers: { "Content-Type": "application/json" },
+    }),
   );
 const enter = (path: string) =>
   `${env.PETTY_CASH_URL}/entity/${ID}/enter?token=${encodeURIComponent(TOKEN)}&next=${encodeURIComponent(path)}`;
@@ -36,7 +47,11 @@ describe("moduleChoices", () => {
   it("offers the modules switched on, each entered through Minty", () => {
     expect(moduleChoices(ID, ["PAYMENT_REQUEST", "PETTY_CASH"])).toEqual([
       { code: "PETTY_CASH", label: "Petty Cash", href: pettyCashWebUrl(ID) },
-      { code: "PAYMENT_REQUEST", label: "Payment Request", href: enter(`/entity/${ID}/payment-request`) },
+      {
+        code: "PAYMENT_REQUEST",
+        label: "Payment Request",
+        href: enter(`/entity/${ID}/payment-request`),
+      },
     ]);
     expect(moduleChoices(ID, [])).toEqual([]);
   });
@@ -62,12 +77,17 @@ describe("ModuleChoiceScreen", () => {
     serve([row(["PETTY_CASH", "PAYMENT_REQUEST"])]);
     render(<ModuleChoiceScreen entityId={ID} entityName="Olive & Vine" />);
 
-    expect(await screen.findByRole("link", { name: "Petty Cash" })).toHaveAttribute("href", pettyCashWebUrl(ID));
+    expect(await screen.findByRole("link", { name: "Petty Cash" })).toHaveAttribute(
+      "href",
+      pettyCashWebUrl(ID),
+    );
     expect(screen.getByRole("link", { name: "Payment Request" })).toHaveAttribute(
       "href",
       enter(`/entity/${ID}/payment-request`),
     );
-    expect(screen.getByRole("heading", { level: 1, name: MODULE_CHOICE_COPY.title })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { level: 1, name: MODULE_CHOICE_COPY.title }),
+    ).toBeInTheDocument();
     expect(screen.getByText("Olive & Vine")).toBeInTheDocument();
     expect(navigate).not.toHaveBeenCalled();
   });
@@ -76,7 +96,9 @@ describe("ModuleChoiceScreen", () => {
     serve([row(["PAYMENT_REQUEST"])]);
     render(<ModuleChoiceScreen entityId={ID} entityName="Olive & Vine" />);
 
-    await waitFor(() => expect(navigate).toHaveBeenCalledWith(enter(`/entity/${ID}/payment-request`)));
+    await waitFor(() =>
+      expect(navigate).toHaveBeenCalledWith(enter(`/entity/${ID}/payment-request`)),
+    );
   });
 
   it("no module: says so, with the way to its module settings", async () => {

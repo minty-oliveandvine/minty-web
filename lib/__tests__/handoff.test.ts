@@ -43,7 +43,9 @@ describe("handoffUrl", () => {
   });
 
   it("takes the origin it is given - the proxy runs on the server", () => {
-    const target = new URL(handoffUrl("/subscription", undefined, "https://pr-feat-x-my.dailyminty.com"));
+    const target = new URL(
+      handoffUrl("/subscription", undefined, "https://pr-feat-x-my.dailyminty.com"),
+    );
     expect(target.searchParams.get("return_origin")).toBe("https://pr-feat-x-my.dailyminty.com");
   });
 });

@@ -303,9 +303,7 @@ export function failedLabel(date: string | null, today: Date = new Date()): stri
   const raised = (date ?? "").trim();
   const match = /^(\d{1,2} [A-Za-z]{3}) (\d{4})$/.exec(raised);
   if (!match) return raised ? `${FAILED} ${raised}` : FAILED;
-  return Number(match[2]) === today.getFullYear()
-    ? `${FAILED} ${match[1]}`
-    : `${FAILED} ${raised}`;
+  return Number(match[2]) === today.getFullYear() ? `${FAILED} ${match[1]}` : `${FAILED} ${raised}`;
 }
 
 export function invoiceLines(invoices: InvoiceRow[], today: Date = new Date()): InvoiceLine[] {
@@ -349,7 +347,8 @@ export type RecentInvoice = {
 };
 
 export function invoiceStatus(inv: InvoiceRow): { label: string; tone: StatusTone } {
-  if (FAILED_INVOICE_STATUSES.includes(inv.status)) return { label: "Payment failed", tone: "danger" };
+  if (FAILED_INVOICE_STATUSES.includes(inv.status))
+    return { label: "Payment failed", tone: "danger" };
   if (inv.status === "paid") return { label: inv.status_label || "Paid", tone: "success" };
   return { label: inv.status_label || inv.status, tone: "neutral" };
 }
@@ -507,11 +506,7 @@ export function overview(list: PayerAccount | null, today: Date): Overview {
 export type StatusTone = "success" | "warning" | "danger" | "neutral";
 
 export type AttentionKind =
-  | "payment_failed"
-  | "card_expired"
-  | "no_card"
-  | "card_expiring"
-  | "trial_ending";
+  "payment_failed" | "card_expired" | "no_card" | "card_expiring" | "trial_ending";
 
 /** One Page banner: the issue, then the action (Part 11), and where the action goes. */
 export type AttentionItem = {
@@ -607,9 +602,16 @@ export function attentionItems(
 
   const soon = entities
     .flatMap((entity) =>
-      trialing(entity).map((trial) => ({ entity, trial, left: daysFromToday(trial.date_iso, today) })),
+      trialing(entity).map((trial) => ({
+        entity,
+        trial,
+        left: daysFromToday(trial.date_iso, today),
+      })),
     )
-    .filter((t): t is typeof t & { left: number } => t.left !== null && t.left >= 0 && t.left <= TRIAL_SOON_DAYS)
+    .filter(
+      (t): t is typeof t & { left: number } =>
+        t.left !== null && t.left >= 0 && t.left <= TRIAL_SOON_DAYS,
+    )
     .sort((a, b) => a.left - b.left);
   if (soon.length > 0) {
     const [first] = soon;
@@ -640,7 +642,8 @@ export function positionPill(
   if (modules.some((m) => m.status === "active" || m.status === "cancelled")) {
     return { label: UP_TO_DATE, tone: "success" };
   }
-  if (modules.some((m) => m.status === "trialing")) return { label: ON_FREE_TRIAL, tone: "neutral" };
+  if (modules.some((m) => m.status === "trialing"))
+    return { label: ON_FREE_TRIAL, tone: "neutral" };
   return { label: NO_ACTIVE_SUBSCRIPTIONS, tone: "neutral" };
 }
 
@@ -681,21 +684,45 @@ export function moduleRows(list: PayerAccount | null): ModuleSummaryRow[] {
       const of = (s: PortalModule["status"]) => modules.filter((m) => m.status === s);
       const states: ModuleRowState[] = [];
       const failed = of("past_due");
-      if (failed.length) states.push({ key: "failed", label: PAYMENT_FAILED_PILL, tone: "danger", count: companies(failed.length) });
-      const trials = of("trialing").sort((a, b) => (a.date_iso ?? "").localeCompare(b.date_iso ?? ""));
+      if (failed.length)
+        states.push({
+          key: "failed",
+          label: PAYMENT_FAILED_PILL,
+          tone: "danger",
+          count: companies(failed.length),
+        });
+      const trials = of("trialing").sort((a, b) =>
+        (a.date_iso ?? "").localeCompare(b.date_iso ?? ""),
+      );
       if (trials.length) {
         const soonest = trials.find((t) => t.date)?.date;
         states.push({
           key: "trial",
-          label: !soonest ? "Free trial" : trials.length === 1 ? `Trial ends ${soonest}` : `First trial ends ${soonest}`,
+          label: !soonest
+            ? "Free trial"
+            : trials.length === 1
+              ? `Trial ends ${soonest}`
+              : `First trial ends ${soonest}`,
           tone: "warning",
           count: companies(trials.length),
         });
       }
       const cancelling = of("cancelled");
-      if (cancelling.length) states.push({ key: "cancelling", label: "Cancelling", tone: "warning", count: companies(cancelling.length) });
+      if (cancelling.length)
+        states.push({
+          key: "cancelling",
+          label: "Cancelling",
+          tone: "warning",
+          count: companies(cancelling.length),
+        });
       const active = of("active");
-      if (active.length) states.push({ key: "active", label: "Active", tone: "success", count: companies(active.length) });
+      if (active.length)
+        states.push({
+          key: "active",
+          label: "Active",
+          tone: "success",
+          count: companies(active.length),
+        });
       return { code, name, states };
     })
     .filter((row) => row.states.length > 0);

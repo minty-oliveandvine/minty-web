@@ -61,7 +61,9 @@ export function settingsTabs(
     tabs.push(tab("Petty Cash Settings", null, pettyCashWebUrl(company.id, page)));
   }
   if (access.billing) {
-    tabs.push(tab("Payment Request Settings", null, `${flask}/entity/${id}/settings/payment-request`));
+    tabs.push(
+      tab("Payment Request Settings", null, `${flask}/entity/${id}/settings/payment-request`),
+    );
   }
   tabs.push(tab(SETTINGS_TAB_LABELS.modules, "modules", hub("modules")));
   return tabs;

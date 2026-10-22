@@ -14,7 +14,11 @@
  * the query string or the body (`entity`), as Flask's routes/portal.py did.
  */
 
-import { fetchAllSubscriptions, UNEXPECTED_SHAPE, type AllSubscriptions } from "@minty/shared/portal";
+import {
+  fetchAllSubscriptions,
+  UNEXPECTED_SHAPE,
+  type AllSubscriptions,
+} from "@minty/shared/portal";
 
 import { ApiError, apiFetch, apiFetchBlob, billingJson } from "@/lib/apiClient";
 

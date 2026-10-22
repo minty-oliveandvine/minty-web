@@ -84,7 +84,7 @@ run" below).
 - [ ] The sidebar panel and the `/profile` page show identical content for the same person/company
       (they share one body).
 - [ ] **DB:** `SELECT email, first_name, last_name, username FROM pettycashv3.user WHERE id =
-      '<id>';` — Save writes only the changed field(s) to `email`/`first_name`/`last_name`;
+'<id>';` — Save writes only the changed field(s) to `email`/`first_name`/`last_name`;
       `username` only moves too when it currently mirrors the old email (sign-in/OTP reads
       `username`, password reset reads `email` — a stale mismatch between the two is the bug to
       watch for).
@@ -103,10 +103,10 @@ run" below).
       blocks a second send until it expires.
 - [ ] Cancelling a pending invitation asks for confirmation first.
 - [ ] **DB:** `SELECT status, role, invited_by FROM pettycashv3.invitation WHERE entity_id =
-      '<id>' ORDER BY created_at DESC;` — a new invite inserts `status = 'pending'`; cancelling
+'<id>' ORDER BY created_at DESC;` — a new invite inserts `status = 'pending'`; cancelling
       updates `status` on the same row (never deletes it); Resend rotates `token`, same row.
 - [ ] **DB:** `SELECT role FROM pettycashv3.user_entity WHERE user_id = '<id>' AND entity_id =
-      '<entity_id>';` — a role change updates this row in place; Remove deletes it outright
+'<entity_id>';` — a role change updates this row in place; Remove deletes it outright
       (composite key `user_id, entity_id` — confirm the row is actually gone, not just hidden).
 
 ## Settings — Entity & Integration tab (`company-settings.md`)
@@ -130,7 +130,7 @@ run" below).
 - [ ] Change something, then Logout from the menu - it asks (a button, so the guard is explicit
       there); _Go Back_ must leave you signed IN, still on the page.
 - [ ] **DB:** `SELECT name, country_code, currency_id, status, xero_org_id,
-      connected_by_user_id FROM pettycashv3.entities WHERE id = '<id>';` — a details save
+connected_by_user_id FROM pettycashv3.entities WHERE id = '<id>';` — a details save
       touches only `name`/`country_code`/`currency_id` (plus `currency_format`, derived);
       Disconnect sets `status = 'disconnected'` and nulls `xero_org_id`/`connected_by_user_id`
       — and clears that user's Xero token columns on `pettycashv3.user` too, but only when no
@@ -162,7 +162,7 @@ run" below).
 - [ ] As a non-admin, or an admin who isn't the payer, the cards render with no CTA and a line
       naming who the payer is (or that only admins can change modules).
 - [ ] **DB:** `SELECT function_code, phase, trial_end, payer_user_id, app_access_until FROM
-      pettycashv3.entity_module_subscription WHERE entity_id = '<id>';` — a confirmed trial
+pettycashv3.entity_module_subscription WHERE entity_id = '<id>';` — a confirmed trial
       start inserts/updates the row for that `function_code` and projects into
       `pettycashv3.entity_function_map` (`is_enabled`, `enabled_at`) — that second table is
       what actually gates app access, so check both, not just the subscription row. Since
@@ -177,8 +177,8 @@ run" below).
       Minty" etc.) naming the company and the modules chosen, and posts nothing. Its Confirm
       opens Billing Accounts; that Confirm posts **two** requests in order —
       `activate-subscription` with `{account}` and **no `codes`**, then the ticked change's own
-      action — and the row lands on its 05·C result, whose button still reads *Back to Manage
-      Subscriptions*.
+      action — and the row lands on its 05·C result, whose button still reads _Back to Manage
+      Subscriptions_.
 - [ ] **It charges when the tick does.** Tick a LAPSED module and activate: the card is charged
       (`restart-billing`), which is what the modal said. Tick a running trial instead and
       nothing is charged (`authorize-billing`).
@@ -186,7 +186,7 @@ run" below).
       `pettycashv3.subscription_invoice` row for that module, not two — the activation sends no
       `codes`, so only the apply pass buys it back.
 - [ ] Force a decline on the apply pass (Stripe test card): the company is left **with** its
-      subscriber and the ticks still pending, and 06·B's *Try again now* posts only the charging
+      subscriber and the ticks still pending, and 06·B's _Try again now_ posts only the charging
       action — never `activate-subscription` a second time.
 - [ ] Make the activation itself fail (402): **nothing** else is posted, no result appears, and
       the ticks are untouched.
@@ -278,7 +278,7 @@ run" below).
       dismiss one via Escape or the backdrop, then reload — it reappears (not marked seen);
       dismiss one via _Done_, then reload — it does not reappear.
 - [ ] **DB:** `SELECT status, from_user_id, to_user_id, responded_at, outcome_seen_at FROM
-      pettycashv3.subscription_transfer WHERE entity_id = '<id>' ORDER BY created_at DESC;` —
+pettycashv3.subscription_transfer WHERE entity_id = '<id>' ORDER BY created_at DESC;` —
       one row per offer throughout: Request inserts `status='pending'`; Withdraw/Decline/Accept
       all UPDATE that same row's `status`/`responded_at`, never insert a second one; _Done_ on
       an outcome dialog is what sets `outcome_seen_at`.
@@ -318,7 +318,7 @@ run" below).
       Stripe (`payment_methods.remove`) — no code path was found that deletes or updates the
       matching `pettycashv3.billing_account_payment_method` row. After removing a non-default
       card, check `SELECT * FROM pettycashv3.billing_account_payment_method WHERE
-      stripe_payment_method_id = '<pm_id>';` — if the row still reads back, that's a stale
+stripe_payment_method_id = '<pm_id>';` — if the row still reads back, that's a stale
       local row pointing at a card Stripe no longer holds; flag it rather than treat it as
       expected.
 - [ ] Open "New billing account" — try Save with either Billing Email or Billing Company blank;

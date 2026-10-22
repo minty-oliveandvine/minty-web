@@ -10,7 +10,10 @@ import { ApiError } from "@/lib/apiClient";
 import { setAuth } from "@/lib/auth";
 import { env } from "@/lib/env";
 
-import { fetchAllPayerSubscriptions, fetchPayerSubscriptions } from "@/features/subscription/api/payerPortal";
+import {
+  fetchAllPayerSubscriptions,
+  fetchPayerSubscriptions,
+} from "@/features/subscription/api/payerPortal";
 
 const fetchMock = vi.fn<typeof fetch>();
 const API = `${env.SUBSCRIPTION_API_URL}/api/me/subscriptions`;
@@ -36,7 +39,10 @@ function serve(...bodies: unknown[]) {
   for (const body of bodies) {
     fetchMock.mockImplementationOnce(
       async () =>
-        new Response(JSON.stringify(body), { status: 200, headers: { "Content-Type": "application/json" } }),
+        new Response(JSON.stringify(body), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
     );
   }
 }
@@ -113,7 +119,13 @@ describe("fetchPayerSubscriptions's query", () => {
 
   it("names q, sort, direction, page, per_page in that order; a blank search is no q", async () => {
     serve(page(1, 1, []), page(1, 1, []), page(1, 1, []));
-    await fetchPayerSubscriptions({ query: "  ", sort: "entity", direction: "desc", page: 2, perPage: 5 });
+    await fetchPayerSubscriptions({
+      query: "  ",
+      sort: "entity",
+      direction: "desc",
+      page: 2,
+      perPage: 5,
+    });
     await fetchPayerSubscriptions({ query: " Olive & Vine " });
     await fetchPayerSubscriptions();
     expect(urls()).toEqual([

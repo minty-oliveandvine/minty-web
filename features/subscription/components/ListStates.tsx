@@ -14,8 +14,7 @@ import {
   LIST_ROW,
 } from "@/features/subscription/components/listGrid";
 
-const CARD =
-  "flex flex-col items-center rounded-lg border border-line bg-card px-6 text-center";
+const CARD = "flex flex-col items-center rounded-lg border border-line bg-card px-6 text-center";
 const TITLE = "text-display-m font-bold text-ink";
 const BODY = "max-w-[640px] text-body-l text-ink-2";
 const BUTTON =
@@ -32,10 +31,7 @@ export function ListEmpty({ entityListHref }: { entityListHref: string }) {
         If you belong to a company that is already paid for, someone else is the subscriber — their
         name is on that company’s subscription page.
       </p>
-      <a
-        href={entityListHref}
-        className={`${BUTTON} mt-2 inline-flex items-center justify-center`}
-      >
+      <a href={entityListHref} className={`${BUTTON} mt-2 inline-flex items-center justify-center`}>
         Go to entity list
       </a>
     </div>
@@ -74,10 +70,7 @@ export function ListSkeleton({ rows = 3 }: { rows?: number }) {
   return (
     <ul className="flex flex-col gap-2" role="status" aria-label="Loading your subscriptions">
       {Array.from({ length: rows }).map((_, i) => (
-        <li
-          key={i}
-          className={`${LIST_GRID} ${LIST_ROW} animate-pulse bg-card`}
-        >
+        <li key={i} className={`${LIST_GRID} ${LIST_ROW} animate-pulse bg-card`}>
           <span className="h-5 w-[300px] max-w-full rounded bg-neutral-bg" />
           {[0, 1].map((cell) => (
             <span key={cell} className={`flex items-center gap-4 lg:gap-6 ${LIST_CELL}`}>

@@ -16,7 +16,12 @@ import { LeaveDialog } from "@/components/ui/LeaveDialog";
 import { useLeaveGuard } from "@minty/shared/leaveGuard";
 
 import { DetailsForm } from "@/features/company-settings/components/DetailsForm";
-import { LoadState, ReadOnlyNotice, SettingsCard, SettingsShell } from "@/features/company-settings/components/SettingsShell";
+import {
+  LoadState,
+  ReadOnlyNotice,
+  SettingsCard,
+  SettingsShell,
+} from "@/features/company-settings/components/SettingsShell";
 import { XeroCard, xeroConnectUrl } from "@/features/company-settings/components/XeroCard";
 import { XeroConflictDialog } from "@/features/company-settings/components/XeroConflictDialog";
 import { useDetailsDraft } from "@/features/company-settings/hooks/useDetailsDraft";
@@ -29,7 +34,8 @@ export const INTEGRATION_COPY = {
   detailsLead: "Its name, and the country and currency its reports use.",
   xero: "Xero",
   xeroLead: "Where the company's petty cash and payments are published.",
-  readOnly: "You have view-only access to these settings. Ask an Accountant or Admin to make changes.",
+  readOnly:
+    "You have view-only access to these settings. Ask an Accountant or Admin to make changes.",
 } as const;
 
 export function IntegrationScreen({
@@ -51,13 +57,27 @@ export function IntegrationScreen({
   const leave = useLeaveGuard(Boolean(page?.can_edit) && draft.dirty, draft.reset);
 
   return (
-    <SettingsShell company={shown} modules={page?.modules ?? null} tab="integration" title={INTEGRATION_COPY.title} lead={INTEGRATION_COPY.lead}>
+    <SettingsShell
+      company={shown}
+      modules={page?.modules ?? null}
+      tab="integration"
+      title={INTEGRATION_COPY.title}
+      lead={INTEGRATION_COPY.lead}
+    >
       {tab.status !== "ready" || !page ? (
-        <LoadState status={tab.status === "error" ? "error" : "loading"} error={tab.error} onRetry={tab.reload} />
+        <LoadState
+          status={tab.status === "error" ? "error" : "loading"}
+          error={tab.error}
+          onRetry={tab.reload}
+        />
       ) : (
         <>
           {page.can_edit ? null : <ReadOnlyNotice>{INTEGRATION_COPY.readOnly}</ReadOnlyNotice>}
-          <SettingsCard title={INTEGRATION_COPY.details} lead={INTEGRATION_COPY.detailsLead} readOnly={!page.can_edit}>
+          <SettingsCard
+            title={INTEGRATION_COPY.details}
+            lead={INTEGRATION_COPY.detailsLead}
+            readOnly={!page.can_edit}
+          >
             {/* The draft follows what Flask holds: a save or a disconnect resets the form to it. */}
             <DetailsForm
               page={page}
@@ -67,8 +87,16 @@ export function IntegrationScreen({
               onSave={(changes) => void tab.save(changes)}
             />
           </SettingsCard>
-          <SettingsCard title={INTEGRATION_COPY.xero} lead={INTEGRATION_COPY.xeroLead} readOnly={!page.can_edit}>
-            <XeroCard page={page} busy={tab.busy === "disconnect"} onDisconnect={() => setConfirming(true)} />
+          <SettingsCard
+            title={INTEGRATION_COPY.xero}
+            lead={INTEGRATION_COPY.xeroLead}
+            readOnly={!page.can_edit}
+          >
+            <XeroCard
+              page={page}
+              busy={tab.busy === "disconnect"}
+              onDisconnect={() => setConfirming(true)}
+            />
           </SettingsCard>
         </>
       )}
@@ -103,8 +131,8 @@ export function IntegrationScreen({
           onBack={() => setConfirming(false)}
         >
           <p className="mt-6 text-body-l leading-snug">
-            Nothing more is published to Xero until you connect again, and the Xero accounts and contacts kept for this company
-            are cleared.
+            Nothing more is published to Xero until you connect again, and the Xero accounts and
+            contacts kept for this company are cleared.
           </p>
         </ConfirmDialog>
       ) : null}

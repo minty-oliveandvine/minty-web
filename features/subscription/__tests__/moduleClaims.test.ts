@@ -32,7 +32,7 @@ describe("the stored token's module claims", () => {
 });
 
 describe("module claims with a claim that is not a boolean", () => {
-  it("treats anything but a real boolean as on - the string \"false\", 0 and null included", () => {
+  it('treats anything but a real boolean as on - the string "false", 0 and null included', () => {
     setAuth(jwt({ petty_cash_enabled: "false", billing_enabled: 0 }), "e1", "Co");
     expect(getModuleClaims()).toEqual({ pettyCash: true, billing: true });
     setAuth(jwt({ petty_cash_enabled: null, billing_enabled: "no" }), "e1", "Co");

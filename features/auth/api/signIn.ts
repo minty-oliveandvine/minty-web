@@ -27,7 +27,10 @@ async function call(path: string, init: RequestInit = {}): Promise<FlaskAnswer> 
     res = await fetch(`${env.PETTY_CASH_URL}${path}`, {
       ...init,
       credentials: "omit",
-      headers: { Accept: "application/json", ...(init.body ? { "Content-Type": "application/json" } : {}) },
+      headers: {
+        Accept: "application/json",
+        ...(init.body ? { "Content-Type": "application/json" } : {}),
+      },
     });
   } catch (err) {
     console.error(`[sign-in] ${path} could not be reached`, err);
@@ -40,13 +43,19 @@ async function call(path: string, init: RequestInit = {}): Promise<FlaskAnswer> 
     // a non-JSON answer: only its status says anything
   }
   if (!res.ok || body.status === "error") {
-    const sentence = typeof body.message === "string" ? body.message : typeof body.error === "string" ? body.error : "";
+    const sentence =
+      typeof body.message === "string"
+        ? body.message
+        : typeof body.error === "string"
+          ? body.error
+          : "";
     throw new ApiError(res.status, sentence || HOUSE_FALLBACK, body);
   }
   return body;
 }
 
-const post = (path: string, json: unknown) => call(path, { method: "POST", body: JSON.stringify(json) });
+const post = (path: string, json: unknown) =>
+  call(path, { method: "POST", body: JSON.stringify(json) });
 
 /**
  * Email a six-digit code. `login` asks Flask to refuse an address with no account (404 "Please
@@ -54,7 +63,11 @@ const post = (path: string, json: unknown) => call(path, { method: "POST", body:
  * The invite rides along so Flask refuses an address the invitation was not sent to - before a
  * code goes to an inbox that cannot use it.
  */
-export async function requestCode(args: { email: string; login: boolean; invite?: string }): Promise<void> {
+export async function requestCode(args: {
+  email: string;
+  login: boolean;
+  invite?: string;
+}): Promise<void> {
   await post("/auth/email/request-code", {
     email: args.email,
     ...(args.login ? { mode: "login" } : {}),
@@ -147,7 +160,10 @@ export async function signUpTerms(): Promise<LegalDocumentBody> {
   try {
     return await fetchLegalDocument(TERMS, live.terms_version);
   } catch (err) {
-    console.error(`[sign-in] Flask names Terms ${live.terms_version}, which this app does not hold`, err);
+    console.error(
+      `[sign-in] Flask names Terms ${live.terms_version}, which this app does not hold`,
+      err,
+    );
     throw new ApiError(500, HOUSE_FALLBACK, live);
   }
 }

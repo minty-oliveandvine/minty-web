@@ -81,7 +81,9 @@ test.describe("module settings page", () => {
     // dashboard on the Petty Cash app, through Flask's hand-off (Step 5, 2026-10-19)
     await expect(page.getByRole("link", { name: "Back" })).toHaveAttribute(
       "href",
-      new RegExp(`/entity/${c.entityId}/enter\\?token=.+&next=%2Fhandoff%2Fpetty-cash-web%3Fentity_id%3D${c.entityId}(%26|$)`),
+      new RegExp(
+        `/entity/${c.entityId}/enter\\?token=.+&next=%2Fhandoff%2Fpetty-cash-web%3Fentity_id%3D${c.entityId}(%26|$)`,
+      ),
     );
     // exact: the route announcer also reads the tab title "Modules - <company>"
     await expect(page.getByText(c.entityName, { exact: true })).toBeVisible();

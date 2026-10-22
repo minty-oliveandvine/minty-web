@@ -23,7 +23,5 @@ const serverEmpty = () => "";
 export function PortalChrome() {
   const entityName = useClientValue(readEntityName, serverEmpty);
 
-  return (
-    <AppHeader lead={<PortalBackSlot />} companyName={entityName || "Subscriptions"} />
-  );
+  return <AppHeader lead={<PortalBackSlot />} companyName={entityName || "Subscriptions"} />;
 }

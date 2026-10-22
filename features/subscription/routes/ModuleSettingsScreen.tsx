@@ -146,7 +146,11 @@ export function ModuleSettingsScreen(args: ModuleSettingsScreenProps) {
                 {m.status === "error" && (
                   <div className="mt-10 text-center" role="alert">
                     <p className="text-sm text-danger">{m.error}</p>
-                    <button type="button" className="mt-3 min-h-11 rounded-lg px-2 text-body-m font-semibold text-link underline hover:bg-hover" onClick={m.reload}>
+                    <button
+                      type="button"
+                      className="mt-3 min-h-11 rounded-lg px-2 text-body-m font-semibold text-link underline hover:bg-hover"
+                      onClick={m.reload}
+                    >
                       Try again
                     </button>
                   </div>

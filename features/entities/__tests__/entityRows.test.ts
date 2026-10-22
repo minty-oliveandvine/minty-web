@@ -129,7 +129,11 @@ describe("entityRows", () => {
 
   it("every reason in one list: Needs you runs most urgent first (a failed payment above a trial ending), last used within the same reason; a trial weeks away stays out", () => {
     const groups = groupRows(sortRows(NEEDS_YOU.entities));
-    expect(groups.needsYou.map((r) => r.id)).toEqual(["e-payment-failed", "e-trial-soon", "e-scenario"]);
+    expect(groups.needsYou.map((r) => r.id)).toEqual([
+      "e-payment-failed",
+      "e-trial-soon",
+      "e-scenario",
+    ]);
     expect(groups.others.map((r) => r.id)).toContain("e-trial-later");
   });
 
@@ -154,7 +158,9 @@ describe("entityRows", () => {
     expect(lastAccessedLabel(new Date(2026, 11, 31, 12, 0).toISOString())).toBe("31 Dec 12:00 PM");
     expect(lastAccessedLabel(null)).toBeNull();
     expect(lastAccessedLabel("not a date")).toBeNull();
-    expect(lastOpenedLabel("9 Jun 5:42 PM", "Olive Vine")).toBe("Last opened 9 Jun 5:42 PM by Olive Vine");
+    expect(lastOpenedLabel("9 Jun 5:42 PM", "Olive Vine")).toBe(
+      "Last opened 9 Jun 5:42 PM by Olive Vine",
+    );
     expect(lastOpenedLabel("9 Jun 5:42 PM", null)).toBe("Last opened 9 Jun 5:42 PM");
   });
 

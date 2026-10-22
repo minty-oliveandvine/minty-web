@@ -292,9 +292,7 @@ function PageForm(props: FormProps) {
           will offer first.
         </p>
       )}
-      <p className="text-body-s leading-relaxed text-ink-2">
-        {CARD_MANDATE}
-      </p>
+      <p className="text-body-s leading-relaxed text-ink-2">{CARD_MANDATE}</p>
       {form.error && (
         <p
           role="alert"
@@ -338,9 +336,9 @@ function SheetForm(props: FormProps) {
           is rendered by Stripe, in Stripe's iframe, and never reaches this app. */}
       <div className={SHEET_FIELD}>
         <span className={SHEET_LABEL}>
-            Payment method
-            <RequiredMark />
-          </span>
+          Payment method
+          <RequiredMark />
+        </span>
         <div className="rounded-lg border border-line p-4">
           <PaymentElement
             onReady={form.onReady}
@@ -414,10 +412,7 @@ export function CardCaptureForm({
     // No key means no form: the API said the account has no Stripe configured (or a fixture is
     // being served), and an empty box would read as a broken page.
     return (
-      <p
-        role="status"
-        className={look === "sheet" ? SHEET_LOADING : "text-body-l text-ink-muted"}
-      >
+      <p role="status" className={look === "sheet" ? SHEET_LOADING : "text-body-l text-ink-muted"}>
         {STRIPE_NOTE}
       </p>
     );
@@ -512,9 +507,7 @@ export function CardCapturePanel({
     return (
       <p
         role="status"
-        className={
-          look === "sheet" ? SHEET_LOADING : "py-6 text-center text-body-l text-ink-muted"
-        }
+        className={look === "sheet" ? SHEET_LOADING : "py-6 text-center text-body-l text-ink-muted"}
       >
         {OPENING_CARD_FORM}
       </p>

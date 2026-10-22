@@ -40,12 +40,12 @@ describe("calendar days", () => {
 });
 
 describe("calendar days' edges", () => {
-  it("reckons in Asia/Hong_Kong, and a trial is \"soon\" within 7 days", () => {
+  it('reckons in Asia/Hong_Kong, and a trial is "soon" within 7 days', () => {
     expect(HK_TIME_ZONE).toBe("Asia/Hong_Kong");
     expect(TRIAL_SOON_DAYS).toBe(7);
   });
 
-  it("the Hong Kong day is \"\" for an unreadable instant, and pads month and day", () => {
+  it('the Hong Kong day is "" for an unreadable instant, and pads month and day', () => {
     expect(hkIsoDate(new Date("nope"))).toBe("");
     expect(hkIsoDate(new Date("2026-01-04T00:00:00Z"))).toBe("2026-01-04");
   });

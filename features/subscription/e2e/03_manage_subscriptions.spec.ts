@@ -222,7 +222,9 @@ test.describe("manage subscriptions", () => {
     // Nothing ticked: the panel offers NO act at all (the user, 2026-10-08 - the button must
     // not sit under "No pending changes").
     await expect(panel.getByRole("button", { name: /^Activate Subscription/ })).toHaveCount(0);
-    await expect(panel.getByRole("button", { name: /^Confirm Subscription Change/ })).toHaveCount(0);
+    await expect(panel.getByRole("button", { name: /^Confirm Subscription Change/ })).toHaveCount(
+      0,
+    );
 
     // Ticked (M45's cancelling Payment Request, restored - the same tick the 06 test uses), it
     // is Activate Subscription that appears in Confirm Subscription Change's slot: a company
@@ -230,7 +232,9 @@ test.describe("manage subscriptions", () => {
     await row.getByRole("checkbox", { name: "Payment Request subscription" }).click();
     const activate = panel.getByRole("button", { name: /^Activate Subscription/ });
     await expect(activate).toBeVisible({ timeout: 15_000 });
-    await expect(panel.getByRole("button", { name: /^Confirm Subscription Change/ })).toHaveCount(0);
+    await expect(panel.getByRole("button", { name: /^Confirm Subscription Change/ })).toHaveCount(
+      0,
+    );
     await activate.click();
 
     // The SAME section-06 modal a change asks in (the user, 2026-10-08), word for word, then
@@ -411,7 +415,9 @@ test.describe("manage subscriptions", () => {
       0,
     );
     await restore.click();
-    await expect(opened.getByRole("button", { name: /^Confirm Subscription Change/ })).toBeVisible();
+    await expect(
+      opened.getByRole("button", { name: /^Confirm Subscription Change/ }),
+    ).toBeVisible();
 
     // 06·B: leaving with the tick pending asks first - Go Back stays, Discard changes goes.
     await opened.getByRole("button", { name: "Close Mino Market Limited" }).click();

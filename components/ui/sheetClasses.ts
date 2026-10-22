@@ -27,8 +27,7 @@ export const SHEET_INPUT =
 export const SHEET_INPUT_OK =
   "border-line-input focus:border-line-selected focus:ring-2 focus:ring-line-selected/25";
 /** `.billing-input.is-invalid` - the border AND the message under it; colour alone is no signal. */
-export const SHEET_INPUT_BAD =
-  "border-danger focus:ring-2 focus:ring-danger/25";
+export const SHEET_INPUT_BAD = "border-danger focus:ring-2 focus:ring-danger/25";
 /** `.billing-fielderror` */
 export const SHEET_FIELD_ERROR = "mt-1.5 text-label leading-[1.4] text-danger";
 /** `.billing-error` - half a point larger than the mandate: it is read once, under pressure. */

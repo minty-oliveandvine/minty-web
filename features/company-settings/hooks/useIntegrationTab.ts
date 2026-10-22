@@ -38,15 +38,24 @@ export type IntegrationTab = {
   moveError: string;
   dismissConflict: () => void;
   reload: () => void;
-  save: (changes: { name?: string; country_code?: string; currency_id?: string }) => Promise<boolean>;
+  save: (changes: {
+    name?: string;
+    country_code?: string;
+    currency_id?: string;
+  }) => Promise<boolean>;
   disconnect: () => Promise<boolean>;
   /** Free the organisation on `holderId`. True when it is free and Xero may be entered. */
   move: (holderId: string) => Promise<boolean>;
 };
 
-const message = (err: unknown) => (err instanceof ApiError ? err.message : "Something went wrong on my end. Mind trying again?");
+const message = (err: unknown) =>
+  err instanceof ApiError ? err.message : "Something went wrong on my end. Mind trying again?";
 
-export function useIntegrationTab(entityId: string, flash: string | null, conflictToken: string | null): IntegrationTab {
+export function useIntegrationTab(
+  entityId: string,
+  flash: string | null,
+  conflictToken: string | null,
+): IntegrationTab {
   const { showToast } = useToast();
   const router = useRouter();
   const pathname = usePathname();

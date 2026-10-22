@@ -7,7 +7,8 @@
 
 // Hong Kong's calendar day, written with Intl here rather than @minty/shared/dates: the Playwright
 // spec 07 reads this fixture, and Playwright will not load the package's .ts source.
-const hkDay = (d: Date) => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Hong_Kong" }).format(d);
+const hkDay = (d: Date) =>
+  new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Hong_Kong" }).format(d);
 
 import type { EntityListAnswer, EntityRow } from "@/features/entities/api/entities";
 

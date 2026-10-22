@@ -149,10 +149,7 @@ export function SubscriberPicker({
       <div className="flex flex-col gap-3">
         {loading ? (
           Array.from({ length: 3 }).map((_, i) => (
-            <div
-              key={i}
-              className="h-[62px] animate-pulse rounded-lg border border-line bg-sunk"
-            />
+            <div key={i} className="h-[62px] animate-pulse rounded-lg border border-line bg-sunk" />
           ))
         ) : candidates.length === 0 ? (
           <p className="rounded-lg border border-dashed border-line px-5 py-8 text-center text-sm text-ink-2">

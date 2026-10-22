@@ -38,7 +38,10 @@ describe("settingsTabs", () => {
   it("links the Module tab to this app's page from another tab", () => {
     const tabs = settingsTabs(COMPANY, ALL, "users");
     expect(tabs[0]).toEqual({ label: "Users", current: true });
-    expect(tabs[1]).toEqual({ label: "Entity & Integration", href: "/entity/360812e1/olive-and-vine/settings/integration" });
+    expect(tabs[1]).toEqual({
+      label: "Entity & Integration",
+      href: "/entity/360812e1/olive-and-vine/settings/integration",
+    });
     expect(tabs[4]).toEqual({
       label: "Modules",
       href: "/entity/360812e1/olive-and-vine/settings/modules",
@@ -47,12 +50,12 @@ describe("settingsTabs", () => {
 
   it("hides a module's settings tab when that module is off", () => {
     const labels = (tabs: ReturnType<typeof settingsTabs>) => tabs.map((t) => t.label);
-    expect(labels(settingsTabs(COMPANY, { pettyCash: false, billing: true }, "modules"))).not.toContain(
-      "Petty Cash Settings",
-    );
-    expect(labels(settingsTabs(COMPANY, { pettyCash: true, billing: false }, "modules"))).not.toContain(
-      "Payment Request Settings",
-    );
+    expect(
+      labels(settingsTabs(COMPANY, { pettyCash: false, billing: true }, "modules")),
+    ).not.toContain("Petty Cash Settings");
+    expect(
+      labels(settingsTabs(COMPANY, { pettyCash: true, billing: false }, "modules")),
+    ).not.toContain("Payment Request Settings");
   });
 
   it("escapes the id in Flask's links", () => {
@@ -63,6 +66,9 @@ describe("settingsTabs", () => {
 
 describe("settingsBackLink", () => {
   it("is labelled Back, with the Petty Cash app's dashboard as the new-tab fallback", () => {
-    expect(settingsBackLink(COMPANY.id)).toEqual({ href: pettyCashWebUrl(COMPANY.id), label: "Back" });
+    expect(settingsBackLink(COMPANY.id)).toEqual({
+      href: pettyCashWebUrl(COMPANY.id),
+      label: "Back",
+    });
   });
 });

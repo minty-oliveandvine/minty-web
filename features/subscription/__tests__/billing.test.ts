@@ -329,7 +329,9 @@ describe("the position (08-A as a Decision dashboard)", () => {
       ]);
     // 27 Oct is 7 days from Hong Kong's 20th (8 from UTC's 19th): a banner
     expect(kinds(attentionItems(endingOn("2026-10-27"), null, lateUtc))).toEqual(["trial_ending"]);
-    expect(attentionItems(endingOn("2026-10-27"), null, lateUtc)[0].text).toContain("ends in 7 days");
+    expect(attentionItems(endingOn("2026-10-27"), null, lateUtc)[0].text).toContain(
+      "ends in 7 days",
+    );
     expect(attentionItems(endingOn("2026-10-28"), null, lateUtc)).toEqual([]);
     // and the Subscription updates line says the same count
     expect(overview(endingOn("2026-10-22"), lateUtc).updates[0].emphasis).toBe("2 days");
@@ -340,7 +342,9 @@ describe("the position (08-A as a Decision dashboard)", () => {
     const calm = subscriptionsPage([entity("calm", [{ status: "active" }])]);
     expect(attentionItems(calm, account, TODAY)).toEqual([]);
     expect(positionPill([], calm)).toEqual({ label: "Up to date", tone: "success" });
-    expect(positionPill([], subscriptionsPage([entity("t", [{ status: "trialing", days: 20 }])]))).toEqual({
+    expect(
+      positionPill([], subscriptionsPage([entity("t", [{ status: "trialing", days: 20 }])])),
+    ).toEqual({
       label: "On free trial",
       tone: "neutral",
     });
@@ -374,9 +378,17 @@ describe("the position (08-A as a Decision dashboard)", () => {
     const list = subscriptionsPage([entity("calm", [{ status: "active" }])]);
     const none = attentionItems(list, { ...account, card: null }, TODAY);
     expect(none).toMatchObject([
-      { kind: "no_card", tone: "warning", action: { href: "/subscription/billing/add?account=acc-vine" } },
+      {
+        kind: "no_card",
+        tone: "warning",
+        action: { href: "/subscription/billing/add?account=acc-vine" },
+      },
     ]);
-    const expiring = attentionItems(list, { ...account, card: { ...account.card!, expires_soon: true } }, TODAY);
+    const expiring = attentionItems(
+      list,
+      { ...account, card: { ...account.card!, expires_soon: true } },
+      TODAY,
+    );
     expect(kinds(expiring)).toEqual(["card_expiring"]);
     // The accounts could not be read: no account, so nothing is said about a card.
     expect(attentionItems(list, null, TODAY)).toEqual([]);
@@ -431,7 +443,9 @@ describe("the position (08-A as a Decision dashboard)", () => {
     });
     // a declined charge is "Payment failed", Danger - open or given up
     expect(invoiceStatus(FAILED_INVOICES[0])).toEqual({ label: "Payment failed", tone: "danger" });
-    expect(invoiceStatus({ ...INVOICES[0], status: "uncollectible", status_label: "Unpaid" })).toEqual({
+    expect(
+      invoiceStatus({ ...INVOICES[0], status: "uncollectible", status_label: "Unpaid" }),
+    ).toEqual({
       label: "Payment failed",
       tone: "danger",
     });

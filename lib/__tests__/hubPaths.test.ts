@@ -41,7 +41,7 @@ describe("hub paths", () => {
     expect(companyPath(ID, "Co", "x")).toBe("/entity/360812e1/co/x");
   });
 
-  it("an empty or all-punctuation name reads as \"company\"; other scripts are kept, encoded", () => {
+  it('an empty or all-punctuation name reads as "company"; other scripts are kept, encoded', () => {
     expect(companyPath(ID, "")).toBe("/entity/360812e1/company");
     expect(companyPath(ID, "!!!")).toBe("/entity/360812e1/company");
     expect(companyPath("abc", "美心")).toBe(`/entity/abc/${encodeURIComponent("美心")}`);
@@ -49,7 +49,9 @@ describe("hub paths", () => {
 
   it("companySettingsPath defaults to the Module tab", () => {
     expect(companySettingsPath(ID, "Co")).toBe("/entity/360812e1/co/settings/modules");
-    expect(companySettingsPath(ID, "Co", "integration")).toBe("/entity/360812e1/co/settings/integration");
+    expect(companySettingsPath(ID, "Co", "integration")).toBe(
+      "/entity/360812e1/co/settings/integration",
+    );
   });
 
   it("COMPANY_SETTINGS_PATTERN matches one tab under a company, a trailing slash allowed", () => {
@@ -61,7 +63,14 @@ describe("hub paths", () => {
   });
 
   it("the open pages are the landing, sign-in, maintenance and the legal documents", () => {
-    expect([...OPEN_PATHS]).toEqual(["/landing", "/login", "/signup", "/maintenance", "/terms", "/privacy"]);
+    expect([...OPEN_PATHS]).toEqual([
+      "/landing",
+      "/login",
+      "/signup",
+      "/maintenance",
+      "/terms",
+      "/privacy",
+    ]);
   });
 
   it("isOpenPath takes the page and anything below it, never a mere prefix", () => {

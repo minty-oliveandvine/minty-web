@@ -63,7 +63,10 @@ const eslintConfig = defineConfig([
         },
         {
           type: "app-company-settings",
-          pattern: ["app/entities/*/*/settings/users/**/*", "app/entities/*/*/settings/integration/**/*"],
+          pattern: [
+            "app/entities/*/*/settings/users/**/*",
+            "app/entities/*/*/settings/integration/**/*",
+          ],
           mode: "full",
         },
         { type: "app-entities", pattern: "app/entities/**/*", mode: "full" },

@@ -56,7 +56,9 @@ export function EntityListScreen(args: UseEntityListArgs) {
           ) : (
             <div className="flex flex-col gap-4">
               <SelectionQuestion />
-              {list.searchable ? <CompanySearch value={list.query} onChange={list.setQuery} /> : null}
+              {list.searchable ? (
+                <CompanySearch value={list.query} onChange={list.setQuery} />
+              ) : null}
               {list.status === "loading" ? <EntityListLoading /> : null}
               {list.status === "error" ? (
                 <EntityListError message={list.error ?? ""} onRetry={list.retry} />

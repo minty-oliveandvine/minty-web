@@ -20,8 +20,7 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 function Part({ part }: { part: ResultPart }) {
   if (part.style === "plain") return <>{part.text}</>;
-  if (part.style === "strong")
-    return <strong className="font-bold text-ink">{part.text}</strong>;
+  if (part.style === "strong") return <strong className="font-bold text-ink">{part.text}</strong>;
   if (part.style === "company") return <span className="text-link">{part.text}</span>;
   return <span className={`font-bold ${PLAN_TONE[part.style]}`}>{part.text}</span>;
 }
@@ -47,7 +46,10 @@ export function ChangeDialog({
 }) {
   const { title } = modal;
   const bundle = title.module?.tone === "bundle";
-  const confirmLabel = pricedLabel(modal.confirmLabel, BILLS_NOTHING.has(modal.kind) ? null : monthly);
+  const confirmLabel = pricedLabel(
+    modal.confirmLabel,
+    BILLS_NOTHING.has(modal.kind) ? null : monthly,
+  );
   return (
     <ConfirmDialog
       title={

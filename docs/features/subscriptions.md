@@ -13,17 +13,17 @@ and minty-payment-request-web's portal components; the API contract in
 Reached from Minty — the entity list's _Subscriptions_ link (an unscoped token, for the portal)
 or a company's _Modules_ settings (a scoped token, for that company's page). Never a login here.
 
-| Page              | Path                                              | Today                                                                                                                                                                                                                                 | Step 4                                                                                                                                        |
-| ----------------- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| Index             | `/subscription`                                   | **built** (§15): "Subscription & Billing" — ONE billing account at a glance (its name as "Bill to", the payer's next billing date; clicking the card opens the billing-account sheet - which account, `?account=`, and _New billing account_ in place), the account's NAME moving a company between accounts (_Change billing account_), how many companies pay, how many trials end within 30 days, what needs attention (five lines, _Show more_ for the rest), and _Manage Subscription_ leading to the list. Where Minty's own link lands | —                                                                                                                                             |
-| Subscriptions     | `/subscription/subscriptions`                     | **built** (§10): every company the payer pays for in one scrolling list, a cell per module, search, the column sorts, the ⋮ menu, Start Trial from the list, the transfer-request cards, the payment-failed line — over a stubbed API | —                                                                                                                                             |
-| Change subscriber | `/subscription/subscriptions/subscriber?entity=…` | **built** (§14): the admins the bill could move to, each with its own quote, the current payer tagged, an invitation for someone new, _Request transfer_ → "Transfer requested"; the request already waiting and its _Withdraw request_ — over the live routes | the outcome modals (accepted / declined / expired) once the API reports how an outgoing request ended                                        |
-| Incoming          | `/subscription/subscriptions/incoming`            | **built** (§14): the requests offered to me — the company's modules as they are, no money line (a handover takes nothing at accept), the BILLING ACCOUNT the bill will go to and the card it charges (changeable among my accounts, or a new one opened in place in the billing-account sheet), _Confirm Subscription Transfer_ (sending that account) landing on the list's row, _Decline_; "No requests waiting" — over the live routes | —                                                                                                                                             |
-| Billing           | `/subscription/billing?account=`                  | **built** (§15): ONE billing account's profile — who it bills (name, address, email) and _Change billing details_, its next bill (the date, and the amount it will charge - estimated, "HKD 1,500"), its cards with the one it charges pinned first (two, then _Show more_) and its _Update card_ menu (charge this card / edit / remove), _+ Add payment method_ onto it, its invoices 10 / 50 / 100 to a page, each previewed from its Inv# (view-only, drawn by pdf.js), downloading as our own PDF (Figma 09-A) and its billing breakdown as a CSV — over the live routes | — |
-| Add / edit a card | `/subscription/billing/add?account=`, `…/billing/edit?card=&account=` | **built** (§15): Stripe's own card fields on a SetupIntent (08-Y) - the card goes ON the account - and the name and expiry of a saved card (08-D) | —                                                                                                                                             |
-| Billing details   | `/subscription/billing/details?account=`          | **built** (§15): 08-C — the account's billing company and email, and the address in Stripe's own form (the billing address and name of the card it charges) | —                                                                                                                                             |
-| New billing account | — (a sheet, not a page)                           | **built** (§15): onboarding's `BillingSheet` over 08-A and 08-B - the list, then the form in place (a billing email and company, then the card - which OPENS the account), then "New Card added Successfully"; from the move's step 2 the company then moves onto it | —                                                                                                                                             |
-| Module settings   | `/entity/{shortid}/{name}/settings/modules`                 | **built** (§9): the settings chrome, the two module cards in their six states, the payment-failed banner, _Start Free Trial_, the way back (no Stripe return: nothing leaves for Stripe) — over a stubbed API until step 3 | the pages the other CTAs lead to (Manage / Activate / Resume / Reactivate / payment method), each from its own Figma frame; the live API      |
+| Page                | Path                                                                  | Today                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | Step 4                                                                                                                                   |
+| ------------------- | --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| Index               | `/subscription`                                                       | **built** (§15): "Subscription & Billing" — ONE billing account at a glance (its name as "Bill to", the payer's next billing date; clicking the card opens the billing-account sheet - which account, `?account=`, and _New billing account_ in place), the account's NAME moving a company between accounts (_Change billing account_), how many companies pay, how many trials end within 30 days, what needs attention (five lines, _Show more_ for the rest), and _Manage Subscription_ leading to the list. Where Minty's own link lands                                 | —                                                                                                                                        |
+| Subscriptions       | `/subscription/subscriptions`                                         | **built** (§10): every company the payer pays for in one scrolling list, a cell per module, search, the column sorts, the ⋮ menu, Start Trial from the list, the transfer-request cards, the payment-failed line — over a stubbed API                                                                                                                                                                                                                                                                                                                                         | —                                                                                                                                        |
+| Change subscriber   | `/subscription/subscriptions/subscriber?entity=…`                     | **built** (§14): the admins the bill could move to, each with its own quote, the current payer tagged, an invitation for someone new, _Request transfer_ → "Transfer requested"; the request already waiting and its _Withdraw request_ — over the live routes                                                                                                                                                                                                                                                                                                                | the outcome modals (accepted / declined / expired) once the API reports how an outgoing request ended                                    |
+| Incoming            | `/subscription/subscriptions/incoming`                                | **built** (§14): the requests offered to me — the company's modules as they are, no money line (a handover takes nothing at accept), the BILLING ACCOUNT the bill will go to and the card it charges (changeable among my accounts, or a new one opened in place in the billing-account sheet), _Confirm Subscription Transfer_ (sending that account) landing on the list's row, _Decline_; "No requests waiting" — over the live routes                                                                                                                                     | —                                                                                                                                        |
+| Billing             | `/subscription/billing?account=`                                      | **built** (§15): ONE billing account's profile — who it bills (name, address, email) and _Change billing details_, its next bill (the date, and the amount it will charge - estimated, "HKD 1,500"), its cards with the one it charges pinned first (two, then _Show more_) and its _Update card_ menu (charge this card / edit / remove), _+ Add payment method_ onto it, its invoices 10 / 50 / 100 to a page, each previewed from its Inv# (view-only, drawn by pdf.js), downloading as our own PDF (Figma 09-A) and its billing breakdown as a CSV — over the live routes | —                                                                                                                                        |
+| Add / edit a card   | `/subscription/billing/add?account=`, `…/billing/edit?card=&account=` | **built** (§15): Stripe's own card fields on a SetupIntent (08-Y) - the card goes ON the account - and the name and expiry of a saved card (08-D)                                                                                                                                                                                                                                                                                                                                                                                                                             | —                                                                                                                                        |
+| Billing details     | `/subscription/billing/details?account=`                              | **built** (§15): 08-C — the account's billing company and email, and the address in Stripe's own form (the billing address and name of the card it charges)                                                                                                                                                                                                                                                                                                                                                                                                                   | —                                                                                                                                        |
+| New billing account | — (a sheet, not a page)                                               | **built** (§15): onboarding's `BillingSheet` over 08-A and 08-B - the list, then the form in place (a billing email and company, then the card - which OPENS the account), then "New Card added Successfully"; from the move's step 2 the company then moves onto it                                                                                                                                                                                                                                                                                                          | —                                                                                                                                        |
+| Module settings     | `/entity/{shortid}/{name}/settings/modules`                           | **built** (§9): the settings chrome, the two module cards in their six states, the payment-failed banner, _Start Free Trial_, the way back (no Stripe return: nothing leaves for Stripe) — over a stubbed API until step 3                                                                                                                                                                                                                                                                                                                                                    | the pages the other CTAs lead to (Manage / Activate / Resume / Reactivate / payment method), each from its own Figma frame; the live API |
 
 **Skeletal by decision** (2026-09-21) for the portal screens: functional, minimal styling, a
 design later. The module settings page is the exception — its design exists (Figma
@@ -281,62 +281,63 @@ a refusal's sentence inside it, a draft's Inv# plain text, the column still down
 opened by the card (and by its own button for the keyboard), the name opening _Change billing
 account_, the link not opening the sheet, _New billing account_ turning the same sheet into the
 form - onboarding's two errors, Cancel back to the list, 01-J and Done landing on the new account
+
 - the move's step 2 opening it and moving the company or saying it stayed, 08-B's empty state
-opening straight on the form, a company moved in two steps and a refused move, the accounts
-failing to load), and `CardCaptureForm.test.tsx` (Stripe mocked at its packages: the gate before
-Stripe, the order - ours, Stripe's, confirmSetup, Minty, the caller - the confirm's body, the
-intent remembered after our half failed, the busy signal, the two looks, no account refusing
-Save before Stripe). The list hook's tests also take a change
-through its modal and apply it over the stubbed API - one action per module, the result row,
-the cancellation page, "Billing Accounts" asked AGAIN when there is no card to charge (a
-cardless trial, `retry-payment`'s `no_card`, `restart-billing`'s 402 "Choose a card") with
-nothing navigating and the ticks still pending, the bank declining (asked
-again, tried again, or left pending), an action refused, Go back posting nothing - land Start
-Trial on its result, take the ⋮'s Cancel subscription (from a closed row) and Reactivate (from
-the open one) through the same modal, and ask before leaving the open row with ticks pending.
-`e2e/01_landing.spec.ts` (the handoff, the cookie gate; Flask's re-handoff
-stubbed - the route exists in Minty now, the spec only asserts where the browser is sent); `features/subscription/e2e/02_module_settings.spec.ts`
-and `03_manage_subscriptions.spec.ts` (each page in the real app, the API served from the
-fixtures by `page.route` - every Figma state, the seams, what a CTA sends, a tick pending on the
-open row, its modal asking, a change confirmed and landing on its result row, a cancellation
-landing on its page, leaving with a tick pending asked about, the bank declining asked about);
-`06_billing.spec.ts` (the billing area over stateful stubbed routes: the landing and its way to
-the list, the picker switching `?account=`, the link to that account's page, a company moved in
-two steps, one account's next bill, cards and invoices - an invoice's PDF downloaded as
-`Inv-<reference>.pdf`, and its breakdown as the CSV; its Inv#'s preview drawn by pdf.js onto a
-real canvas, at an A4 page's true width, with no Download and no download event - the card it charges switched, its own
-card refused removal and another one removed, the empty and expired states, the card that just
-arrived, 08-C's name and email - 255 refused under the field, only what changed sent, the
-address's note with Stripe's key withheld - the estimated amount and a page size of 50 read, and the
-billing-account sheet - the list 481 wide, _New billing account_ turning it into the 880-wide
-form in place, Cancel back, the X closing, 481 and no cat below 900px, the move's step 2
-opening it);
-`05_transfers.spec.ts` (both sides of a handover over the stubbed routes: the payer picks and
-sends - 07-A → 07-B - and withdraws the one waiting - 07-C → 07-K → 07-A; the recipient sees
-nothing waiting - 07-F - and reviews, changes the billing account, accepts and lands on the
-list's "Subscription Transfer Completed" row - 07-D → 07-E → 07-M; every POST's body checked,
-and no `payment-methods/*` call made);
-`04_live_api.spec.ts` (step 3's API for real, no stubs: the module page's real cards, a
-card-free trial started from the page and read back as `trialing` with Flask's gate open, the
-landing and the billing page over the person's real billing accounts (read-only), the
-list showing the company - against the seed's `E2E Subscription Shop`, which
-`Minty/scripts/e2e_seed.py` resets to "never held anything" on every run). The landing spec
-stubs the API too (`stubBillingApi`): over the real API a token for a user its database does
-not hold is a 401 that sends the browser out of the app. Still to come with the portal port: the
-five journeys from `minty-payment-request-web/e2e/03_payer_portal.spec.ts`. The fixtures' `TODAY` is the
-real calendar day (UTC 03:00), not a pinned one: a `page.route` stub reaches a page that counts
-from the browser's clock, so a pinned day drifted by one every midnight.
+  opening straight on the form, a company moved in two steps and a refused move, the accounts
+  failing to load), and `CardCaptureForm.test.tsx` (Stripe mocked at its packages: the gate before
+  Stripe, the order - ours, Stripe's, confirmSetup, Minty, the caller - the confirm's body, the
+  intent remembered after our half failed, the busy signal, the two looks, no account refusing
+  Save before Stripe). The list hook's tests also take a change
+  through its modal and apply it over the stubbed API - one action per module, the result row,
+  the cancellation page, "Billing Accounts" asked AGAIN when there is no card to charge (a
+  cardless trial, `retry-payment`'s `no_card`, `restart-billing`'s 402 "Choose a card") with
+  nothing navigating and the ticks still pending, the bank declining (asked
+  again, tried again, or left pending), an action refused, Go back posting nothing - land Start
+  Trial on its result, take the ⋮'s Cancel subscription (from a closed row) and Reactivate (from
+  the open one) through the same modal, and ask before leaving the open row with ticks pending.
+  `e2e/01_landing.spec.ts` (the handoff, the cookie gate; Flask's re-handoff
+  stubbed - the route exists in Minty now, the spec only asserts where the browser is sent); `features/subscription/e2e/02_module_settings.spec.ts`
+  and `03_manage_subscriptions.spec.ts` (each page in the real app, the API served from the
+  fixtures by `page.route` - every Figma state, the seams, what a CTA sends, a tick pending on the
+  open row, its modal asking, a change confirmed and landing on its result row, a cancellation
+  landing on its page, leaving with a tick pending asked about, the bank declining asked about);
+  `06_billing.spec.ts` (the billing area over stateful stubbed routes: the landing and its way to
+  the list, the picker switching `?account=`, the link to that account's page, a company moved in
+  two steps, one account's next bill, cards and invoices - an invoice's PDF downloaded as
+  `Inv-<reference>.pdf`, and its breakdown as the CSV; its Inv#'s preview drawn by pdf.js onto a
+  real canvas, at an A4 page's true width, with no Download and no download event - the card it charges switched, its own
+  card refused removal and another one removed, the empty and expired states, the card that just
+  arrived, 08-C's name and email - 255 refused under the field, only what changed sent, the
+  address's note with Stripe's key withheld - the estimated amount and a page size of 50 read, and the
+  billing-account sheet - the list 481 wide, _New billing account_ turning it into the 880-wide
+  form in place, Cancel back, the X closing, 481 and no cat below 900px, the move's step 2
+  opening it);
+  `05_transfers.spec.ts` (both sides of a handover over the stubbed routes: the payer picks and
+  sends - 07-A → 07-B - and withdraws the one waiting - 07-C → 07-K → 07-A; the recipient sees
+  nothing waiting - 07-F - and reviews, changes the billing account, accepts and lands on the
+  list's "Subscription Transfer Completed" row - 07-D → 07-E → 07-M; every POST's body checked,
+  and no `payment-methods/*` call made);
+  `04_live_api.spec.ts` (step 3's API for real, no stubs: the module page's real cards, a
+  card-free trial started from the page and read back as `trialing` with Flask's gate open, the
+  landing and the billing page over the person's real billing accounts (read-only), the
+  list showing the company - against the seed's `E2E Subscription Shop`, which
+  `Minty/scripts/e2e_seed.py` resets to "never held anything" on every run). The landing spec
+  stubs the API too (`stubBillingApi`): over the real API a token for a user its database does
+  not hold is a 401 that sends the browser out of the app. Still to come with the portal port: the
+  five journeys from `minty-payment-request-web/e2e/03_payer_portal.spec.ts`. The fixtures' `TODAY` is the
+  real calendar day (UTC 03:00), not a pinned one: a `page.route` stub reaches a page that counts
+  from the browser's clock, so a pinned day drifted by one every midnight.
 
 ## 8. What arrives when
 
-| Step   | Lands here                                                                                                                                                                                                                                                                                                                                                                                                  |
-| ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 4a     | **done 2026-09-21** — the module settings page from its Figma design (§9), over a stubbed API; the `(portal)` route group; Flask's `/entity/settings/payments/<id>` redirect for the Payment Settings tab                                                                                                                                                                                                   |
-| 4b     | **the Manage Subscriptions list, done 2026-09-21** (§10) — the design's target of the module page's _Manage Subscription_                                                                                                                                                                                                                                                                                   |
+| Step   | Lands here                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 4a     | **done 2026-09-21** — the module settings page from its Figma design (§9), over a stubbed API; the `(portal)` route group; Flask's `/entity/settings/payments/<id>` redirect for the Payment Settings tab                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| 4b     | **the Manage Subscriptions list, done 2026-09-21** (§10) — the design's target of the module page's _Manage Subscription_                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | 4c     | **live-API journeys done 2026-09-22** (`04_live_api.spec.ts`); **the open row done 2026-09-22** (§11, Figma 05·A and 05·B - the ticks pend on the row until _Confirm Subscription Change_); **the change applied and its result screens done 2026-09-22** (§12, Figma 05·C); **the confirmation modals done 2026-09-22** (§13, Figma section 06 - the confirm button asks first); **the "Calculating…" beat and the ⋮'s items done 2026-09-22** (§11, Figma 05·B-C; §13, Figma 05·D); **the declined-payment and leave-without-saving modals done 2026-09-22** (§13, Figma 06·B); **both sides of a handover done 2026-09-22** (§14, Figma section 07 - _Request transfer_ and the incoming requests, over the live routes; the outcome modals wait for an outgoing-transfer read). **the billing area done 2026-09-23** (§15, Figma section 08 - the portal's landing, the billing page and its states, the card screens; `/subscription` is the landing now and the list is `/subscription/subscriptions`). **Billing accounts done 2026-09-25** (§15 - 08-A shows ONE account, picked by clicking its card; _Change billing account_ moves a company; 08-B is one account's profile; 08-C and the new-account form built; the landing's Next Billing Date no longer prints the anchor). **Same day, at the user's word:** _New billing account_ became onboarding's `BillingSheet` in place (the page went), the account's name took over _Change billing account_ (its button went, and the move's "Nothing is charged now…" note), "Trial ending" counts the trials ending within 30 days and the update lines list them with _Show more_, and 08-B gained the next bill's estimated amount (`next_bill`, priced by the API's renewal runner) and 10 / 50 / 100 invoice paging; one real Stripe test-mode account opened through the sheet on the dev database. **A standalone invoices page (09) was decided AGAINST, 2026-09-28** - the billing page's own invoice list already covers it (paging, each invoice's PDF, the billing-breakdown CSV), so `PORTAL.invoices`, the tab and the route's NotBuiltYet entry were all removed rather than left waiting to be built. **The Invoice PDF became our own document, 2026-09-29** (§15, Figma 09-A - downloaded from `GET /api/me/invoices/{id}/pdf`, where it had linked Stripe's hosted invoice page); **its Inv# previews it, 2026-09-30** (§15 - view-only at the user's word, drawn by pdf.js; the column is still the download) |
-| 5      | Minty's `/handoff/minty-web` route exists — the e2e stub goes. (minty-payment-request-web's profile links go through Minty's `/profile` since 2026-09-29, which opens minty-web's profile; its old profile page is deleted here with the portal copies) |
-| 7      | deployed to a test site with subscriptions on - no dark phase (the switch was removed 2026-10-01, §4)                                                                                                                                                                                                                                                                                                       |
-| Part 3 | the entity list and My Profile **joined the hub 2026-09-29** (`entities.md`, `profile.md`); login, dashboard and settings follow; `@/lib` and `@/components/ui` become `@minty/shared`; each feature folder is liftable per its README |
+| 5      | Minty's `/handoff/minty-web` route exists — the e2e stub goes. (minty-payment-request-web's profile links go through Minty's `/profile` since 2026-09-29, which opens minty-web's profile; its old profile page is deleted here with the portal copies)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| 7      | deployed to a test site with subscriptions on - no dark phase (the switch was removed 2026-10-01, §4)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| Part 3 | the entity list and My Profile **joined the hub 2026-09-29** (`entities.md`, `profile.md`); login, dashboard and settings follow; `@/lib` and `@/components/ui` become `@minty/shared`; each feature folder is liftable per its README                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 
 ## 9. The module settings page
 
@@ -373,14 +374,14 @@ docs/features/company-settings.md). What is on it:
   sidebar over the page (`profile.md`; since 2026-09-29 - they were hover-only that morning).
 - **Two cards, six states** (`lib/moduleState.ts`, first match wins):
 
-  | state          | card says                                | CTA                                      |
-  | -------------- | ---------------------------------------- | ---------------------------------------- |
-  | past_due       | Subscription Suspended + the page banner | Reactivate Subscription (outline) → seam |
-  | pending_cancel | Cancellation pending · Ends in N days    | Resume Subscription (filled) → seam      |
-  | trialing       | Trial · N days remaining (red, ≤ 7 days) / Trial Active · N days remaining (black) | Manage Subscription (filled) → seam |
-  | active         | Currently Active                         | Manage Subscription → (link) → seam      |
-  | trial_eligible | Get Started · 30 days trial available    | Start Free Trial (outline) → **asks, then posts** |
-  | expired        | Trial Expired                            | Activate Subscription (outline) → seam   |
+  | state          | card says                                                                          | CTA                                               |
+  | -------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------- |
+  | past_due       | Subscription Suspended + the page banner                                           | Reactivate Subscription (outline) → seam          |
+  | pending_cancel | Cancellation pending · Ends in N days                                              | Resume Subscription (filled) → seam               |
+  | trialing       | Trial · N days remaining (red, ≤ 7 days) / Trial Active · N days remaining (black) | Manage Subscription (filled) → seam               |
+  | active         | Currently Active                                                                   | Manage Subscription → (link) → seam               |
+  | trial_eligible | Get Started · 30 days trial available                                              | Start Free Trial (outline) → **asks, then posts** |
+  | expired        | Trial Expired                                                                      | Activate Subscription (outline) → seam            |
 
   When both cards carry the same _Manage Subscription_ (frames B and C), it is drawn once,
   centred. A closing trial is still a trial: the access gate ends it, never the date. Days count
@@ -413,17 +414,18 @@ docs/features/company-settings.md). What is on it:
   activation does, and for the same reason: a journey that began on this page should not end on
   another, under a button offering to go back to a third. _Confirm_ posts, reads the page model
   again and diffs it against the one it had, through `buildChangeResult({kind:"start_trial",
-  code}, …)`; the outcome reads `"started"`, so the frame is the design's RV11 words -
+code}, …)`; the outcome reads `"started"`, so the frame is the design's RV11 words -
   "Congratulations! / <Module> free trial has started — 30 days, free. / Nothing is being
   charged." - drawn by `ChangeResultRow` in a one-item list. Its button says **Back to Company**
   and leaves for `/entity/<shortid>/<name>`.
 
   It used to push `moduleRoutes(id).started(code)` = `/subscription/subscriptions?entity=<id>&
-  started=<code>` and let the list rebuild the row from the company's page model alone
+started=<code>` and let the list rebuild the row from the company's page model alone
   (`lib/changeResult.ts::startedTrialResult`). **Nothing builds that URL any more** -
   `moduleRoutes.started` is gone - but the list still READS `?started=`, so an old link still
   lands as it did. Starting a trial does NOT make the person the company's payer (the user,
   2026-10-08): it is free and commits nobody. A refusal is a toast and nothing lands.
+
 - **The dialog is the design's, with the design's own styling fixed** (2026-09-23). The copy is
   Figma 04-G/04-H word for word - "You've activated free trial for <Module>." and "after trial
   period" without the article - by the user's decision, over the grammar. Its title lockup is a
@@ -437,14 +439,14 @@ docs/features/company-settings.md). What is on it:
   otherwise the cards render without them and a line names the payer, or says only admins can
   change modules. "No payer yet" is the ordinary state of a company on a free trial since
   2026-10-08, not a moment during onboarding, so until billing is confirmed EVERY admin sees the
-  buttons - and the trial's button is *Activate Subscription*.
+  buttons - and the trial's button is _Activate Subscription_.
 - **No re-entry from Stripe** (2026-10-01). The page used to settle `?session_id=` (back from
   Stripe Checkout, posting `checkout-complete`) and `?checkout_error=`; nothing hands the browser
   to a Stripe-hosted page any more, so neither is read and the action is gone from the API.
 - **Activate Subscription on an unconfirmed trial IS a page action** (2026-10-08), and the one
   CTA besides _Start Free Trial_ that acts here rather than navigating. A trial establishes no
-  SUBSCRIBER, so a company running one that nobody has confirmed shows *Activate Subscription*
-  in place of *Manage Subscription* (`moduleState`'s `needs_activation`, keyed on the page
+  SUBSCRIBER, so a company running one that nobody has confirmed shows _Activate Subscription_
+  in place of _Manage Subscription_ (`moduleState`'s `needs_activation`, keyed on the page
   model's `has_subscriber`; the card's own line - "Trial / N days remaining" - is unchanged,
   only the button differs). Pressing it asks in the **same section-06 modal** a change asks in,
   then opens the same Billing Accounts sheet Manage Subscriptions asks with, mounted over this
@@ -457,7 +459,7 @@ docs/features/company-settings.md). What is on it:
   account with nothing to charge would look activated and its trial would still expire.
   A 402 re-opens the sheet with the API's own sentence (the refusal rolled the stamp back, so
   pressing again is safe); a 409 means somebody else activated first and the page reloads.
-  *Start Free Trial* is untouched and still wins on a module with no trial yet.
+  _Start Free Trial_ is untouched and still wins on a module with no trial yet.
 
   **It lands on its result in the cards' place** (2026-10-08), not on a toast. The page model is
   read again - `fetchPageModel`, so `?fixture=` stays offline - and diffed against the one
@@ -477,9 +479,10 @@ docs/features/company-settings.md). What is on it:
   (`ModuleChoiceScreen`); accepted (the user, 2026-10-08).
 
   **When both cards await activation the page draws ONE button**, centred, as it does for a
-  shared *Manage Subscription* - the act is per company. It is dispatched through `press` like
+  shared _Manage Subscription_ - the act is per company. It is dispatched through `press` like
   any other CTA; it was hard-wired to `manage` and silently navigated to the list instead of
   activating, which was a bug (fixed 2026-10-08).
+
 - **Activate / Resume / Reactivate on a LAPSED module are not pages** (2026-09-23). Each is ONE module's pending
   change, which the open row already says, so the CTA lands on the list with that company's row
   open and that module **ticked**: `moduleRoutes(id).activate|resume|reactivate(code)` all build
@@ -870,19 +873,20 @@ button in 05·B lands". Built 2026-09-22.
   design's headline is spelled "Congragulations!" in the base frames and "Congratulations!" in
   the generated ones — the latter is used.
 - **Dev switch**: `?result=RU22` (any of `RU22 RU23 RU24 RV14 RV44 RV45 RW45 RV41 RV51 RV61
-  RNX21a`) lands the open row (`?entity=`, `?fixture=A`) on that frame outside production.
+RNX21a`) lands the open row (`?entity=`, `?fixture=A`) on that frame outside production.
 
 ## 13. The confirmation — what the modal asks
 
 Figma section "06 · Confirm modals — every button that costs money asks first, and names the
 module" (`1410:1588`; two template frames from the admin design and 108 generated ones, PU/PV/PW
-+ the 05·B frame each follows, "directly across from the pending screen that opens it"). Built
-2026-09-22: `lib/changeModal.ts` (`buildChangeModal(page, codes)`, pure) reduces the grid to
-seven shapes read off the ticks, `components/ConfirmDialog.tsx` is the shell (the 04-G dialog's,
-now shared with `StartTrialDialog` - the design's B-02) and `components/ChangeDialog.tsx` draws
-them; `useSubscriptionsList` holds the prompt (`changePrompt`, `dismissChangePrompt`,
-`applyChangePrompt`) between the button and `applyChange` for a change that cancels, and
-`accountStep` / `confirmed` for one that bills (below).
+
+- the 05·B frame each follows, "directly across from the pending screen that opens it"). Built
+  2026-09-22: `lib/changeModal.ts` (`buildChangeModal(page, codes)`, pure) reduces the grid to
+  seven shapes read off the ticks, `components/ConfirmDialog.tsx` is the shell (the 04-G dialog's,
+  now shared with `StartTrialDialog` - the design's B-02) and `components/ChangeDialog.tsx` draws
+  them; `useSubscriptionsList` holds the prompt (`changePrompt`, `dismissChangePrompt`,
+  `applyChangePrompt`) between the button and `applyChange` for a change that cancels, and
+  `accountStep` / `confirmed` for one that bills (below).
 
 The dialog family (`components/ui/ModalFrame`, `components/ui/ConfirmDialog`, `LeaveDialog`) is copied to minty-payment-request-web (under its `features/subscription/components/`) (its Payment Request Settings' "Leave without saving?", 2026-10-01) and ported to Flask (Minty `static/js/minty_dialog.js` + `static/css/minty_dialog.css`) - change all three.
 
@@ -936,13 +940,13 @@ The dialog family (`components/ui/ModalFrame`, `components/ui/ConfirmDialog`, `L
   pass as any other change**, on that same account, which `cardChosen` makes it. So the two acts
   differ in ORDER, not in outcome, and activating **can charge** - a ticked lapsed module is
   bought back, which is what the modal said would happen. Either way it lands on the same 05·C
-  result, and its button still reads *Back to Manage Subscriptions*: this journey began in the
+  result, and its button still reads _Back to Manage Subscriptions_: this journey began in the
   portal.
 
   Two rules hold it together. The activation is sent with **no `codes`** - naming them is its
   own way to buy a lapsed module back, and the apply pass already owns that path, so a lapsed
   module is charged **exactly once**. And a decline afterwards is **not rolled back**: the
-  company keeps its subscriber and its ticks stay pending, and 06·B's *Try again* re-runs only
+  company keeps its subscriber and its ticks stay pending, and 06·B's _Try again_ re-runs only
   the charge, because activation lives in `confirmAccount` and the retry re-enters `apply`.
   Nothing below the activation runs when the activation itself fails, which is what stops the
   apply pass charging a company that never got a subscriber. An account with no card cannot be
@@ -1157,7 +1161,7 @@ payer's money does not cover, and the subscription moves.
     says "Choose Modules" and now it does: every module the company holds starts ticked —
     arriving here is being offered all of it — and unticking one **cancels that module for the
     company** as part of accepting, ending it where the outgoing payer's money runs out.
-    The tick reflects *"am I taking this on"*, NOT the module's own state, which is why a
+    The tick reflects _"am I taking this on"_, NOT the module's own state, which is why a
     module that is not the active one is still ticked. `codes` is sent only when the choice
     differs from the whole company; unchanged, the field is omitted.
     **The last ticked module cannot be unticked** — its checkbox and its card both go inert —
@@ -1177,6 +1181,7 @@ payer's money does not cover, and the subscription moves.
     2026."), a trial runs its free days out and then does not convert ("Petty Cash ends when
     the trial runs out."), and one of each is two sentences. With no date to name, a paid one
     reads "when the current subscription runs out".
+
   - **Decline exists.** The design draws no way to refuse a request; the API has one
     (`accept: false`) and a request the person cannot take (blockers) would otherwise sit
     forever, so _Decline_ sits under _Confirm Subscription Transfer_.
@@ -1293,7 +1298,7 @@ schema change), which 08-C writes.
   ending within 30 days - a trial's whole length, the user's call 2026-09-25, after a 7-day window
   read "0" to a payer with seven trials running), the update lines for those same trials,
   soonest first, under every payment that failed ("Company A Limited · **Petty Cash** trial ends
-  in *3 days*", "Company C Limited · **Payment failed**") - five shown, _Show more (N)_ opens
+  in _3 days_", "Company C Limited · **Payment failed**") - five shown, _Show more (N)_ opens
   the rest and _Show less_ puts them back - and _Manage Subscription_ → the list. Minty counting
   at the desk is MIRRORED (`-scale-x-100`, the user's call 2026-09-25) so it faces the figures,
   not out of the card; its cap's lettering reads mirrored with it.

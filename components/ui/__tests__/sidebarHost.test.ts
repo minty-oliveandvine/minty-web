@@ -64,12 +64,15 @@ describe("sidebarHost.loadViewer", () => {
 
   it("any other failure rejects with Flask's sentence", async () => {
     fetchMock.mockResolvedValueOnce(answer(500, { error: "Down for a moment." }));
-    await expect(sidebarHost.loadViewer()).rejects.toMatchObject({ status: 500, message: "Down for a moment." });
+    await expect(sidebarHost.loadViewer()).rejects.toMatchObject({
+      status: 500,
+      message: "Down for a moment.",
+    });
   });
 });
 
 describe("sidebarHost's reads of the cookie and the page", () => {
-  it("names the app and reads the company and token from the cookie, \"\" with none", () => {
+  it('names the app and reads the company and token from the cookie, "" with none', () => {
     expect(sidebarHost.app).toBe("minty-web");
     expect(sidebarHost.entityId()).toBe("");
     expect(sidebarHost.entityName()).toBe("");

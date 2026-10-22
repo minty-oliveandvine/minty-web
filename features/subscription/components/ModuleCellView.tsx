@@ -10,7 +10,12 @@ import type { ModuleCode } from "@/features/subscription/api/moduleSettings";
 import type { ModuleCell } from "@/features/subscription/lib/portalRows";
 
 const BADGE: Record<ModuleCode, { src: string; width: number; height: number; circle: string }> = {
-  PETTY_CASH: { src: "/portal/petty-cash-icon.svg", width: 42, height: 45, circle: "bg-warning-bg" },
+  PETTY_CASH: {
+    src: "/portal/petty-cash-icon.svg",
+    width: 42,
+    height: 45,
+    circle: "bg-warning-bg",
+  },
   PAYMENT_REQUEST: {
     src: "/portal/payment-request-icon.svg",
     width: 76,

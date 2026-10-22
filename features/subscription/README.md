@@ -75,7 +75,7 @@ step 3's routers with no stubs (a real card-free trial started from the page and
 against the seed's `E2E Subscription Shop`; and the open row from Figma 05·A and 05·B - `hooks/
 useEntitySummary` (the answer and the ticks pending on it), `lib/subscriptionSummary`,
 `components/SubscriptionSummaryRow` (`docs/features/subscriptions.md` §11); a tick is a change
-pending on the row until *Confirm Subscription Change*, which asks in the change's modal from
+pending on the row until _Confirm Subscription Change_, which asks in the change's modal from
 Figma section 06 - `lib/changeModal`, `components/ConfirmDialog` (the shell, shared with the
 Start Trial dialog) and `components/ChangeDialog` (§13). Its Confirm, for a change that bills
 anything, opens "Billing Accounts" (08-A's `AccountPickerDialog`, `lib/billingAccounts`
@@ -109,18 +109,19 @@ one account's profile, and 08-C (`routes/BillingDetailsPage`, `hooks/useBillingD
 `components/BillingDetailsForm`) is built, over `lib/billingAccounts` - its address in
 Stripe's own `AddressElement` (loaded through `lib/stripe`, shared with the card forms). Later the same day, at the
 user's word: a new account opens in onboarding's `BillingSheet`, in place (`components/AccountSheet`
-+ `sheetClasses`, `BillingAccountDialogs`, `useCardForm.useNewAccount`; the new-account page went);
-the account's NAME is _Change billing account_; "Trial ending" counts the trials ending within 30
-days and the update lines have _Show more_; 08-B shows the next bill's estimated amount (the API's
-`next_bill`, priced by its renewal runner), pages its invoices 10 / 50 / 100 and downloads each
-one's billing breakdown as the user's sample CSV (`lib/breakdown`, `@minty/shared/download`).
-`components/ModalFrame` is shared by the other modals (§15). A
-standalone invoices page (minty-payment-request-web's section 09) was deliberately NOT built: the billing
-page's own invoice list already lists every invoice, paged, with its PDF and the
-billing-breakdown CSV, so a second page listing the same rows would be pure duplication - see
-`lib/paths.ts::PORTAL`. 2026-09-29: that PDF is our own document (Figma 09-A), downloaded -
-`api/payerPortal.fetchInvoicePdf` over `@/lib/apiClient.apiFetchBlob`, saved by
-`saveBlob` (`@minty/shared/download`) - where it had linked Stripe's hosted invoice page (§15). 2026-09-30: the
-row's Inv# opens a VIEW-ONLY preview of it (`components/InvoicePreviewDialog` over
-`components/PdfPages` - pdf.js, the `pdfjs-dist` package, its worker served at `/pdfjs` by the
-app's `next.config.ts`); nothing is saved from it, the Invoice PDF column is still the download.
+
+- `sheetClasses`, `BillingAccountDialogs`, `useCardForm.useNewAccount`; the new-account page went);
+  the account's NAME is _Change billing account_; "Trial ending" counts the trials ending within 30
+  days and the update lines have _Show more_; 08-B shows the next bill's estimated amount (the API's
+  `next_bill`, priced by its renewal runner), pages its invoices 10 / 50 / 100 and downloads each
+  one's billing breakdown as the user's sample CSV (`lib/breakdown`, `@minty/shared/download`).
+  `components/ModalFrame` is shared by the other modals (§15). A
+  standalone invoices page (minty-payment-request-web's section 09) was deliberately NOT built: the billing
+  page's own invoice list already lists every invoice, paged, with its PDF and the
+  billing-breakdown CSV, so a second page listing the same rows would be pure duplication - see
+  `lib/paths.ts::PORTAL`. 2026-09-29: that PDF is our own document (Figma 09-A), downloaded -
+  `api/payerPortal.fetchInvoicePdf` over `@/lib/apiClient.apiFetchBlob`, saved by
+  `saveBlob` (`@minty/shared/download`) - where it had linked Stripe's hosted invoice page (§15). 2026-09-30: the
+  row's Inv# opens a VIEW-ONLY preview of it (`components/InvoicePreviewDialog` over
+  `components/PdfPages` - pdf.js, the `pdfjs-dist` package, its worker served at `/pdfjs` by the
+  app's `next.config.ts`); nothing is saved from it, the Invoice PDF column is still the download.

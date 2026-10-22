@@ -121,7 +121,8 @@ describe("useBillingPage", () => {
       }
       if (url.pathname === "/api/me/invoices") {
         invoiceQueries.push(url.search);
-        if (options.invoices === false) return reply(500, { error: "The invoices are not available." });
+        if (options.invoices === false)
+          return reply(500, { error: "The invoices are not available." });
         if (options.invoiceTotal === undefined) return reply(200, invoicePage());
         // An account with more invoices than a page holds: answer the page asked for.
         const perPage = Number(url.searchParams.get("per_page") ?? 10);
@@ -187,13 +188,17 @@ describe("useBillingPage", () => {
     ).length;
 
     act(() => result.current.goToInvoicePage(2));
-    await waitFor(() => expect(invoiceQueries.at(-1)).toBe("?account=acc-company-a&page=2&per_page=10"));
+    await waitFor(() =>
+      expect(invoiceQueries.at(-1)).toBe("?account=acc-company-a&page=2&per_page=10"),
+    );
     // A new size starts at the first page.
     act(() => result.current.setInvoicesPerPage(50));
     await waitFor(() =>
       expect(invoiceQueries.at(-1)).toBe("?account=acc-company-a&page=1&per_page=50"),
     );
-    await waitFor(() => expect(result.current.invoicePaging).toMatchObject({ page: 1, perPage: 50 }));
+    await waitFor(() =>
+      expect(result.current.invoicePaging).toMatchObject({ page: 1, perPage: 50 }),
+    );
     // Turning pages never re-reads the accounts (a Stripe read at the API).
     expect(
       fetchMock.mock.calls.filter((c) => String(c[0]).includes("/billing/accounts")).length,
@@ -392,7 +397,11 @@ describe("useBillingPage", () => {
     serve(accountsFor(WALLET_TWO), {
       "/api/me/invoices/in_failed/retry": {
         status: 200,
-        body: { ok: true, status: "paid", message: "Payment received — your subscription is active again." },
+        body: {
+          ok: true,
+          status: "paid",
+          message: "Payment received — your subscription is active again.",
+        },
       },
     });
     const { result } = renderHook(() => useBillingPage());
@@ -404,7 +413,10 @@ describe("useBillingPage", () => {
     await act(async () => result.current.retryInvoice("in_failed"));
 
     expect(posts).toEqual([{ path: "/api/me/invoices/in_failed/retry", body: {} }]);
-    expect(result.current.retryNotice).toEqual({ tone: "ok", text: "Payment received — your subscription is active again." });
+    expect(result.current.retryNotice).toEqual({
+      tone: "ok",
+      text: "Payment received — your subscription is active again.",
+    });
     expect(result.current.declined).toBe(false);
     expect(result.current.retrying).toBeNull();
     // Read again - a paid retry clears the amber block - without the page's loading state.
@@ -472,8 +484,13 @@ describe("useBillingPage", () => {
     // never quiet: the table's failure is named, and logged
     // owner 2026-10-21: one shared module (@minty/shared/errorCopy) - the fixture said "nope", and a
     // single word is no longer shown; the server's sentence still is
-    await waitFor(() => expect(result.current.invoicesError).toBe("The invoices are not available."));
-    expect(errors).toHaveBeenCalledWith("[billing] the account's invoices could not be read", expect.anything());
+    await waitFor(() =>
+      expect(result.current.invoicesError).toBe("The invoices are not available."),
+    );
+    expect(errors).toHaveBeenCalledWith(
+      "[billing] the account's invoices could not be read",
+      expect.anything(),
+    );
     errors.mockRestore();
   });
 

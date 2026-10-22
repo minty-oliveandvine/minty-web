@@ -14,9 +14,7 @@ import { SubscriptionOverviewScreen } from "@/features/subscription/routes/Subsc
 
 function Content() {
   const q = useSearchParams();
-  return (
-    <SubscriptionOverviewScreen accountId={q.get("account")} fixture={q.get("fixture")} />
-  );
+  return <SubscriptionOverviewScreen accountId={q.get("account")} fixture={q.get("fixture")} />;
 }
 
 export function SubscriptionOverview() {

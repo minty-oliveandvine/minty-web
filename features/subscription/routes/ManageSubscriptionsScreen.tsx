@@ -91,9 +91,7 @@ export function ManageSubscriptionsScreen(args: UseSubscriptionsListArgs) {
 
       {m.status === "loading" && <ListSkeleton />}
       {m.status === "error" && <ListError message={m.error ?? ""} onRetry={m.reload} />}
-      {m.status === "ready" && !m.hasEntities && (
-        <ListEmpty entityListHref={HUB_PATHS.entities} />
-      )}
+      {m.status === "ready" && !m.hasEntities && <ListEmpty entityListHref={HUB_PATHS.entities} />}
       {m.status === "ready" && m.hasEntities && nothingShown && <ListNoMatch />}
       {m.status === "ready" && !nothingShown && (
         <SubscriptionsTable

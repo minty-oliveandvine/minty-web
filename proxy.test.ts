@@ -16,13 +16,15 @@ describe("movedModulePage", () => {
   });
 
   it("moves the full-id address with a placeholder name the page corrects", () => {
-    expect(movedModulePage("/subscription/entities/360812e1-9f94-46a3-aa31-347e21afde8e/modules")).toBe(
-      "/entity/360812e1-9f94-46a3-aa31-347e21afde8e/company/settings/modules",
-    );
+    expect(
+      movedModulePage("/subscription/entities/360812e1-9f94-46a3-aa31-347e21afde8e/modules"),
+    ).toBe("/entity/360812e1-9f94-46a3-aa31-347e21afde8e/company/settings/modules");
   });
 
   it("moves a company's plural address to the singular one, path and depth kept", () => {
-    expect(movedModulePage("/entities/360812e1/olive-and-vine")).toBe("/entity/360812e1/olive-and-vine");
+    expect(movedModulePage("/entities/360812e1/olive-and-vine")).toBe(
+      "/entity/360812e1/olive-and-vine",
+    );
     expect(movedModulePage("/entities/360812e1/olive-and-vine/settings/users")).toBe(
       "/entity/360812e1/olive-and-vine/settings/users",
     );
@@ -95,9 +97,13 @@ describe("movedSignUpPage", () => {
 describe("proxy's other answers", () => {
   // Pins proxy()'s redirects and pass-throughs before they move to @minty/shared (the shared-code refactor, 2026-10-21)
   it("307s a moved address, keeping its query", () => {
-    const res = proxy(new NextRequest("http://localhost:3000/entities/360812e1/co/settings/users?tab=2"));
+    const res = proxy(
+      new NextRequest("http://localhost:3000/entities/360812e1/co/settings/users?tab=2"),
+    );
     expect(res.status).toBe(307);
-    expect(res.headers.get("location")).toBe("http://localhost:3000/entity/360812e1/co/settings/users?tab=2");
+    expect(res.headers.get("location")).toBe(
+      "http://localhost:3000/entity/360812e1/co/settings/users?tab=2",
+    );
   });
 
   it("307s the old sign-up address", () => {
@@ -107,7 +113,9 @@ describe("proxy's other answers", () => {
   });
 
   it("lets an open page through without a cookie, and any page with one", () => {
-    expect(proxy(new NextRequest("http://localhost:3000/terms/beta-1")).headers.get("x-middleware-next")).toBe("1");
+    expect(
+      proxy(new NextRequest("http://localhost:3000/terms/beta-1")).headers.get("x-middleware-next"),
+    ).toBe("1");
     const withCookie = new NextRequest("http://localhost:3000/subscription", {
       headers: { cookie: "minty_token=anything" },
     });
@@ -115,7 +123,9 @@ describe("proxy's other answers", () => {
   });
 
   it("an EMPTY cookie is no cookie", () => {
-    const req = new NextRequest("http://localhost:3000/subscription", { headers: { cookie: "minty_token=" } });
+    const req = new NextRequest("http://localhost:3000/subscription", {
+      headers: { cookie: "minty_token=" },
+    });
     expect(proxy(req).status).toBe(307);
   });
 });
@@ -125,12 +135,15 @@ describe("toFlask", () => {
   const FLASK = 'https://flask.test/handoff?a=1&b="2"<3>';
 
   it("a normal host gets a plain 307 to the URL", () => {
-    const res = toFlask(new NextRequest("https://my.dailyminty.com/x"), "https://flask.test/h?a=1&b=2");
+    const res = toFlask(
+      new NextRequest("https://my.dailyminty.com/x"),
+      "https://flask.test/h?a=1&b=2",
+    );
     expect(res.status).toBe(307);
     expect(res.headers.get("location")).toBe("https://flask.test/h?a=1&b=2");
   });
 
-  it("a preview-set host gets this exact page, escaping &, \", < and >", async () => {
+  it('a preview-set host gets this exact page, escaping &, ", < and >', async () => {
     // owner 2026-10-21: one shared module (@minty/shared/proxy) - ">" was left as it stood
     const res = toFlask(new NextRequest("https://pr-feat-x-my.dailyminty.com/x"), FLASK);
     expect(res.status).toBe(200);

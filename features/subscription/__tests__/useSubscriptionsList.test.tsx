@@ -437,7 +437,10 @@ describe("useSubscriptionsList", () => {
     // and lands on 08-A, rather than carrying the company's scope into the portal.
     serveChange(fetchMock, "RV44");
     const e = ENTITIES[0];
-    const claims = btoa(JSON.stringify({ user_id: "u1", entity_id: e.entity_id })).replace(/=+$/, "");
+    const claims = btoa(JSON.stringify({ user_id: "u1", entity_id: e.entity_id })).replace(
+      /=+$/,
+      "",
+    );
     setAuth(`h.${claims}.s`, e.entity_id, e.entity_name);
     const left: string[] = [];
     _resetHandoffForTests((url) => left.push(url));
@@ -655,9 +658,9 @@ describe("useSubscriptionsList", () => {
     expectAskedAgain(result, left, said, ["PETTY_CASH"]);
     // An account that can pay is preselected; the one in dunning stays shut.
     expect(result.current.accountStep?.picked).toBe("acc-company-a");
-    expect(result.current.accountStep?.targets.find((t) => t.account.id === "acc-legacy")?.block).toBe(
-      "in_dunning",
-    );
+    expect(
+      result.current.accountStep?.targets.find((t) => t.account.id === "acc-legacy")?.block,
+    ).toBe("in_dunning");
     _resetHandoffForTests();
   });
 
@@ -681,7 +684,11 @@ describe("useSubscriptionsList", () => {
     expectAskedAgain(result, left, said, ["PETTY_CASH", "PAYMENT_REQUEST"]);
     // Asked again, the account picked carries the change on - nothing else to press first.
     await act(() => result.current.confirmAccount("acc-vine"));
-    expect(posts.map((p) => p.action).slice(3)).toEqual([MOVE, "authorize-billing", "restart-billing"]);
+    expect(posts.map((p) => p.action).slice(3)).toEqual([
+      MOVE,
+      "authorize-billing",
+      "restart-billing",
+    ]);
     _resetHandoffForTests();
   });
 
@@ -1159,7 +1166,8 @@ describe("useSubscriptionsList", () => {
   });
 
   it("an account the API refuses stays in the sheet in its words; closing it applies nothing", async () => {
-    const refusal = "A payment on Vine Consulting Limited didn't go through. Settle it before moving a company onto it.";
+    const refusal =
+      "A payment on Vine Consulting Limited didn't go through. Settle it before moving a company onto it.";
     const posts = serveChange(fetchMock, "RU23", {
       [MOVE]: { status: 409, body: { error: refusal } },
     });

@@ -200,9 +200,7 @@ export function PlanLines({ lines, size = "text-title-l" }: { lines: PlanLine[];
               layout, deliberately. */}
           <span data-plan-line className="flex flex-wrap items-baseline gap-x-2">
             <span className={`${size} font-bold ${PLAN_TONE[line.tone]}`}>{line.name}</span>
-            {line.tag && (
-              <span className="whitespace-nowrap text-sm text-ink-2">{line.tag}</span>
-            )}
+            {line.tag && <span className="whitespace-nowrap text-sm text-ink-2">{line.tag}</span>}
           </span>
           {/* Outside the baseline group: an image aligned to a baseline sits its bottom on
               the text's and rides up. */}
@@ -264,9 +262,7 @@ export function PriceBox({
 function Block({ block, card }: { block: SummaryBlock; card?: boolean }) {
   return (
     <div
-      className={`flex flex-col gap-4 ${
-        card ? "rounded-lg border border-line bg-card p-5" : ""
-      }`}
+      className={`flex flex-col gap-4 ${card ? "rounded-lg border border-line bg-card p-5" : ""}`}
     >
       <p className="whitespace-pre-line text-body-l text-ink-2">
         {block.heading}
@@ -502,10 +498,7 @@ export function SubscriptionSummaryRow({
               them - always below: the list is 960 wide (Minty v2 Part 15.4a). */}
           <div className="grid grid-cols-1 items-start gap-6 sm:grid-cols-2">
             {view.modules.map((module) => (
-              <div
-                key={module.code}
-                className="flex min-w-0 flex-col items-center gap-5"
-              >
+              <div key={module.code} className="flex min-w-0 flex-col items-center gap-5">
                 <SummaryModuleCard
                   module={module}
                   // The card toggles what the box below it toggles - the same handler, so the

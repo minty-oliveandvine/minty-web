@@ -55,7 +55,10 @@ describe("formatPrice, as the panel prints a price", () => {
 
   it("the forecast reads the summary's CODE, so a symbol in `currency` can never show", () => {
     const page = SUMMARY_FIXTURES.M44;
-    const legacy = { ...page, summary: { ...page.summary!, currency: "HK$", currency_code: "HKD" } };
+    const legacy = {
+      ...page,
+      summary: { ...page.summary!, currency: "HK$", currency_code: "HKD" },
+    };
     expect(forecast(legacy, TODAY).currency).toBe("HKD");
     const noCode = { ...page, summary: { ...page.summary!, currency: "HKD", currency_code: null } };
     expect(forecast(noCode, TODAY).currency).toBe("HKD");
@@ -257,7 +260,9 @@ describe("the panel", () => {
       ...SUMMARY_FIXTURES.M44,
       summary: { ...SUMMARY_FIXTURES.M44.summary!, currency: "HKD" },
     };
-    expect(buildSummaryView(page, ENTITY, null, TODAY).panel).toMatchObject({ price: "HKD\u00a0400" });
+    expect(buildSummaryView(page, ENTITY, null, TODAY).panel).toMatchObject({
+      price: "HKD\u00a0400",
+    });
     const bare: ModulePage = { ...SUMMARY_FIXTURES.M44, summary: null };
     // Without the bundle's price the two singles simply add up.
     expect(buildSummaryView(bare, ENTITY, null, TODAY).panel).toMatchObject({
@@ -456,7 +461,7 @@ describe("a tick pending (05·B)", () => {
 
 describe("longDate and shortDate, literally", () => {
   // Pins the en-GB date words before they move to @minty/shared (the shared-code refactor, 2026-10-21)
-  it("longDate is \"16 August 2026\", read in UTC", () => {
+  it('longDate is "16 August 2026", read in UTC', () => {
     expect(longDate(new Date(Date.UTC(2026, 7, 16)))).toBe("16 August 2026");
     expect(longDate(new Date("2026-08-16T23:30:00Z"))).toBe("16 August 2026");
     expect(longDate(new Date(Date.UTC(2026, 0, 1)))).toBe("1 January 2026");

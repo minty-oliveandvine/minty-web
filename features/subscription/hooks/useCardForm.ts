@@ -451,9 +451,7 @@ export function useEditCard({
       await updatePaymentMethod(card.id, {
         name: fields.name,
         // A two-digit year is this century's: Stripe wants the full one.
-        ...(expiryUsable
-          ? { exp_month: month, exp_year: year < 100 ? 2000 + year : year }
-          : {}),
+        ...(expiryUsable ? { exp_month: month, exp_year: year < 100 ? 2000 + year : year } : {}),
       });
       router.push(BILLING.account({ id: accountId }));
     } catch (err) {

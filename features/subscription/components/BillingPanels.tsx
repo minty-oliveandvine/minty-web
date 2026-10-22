@@ -102,7 +102,15 @@ const CATS = {
   thinking: { src: "/portal/minty-thinking.png", file: [235, 276], art: [35, 9, 217, 265] },
 } as const;
 
-function CatArt({ cat, width, className = "" }: { cat: keyof typeof CATS; width: number; className?: string }) {
+function CatArt({
+  cat,
+  width,
+  className = "",
+}: {
+  cat: keyof typeof CATS;
+  width: number;
+  className?: string;
+}) {
   const { src, file, art } = CATS[cat];
   const [left, top, right, bottom] = art;
   const scale = width / (right - left);
@@ -177,72 +185,72 @@ export function NextBillingCard({
           next.failed ? "border-danger" : "border-line"
         }`}
       >
-      <div className="min-w-0 [overflow-wrap:anywhere] sm:col-start-1 sm:row-start-1">
-        <p className="text-body-s text-ink-2">{BILL_TO}</p>
-        <p className="mt-1 text-body-m font-semibold text-ink">{next.billTo || "—"}</p>
-        {next.addressLines.length > 0 && (
-          <address className="mt-2 text-body-m not-italic leading-snug text-ink-2">
-            {next.addressLines.map((line) => (
-              <span key={line} className="block">
-                {line}
-              </span>
-            ))}
-          </address>
-        )}
-        {next.email && (
-          <p className="mt-2 text-body-m text-ink-2">
-            <BreakableEmail address={next.email} />
-          </p>
-        )}
-        {onChangeDetails && (
-          <button
-            type="button"
-            onClick={onChangeDetails}
-            className="-mx-2 mt-2 min-h-11 rounded-lg px-2 text-body-m text-ink underline underline-offset-4 hover:text-link"
-          >
-            {CHANGE_BILLING_DETAILS}
-          </button>
-        )}
-      </div>
-      <div className="sm:col-start-2 sm:row-start-1">
-        {/* Two label/value rows, ruled between: the date, and the amount set large in the
+        <div className="min-w-0 [overflow-wrap:anywhere] sm:col-start-1 sm:row-start-1">
+          <p className="text-body-s text-ink-2">{BILL_TO}</p>
+          <p className="mt-1 text-body-m font-semibold text-ink">{next.billTo || "—"}</p>
+          {next.addressLines.length > 0 && (
+            <address className="mt-2 text-body-m not-italic leading-snug text-ink-2">
+              {next.addressLines.map((line) => (
+                <span key={line} className="block">
+                  {line}
+                </span>
+              ))}
+            </address>
+          )}
+          {next.email && (
+            <p className="mt-2 text-body-m text-ink-2">
+              <BreakableEmail address={next.email} />
+            </p>
+          )}
+          {onChangeDetails && (
+            <button
+              type="button"
+              onClick={onChangeDetails}
+              className="-mx-2 mt-2 min-h-11 rounded-lg px-2 text-body-m text-ink underline underline-offset-4 hover:text-link"
+            >
+              {CHANGE_BILLING_DETAILS}
+            </button>
+          )}
+        </div>
+        <div className="sm:col-start-2 sm:row-start-1">
+          {/* Two label/value rows, ruled between: the date, and the amount set large in the
             price teal with "(estimated)" under it - the API prices it with the renewal runner
             itself, but a trial that lapses or a module cancelled before the date changes the
             bill. */}
-        <dl className="flex flex-col divide-y divide-line-subtle">
-          <div className="flex items-baseline justify-between gap-6 pb-3">
-            <dt className="text-body-s text-ink-2">{NEXT_BILL_DATE}</dt>
-            <dd className="text-right text-body-m text-ink">{next.date ?? "—"}</dd>
-          </div>
-          <div className="flex items-baseline justify-between gap-6 pt-3">
-            <dt className="text-body-s text-ink-2">{AMOUNT}</dt>
-            <dd className="text-right">
-              <span className="block text-display-m font-bold leading-none tabular-nums text-link">
-                {next.amount ?? "—"}
-              </span>
-              {next.amount && (
-                <span className="mt-1.5 block text-body-s text-ink-2">{ESTIMATED}</span>
-              )}
-            </dd>
-          </div>
-        </dl>
-        {/* Which companies failed is the overview's line (08-A); here the block only
+          <dl className="flex flex-col divide-y divide-line-subtle">
+            <div className="flex items-baseline justify-between gap-6 pb-3">
+              <dt className="text-body-s text-ink-2">{NEXT_BILL_DATE}</dt>
+              <dd className="text-right text-body-m text-ink">{next.date ?? "—"}</dd>
+            </div>
+            <div className="flex items-baseline justify-between gap-6 pt-3">
+              <dt className="text-body-s text-ink-2">{AMOUNT}</dt>
+              <dd className="text-right">
+                <span className="block text-display-m font-bold leading-none tabular-nums text-link">
+                  {next.amount ?? "—"}
+                </span>
+                {next.amount && (
+                  <span className="mt-1.5 block text-body-s text-ink-2">{ESTIMATED}</span>
+                )}
+              </dd>
+            </div>
+          </dl>
+          {/* Which companies failed is the overview's line (08-A); here the block only
             says that the account owes something now. */}
-        {next.failed && (
-          <div className="mt-4 flex flex-col items-start gap-2">
-            <p className="text-body-m font-semibold text-danger">{DUE_IMMEDIATELY}</p>
-            <span className="inline-flex h-6 items-center rounded-full bg-danger-bg px-2.5 text-label font-semibold text-danger">
-              {PAYMENT_FAILED}
-            </span>
-          </div>
-        )}
-      </div>
-      {/* The third column: the block's height, centred, against the right edge. */}
-      <CatArt
-        cat={next.failed ? "thinking" : "clock"}
-        width={next.failed ? 96 : 128}
-        className="hidden self-center justify-self-end sm:col-start-3 sm:row-start-1 sm:block"
-      />
+          {next.failed && (
+            <div className="mt-4 flex flex-col items-start gap-2">
+              <p className="text-body-m font-semibold text-danger">{DUE_IMMEDIATELY}</p>
+              <span className="inline-flex h-6 items-center rounded-full bg-danger-bg px-2.5 text-label font-semibold text-danger">
+                {PAYMENT_FAILED}
+              </span>
+            </div>
+          )}
+        </div>
+        {/* The third column: the block's height, centred, against the right edge. */}
+        <CatArt
+          cat={next.failed ? "thinking" : "clock"}
+          width={next.failed ? 96 : 128}
+          className="hidden self-center justify-self-end sm:col-start-3 sm:row-start-1 sm:block"
+        />
       </div>
     </section>
   );
@@ -390,11 +398,7 @@ function CardRowView({
         </div>
         <div className="hidden min-w-[96px] sm:block">
           <p className="text-body-s text-ink-2">Expiry date</p>
-          <p
-            className={`text-body-m ${
-              row.chip === "expired" ? "text-danger" : "text-ink"
-            }`}
-          >
+          <p className={`text-body-m ${row.chip === "expired" ? "text-danger" : "text-ink"}`}>
             {row.expiry ?? "—"}
           </p>
         </div>
@@ -800,7 +804,9 @@ export function InvoiceHistoryTable({
             </select>
           </div>
           <div className="flex items-center gap-2">
-            <span aria-live="polite">{invoiceRange(paging.page, paging.perPage, paging.total)}</span>
+            <span aria-live="polite">
+              {invoiceRange(paging.page, paging.perPage, paging.total)}
+            </span>
             <button
               type="button"
               onClick={() => onPage(paging.page - 1)}

@@ -52,8 +52,7 @@ function BackButton({ label = BACK_TO_LIST, onBack }: { label?: string; onBack: 
 
 function Part({ part }: { part: ResultPart }) {
   if (part.style === "plain") return <>{part.text}</>;
-  if (part.style === "strong")
-    return <strong className="font-normal text-ink">{part.text}</strong>;
+  if (part.style === "strong") return <strong className="font-normal text-ink">{part.text}</strong>;
   if (part.style === "company") return <span className="text-link">{part.text}</span>;
   return <span className={PLAN_TONE[part.style]}>{part.text}</span>;
 }

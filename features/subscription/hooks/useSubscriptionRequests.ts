@@ -341,27 +341,24 @@ export function useSubscriptionRequests({
     setAddingAccount(true);
   }, []);
   const cancelAddAccount = useCallback(() => setAddingAccount(false), []);
-  const accountOpened = useCallback(
-    (opened: OpenedAccount) => {
-      setAddingAccount(false);
-      // Selected straight away: they opened it in the middle of choosing which account pays,
-      // so choosing it for them is what they just asked for.
-      if (opened.accountId) setAccountId(opened.accountId);
-      setStep("payment");
-      if (opened.accounts) {
-        const accounts = opened.accounts;
-        setCompany((c) => (c ? { ...c, accounts } : c));
-        return;
-      }
-      // The sheet could not read the accounts back: read them here, or say so - a list without
-      // the account just opened would offer nothing to pick.
-      void fetchBillingAccounts().then(
-        (accounts) => setCompany((c) => (c ? { ...c, accounts } : c)),
-        (err) => setActionError(sentence(err, ACCOUNTS_LOAD_FAILED)),
-      );
-    },
-    [],
-  );
+  const accountOpened = useCallback((opened: OpenedAccount) => {
+    setAddingAccount(false);
+    // Selected straight away: they opened it in the middle of choosing which account pays,
+    // so choosing it for them is what they just asked for.
+    if (opened.accountId) setAccountId(opened.accountId);
+    setStep("payment");
+    if (opened.accounts) {
+      const accounts = opened.accounts;
+      setCompany((c) => (c ? { ...c, accounts } : c));
+      return;
+    }
+    // The sheet could not read the accounts back: read them here, or say so - a list without
+    // the account just opened would offer nothing to pick.
+    void fetchBillingAccounts().then(
+      (accounts) => setCompany((c) => (c ? { ...c, accounts } : c)),
+      (err) => setActionError(sentence(err, ACCOUNTS_LOAD_FAILED)),
+    );
+  }, []);
 
   const accept = useCallback(async () => {
     const chosen = reviewed?.account ?? null;

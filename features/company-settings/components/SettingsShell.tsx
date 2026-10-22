@@ -38,13 +38,22 @@ export function SettingsShell({
   const access = useMemo<ModuleAccess>(
     () =>
       modules
-        ? { pettyCash: modules.includes("PETTY_CASH"), billing: modules.includes("PAYMENT_REQUEST") }
+        ? {
+            pettyCash: modules.includes("PETTY_CASH"),
+            billing: modules.includes("PAYMENT_REQUEST"),
+          }
         : moduleClaims(getAuth()?.token),
     [modules],
   );
   return (
     <div className="flex h-dvh h-screen min-w-0 max-w-full flex-col overflow-hidden bg-canvas">
-      <AppHeader title="Settings" back={settingsBackLink(company.id)} companyName={company.name} nav={{ modules: access }} noBorder />
+      <AppHeader
+        title="Settings"
+        back={settingsBackLink(company.id)}
+        companyName={company.name}
+        nav={{ modules: access }}
+        noBorder
+      />
       <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto overflow-x-hidden px-4 pb-[env(safe-area-inset-bottom,0px)] sm:px-6 lg:px-8">
         {/* Part 15.G: Users is a list (960), the others are record pages (720). The whole column
             narrows, so the pills, heading and cards stay on one left edge. */}
@@ -79,7 +88,9 @@ export function SettingsCard({
   children: ReactNode;
 }) {
   return (
-    <div className={`min-w-0 overflow-hidden rounded-lg border border-line ${readOnly ? "bg-sunk" : "bg-card"}`}>
+    <div
+      className={`min-w-0 overflow-hidden rounded-lg border border-line ${readOnly ? "bg-sunk" : "bg-card"}`}
+    >
       <div className="flex flex-wrap items-start justify-between gap-3 px-4 pt-4 sm:px-5 sm:pt-5">
         <div className="min-w-0 flex-1">
           <h3 className="text-title-m font-semibold text-ink">{title}</h3>
@@ -95,8 +106,14 @@ export function SettingsCard({
 /** Why the controls are dead - Payment Settings' read-only line. */
 export function ReadOnlyNotice({ children }: { children: ReactNode }) {
   return (
-    <div role="status" className="flex items-center gap-2 rounded-lg border border-line bg-sunk px-4 py-2.5 text-sm text-ink-2">
-      <span className="material-symbols-rounded shrink-0 text-[18px] leading-none text-ink-muted" aria-hidden>
+    <div
+      role="status"
+      className="flex items-center gap-2 rounded-lg border border-line bg-sunk px-4 py-2.5 text-sm text-ink-2"
+    >
+      <span
+        className="material-symbols-rounded shrink-0 text-[18px] leading-none text-ink-muted"
+        aria-hidden
+      >
         visibility
       </span>
       <span>{children}</span>
@@ -104,7 +121,15 @@ export function ReadOnlyNotice({ children }: { children: ReactNode }) {
   );
 }
 
-export function LoadState({ status, error, onRetry }: { status: "loading" | "error"; error?: string; onRetry: () => void }) {
+export function LoadState({
+  status,
+  error,
+  onRetry,
+}: {
+  status: "loading" | "error";
+  error?: string;
+  onRetry: () => void;
+}) {
   return status === "loading" ? (
     <p className="mt-6 text-center text-sm text-ink-2" role="status">
       Loading…
@@ -112,7 +137,11 @@ export function LoadState({ status, error, onRetry }: { status: "loading" | "err
   ) : (
     <div className="mt-6 text-center" role="alert">
       <p className="text-sm text-danger">{error}</p>
-      <button type="button" className="mt-2 min-h-11 rounded-lg px-2 text-body-m font-semibold text-link underline hover:bg-hover" onClick={onRetry}>
+      <button
+        type="button"
+        className="mt-2 min-h-11 rounded-lg px-2 text-body-m font-semibold text-link underline hover:bg-hover"
+        onClick={onRetry}
+      >
         Try again
       </button>
     </div>

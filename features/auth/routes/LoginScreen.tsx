@@ -27,7 +27,12 @@ import { EMAIL_ASCII_HINT, isEmail, useEmailInput } from "@minty/shared/emailInp
 import type { LegalDocumentBody } from "@/lib/legal/document";
 import { LEGAL_PATHS } from "@/lib/legal/paths";
 
-import { requestCode, inviteOwesTerms, signUpTerms, xeroSignInUrl } from "@/features/auth/api/signIn";
+import {
+  requestCode,
+  inviteOwesTerms,
+  signUpTerms,
+  xeroSignInUrl,
+} from "@/features/auth/api/signIn";
 import {
   AUTH_ERROR,
   AUTH_GHOST,
@@ -95,7 +100,9 @@ export function LoginScreen({ arrival }: { arrival: Arrival }) {
     if (!invited) return;
     inviteOwesTerms(arrival.invite)
       .then(setTermsOwed)
-      .catch((err) => console.error("[sign-in] whether the invitee owes the Terms is unknown; asking", err));
+      .catch((err) =>
+        console.error("[sign-in] whether the invitee owes the Terms is unknown; asking", err),
+      );
   }, [invited, arrival.invite]);
 
   const emailLocked = invited && Boolean(arrival.email);
@@ -156,9 +163,12 @@ export function LoginScreen({ arrival }: { arrival: Arrival }) {
       />
 
       {invited && arrival.email ? (
-        <div className="rounded-lg border border-line-selected bg-selected px-3.5 py-3 text-body-s leading-normal text-ink" role="status">
-          This invitation was sent to <strong className="font-semibold">{arrival.email}</strong>. Please
-          sign in with that account to accept it.
+        <div
+          className="rounded-lg border border-line-selected bg-selected px-3.5 py-3 text-body-s leading-normal text-ink"
+          role="status"
+        >
+          This invitation was sent to <strong className="font-semibold">{arrival.email}</strong>.
+          Please sign in with that account to accept it.
         </div>
       ) : null}
 
@@ -201,8 +211,8 @@ export function LoginScreen({ arrival }: { arrival: Arrival }) {
         <div>
           <label htmlFor="signin-email" className={AUTH_LABEL}>
             Email
-                <RequiredMark />
-              </label>
+            <RequiredMark />
+          </label>
           <input
             id="signin-email"
             {...emailInput.props}
@@ -235,11 +245,21 @@ export function LoginScreen({ arrival }: { arrival: Arrival }) {
             />
             <span>
               I agree to the{" "}
-              <a className={AUTH_LINK} href={LEGAL_PATHS.terms} target="_blank" rel="noopener noreferrer">
+              <a
+                className={AUTH_LINK}
+                href={LEGAL_PATHS.terms}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 Terms of Use
               </a>{" "}
               and{" "}
-              <a className={AUTH_LINK} href={LEGAL_PATHS.privacy} target="_blank" rel="noopener noreferrer">
+              <a
+                className={AUTH_LINK}
+                href={LEGAL_PATHS.privacy}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 Privacy Policy
               </a>
               .
@@ -263,9 +283,19 @@ export function LoginScreen({ arrival }: { arrival: Arrival }) {
         <span className="h-px flex-1 bg-line-subtle" />
       </div>
 
-      <a className={AUTH_GHOST} href={xeroSignInUrl({ invite: arrival.invite, next: arrival.next }, origin)}>
+      <a
+        className={AUTH_GHOST}
+        href={xeroSignInUrl({ invite: arrival.invite, next: arrival.next }, origin)}
+      >
         {LOGIN_COPY.xero}
-        <Image src="/auth/xero-logo.webp" alt="" width={20} height={20} unoptimized className="h-5 w-5 rounded-full object-cover" />
+        <Image
+          src="/auth/xero-logo.webp"
+          alt=""
+          width={20}
+          height={20}
+          unoptimized
+          className="h-5 w-5 rounded-full object-cover"
+        />
       </a>
 
       <p className="text-center text-sm text-ink-2">

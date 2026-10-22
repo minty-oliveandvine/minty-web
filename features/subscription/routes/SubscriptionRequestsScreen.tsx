@@ -44,7 +44,11 @@ export function SubscriptionRequestsScreen(args: UseSubscriptionRequestsArgs) {
           className="flex items-center gap-4 rounded-lg border border-transparent bg-danger-bg px-4 py-3 text-body-m text-danger"
         >
           <p>{r.error}</p>
-          <button type="button" onClick={r.reload} className="min-h-11 px-2 font-semibold underline">
+          <button
+            type="button"
+            onClick={r.reload}
+            className="min-h-11 px-2 font-semibold underline"
+          >
             Try again
           </button>
         </div>

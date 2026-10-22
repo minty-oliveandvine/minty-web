@@ -67,7 +67,9 @@ describe("ProfilePanel", () => {
     serve(UNSCOPED);
     await userEvent.click(badge);
     const view = within(panel()!);
-    expect(await view.findByRole("heading", { level: 2, name: UNSCOPED.user.name })).toBeInTheDocument();
+    expect(
+      await view.findByRole("heading", { level: 2, name: UNSCOPED.user.name }),
+    ).toBeInTheDocument();
     expect(String(fetchMock.mock.calls[0][0])).toBe(`${env.PETTY_CASH_URL}/api/me/profile`);
     // the same body as the page: the details card, the slot, Log Out
     expect(view.getByRole("region", { name: "Your details" })).toBeInTheDocument();
@@ -92,7 +94,9 @@ describe("ProfilePanel", () => {
 
     serve(UNSCOPED);
     await userEvent.click(menu.getByRole("button", { name: `${UNSCOPED.user.name}, My Profile` }));
-    await userEvent.click(await within(panel()!).findByRole("button", { name: "Close My Profile" }));
+    await userEvent.click(
+      await within(panel()!).findByRole("button", { name: "Close My Profile" }),
+    );
     expect(panel()).toBeNull();
     expect(screen.queryByRole("navigation", { name: "Main navigation" })).toBeNull();
   });

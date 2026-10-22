@@ -8,8 +8,18 @@
 import Image from "next/image";
 
 const ART = {
-  PETTY_CASH: { icon: "/entities/modules/pettycash-icon.webp", scale: "w-[80%] h-[80%]", cat: "/entities/modules/minty-l.webp", corner: "left" },
-  PAYMENT_REQUEST: { icon: "/entities/modules/payment-icon.webp", scale: "w-full h-full", cat: "/entities/modules/minty-r.webp", corner: "right" },
+  PETTY_CASH: {
+    icon: "/entities/modules/pettycash-icon.webp",
+    scale: "w-[80%] h-[80%]",
+    cat: "/entities/modules/minty-l.webp",
+    corner: "left",
+  },
+  PAYMENT_REQUEST: {
+    icon: "/entities/modules/payment-icon.webp",
+    scale: "w-full h-full",
+    cat: "/entities/modules/minty-r.webp",
+    corner: "right",
+  },
 } as const;
 
 export function ModuleChoiceButton({
@@ -35,7 +45,11 @@ export function ModuleChoiceButton({
             alt=""
             fill
             sizes="360px"
-            className={art.corner === "left" ? "object-contain object-left-top" : "object-contain object-right-top"}
+            className={
+              art.corner === "left"
+                ? "object-contain object-left-top"
+                : "object-contain object-right-top"
+            }
           />
         </div>
       </div>

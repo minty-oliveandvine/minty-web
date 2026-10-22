@@ -133,7 +133,7 @@ and the gate fails open rather than show a document Flask would misrecord.
   said in the panel, and Accept can be tried again.
 - **It fails open, as Flask's gate does.** A check that errors - Flask down, a 500, an answer it
   cannot read - shows the page and logs `Terms check failed: showing the page WITHOUT the Terms
-  gate` to the console. The gate is a backstop here: entering a company still passes Flask's own
+gate` to the console. The gate is a backstop here: entering a company still passes Flask's own
   gate, and the bearer APIs are not Terms-gated (Minty's gate only sees session requests).
 - **The page behind still loads** (inert, hidden from assistive technology): the company list is
   readable behind the panel, entering one is not possible - the trade Flask's own modal made over

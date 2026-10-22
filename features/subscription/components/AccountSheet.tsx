@@ -150,14 +150,8 @@ export function SheetFrame({
         {(title || onClose) && (
           <div className="mb-5 flex items-start gap-3">
             <div className="min-w-0">
-              {title && (
-                <h2 className="mb-1.5 text-title-l font-semibold text-ink">
-                  {title}
-                </h2>
-              )}
-              {sub && (
-                <p className="max-w-[434px] text-body-m text-ink-2">{sub}</p>
-              )}
+              {title && <h2 className="mb-1.5 text-title-l font-semibold text-ink">{title}</h2>}
+              {sub && <p className="max-w-[434px] text-body-m text-ink-2">{sub}</p>}
             </div>
             {onClose && (
               <button
@@ -219,7 +213,9 @@ function BrandChip({ card }: { card: SavedPaymentMethod | null }) {
       aria-hidden="true"
       className="inline-flex h-9 w-14 flex-none items-center justify-center rounded-md border border-line bg-card"
     >
-      {card && <CardBrand brand={card.brand} label={card.brand_label} className="h-[30px] w-[46px]" />}
+      {card && (
+        <CardBrand brand={card.brand} label={card.brand_label} className="h-[30px] w-[46px]" />
+      )}
     </span>
   );
 }
@@ -257,9 +253,7 @@ export function SheetRow({
     <li>
       <label
         className={`flex min-h-[95px] items-center gap-[18px] rounded-lg bg-card px-5 py-3.5 -outline-offset-2 transition-[background-color,outline-color] duration-150 max-sm:flex-wrap max-sm:gap-3.5 max-sm:px-4 ${
-          checked
-            ? "outline-2 outline-line-selected"
-            : "outline-1 outline-line"
+          checked ? "outline-2 outline-line-selected" : "outline-1 outline-line"
         } ${
           disabled
             ? "cursor-not-allowed opacity-60"
@@ -515,12 +509,12 @@ function AccountAdded({
         />
       </div>
       <p className="pt-6 text-body-m text-ink-2">
-        <span className="font-semibold text-ink">{shortCardName(card.brand_label, card.last4)}</span> is
-        added successfully.
+        <span className="font-semibold text-ink">
+          {shortCardName(card.brand_label, card.last4)}
+        </span>{" "}
+        is added successfully.
       </p>
-      {isDefault && (
-        <p className="pt-3 text-body-m text-ink-2">{CARD_ADDED_DEFAULT}</p>
-      )}
+      {isDefault && <p className="pt-3 text-body-m text-ink-2">{CARD_ADDED_DEFAULT}</p>}
       <div className="mt-6 flex justify-end max-sm:flex-col">
         <button
           ref={doneRef}
@@ -551,9 +545,7 @@ export type NewAccountSheet = {
 
 export function useNewAccountSheet(onOpened: (opened: OpenedAccount) => void): NewAccountSheet {
   const [saving, setSaving] = useState(false);
-  const [opened, setOpened] = useState<(OpenedAccount & { card: SavedPaymentMethod }) | null>(
-    null,
-  );
+  const [opened, setOpened] = useState<(OpenedAccount & { card: SavedPaymentMethod }) | null>(null);
 
   const saved = useCallback(
     (result: OpenedAccount) => {

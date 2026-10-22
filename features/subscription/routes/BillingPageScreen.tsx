@@ -146,9 +146,7 @@ export function BillingPageScreen(args: UseBillingPageArgs) {
         // promised only while collection is running.
         <PaymentFailedDialog
           card={
-            b.account?.card
-              ? shortCardName(b.account.card.brand_label, b.account.card.last4)
-              : null
+            b.account?.card ? shortCardName(b.account.card.brand_label, b.account.card.last4) : null
           }
           autoRetry={Boolean(b.account?.in_dunning)}
           busy={b.retrying !== null}

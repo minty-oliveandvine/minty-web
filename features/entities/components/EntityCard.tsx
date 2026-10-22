@@ -162,7 +162,14 @@ export function EntityCard({ row }: { row: EntityRow }) {
           ) : null}
           <LastOpened row={row} />
         </span>
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" className="shrink-0 text-ink" aria-hidden>
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 20 20"
+          fill="none"
+          className="shrink-0 text-ink"
+          aria-hidden
+        >
           <path
             d="M10.8234 9.99945L6.98561 13.8395L8.07324 14.9434L13.0142 9.99945L8.07324 5.05555L6.98561 6.15938L10.8234 9.99945Z"
             fill="currentColor"

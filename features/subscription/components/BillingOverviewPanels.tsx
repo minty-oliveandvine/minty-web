@@ -73,7 +73,15 @@ export function StatusPill({ label, tone }: { label: string; tone: StatusTone })
 }
 
 /** The section headings' one look: plain, on the page, a link at the right when there is one. */
-function SectionHeading({ id, title, children }: { id: string; title: string; children?: ReactNode }) {
+function SectionHeading({
+  id,
+  title,
+  children,
+}: {
+  id: string;
+  title: string;
+  children?: ReactNode;
+}) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
       <h2 id={id} className="text-title-l font-semibold text-ink">
@@ -212,7 +220,11 @@ export function PositionHeader({
             {accountsFailed && (
               <p className="rounded-lg bg-card px-3 py-1 text-body-s text-danger">
                 {ACCOUNTS_LOAD_FAILED}{" "}
-                <button type="button" onClick={onRetry} className="min-h-11 px-1 font-semibold underline">
+                <button
+                  type="button"
+                  onClick={onRetry}
+                  className="min-h-11 px-1 font-semibold underline"
+                >
                   Try again
                 </button>
               </p>
@@ -284,8 +296,14 @@ export function AttentionBanners({
 }
 
 const MODULE_CHIP: Record<string, { look: string; glyph: string }> = {
-  PETTY_CASH: { look: "bg-module-pettycash-wash text-module-pettycash-ink", glyph: "point_of_sale" },
-  PAYMENT_REQUEST: { look: "bg-module-payment-wash text-module-payment-ink", glyph: "request_quote" },
+  PETTY_CASH: {
+    look: "bg-module-pettycash-wash text-module-pettycash-ink",
+    glyph: "point_of_sale",
+  },
+  PAYMENT_REQUEST: {
+    look: "bg-module-payment-wash text-module-payment-ink",
+    glyph: "request_quote",
+  },
 };
 
 /** The module's identity chip: its wash, its ink and its glyph (identity, never status). */
@@ -309,9 +327,7 @@ function UpdateLine({ update }: { update: OverviewUpdate }) {
       <span className="w-[150px] shrink-0 truncate text-body-s text-ink-muted">
         {update.entityName}
       </span>
-      {update.module && (
-        <span className="text-body-s font-bold text-ink">{update.module}</span>
-      )}
+      {update.module && <span className="text-body-s font-bold text-ink">{update.module}</span>}
       <span className={`text-body-s ${update.tone === "failed" ? "font-bold text-danger" : ""}`}>
         {update.text}
       </span>
@@ -343,7 +359,10 @@ export function ModulesSection({
       {rows.length === 0 ? (
         <p className="text-body-m text-ink-2">{NO_MODULES}</p>
       ) : (
-        <ul className="flex flex-col divide-y divide-line-subtle rounded-lg border border-line" aria-label={MODULES}>
+        <ul
+          className="flex flex-col divide-y divide-line-subtle rounded-lg border border-line"
+          aria-label={MODULES}
+        >
           {rows.map((row) => (
             <li
               key={row.code}
@@ -355,7 +374,11 @@ export function ModulesSection({
               </span>
               <span className="flex min-w-0 flex-1 flex-wrap items-center gap-x-5 gap-y-2">
                 {row.states.map((state) => (
-                  <span key={state.key} className="inline-flex items-center gap-2" data-state={state.key}>
+                  <span
+                    key={state.key}
+                    className="inline-flex items-center gap-2"
+                    data-state={state.key}
+                  >
                     <StatusPill label={state.label} tone={state.tone} />
                     <span className="text-body-s text-ink-2">{state.count}</span>
                   </span>
@@ -428,7 +451,12 @@ export function PaymentMethodSection({
       ) : (
         <div className="flex items-center gap-4" data-card={card.id}>
           <span className="flex h-16 w-24 shrink-0 items-center justify-center rounded-lg border border-line bg-card px-2">
-            <CardBrand brand={card.brand} label={card.brand_label} fit="mark" className="w-[72px]" />
+            <CardBrand
+              brand={card.brand}
+              label={card.brand_label}
+              fit="mark"
+              className="w-[72px]"
+            />
           </span>
           <div className="flex min-w-0 flex-col gap-1">
             <p className="truncate text-title-m font-semibold text-ink">{cardTitle(card)}</p>
@@ -476,7 +504,10 @@ export function InvoicesSection({
       {invoices.status === "loading" ? (
         <ul className="flex flex-col gap-2" role="status" aria-label={LOADING_INVOICES}>
           {Array.from({ length: RECENT_INVOICES }).map((_, i) => (
-            <li key={i} className="flex animate-pulse flex-col gap-2 rounded-lg border border-line bg-card px-4 py-3">
+            <li
+              key={i}
+              className="flex animate-pulse flex-col gap-2 rounded-lg border border-line bg-card px-4 py-3"
+            >
               <span className="h-5 w-[160px] max-w-full rounded bg-neutral-bg" />
               <span className="h-4 w-[220px] max-w-full rounded bg-sunk" />
             </li>

@@ -42,14 +42,17 @@ describe("app/login and app/signup are re-exports only", () => {
     ]);
   });
 
-  it.each(files.map((f) => [rel(f), f]))("%s is a single re-export from the feature index", (_n, file) => {
-    const code = readFileSync(file, "utf8")
-      .replace(/\r\n/g, "\n")
-      .split("\n")
-      .filter((line) => !line.trim().startsWith("//") && line.trim() !== "")
-      .join("\n");
-    expect(code + "\n").toMatch(REEXPORT);
-  });
+  it.each(files.map((f) => [rel(f), f]))(
+    "%s is a single re-export from the feature index",
+    (_n, file) => {
+      const code = readFileSync(file, "utf8")
+        .replace(/\r\n/g, "\n")
+        .split("\n")
+        .filter((line) => !line.trim().startsWith("//") && line.trim() !== "")
+        .join("\n");
+      expect(code + "\n").toMatch(REEXPORT);
+    },
+  );
 });
 
 describe("the shell's spelling of the mounts", () => {

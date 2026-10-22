@@ -78,7 +78,11 @@ const DETAILS_APPEARANCE: Appearance = {
     // 13.5px + a 15px line + 13.5px + two 1.5px edges = the 46px of `INPUT` (measured live:
     // Stripe's default padding drew 43px beside ours).
     ".Input": { border: "1.5px solid #848C8C", boxShadow: "none", padding: "13.5px 14px" },
-    ".Input:focus": { border: "1.5px solid #19676B", boxShadow: "0 0 0 2px #19676B", outline: "none" },
+    ".Input:focus": {
+      border: "1.5px solid #19676B",
+      boxShadow: "0 0 0 2px #19676B",
+      outline: "none",
+    },
     ".Label": { fontSize: "14px", fontWeight: "500", color: "#242828", marginBottom: "7px" },
   },
 };
@@ -239,7 +243,10 @@ export function BillingDetailsForm({
       className="flex w-full flex-col gap-4 rounded-lg border border-line bg-card p-4 sm:p-5"
     >
       <Field id="billing-company" label="Billing Company" error={errors.company}>
-        <input {...input("company", "(e.g. Vine Consulting Limited)")} autoComplete="organization" />
+        <input
+          {...input("company", "(e.g. Vine Consulting Limited)")}
+          autoComplete="organization"
+        />
       </Field>
       <Field id="billing-email" label="Billing email" error={emailError}>
         <input

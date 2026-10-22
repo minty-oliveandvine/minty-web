@@ -7,42 +7,42 @@ same week had produced a third byte-identical copy of the design tokens.
 
 It is for the **Next.js apps only**. Flask keeps its own sidebar and CSS and is not a consumer.
 
-| Consumer | takes |
-|---|---|
-| `minty-web` (here) | the tokens **and** the components |
-| `minty-payment-request-web` | the tokens **and** the components |
-| `minty-onboarding-web` | `theme.css` only |
-| `minty-www` | nothing — Tailwind v3 / React 18 / Next 14 |
+| Consumer                    | takes                                      |
+| --------------------------- | ------------------------------------------ |
+| `minty-web` (here)          | the tokens **and** the components          |
+| `minty-payment-request-web` | the tokens **and** the components          |
+| `minty-onboarding-web`      | `theme.css` only                           |
+| `minty-www`                 | nothing — Tailwind v3 / React 18 / Next 14 |
 
 ## What came out of this repo
 
-| Was | Now |
-|---|---|
-| `components/ui/{Sidebar,SideMenu,NavMenu,ViewerBadge}.tsx` | shims re-exporting `@minty/shared/sidebar` |
-| `lib/viewer.ts` | a shim over `@minty/shared/viewer` |
-| `lib/{safeNext,companyRef,leaveGuard,emailInput}.ts` | **deleted**; ~23 call sites import `@minty/shared/<name>` |
+| Was                                                                                       | Now                                                                                                                                                                                    |
+| ----------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `components/ui/{Sidebar,SideMenu,NavMenu,ViewerBadge}.tsx`                                | shims re-exporting `@minty/shared/sidebar`                                                                                                                                             |
+| `lib/viewer.ts`                                                                           | a shim over `@minty/shared/viewer`                                                                                                                                                     |
+| `lib/{safeNext,companyRef,leaveGuard,emailInput}.ts`                                      | **deleted**; ~23 call sites import `@minty/shared/<name>`                                                                                                                              |
 | `formatMoney(symbol, n)` in `features/subscription/lib/subscriptionSummary.ts` ("HK$400") | **deleted** (2026-10-21, the owner's one money rule): prices call `formatPrice(n, code)` from `@minty/shared/money` ("HKD 400", "HKD 400.50"; the space is non-breaking, `CODE_SPACE`) |
-| the `@theme` font block in `app/globals.css` | `@import "@minty/shared/theme.css";` |
-| the Minty v2 type scale (`--text-*`) and `--color-action-disabled` in `app/globals.css` | `@import "@minty/shared/tokens.css";` (v0.4, 2026-10-15) |
+| the `@theme` font block in `app/globals.css`                                              | `@import "@minty/shared/theme.css";`                                                                                                                                                   |
+| the Minty v2 type scale (`--text-*`) and `--color-action-disabled` in `app/globals.css`   | `@import "@minty/shared/tokens.css";` (v0.4, 2026-10-15)                                                                                                                               |
 
 ### The shared-code refactor (2026-10-21, the owner: one shared module per rule)
 
-| Was | Now |
-|---|---|
-| `lib/calendarDays.ts` `hkIsoDate`, `daysFromToday`, `BUSINESS_TIME_ZONE`; the `MONTHS` copies in `entityRows.ts`, `billing.ts`, `breakdown.ts` | `@minty/shared/dates` (`isoDateInTimeZone(HK_TIME_ZONE, d)`, `daysFromToday`, `MONTHS`); `lib/calendarDays.ts` keeps only this app's `TRIAL_SOON_DAYS` |
-| `features/subscription/lib/download.ts` | **deleted**; `@minty/shared/download` - `saveBlob(blob, filename)`, `saveTextFile(text, filename, type)` (the argument order flipped; the link is hidden and cleaned up even when the click throws) |
-| `lib/env.ts`'s `url()` | `envUrl(name, raw, devFallback)` from `@minty/shared/env`; a production build with a URL unset **throws** (CI and every Vercel environment set all three) |
-| `toFlask` in `proxy.ts` | `@minty/shared/proxy` (also escapes `>`) |
-| `lib/apiClient.ts`'s request code, `ApiError`, `HOUSE_FALLBACK` | `createBearerClient`, `ApiError`, `HOUSE_FALLBACK` from `@minty/shared/apiClient`; `lib/apiClient.ts` keeps this app's configuration and the names it imports (`apiFetch`, `apiFetchBlob`, `mintyFetch`, `billingJson`, `flaskJson`, `flaskDecorationJson`) |
-| `lib/auth.ts`'s cookie code, `decodeJwtPayload`, `secondsUntilExpiry`, `isTokenExpired()` | `createCookieAuth({ prefix: "minty" })` and the JWT reads from `@minty/shared/auth` (`isTokenExpired(token)` takes the token); `lib/auth.ts` keeps the instance, `setAuth(token, id, name)` and `isEntityScoped` |
-| `lib/moduleClaims.ts` | **deleted**; `moduleClaims(token)` from `@minty/shared/auth` |
-| `lib/handoff.ts`'s URL and redirect code, its `withReturnOrigin` copy; `lib/logout.ts` | `createHandoff({ route: "/handoff/minty-web" })` (no `companyFromNext`: Flask's minty-web hand-off takes a full id only) and `logoutUrl` from `@minty/shared/handoff`; `lib/handoff.ts` keeps the instance and `logOut`; `lib/logout.ts` **deleted** |
-| `lib/previewSibling.ts` | **deleted**; `@minty/shared/previewSibling` |
-| `app/landing/page.tsx`'s effect | `useLandingHandoff` from `@minty/shared/landing` |
-| `features/profile/api/profile.ts` `fetchProfile`/`saveProfile`; the sidebar host's `loadViewer`; `fetchAllPayerSubscriptions`'s page walk | `createProfileApi`, `loadViewer`, `fetchAllSubscriptions` from `@minty/shared/portal`, over this app's clients |
-| the sidebar host's inline `body` overflow lock | `pushAppScrollLock` from `@minty/shared/scrollLock` (reference counted) |
-| `lib/hubPaths.ts` `companyPath` | `@minty/shared/companyRef` `companyPath` (segments joined with `/`; every caller here passed a leading slash, so no address changed) |
-| the inline `useSyncExternalStore(noSubscribe, …)` copies (Header, LoginScreen, PortalChrome, SubscriptionOverviewScreen, ModuleSettingsScreen) | `useClientValue` from `@minty/shared/clientValue` |
+| Was                                                                                                                                            | Now                                                                                                                                                                                                                                                         |
+| ---------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `lib/calendarDays.ts` `hkIsoDate`, `daysFromToday`, `BUSINESS_TIME_ZONE`; the `MONTHS` copies in `entityRows.ts`, `billing.ts`, `breakdown.ts` | `@minty/shared/dates` (`isoDateInTimeZone(HK_TIME_ZONE, d)`, `daysFromToday`, `MONTHS`); `lib/calendarDays.ts` keeps only this app's `TRIAL_SOON_DAYS`                                                                                                      |
+| `features/subscription/lib/download.ts`                                                                                                        | **deleted**; `@minty/shared/download` - `saveBlob(blob, filename)`, `saveTextFile(text, filename, type)` (the argument order flipped; the link is hidden and cleaned up even when the click throws)                                                         |
+| `lib/env.ts`'s `url()`                                                                                                                         | `envUrl(name, raw, devFallback)` from `@minty/shared/env`; a production build with a URL unset **throws** (CI and every Vercel environment set all three)                                                                                                   |
+| `toFlask` in `proxy.ts`                                                                                                                        | `@minty/shared/proxy` (also escapes `>`)                                                                                                                                                                                                                    |
+| `lib/apiClient.ts`'s request code, `ApiError`, `HOUSE_FALLBACK`                                                                                | `createBearerClient`, `ApiError`, `HOUSE_FALLBACK` from `@minty/shared/apiClient`; `lib/apiClient.ts` keeps this app's configuration and the names it imports (`apiFetch`, `apiFetchBlob`, `mintyFetch`, `billingJson`, `flaskJson`, `flaskDecorationJson`) |
+| `lib/auth.ts`'s cookie code, `decodeJwtPayload`, `secondsUntilExpiry`, `isTokenExpired()`                                                      | `createCookieAuth({ prefix: "minty" })` and the JWT reads from `@minty/shared/auth` (`isTokenExpired(token)` takes the token); `lib/auth.ts` keeps the instance, `setAuth(token, id, name)` and `isEntityScoped`                                            |
+| `lib/moduleClaims.ts`                                                                                                                          | **deleted**; `moduleClaims(token)` from `@minty/shared/auth`                                                                                                                                                                                                |
+| `lib/handoff.ts`'s URL and redirect code, its `withReturnOrigin` copy; `lib/logout.ts`                                                         | `createHandoff({ route: "/handoff/minty-web" })` (no `companyFromNext`: Flask's minty-web hand-off takes a full id only) and `logoutUrl` from `@minty/shared/handoff`; `lib/handoff.ts` keeps the instance and `logOut`; `lib/logout.ts` **deleted**        |
+| `lib/previewSibling.ts`                                                                                                                        | **deleted**; `@minty/shared/previewSibling`                                                                                                                                                                                                                 |
+| `app/landing/page.tsx`'s effect                                                                                                                | `useLandingHandoff` from `@minty/shared/landing`                                                                                                                                                                                                            |
+| `features/profile/api/profile.ts` `fetchProfile`/`saveProfile`; the sidebar host's `loadViewer`; `fetchAllPayerSubscriptions`'s page walk      | `createProfileApi`, `loadViewer`, `fetchAllSubscriptions` from `@minty/shared/portal`, over this app's clients                                                                                                                                              |
+| the sidebar host's inline `body` overflow lock                                                                                                 | `pushAppScrollLock` from `@minty/shared/scrollLock` (reference counted)                                                                                                                                                                                     |
+| `lib/hubPaths.ts` `companyPath`                                                                                                                | `@minty/shared/companyRef` `companyPath` (segments joined with `/`; every caller here passed a leading slash, so no address changed)                                                                                                                        |
+| the inline `useSyncExternalStore(noSubscribe, …)` copies (Header, LoginScreen, PortalChrome, SubscriptionOverviewScreen, ModuleSettingsScreen) | `useClientValue` from `@minty/shared/clientValue`                                                                                                                                                                                                           |
 
 **Kept local on purpose:** `lib/mintyEntry.ts` (`mintyEntryUrl`, `pettyCashWebUrl` and friends) -
 the package's `mintyEntryUrl` adds `return_origin` to the `/enter` address, which this app's
@@ -108,8 +108,8 @@ Three parts of its shape exist for reasons worth keeping:
 ```css
 /* app/globals.css */
 @import "tailwindcss";
-@import "@minty/shared/theme.css";           /* tokens - a bad specifier fails the build */
-@import "@minty/shared/tokens.css";          /* Part 13 colour roles, radius, type, shadows */
+@import "@minty/shared/theme.css"; /* tokens - a bad specifier fails the build */
+@import "@minty/shared/tokens.css"; /* Part 13 colour roles, radius, type, shadows */
 @import "material-symbols/rounded.css";
 @source "../node_modules/@minty/shared/src"; /* AFTER every @import */
 ```
@@ -142,10 +142,10 @@ modules for good.
 
 ## Guards
 
-| Test | Catches |
-|---|---|
+| Test                                   | Catches                                                                                                                                                                      |
+| -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `app/__tests__/packagedStyles.test.ts` | a lost `@import`/`@source`, a local font, radius or type token redeclared, `@source` out of order, and the packaged sidebar's own declarations missing from the compiled CSS |
-| `app/__tests__/packagedAssets.test.ts` | a `/menu/*` file the package renders that this app's `public/` does not serve (Next cannot serve one from `node_modules`) — a broken image is not an error |
+| `app/__tests__/packagedAssets.test.ts` | a `/menu/*` file the package renders that this app's `public/` does not serve (Next cannot serve one from `node_modules`) — a broken image is not an error                   |
 
 ## Changing it
 

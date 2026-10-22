@@ -56,12 +56,12 @@ name, and whether this person may free it). That raises **"That Xero organisatio
 (`XeroConflictDialog`, the `ConfirmDialog` frame) — a dialog, not a toast alone, because the way
 on is a real disconnect of another company and that is asked for:
 
-- ***Move it here*** (orange) → `POST /api/me/company/xero/release` with the **other** company's
+- _**Move it here**_ (orange) → `POST /api/me/company/xero/release` with the **other** company's
   id, which Flask authorizes on that company (`XERO_SETTINGS_UPDATE` there) and leaves
   `disconnected`; then the browser goes back through `/xero_reconnect` for this one. Two steps,
   because the refused attempt's grant was handed back to Xero.
-- **No permission there** → no *Move it here*, only the company to ask and *Close*.
-- ***Go back***, Escape and the backdrop change nothing, on either company.
+- **No permission there** → no _Move it here_, only the company to ask and _Close_.
+- _**Go back**_, Escape and the backdrop change nothing, on either company.
 
 A refused release stays **in** the dialog (`role="alert"`) and it stays open to retry — the
 success case leaves the page, so a toast would not outlive it.
@@ -70,8 +70,8 @@ success case leaves the page, so a toast would not outlive it.
 
 An unsaved name, country or currency (and only where the viewer may change them) arms the leave
 guard, `lib/leaveGuard.ts`: every way out asks "Leave without saving?" first
-(`components/ui/LeaveDialog.tsx`, Figma A-11) - *Discard changes* puts the saved values back and
-goes on, *Go Back*, Escape and the backdrop stay.
+(`components/ui/LeaveDialog.tsx`, Figma A-11) - _Discard changes_ puts the saved values back and
+goes on, _Go Back_, Escape and the backdrop stay.
 
 What it holds: the pill row, the header's Back, Connect / Reconnect to Xero and the sidebar's
 links - all anchors, caught on `window` in the capture phase, so before their own handlers run -

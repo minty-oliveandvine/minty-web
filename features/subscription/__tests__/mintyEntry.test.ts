@@ -64,7 +64,9 @@ describe("mintyEntryUrl's exact spelling", () => {
 
   it("an empty path is no path: no &next=", () => {
     setAuth(TOKEN, "e1", "Co");
-    expect(mintyEntryUrl("")).toBe(`${env.PETTY_CASH_URL}/entity/e1/enter?token=${encodeURIComponent(TOKEN)}`);
+    expect(mintyEntryUrl("")).toBe(
+      `${env.PETTY_CASH_URL}/entity/e1/enter?token=${encodeURIComponent(TOKEN)}`,
+    );
   });
 
   it("a company with no token is still the entity list", () => {

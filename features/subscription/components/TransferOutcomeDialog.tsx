@@ -10,7 +10,6 @@
 
 import type { ReactNode } from "react";
 
-
 import { ConfirmDialog, type ModalImage } from "@/components/ui/ConfirmDialog";
 
 export type TransferOutcome = "withdrawn" | "accepted" | "declined" | "expired";

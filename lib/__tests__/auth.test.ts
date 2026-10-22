@@ -17,7 +17,8 @@ import {
 } from "@/lib/auth";
 
 const b64url = (s: string) => Buffer.from(s).toString("base64url");
-const jwt = (claims: unknown) => `${b64url('{"alg":"HS256"}')}.${b64url(JSON.stringify(claims))}.sig`;
+const jwt = (claims: unknown) =>
+  `${b64url('{"alg":"HS256"}')}.${b64url(JSON.stringify(claims))}.sig`;
 const nowSeconds = () => Math.floor(Date.now() / 1000);
 
 /** Every string written to document.cookie while `fn` runs. */
@@ -60,7 +61,11 @@ describe("the cookies", () => {
 
   it("getAuth decodes what setAuth encoded", () => {
     setAuth("tok=en", "e/1", "Olive & Vine; Ltd");
-    expect(getAuth()).toEqual({ token: "tok=en", entityId: "e/1", entityName: "Olive & Vine; Ltd" });
+    expect(getAuth()).toEqual({
+      token: "tok=en",
+      entityId: "e/1",
+      entityName: "Olive & Vine; Ltd",
+    });
   });
 
   it("getAuth is null with no token cookie - even an EMPTY token, with a company beside it", () => {
@@ -69,7 +74,7 @@ describe("the cookies", () => {
     expect(getAuth()).toBeNull();
   });
 
-  it("getAuth answers \"\" for a missing company cookie", () => {
+  it('getAuth answers "" for a missing company cookie', () => {
     document.cookie = "minty_token=t1;path=/";
     expect(getAuth()).toEqual({ token: "t1", entityId: "", entityName: "" });
   });

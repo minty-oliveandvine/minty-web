@@ -213,7 +213,9 @@ describe("the billing page", () => {
     const pages = within(invoices).getByRole("navigation", { name: "Invoice pages" });
     expect(within(pages).getByLabelText("Rows per page")).toHaveValue("10");
     expect(
-      within(within(pages).getByLabelText("Rows per page")).getAllByRole("option").map((o) => o.textContent),
+      within(within(pages).getByLabelText("Rows per page"))
+        .getAllByRole("option")
+        .map((o) => o.textContent),
     ).toEqual(["10", "50", "100"]);
     expect(pages).toHaveTextContent(/1–\d+ of \d+/);
     expect(within(pages).getByRole("button", { name: "Next page" })).toBeDisabled();
@@ -221,7 +223,9 @@ describe("the billing page", () => {
 
     // The two downloads, centred as the design sets them; the breakdown is saved as a CSV.
     for (const header of ["Invoice PDF", "Billing Breakdown"]) {
-      expect(within(invoices).getByRole("columnheader", { name: header })).toHaveClass("text-center");
+      expect(within(invoices).getByRole("columnheader", { name: header })).toHaveClass(
+        "text-center",
+      );
     }
     saved.length = 0;
     await user.click(
@@ -239,14 +243,16 @@ describe("the billing page", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("08-B: invoices that fail to load say so with Try again - never \"Nothing has been billed yet.\"", async () => {
+  it('08-B: invoices that fail to load say so with Try again - never "Nothing has been billed yet."', async () => {
     let fail = true;
     const errors = vi.spyOn(console, "error").mockImplementation(() => {});
     fetchMock.mockImplementation(async (input) => {
       const url = new URL(String(input));
       if (url.pathname === "/api/me/billing/accounts") return reply(200, accountsFor(WALLET_TWO));
       if (url.pathname === "/api/me/invoices") {
-        return fail ? reply(500, { error: "Could not load your invoices." }) : reply(200, invoicePage());
+        return fail
+          ? reply(500, { error: "Could not load your invoices." })
+          : reply(200, invoicePage());
       }
       return reply(404, { error: "not_found" });
     });
@@ -668,7 +674,9 @@ describe("the card screens", () => {
     await user.click(within(asked).getByRole("button", { name: GO_BACK_UPPER }));
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(push).not.toHaveBeenCalled();
-    expect(within(form).getByLabelText("Billing Company")).toHaveValue("Company A Limited Holdings");
+    expect(within(form).getByLabelText("Billing Company")).toHaveValue(
+      "Company A Limited Holdings",
+    );
 
     // Discarding puts the saved value back and then goes.
     await user.click(within(form).getByRole("button", { name: "Go Back" }));
@@ -727,7 +735,9 @@ describe("the card screens", () => {
     expect(save).toBeEnabled();
     await user.click(save);
 
-    await waitFor(() => expect(push).toHaveBeenCalledWith("/subscription/billing?account=acc-company-a"));
+    await waitFor(() =>
+      expect(push).toHaveBeenCalledWith("/subscription/billing?account=acc-company-a"),
+    );
     expect(posts).toEqual([
       {
         account: "acc-company-a",
@@ -841,7 +851,9 @@ describe("08-A, the portal's landing", () => {
     // A Page banner per thing that needs the payer, issue then action - no red figure anywhere.
     const banners = screen.getByRole("list", { name: "Needs your attention" });
     const failed = within(banners).getAllByRole("listitem")[0];
-    expect(failed).toHaveTextContent(/^.*Payment failed for 6 companies\. Update the payment method/);
+    expect(failed).toHaveTextContent(
+      /^.*Payment failed for 6 companies\. Update the payment method/,
+    );
     expect(screen.queryByText("Trial ending")).toBeNull();
     expect(screen.queryByText("Active subscriptions")).toBeNull();
 
@@ -887,7 +899,9 @@ describe("08-A, the portal's landing", () => {
     expect(push).toHaveBeenCalledWith("/subscription/billing?account=acc-company-a");
 
     await user.click(within(failed).getByRole("button", { name: "Update payment method" }));
-    expect(push).toHaveBeenLastCalledWith(expect.stringMatching(/^\/subscription\/billing\?entity=/));
+    expect(push).toHaveBeenLastCalledWith(
+      expect.stringMatching(/^\/subscription\/billing\?entity=/),
+    );
     // ONE Manage Subscription, the header's action.
     await user.click(within(payment).getByRole("button", { name: "Manage Subscription" }));
     expect(push).toHaveBeenLastCalledWith("/subscription/subscriptions");
@@ -927,7 +941,14 @@ describe("08-A, the portal's landing", () => {
 
     it("asks for three of the shown account's, newest first, and shows no more than three", async () => {
       const older = { ...INVOICES[2], id: "in_4", reference: "#100000004" };
-      const failed = { ...INVOICES[0], id: "in_f", reference: "#100000009", status: "open", status_label: "Unpaid", paid: null };
+      const failed = {
+        ...INVOICES[0],
+        id: "in_f",
+        reference: "#100000009",
+        status: "open",
+        status_label: "Unpaid",
+        paid: null,
+      };
       serveOverview(() => reply(200, invoicePage([failed, ...INVOICES, older])));
       render(<SubscriptionOverviewScreen today={TODAY} />);
       const section = await screen.findByRole("region", { name: "Invoices" });
@@ -940,7 +961,9 @@ describe("08-A, the portal's landing", () => {
 
       // the date and period, the amount as plain text, the status as a pill in its tone
       expect(rows[1]).toHaveTextContent("#11241234113");
-      expect(rows[1]).toHaveTextContent(`${INVOICES[0].date} · ${INVOICES[0].period_start} – ${INVOICES[0].period_end}`);
+      expect(rows[1]).toHaveTextContent(
+        `${INVOICES[0].date} · ${INVOICES[0].period_start} – ${INVOICES[0].period_end}`,
+      );
       expect(within(rows[1]).getByText("Paid")).toHaveAttribute("data-tone", "success");
       expect(within(rows[0]).getByText("Payment failed")).toHaveAttribute("data-tone", "danger");
       // getByText turns the row's non-breaking space into a plain one, but not the query's
@@ -949,7 +972,9 @@ describe("08-A, the portal's landing", () => {
       expect(amount).not.toHaveClass("text-danger");
 
       push.mockReset();
-      await userEvent.setup().click(within(section).getByRole("button", { name: /See all invoices/ }));
+      await userEvent
+        .setup()
+        .click(within(section).getByRole("button", { name: /See all invoices/ }));
       expect(push).toHaveBeenCalledWith("/subscription/billing?account=acc-company-a");
     });
 
@@ -972,7 +997,9 @@ describe("08-A, the portal's landing", () => {
         if (path === "/api/me/billing/accounts") return reply(200, ACCOUNTS);
         if (path === "/api/me/invoices") {
           await held;
-          return fail ? reply(500, { error: "Could not load your invoices." }) : reply(200, invoicePage());
+          return fail
+            ? reply(500, { error: "Could not load your invoices." })
+            : reply(200, invoicePage());
         }
         return reply(200, listPage);
       });
@@ -1210,7 +1237,9 @@ describe("08-A, the portal's landing", () => {
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
 
     // What a click on the card does, for the keyboard - out of sight until it is focused.
-    const choose = within(card).getByRole("button", { name: "Choose which billing account to show" });
+    const choose = within(card).getByRole("button", {
+      name: "Choose which billing account to show",
+    });
     choose.focus();
     await user.keyboard("{Enter}");
     const picker = await screen.findByRole("dialog", { name: "Billing Accounts" });
@@ -1232,7 +1261,10 @@ describe("08-A, the portal's landing", () => {
     expect(within(sheet).getByRole("heading", { name: "New billing account" })).toBeVisible();
     expect(sheet).toHaveTextContent("never stored by Minty");
     // English only: a text field with the email keyboard (lib/emailInput.ts), not type=email.
-    expect(within(sheet).getByLabelText(/^Billing Email\s*\*?$/)).toHaveAttribute("inputmode", "email");
+    expect(within(sheet).getByLabelText(/^Billing Email\s*\*?$/)).toHaveAttribute(
+      "inputmode",
+      "email",
+    );
     expect(within(sheet).getByLabelText(/^Billing company\s*\*?$/)).toBeRequired();
     expect(push).not.toHaveBeenCalled();
 
@@ -1240,7 +1272,10 @@ describe("08-A, the portal's landing", () => {
     await user.click(within(sheet).getByRole("button", { name: "Save billing account" }));
     expect(within(sheet).getByText("Enter the email address invoices should go to.")).toBeVisible();
     expect(within(sheet).getByText("Enter the company name to invoice.")).toBeVisible();
-    expect(within(sheet).getByLabelText(/^Billing Email\s*\*?$/)).toHaveAttribute("aria-invalid", "true");
+    expect(within(sheet).getByLabelText(/^Billing Email\s*\*?$/)).toHaveAttribute(
+      "aria-invalid",
+      "true",
+    );
     expect(fetchMock).not.toHaveBeenCalled();
 
     // Cancel is 01-D's arrow back to the list.

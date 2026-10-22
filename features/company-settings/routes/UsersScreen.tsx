@@ -17,7 +17,12 @@ import type { Invitation, Member } from "@/features/company-settings/api/company
 import { InviteDialog } from "@/features/company-settings/components/InviteDialog";
 import { MemberRow } from "@/features/company-settings/components/MemberRow";
 import { PendingInvitations } from "@/features/company-settings/components/PendingInvitations";
-import { LoadState, ReadOnlyNotice, SettingsCard, SettingsShell } from "@/features/company-settings/components/SettingsShell";
+import {
+  LoadState,
+  ReadOnlyNotice,
+  SettingsCard,
+  SettingsShell,
+} from "@/features/company-settings/components/SettingsShell";
 import { useUsersTab } from "@/features/company-settings/hooks/useUsersTab";
 
 export const USERS_COPY = {
@@ -31,7 +36,13 @@ export const USERS_COPY = {
   viewOnly: "You can see who is here. Ask a Shop Manager or above to invite or change people.",
 } as const;
 
-export function UsersScreen({ company, flash }: { company: { id: string; name: string }; flash: string | null }) {
+export function UsersScreen({
+  company,
+  flash,
+}: {
+  company: { id: string; name: string };
+  flash: string | null;
+}) {
   const tab = useUsersTab(company.id, flash);
   const [inviting, setInviting] = useState(false);
   const [removing, setRemoving] = useState<Member | null>(null);
@@ -40,12 +51,24 @@ export function UsersScreen({ company, flash }: { company: { id: string; name: s
   const shown = page?.company ?? company;
 
   return (
-    <SettingsShell company={shown} modules={page?.modules ?? null} tab="users" title={USERS_COPY.title} lead={USERS_COPY.lead}>
+    <SettingsShell
+      company={shown}
+      modules={page?.modules ?? null}
+      tab="users"
+      title={USERS_COPY.title}
+      lead={USERS_COPY.lead}
+    >
       {tab.status !== "ready" || !page ? (
-        <LoadState status={tab.status === "error" ? "error" : "loading"} error={tab.error} onRetry={tab.reload} />
+        <LoadState
+          status={tab.status === "error" ? "error" : "loading"}
+          error={tab.error}
+          onRetry={tab.reload}
+        />
       ) : (
         <>
-          {!page.can_invite && !page.members.some((m) => m.can_change_role) ? <ReadOnlyNotice>{USERS_COPY.viewOnly}</ReadOnlyNotice> : null}
+          {!page.can_invite && !page.members.some((m) => m.can_change_role) ? (
+            <ReadOnlyNotice>{USERS_COPY.viewOnly}</ReadOnlyNotice>
+          ) : null}
           <SettingsCard
             title={USERS_COPY.members}
             lead={USERS_COPY.membersLead}
@@ -92,7 +115,12 @@ export function UsersScreen({ company, flash }: { company: { id: string; name: s
       )}
 
       {inviting && page ? (
-        <InviteDialog roles={page.roles} busy={tab.busy === "invite"} onSend={tab.invite} onClose={() => setInviting(false)} />
+        <InviteDialog
+          roles={page.roles}
+          busy={tab.busy === "invite"}
+          onSend={tab.invite}
+          onClose={() => setInviting(false)}
+        />
       ) : null}
       {removing ? (
         <ConfirmDialog
@@ -106,7 +134,10 @@ export function UsersScreen({ company, flash }: { company: { id: string; name: s
           onConfirm={() => void tab.remove(removing.id).then(() => setRemoving(null))}
           onBack={() => setRemoving(null)}
         >
-          <p className="mt-6 text-body-l leading-snug">They lose access to this company straight away. Their account and their other companies stay as they are.</p>
+          <p className="mt-6 text-body-l leading-snug">
+            They lose access to this company straight away. Their account and their other companies
+            stay as they are.
+          </p>
         </ConfirmDialog>
       ) : null}
       {cancelling ? (
@@ -117,10 +148,14 @@ export function UsersScreen({ company, flash }: { company: { id: string; name: s
           busy={tab.busy === cancelling.id}
           confirmLabel="Cancel invitation"
           confirmTone="red"
-          onConfirm={() => void tab.cancel(cancelling.id).then((done) => done && setCancelling(null))}
+          onConfirm={() =>
+            void tab.cancel(cancelling.id).then((done) => done && setCancelling(null))
+          }
           onBack={() => setCancelling(null)}
         >
-          <p className="mt-6 text-body-l leading-snug">The link in their email stops working. You can invite them again later.</p>
+          <p className="mt-6 text-body-l leading-snug">
+            The link in their email stops working. You can invite them again later.
+          </p>
         </ConfirmDialog>
       ) : null}
     </SettingsShell>

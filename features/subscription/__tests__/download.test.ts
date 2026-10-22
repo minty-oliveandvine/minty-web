@@ -35,7 +35,9 @@ describe("saveBlob(blob, filename)", () => {
       writable: true,
       value: (u: string) => revoked.push(u),
     });
-    vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (this: HTMLAnchorElement) {
+    vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (
+      this: HTMLAnchorElement,
+    ) {
       anchors.push(this);
       clicks.push({
         href: this.getAttribute("href") ?? "",
@@ -63,7 +65,9 @@ describe("saveBlob(blob, filename)", () => {
 
   it("still removes the link and revokes the URL when the click throws", () => {
     // owner 2026-10-21: one shared module (@minty/shared/download) - a throwing click left both behind
-    vi.mocked(HTMLAnchorElement.prototype.click).mockImplementationOnce(function (this: HTMLAnchorElement) {
+    vi.mocked(HTMLAnchorElement.prototype.click).mockImplementationOnce(function (
+      this: HTMLAnchorElement,
+    ) {
       anchors.push(this);
       throw new Error("blocked");
     });

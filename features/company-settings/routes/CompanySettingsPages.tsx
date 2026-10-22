@@ -33,7 +33,9 @@ function IntegrationContent() {
   const xeroConflict = params.get("xero_conflict");
   return (
     <CompanyFromAddress pathOf={integrationPath} label="entity & integration">
-      {(company) => <IntegrationScreen company={company} flash={flash} xeroConflict={xeroConflict} />}
+      {(company) => (
+        <IntegrationScreen company={company} flash={flash} xeroConflict={xeroConflict} />
+      )}
     </CompanyFromAddress>
   );
 }

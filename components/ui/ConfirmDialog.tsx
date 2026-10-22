@@ -164,17 +164,13 @@ export function ConfirmDialog({
           className="w-auto shrink-0"
         />
       </div>
-      <div className="mt-4 flex flex-col gap-3 text-body-m text-ink-2">
-        {children}
-      </div>
+      <div className="mt-4 flex flex-col gap-3 text-body-m text-ink-2">{children}</div>
       {/*
           Minty v2 modal actions: right-aligned, the way back (Secondary) first and the verb
           after it - one button on its own (`hideBack`) sits on the right too. Below 640px the
           card is a bottom sheet and the row stacks full width with the verb on top.
         */}
-      <div
-        className="mt-6 flex justify-end gap-3 max-sm:flex-col-reverse"
-      >
+      <div className="mt-6 flex justify-end gap-3 max-sm:flex-col-reverse">
         {!hideBack && (
           <button
             type="button"

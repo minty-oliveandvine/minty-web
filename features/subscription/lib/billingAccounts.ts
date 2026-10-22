@@ -286,27 +286,24 @@ export function nominationChoice(
   const accounts = data?.accounts ?? [];
   const current = accounts.find((a) => a.companies.some((c) => c.entity_id === entityId)) ?? null;
   const pastDue = current?.companies.find((c) => c.entity_id === entityId)?.past_due ?? false;
-  const targets = accounts.map(
-    (account): MoveTarget => ({
-      account,
-      block:
-        account.id === current?.id
-          ? needCard && !account.card
-            ? "no_card"
-            : null
-          : pastDue
-            ? "settle_first"
-            : account.in_dunning
-              ? "in_dunning"
-              : account.card
-                ? null
-                : "no_card",
-    }),
-  );
+  const targets = accounts.map((account): MoveTarget => ({
+    account,
+    block:
+      account.id === current?.id
+        ? needCard && !account.card
+          ? "no_card"
+          : null
+        : pastDue
+          ? "settle_first"
+          : account.in_dunning
+            ? "in_dunning"
+            : account.card
+              ? null
+              : "no_card",
+  }));
   const open = (id: string | undefined) =>
     targets.some((t) => t.account.id === id && t.block === null) ? id : undefined;
-  const picked =
-    open(current?.id) ?? targets.find((t) => t.block === null)?.account.id ?? null;
+  const picked = open(current?.id) ?? targets.find((t) => t.block === null)?.account.id ?? null;
   return { targets, picked };
 }
 
@@ -317,12 +314,10 @@ export function nominationChoice(
  * OLDEST that can (the API lists them oldest first), or none.
  */
 export function transferChoice(data: BillingAccounts | null): NominationChoice {
-  const targets = (data?.accounts ?? []).map(
-    (account): MoveTarget => ({
-      account,
-      block: account.in_dunning ? "in_dunning" : account.card ? null : "no_card",
-    }),
-  );
+  const targets = (data?.accounts ?? []).map((account): MoveTarget => ({
+    account,
+    block: account.in_dunning ? "in_dunning" : account.card ? null : "no_card",
+  }));
   return { targets, picked: targets.find((t) => t.block === null)?.account.id ?? null };
 }
 

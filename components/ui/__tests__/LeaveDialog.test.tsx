@@ -6,7 +6,12 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
-import { DISCARD_CHANGES, GO_BACK_UPPER, LEAVE_TITLE, LeaveDialog } from "@/components/ui/LeaveDialog";
+import {
+  DISCARD_CHANGES,
+  GO_BACK_UPPER,
+  LEAVE_TITLE,
+  LeaveDialog,
+} from "@/components/ui/LeaveDialog";
 
 describe("LeaveDialog (A-11)", () => {
   it("asks, and Escape stays", async () => {
