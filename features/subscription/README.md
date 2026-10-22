@@ -113,14 +113,14 @@ user's word: a new account opens in onboarding's `BillingSheet`, in place (`comp
 the account's NAME is _Change billing account_; "Trial ending" counts the trials ending within 30
 days and the update lines have _Show more_; 08-B shows the next bill's estimated amount (the API's
 `next_bill`, priced by its renewal runner), pages its invoices 10 / 50 / 100 and downloads each
-one's billing breakdown as the user's sample CSV (`lib/breakdown`, `lib/download`).
+one's billing breakdown as the user's sample CSV (`lib/breakdown`, `@minty/shared/download`).
 `components/ModalFrame` is shared by the other modals (§15). A
 standalone invoices page (minty-payment-request-web's section 09) was deliberately NOT built: the billing
 page's own invoice list already lists every invoice, paged, with its PDF and the
 billing-breakdown CSV, so a second page listing the same rows would be pure duplication - see
 `lib/paths.ts::PORTAL`. 2026-09-29: that PDF is our own document (Figma 09-A), downloaded -
 `api/payerPortal.fetchInvoicePdf` over `@/lib/apiClient.apiFetchBlob`, saved by
-`lib/download.saveBlob` - where it had linked Stripe's hosted invoice page (§15). 2026-09-30: the
+`saveBlob` (`@minty/shared/download`) - where it had linked Stripe's hosted invoice page (§15). 2026-09-30: the
 row's Inv# opens a VIEW-ONLY preview of it (`components/InvoicePreviewDialog` over
 `components/PdfPages` - pdf.js, the `pdfjs-dist` package, its worker served at `/pdfjs` by the
 app's `next.config.ts`); nothing is saved from it, the Invoice PDF column is still the download.

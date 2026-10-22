@@ -1,5 +1,6 @@
 /**
- * Getting a token, and getting a new one.
+ * Getting a token, getting a new one, and leaving - this app's instance of
+ * `@minty/shared/handoff` (owner 2026-10-21: one shared module).
  *
  * This app never mints a token and never refreshes one (Flask is the single minter -
  * cross-cutting rule 1). Both the first arrival and a lapsed session go through Flask's
@@ -7,68 +8,52 @@
  * with a live Flask session it mints the module token and sends the browser straight back to
  * `/landing?token=…&next=<path>` here - a silent round trip, because Flask's 24-hour session
  * outlives the 30-minute token; without one it shows the login first and then does the same.
+ *
+ * No `companyFromNext`: Flask's minty-web hand-off accepts only a full company id, never the
+ * address form `<shortid>/<name>`. Every trip names the page's origin as `return_origin`
+ * (`withReturnOrigin`, `@minty/shared/previewSibling`) so Flask can hand back into a branch
+ * preview set; the proxy passes the request's origin, since it runs on the server.
  */
+
+import { createHandoff, logoutUrl } from "@minty/shared/handoff";
 
 import { clearAuth } from "@/lib/auth";
 import { env } from "@/lib/env";
 import { HUB_HOME } from "@/lib/hubPaths";
-import { safeNextPath } from "@minty/shared/safeNext";
 
-/** A path this app may land on after the handoff (lib/safeNext.ts has the rule). */
-export function safeNext(raw: string | null | undefined, fallback: string = HUB_HOME): string {
-  return safeNextPath(raw, fallback);
-}
+const handoff = createHandoff({
+  flaskBase: () => env.PETTY_CASH_URL,
+  route: "/handoff/minty-web",
+  clearAuth,
+  home: HUB_HOME,
+});
 
-/**
- * `origin` is where Flask should hand back to: the page's own origin, or - in the proxy, which
- * runs on the server - the request's. Flask uses it only for a branch preview set (Minty
- * `blueprints/shared/preview_origin.py`) and ignores it everywhere else.
- */
-export function handoffUrl(next: string, entityId?: string, origin?: string): string {
-  const qs = new URLSearchParams({ next: safeNext(next) });
-  if (entityId) qs.set("entity_id", entityId);
-  return withReturnOrigin(`${env.PETTY_CASH_URL}/handoff/minty-web?${qs.toString()}`, origin);
-}
+/** A path this app may land on after the handoff; anything else is the hub home (or `fallback`). */
+export const safeNext = handoff.safeNext;
 
-/** `url` (a Flask address) naming this app's origin as `return_origin`; unchanged with none. */
-export function withReturnOrigin(url: string, origin?: string): string {
-  const own = origin ?? (typeof window === "undefined" ? undefined : window.location.origin);
-  if (!own) return url;
-  const target = new URL(url);
-  target.searchParams.set("return_origin", own);
-  return target.toString();
-}
-
-type Navigate = (url: string) => void;
-
-const defaultNavigate: Navigate = (url) => {
-  window.location.href = url;
-};
-
-let navigate: Navigate = defaultNavigate;
-let redirecting = false;
+/** Flask's hand-off back into this app for `next` (made safe), naming the company when given. */
+export const handoffUrl = handoff.handoffUrl;
 
 /**
- * Send the browser to Flask for a fresh token, once. Several requests in flight fail together
- * on an expired token, and each one reassigning `location.href` while the first navigation is
- * already under way is how a redirect turns into a flicker.
+ * Send the browser to Flask for a fresh token, once - several requests in flight fail together
+ * on an expired token. Clears the cookie first; with no `next`, the page it is on.
  */
-export function redirectToHandoff(next?: string, entityId?: string) {
-  if (redirecting || typeof window === "undefined") return;
-  redirecting = true;
-  clearAuth();
-  const target = next ?? window.location.pathname + window.location.search;
-  navigate(handoffUrl(target, entityId));
-}
+export const redirectToHandoff = handoff.redirectToHandoff;
 
 /** Send the browser somewhere outside the app - Stripe's card form - through the same seam. */
-export function leaveTo(url: string) {
-  navigate(url);
+export const leaveTo = handoff.leaveTo;
+
+/**
+ * Log out - the side menu's Logout and My Profile's Log Out are the same act: forget this
+ * app's token, then end the session at Minty (Flask's /logout signs the person out and lands
+ * on the sign-in page - this app's /login since phase 2), so no app is left signed in behind
+ * the one that said goodbye. Not the once-only redirect: a second log out goes again.
+ */
+export function logOut(): void {
+  clearAuth();
+  leaveTo(logoutUrl(env.PETTY_CASH_URL));
 }
 
 /** Test seam: forget that a redirect is under way, and optionally capture the navigation
  * instead of assigning `location.href` (jsdom does not allow `location` to be replaced). */
-export function _resetHandoffForTests(capture?: Navigate) {
-  redirecting = false;
-  navigate = capture ?? defaultNavigate;
-}
+export const _resetHandoffForTests = handoff._resetForTests;

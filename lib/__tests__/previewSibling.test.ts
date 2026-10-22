@@ -1,10 +1,10 @@
-// Preview sets (lib/previewSibling.ts - a copy of @minty/shared's until minty-web moves past
-// v0.1): a page served on pr-<slug>-<app>.dailyminty.com links to the same set's other apps;
+// Preview sets (@minty/shared/previewSibling since the shared-code refactor, 2026-10-21; this
+// app's copy is gone): a page served on pr-<slug>-<app>.dailyminty.com links to the same set's other apps;
 // every other host keeps the configured URL untouched.
 
 import { describe, expect, it } from "vitest";
 
-import { previewSetSlug, siblingUrl } from "@/lib/previewSibling";
+import { previewSetSlug, siblingUrl } from "@minty/shared/previewSibling";
 
 const PRW = "https://payment.dailyminty.com";
 
@@ -69,5 +69,20 @@ describe("previewSetSlug", () => {
 
   it("is null off a preview set", () => {
     expect(previewSetSlug("my.dailyminty.com")).toBeNull();
+  });
+});
+
+describe("siblingUrl's rewriting", () => {
+  // Pins the minty-web copy of previewSibling before it moves to @minty/shared (the shared-code refactor, 2026-10-21)
+  it("forces https, keeps a port, and keeps a trailing slash only when it was given", () => {
+    expect(siblingUrl("http://localhost:3020", "payment-request", "pr-a-my.dailyminty.com")).toBe(
+      "https://pr-a-payment-request.dailyminty.com:3020",
+    );
+    expect(siblingUrl(`${PRW}/`, "payment-request", "pr-a-my.dailyminty.com")).toBe(
+      "https://pr-a-payment-request.dailyminty.com/",
+    );
+    expect(siblingUrl(`${PRW}#x`, "payment-request", "pr-a-my.dailyminty.com")).toBe(
+      "https://pr-a-payment-request.dailyminty.com/#x",
+    );
   });
 });

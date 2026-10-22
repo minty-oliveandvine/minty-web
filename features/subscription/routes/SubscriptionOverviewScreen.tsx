@@ -18,7 +18,7 @@
  * the payer's), and then the way back is Minty's entity list.
  */
 
-import { useSyncExternalStore } from "react";
+import { useClientValue } from "@minty/shared/clientValue";
 
 import { getAuth } from "@/lib/auth";
 import { mintyModulesUrl } from "@/lib/mintyEntry";
@@ -44,13 +44,12 @@ import { BACK_TO_ENTITIES } from "@/features/subscription/lib/billing";
 import { BILLING } from "@/features/subscription/lib/paths";
 
 // A primitive, not the auth object: a fresh object per read makes the store loop (PortalChrome).
-const noSubscribe = () => () => {};
 const readEntityId = () => getAuth()?.entityId ?? "";
 const serverEmpty = () => "";
 
 export function SubscriptionOverviewScreen(args: UseBillingOverviewArgs) {
   const o = useBillingOverview(args);
-  const entityId = useSyncExternalStore(noSubscribe, readEntityId, serverEmpty);
+  const entityId = useClientValue(readEntityId, serverEmpty);
 
   return (
     <div

@@ -1,36 +1,30 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect } from "react";
+import { Suspense } from "react";
+
+import { useLandingHandoff, type LandingParams } from "@minty/shared/landing";
 
 import { setAuth } from "@/lib/auth";
-import { redirectToHandoff, safeNext } from "@/lib/handoff";
+import { redirectToHandoff } from "@/lib/handoff";
+import { HUB_HOME } from "@/lib/hubPaths";
+
+/** Reached with no token - a bookmark, a stale tab: Flask's re-handoff for `next`. */
+const backThroughFlask = ({ next, entityId }: LandingParams) =>
+  redirectToHandoff(next, entityId || undefined);
 
 /**
  * Where Minty sends people: `/landing?token=<jwt>&next=<path>&entity_id=…&entity_name=…`.
- * Stores the token (lib/auth.ts) and forwards to `next`. Reached with no token - a bookmark,
- * a stale tab - it goes to Flask's re-handoff for `next`, which comes back here with one.
- * Lifted from minty-payment-request-web/app/landing; the `from` provenance cookie is not needed here
- * (this app has one way back, to Minty).
+ * Stores the token (lib/auth.ts) and forwards to a safe `next` (the hub home otherwise). Reached
+ * with no token it goes to Flask's re-handoff for `next`, which comes back here with one. The
+ * logic is `useLandingHandoff` from `@minty/shared/landing` (owner 2026-10-21: one shared
+ * module); this app supplies its cookie, its home and its way back.
  */
 function LandingContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  useEffect(() => {
-    const token = searchParams.get("token") ?? "";
-    const entityId = searchParams.get("entity_id") ?? "";
-    const entityName = searchParams.get("entity_name") ?? "";
-    const next = safeNext(searchParams.get("next"));
-
-    if (!token) {
-      redirectToHandoff(next, entityId || undefined);
-      return;
-    }
-
-    setAuth(token, entityId, entityName);
-    router.replace(next);
-  }, [router, searchParams]);
+  useLandingHandoff({ searchParams, router, setAuth, home: HUB_HOME, onNoToken: backThroughFlask });
 
   return (
     <main className="flex min-h-screen items-center justify-center">

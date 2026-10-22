@@ -1,105 +1,38 @@
 /**
- * The module token, kept in a cookie.
+ * The module token, kept in a cookie - this app's instance of `@minty/shared/auth` (owner
+ * 2026-10-21: one shared module), under the `minty` prefix so this app and its siblings on
+ * localhost never read each other's token.
  *
  * Minty (Flask) mints a 30-minute HS256 JWT when a person opens this app
  * (`_generate_module_token`) and sends the browser to `/landing?token=…`, which stores it here.
- * The cookie is what proxy.ts gates on and what lib/apiClient.ts sends as the bearer.
- * Lifted from minty-payment-request-web/lib/auth.ts with the cookie renamed (`minty_token`, so the two
- * apps never read each other's) and the refresh removed: this app has no refresh endpoint -
- * a lapsed token goes back through Flask's login-gated re-handoff (lib/handoff.ts).
+ * The cookie is what proxy.ts gates on and what lib/apiClient.ts sends as the bearer. This app
+ * has no refresh endpoint: a lapsed token goes back through Flask's login-gated re-handoff
+ * (lib/handoff.ts).
  *
  * The cookie lives exactly as long as the token (its `exp` claim), so an expired session is
- * caught by proxy.ts before a page renders, rather than by the first API call after.
+ * caught by proxy.ts before a page renders, rather than by the first API call after. The JWT
+ * reads themselves (`decodeJwtPayload`, `isTokenExpired(token)`, `moduleClaims(token)`) are
+ * imported from the package where they are needed.
  */
 
-const TOKEN_KEY = "minty_token";
-const ENTITY_ID_KEY = "minty_entity_id";
-const ENTITY_NAME_KEY = "minty_entity_name";
+import { createCookieAuth, decodeJwtPayload, type AuthInfo } from "@minty/shared/auth";
+
+export type { AuthInfo };
+
+const auth = createCookieAuth({ prefix: "minty" });
 
 /** Cookie name checked by proxy.ts for the auth gate. */
-export const AUTH_COOKIE_NAME = TOKEN_KEY;
+export const AUTH_COOKIE_NAME = auth.cookieNames.token;
 /** The company the token is for - read on the server for the tab title (lib/companyTitle.ts). */
-export const ENTITY_ID_COOKIE_NAME = ENTITY_ID_KEY;
-export const ENTITY_NAME_COOKIE_NAME = ENTITY_NAME_KEY;
+export const ENTITY_ID_COOKIE_NAME = auth.cookieNames.entityId;
+export const ENTITY_NAME_COOKIE_NAME = auth.cookieNames.entityName;
 
-/** What a token is allowed to live when its `exp` cannot be read - Flask's token lifetime. */
-const FALLBACK_MAX_AGE_SECONDS = 60 * 30;
-
-export type AuthInfo = {
-  token: string;
-  entityId: string;
-  entityName: string;
-};
-
-function cookieOptions(maxAgeSeconds: number): string {
-  const isSecure = typeof window !== "undefined" && window.location.protocol === "https:";
-  return `path=/;max-age=${maxAgeSeconds};SameSite=Lax${isSecure ? ";Secure" : ""}`;
+export function setAuth(token: string, entityId: string, entityName: string): void {
+  auth.setAuth({ token, entityId, entityName });
 }
 
-function readJar(): Record<string, string> {
-  if (typeof document === "undefined") return {};
-  return Object.fromEntries(
-    document.cookie
-      .split("; ")
-      .filter(Boolean)
-      .map((c) => {
-        const idx = c.indexOf("=");
-        return [c.slice(0, idx), decodeURIComponent(c.slice(idx + 1))];
-      }),
-  );
-}
-
-/**
- * Neutral JWT-payload decode: base64url the middle segment and JSON-parse it. Never throws;
- * null for anything that is not a three-part token with an object payload. No signature check
- * here - the browser cannot hold the key, and the API verifies every request anyway.
- */
-export function decodeJwtPayload(token: string): Record<string, unknown> | null {
-  try {
-    const parts = token.split(".");
-    if (parts.length !== 3) return null;
-    let base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
-    const pad = base64.length % 4;
-    if (pad) base64 += "=".repeat(4 - pad);
-    const payload = JSON.parse(atob(base64)) as unknown;
-    if (payload == null || typeof payload !== "object" || Array.isArray(payload)) return null;
-    return payload as Record<string, unknown>;
-  } catch {
-    return null;
-  }
-}
-
-/** Seconds until the token's `exp`, floored at 1 - or the fallback when there is no `exp`. */
-export function secondsUntilExpiry(token: string): number {
-  const exp = decodeJwtPayload(token)?.exp;
-  if (typeof exp !== "number") return FALLBACK_MAX_AGE_SECONDS;
-  return Math.max(1, Math.floor(exp - Date.now() / 1000));
-}
-
-export function setAuth(token: string, entityId: string, entityName: string) {
-  const opts = cookieOptions(secondsUntilExpiry(token));
-  document.cookie = `${TOKEN_KEY}=${encodeURIComponent(token)};${opts}`;
-  document.cookie = `${ENTITY_ID_KEY}=${encodeURIComponent(entityId)};${opts}`;
-  document.cookie = `${ENTITY_NAME_KEY}=${encodeURIComponent(entityName)};${opts}`;
-}
-
-export function getAuth(): AuthInfo | null {
-  const jar = readJar();
-  const token = jar[TOKEN_KEY];
-  if (!token) return null;
-  return {
-    token,
-    entityId: jar[ENTITY_ID_KEY] ?? "",
-    entityName: jar[ENTITY_NAME_KEY] ?? "",
-  };
-}
-
-export function clearAuth() {
-  const expire = "path=/;max-age=0";
-  document.cookie = `${TOKEN_KEY}=;${expire}`;
-  document.cookie = `${ENTITY_ID_KEY}=;${expire}`;
-  document.cookie = `${ENTITY_NAME_KEY}=;${expire}`;
-}
+export const getAuth = auth.getAuth;
+export const clearAuth = auth.clearAuth;
 
 /**
  * Whether the stored token was minted INSIDE a company - its `entity_id` claim, or the company
@@ -107,17 +40,8 @@ export function clearAuth() {
  * is; the one Minty's entity list hands the payer portal is not.
  */
 export function isEntityScoped(): boolean {
-  const auth = getAuth();
-  if (!auth) return false;
-  const claim = decodeJwtPayload(auth.token)?.entity_id;
-  return auth.entityId !== "" || (typeof claim === "string" && claim !== "");
-}
-
-/** Whether the stored token is already past its `exp` (5 s of clock-skew tolerance). */
-export function isTokenExpired(): boolean {
-  const auth = getAuth();
-  if (!auth) return true;
-  const exp = decodeJwtPayload(auth.token)?.exp;
-  if (typeof exp !== "number") return false;
-  return exp - Date.now() / 1000 < -5;
+  const info = getAuth();
+  if (!info) return false;
+  const claim = decodeJwtPayload(info.token)?.entity_id;
+  return info.entityId !== "" || (typeof claim === "string" && claim !== "");
 }

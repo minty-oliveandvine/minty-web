@@ -3,6 +3,7 @@
 // future, the payment method, and the footer's two dates - one frame per rule. Then 05·B: the
 // same view with a tick pending - the chip, the future the ticks say, the confirm button.
 
+import { formatPrice } from "@minty/shared/money";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -18,7 +19,7 @@ import {
   NO_MODULES,
   TRIAL_NO_CHARGE,
   buildSummaryView,
-  formatMoney,
+  forecast,
   longDate,
   pageFromList,
   shortDate,
@@ -35,18 +36,29 @@ const view = (frame: SummaryFrame, page: ModulePage = SUMMARY_FIXTURES[frame]) =
 
 const ticks = (frame: SummaryFrame) => view(frame).modules.map((m) => [m.code, m.tick, m.seam]);
 
-describe("formatMoney", () => {
-  it("prints the API's way: symbol tight, a code spaced, cents only when they mean something", () => {
-    expect(formatMoney("HK$", 400)).toBe("HK$400");
-    expect(formatMoney("HK$", 400.5)).toBe("HK$400.50");
-    expect(formatMoney("HKD", 280)).toBe("HKD 280");
-    expect(formatMoney("", 0)).toBe("0");
+// owner 2026-10-21: one money rule (@minty/shared/money). The panel's prices were this file's
+// own formatMoney(symbol, n) ("HKD 400"); they are formatPrice(n, code) now - the ISO code, one
+// space, the number, a trailing ".00" dropped. Never a symbol.
+describe("formatPrice, as the panel prints a price", () => {
+  it("the code, a non-breaking space, cents only when they mean something", () => {
+    expect(formatPrice(400, "HKD")).toBe("HKD\u00a0400");
+    expect(formatPrice(400.5, "HKD")).toBe("HKD\u00a0400.50");
+    expect(formatPrice(280, "HKD")).toBe("HKD\u00a0280");
+    expect(formatPrice(0, "")).toBe("0");
   });
 
-  it("groups the thousands as the API does - it printed HK$1200 beside the API's HK$1,200", () => {
-    expect(formatMoney("HKD", 1500)).toBe("HKD 1,500");
-    expect(formatMoney("HK$", 1695.09)).toBe("HK$1,695.09");
-    expect(formatMoney("HKD", 1234567.5)).toBe("HKD 1,234,567.50");
+  it("groups the thousands as the API does - it once printed 1200 beside the API's 1,200", () => {
+    expect(formatPrice(1500, "HKD")).toBe("HKD\u00a01,500");
+    expect(formatPrice(1695.09, "HKD")).toBe("HKD\u00a01,695.09");
+    expect(formatPrice(1234567.5, "HKD")).toBe("HKD\u00a01,234,567.50");
+  });
+
+  it("the forecast reads the summary's CODE, so a symbol in `currency` can never show", () => {
+    const page = SUMMARY_FIXTURES.M44;
+    const legacy = { ...page, summary: { ...page.summary!, currency: "HK$", currency_code: "HKD" } };
+    expect(forecast(legacy, TODAY).currency).toBe("HKD");
+    const noCode = { ...page, summary: { ...page.summary!, currency: "HKD", currency_code: null } };
+    expect(forecast(noCode, TODAY).currency).toBe("HKD");
   });
 });
 
@@ -149,22 +161,22 @@ describe("the cards and their ticks", () => {
 });
 
 describe("the panel", () => {
-  it("M11: no module selected, HK$0, greyed, no pending changes", () => {
+  it("M11: no module selected, HKD 0, greyed, no pending changes", () => {
     const p = view("M11").panel;
     expect(p).toEqual({
       kind: "simple",
       lines: [{ name: NO_MODULE, tone: "none", tag: null }],
-      price: "HK$0",
+      price: "HKD\u00a00",
       greyed: true,
     });
   });
 
-  it("M21: a trial is the selected plan at HK$0, tagged Free Trial", () => {
+  it("M21: a trial is the selected plan at HKD 0, tagged Free Trial", () => {
     const p = view("M21").panel;
     expect(p).toMatchObject({
       kind: "simple",
       lines: [{ name: "Petty Cash", tone: "petty", tag: "(Free Trial)" }],
-      price: "HK$0",
+      price: "HKD\u00a00",
       greyed: true,
     });
   });
@@ -174,7 +186,7 @@ describe("the panel", () => {
     expect(p).toEqual({
       kind: "simple",
       lines: [{ name: "Super Minty", tone: "bundle", tag: null }],
-      price: "HK$400",
+      price: "HKD\u00a0400",
       greyed: false,
     });
   });
@@ -189,15 +201,15 @@ describe("the panel", () => {
         { name: "Petty Cash", tone: "petty", tag: "(Active)" },
         { name: "Payment Request", tone: "payment", tag: "(Cancellation in progress)" },
       ],
-      price: "HK$400",
-      struck: "HK$560",
+      price: "HKD\u00a0400",
+      struck: "HKD\u00a0560",
       note: null,
       greyed: true,
     });
     expect(p.future).toMatchObject({
       heading: "Future Subscription",
       lines: [{ name: "Petty Cash", tone: "petty", tag: "only" }],
-      price: "HK$280",
+      price: "HKD\u00a0280",
       struck: null,
       greyed: false,
     });
@@ -215,29 +227,29 @@ describe("the panel", () => {
     expect(p.current.lines).toEqual([
       { name: "Petty Cash", tone: "petty", tag: "(Cancellation in progress)" },
     ]);
-    expect(p.current.price).toBe("HK$280");
+    expect(p.current.price).toBe("HKD\u00a0280");
     expect(p.current.struck).toBeNull();
     expect(p.future?.lines).toEqual([{ name: NO_MODULES, tone: "none", tag: null }]);
-    expect(p.future?.price).toBe("HK$0");
+    expect(p.future?.price).toBe("HKD\u00a00");
   });
 
-  it("N21a: a confirmed trial - HK$0 now with the no-charge note, its price from the day after", () => {
+  it("N21a: a confirmed trial - HKD 0 now with the no-charge note, its price from the day after", () => {
     const p = view("N21a").panel;
     expect(p.kind).toBe("changing");
     if (p.kind !== "changing") return;
     expect(p.current).toMatchObject({
       lines: [{ name: "Petty Cash", tone: "petty", tag: "(Free Trial)" }],
-      price: "HK$0",
+      price: "HKD\u00a00",
       note: TRIAL_NO_CHARGE,
     });
     expect(p.future).toMatchObject({
       lines: [{ name: "Petty Cash", tone: "petty", tag: "only" }],
-      price: "HK$280",
+      price: "HKD\u00a0280",
     });
   });
 
   it("M61: a suspended module is not billable", () => {
-    expect(view("M61").panel).toMatchObject({ kind: "simple", price: "HK$0", greyed: true });
+    expect(view("M61").panel).toMatchObject({ kind: "simple", price: "HKD\u00a00", greyed: true });
   });
 
   it("names the currency the summary gives, and falls back to the cards' code", () => {
@@ -245,11 +257,11 @@ describe("the panel", () => {
       ...SUMMARY_FIXTURES.M44,
       summary: { ...SUMMARY_FIXTURES.M44.summary!, currency: "HKD" },
     };
-    expect(buildSummaryView(page, ENTITY, null, TODAY).panel).toMatchObject({ price: "HKD 400" });
+    expect(buildSummaryView(page, ENTITY, null, TODAY).panel).toMatchObject({ price: "HKD\u00a0400" });
     const bare: ModulePage = { ...SUMMARY_FIXTURES.M44, summary: null };
     // Without the bundle's price the two singles simply add up.
     expect(buildSummaryView(bare, ENTITY, null, TODAY).panel).toMatchObject({
-      price: "HKD 560",
+      price: "HKD\u00a0560",
       lines: [
         { name: "Petty Cash", tag: null },
         { name: "Payment Request", tag: null },
@@ -334,12 +346,12 @@ describe("a tick pending (05·B)", () => {
     if (v.panel.kind !== "changing") return;
     expect(v.panel.current).toMatchObject({
       lines: [{ name: "Super Minty", tone: "bundle" }],
-      price: "HK$400",
-      struck: "HK$560",
+      price: "HKD\u00a0400",
+      struck: "HKD\u00a0560",
     });
     expect(v.panel.future).toMatchObject({
       lines: [{ name: "Payment Request", tag: "only" }],
-      price: "HK$280",
+      price: "HKD\u00a0280",
     });
     expect(v.pendingChange).toEqual({ code: "PETTY_CASH", seam: "cancel", codes: ["PETTY_CASH"] });
   });
@@ -349,23 +361,23 @@ describe("a tick pending (05·B)", () => {
     expect(v.modules.map((m) => m.chip)).toEqual(["Removing", "Removing"]);
     if (v.panel.kind !== "changing") throw new Error(v.panel.kind);
     expect(v.panel.future?.lines).toEqual([{ name: NO_MODULES, tone: "none", tag: null }]);
-    expect(v.panel.future?.price).toBe("HK$0");
+    expect(v.panel.future?.price).toBe("HKD\u00a00");
     expect(v.pendingChange?.codes).toEqual(["PETTY_CASH", "PAYMENT_REQUEST"]);
   });
 
-  it("V21: ticking a running trial - Adding, teal, HK$0 now with the note, its price after", () => {
+  it("V21: ticking a running trial - Adding, teal, HKD 0 now with the note, its price after", () => {
     const v = withTicks("M21", { PETTY_CASH: true });
     expect(v.modules[0]).toMatchObject({ tick: "ticked", chip: "Adding", changed: true });
     expect(v.modules[0].view.live).toBe(true);
     if (v.panel.kind !== "changing") throw new Error(v.panel.kind);
     expect(v.panel.current).toMatchObject({
       lines: [{ name: "Petty Cash", tag: "(Free Trial)" }],
-      price: "HK$0",
+      price: "HKD\u00a00",
       note: TRIAL_NO_CHARGE,
     });
     expect(v.panel.future).toMatchObject({
       lines: [{ name: "Petty Cash", tag: "only" }],
-      price: "HK$280",
+      price: "HKD\u00a0280",
     });
     // The trial's end is the period end.
     const end = SUMMARY_FIXTURES.M21.cards[0].period_end as string;
@@ -381,12 +393,12 @@ describe("a tick pending (05·B)", () => {
     if (v.panel.kind !== "changing") throw new Error(v.panel.kind);
     expect(v.panel.current).toMatchObject({
       lines: [{ name: NO_MODULE, tone: "none" }],
-      price: "HK$0",
+      price: "HKD\u00a00",
       dateLine: null,
     });
     expect(v.panel.future).toMatchObject({
       lines: [{ name: "Petty Cash", tag: "only" }],
-      price: "HK$280",
+      price: "HKD\u00a0280",
       dateLine: null,
     });
     expect(v.pendingChange?.seam).toBe("subscribe");
@@ -399,7 +411,7 @@ describe("a tick pending (05·B)", () => {
     if (resumed.panel.kind !== "changing") throw new Error(resumed.panel.kind);
     expect(resumed.panel.future).toMatchObject({
       lines: [{ name: "Petty Cash", tag: "only" }],
-      price: "HK$280",
+      price: "HKD\u00a0280",
     });
 
     const restored = withTicks("M61", { PETTY_CASH: true });
@@ -414,7 +426,7 @@ describe("a tick pending (05·B)", () => {
     if (v.panel.kind !== "changing") throw new Error(v.panel.kind);
     expect(v.panel.current).toMatchObject({
       lines: [{ name: "Petty Cash", tag: "(Free Trial)" }],
-      price: "HK$0",
+      price: "HKD\u00a00",
       note: TRIAL_NO_CHARGE,
     });
     expect(v.panel.future).toBeNull();
@@ -439,5 +451,20 @@ describe("a tick pending (05·B)", () => {
     expect(toggleTick(pending, never)).toEqual({});
     const trial = SUMMARY_FIXTURES.M21.cards[0];
     expect(toggleTick({}, trial)).toEqual({ PETTY_CASH: true });
+  });
+});
+
+describe("longDate and shortDate, literally", () => {
+  // Pins the en-GB date words before they move to @minty/shared (the shared-code refactor, 2026-10-21)
+  it("longDate is \"16 August 2026\", read in UTC", () => {
+    expect(longDate(new Date(Date.UTC(2026, 7, 16)))).toBe("16 August 2026");
+    expect(longDate(new Date("2026-08-16T23:30:00Z"))).toBe("16 August 2026");
+    expect(longDate(new Date(Date.UTC(2026, 0, 1)))).toBe("1 January 2026");
+  });
+
+  it("shortDate is en-GB's short month - FOUR letters for September, unpadded day", () => {
+    expect(shortDate(new Date(Date.UTC(2025, 8, 11)))).toBe("11 Sept 2025");
+    expect(shortDate(new Date(Date.UTC(2026, 5, 3)))).toBe("3 Jun 2026");
+    expect(shortDate(new Date(Date.UTC(2026, 4, 9)))).toBe("9 May 2026");
   });
 });

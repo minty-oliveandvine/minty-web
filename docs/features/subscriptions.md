@@ -64,8 +64,8 @@ lib/            paths.ts (the ONE place the mount point is spelled; PORTAL.*, mo
                 · changeResult.ts (where a change lands) · transfer.ts (both sides of a handover: minor-unit money,
                 the paid-through day, who a request waits on, what each side is charged, inherited trials)
                 · breakdown.ts (08-B's "Download csv": the invoice's breakdown written as the user's
-                sample, and the file's name) · download.ts (the one DOM helper: hand the browser a file -
-                an invoice's PDF, or the breakdown's CSV)
+                sample, and the file's name; the browser is handed the file by `saveBlob(blob, name)` /
+                `saveTextFile(text, name)` from `@minty/shared/download` since 2026-10-21)
                 · billing.ts (the billing screens: a card's name, chip and month, the default pinned first, the
                 menu it offers, the expired line, the invoice table - which rows have a PDF, and the name it
                 is saved under - the landing's figures) · billingAccounts.ts
@@ -134,12 +134,17 @@ under `Suspense`) because a page taking `params` could not be a one-line re-expo
 `lib/apiClient.ts` is the one way out: `Authorization: Bearer <cookie token>`; `X-Entity-Id`
 **opt-in per call** — the portal (`/api/me/*`) is person-scoped and sends none, the module page
 names its company, because the token may be the unscoped one when the page is reached from the
-portal. Errors arrive as `ApiError(status, sentence)` from the API's `{"error": …}` body with
+portal. Errors arrive as `ApiError(status, sentence)` from the API's `{"error": …}` body (the
+sentence only when it reads as one - `@minty/shared/errorCopy` - else the house line) with
 Flask's status codes — 402 card declined, 403 not allowed / no consent, 404 not yours, 409
 already done — and screens branch on the status and show the sentence. A 401 sends the browser
 back through Flask's re-handoff once (`lib/handoff.ts`); nothing retries or refreshes
 (`docs/features/authentication.md`). Every route answers JSON but one: an invoice's PDF, read
-with `apiFetchBlob` - the same bearer, 401 and `ApiError`, since its failures are JSON too.
+with `apiFetchBlob` - the same bearer, 401 and `ApiError`, since its failures are JSON too. The
+client underneath is `createBearerClient` from `@minty/shared/apiClient` (2026-10-21); the whole
+list's page walk (`fetchAllPayerSubscriptions`, `per_page=100`) is `fetchAllSubscriptions` from
+`@minty/shared/portal`, answering `payer`, `billing` (both may be absent), every company and the
+first page's `transfer_outcomes`.
 
 `api/payerPortal.ts` keeps minty-payment-request-web's function names (`fetchPayerSubscriptions`,
 `fetchSubscriberOptions`, `inviteAdminToEntity`, `initiateTransfer`, `respondToTransfer`,
@@ -183,7 +188,8 @@ Playwright (as in the sibling apps); the capture flow is unit-tested with Stripe
 
 ## 6. Configuration
 
-`lib/env.ts` — `SUBSCRIPTION_API_URL` (8000), `PETTY_CASH_URL` (8010, the
+`lib/env.ts` (through `envUrl`, `@minty/shared/env`; a production build with one unset throws) —
+`SUBSCRIPTION_API_URL` (8001 locally), `PETTY_CASH_URL` (8000 locally, the
 re-handoff, the entity list's and the profile's reads, Petty Cash) and `PAYMENT_REQUEST_WEB_URL`
 (3020, the payment-request app - the side menu's _Bills_, the profile's way back). All inlined at
 build time (`next.config.ts` `env`). In the docker stack this is the `minty-web` service on 3000.
@@ -361,8 +367,8 @@ docs/features/company-settings.md). What is on it:
   `GET /entity/<id>/settings/payment-request` (Flask shows it by short id and name), which mints the payments app's token and sends the
   browser on. A module's settings tab (and its drawer section) shows only when that module is on, as
   in minty-payment-request-web and Flask - from the page model's `has_access` once it is here, from the
-  token's `petty_cash_enabled` / `billing_enabled` claims until then (`lib/moduleClaims.ts`,
-  minty-payment-request-web's `getModuleClaims` ported; both default to on), so the pills never vanish
+  token's `petty_cash_enabled` / `billing_enabled` claims until then (`moduleClaims(token)` from
+  `@minty/shared/auth` since 2026-10-21; only a literal `false` turns one off), so the pills never vanish
   while the page loads or when the API cannot answer. The initials open My Profile in the
   sidebar over the page (`profile.md`; since 2026-09-29 - they were hover-only that morning).
 - **Two cards, six states** (`lib/moduleState.ts`, first match wins):
@@ -379,7 +385,7 @@ docs/features/company-settings.md). What is on it:
   When both cards carry the same _Manage Subscription_ (frames B and C), it is drawn once,
   centred. A closing trial is still a trial: the access gate ends it, never the date. Days count
   calendar days (the `YYYY-MM-DD` of both sides, today's in HONG KONG since 2026-10-19 -
-  `@/lib/calendarDays`' `daysFromToday`; it was UTC's, a day behind from 00:00 to 08:00 HKT),
+  `daysFromToday` from `@minty/shared/dates`; it was UTC's, a day behind from 00:00 to 08:00 HKT),
   floored at zero. The landing's own counts (`attentionItems`' trial banner and `overview`'s
   "trial ends in N days" lines, `lib/billing.ts`) use the same `daysFromToday`, so one page
   never shows two counts.
@@ -643,7 +649,7 @@ re-homed and redrawn to Figma section "04 · Manage Subscriptions — the payer 
   `/api/me/subscriptions`' modules).
 - **Money buttons name the money** (same round): _Activate Subscription_ and _Confirm
   Subscription Change_ on the open row, the change modal's confirm opened from the list (not a
-  removal or cancellation), and _Confirm Subscription Transfer_ read "… · HK$400/month" when the
+  removal or cancellation), and _Confirm Subscription Transfer_ read "… · HKD 400/month" when the
   panel shows that monthly price (`pendingMonthly`, `pricedLabel` in `SubscriptionSummaryRow.tsx`).
   Start Free Trial, the trial dialog, module settings' Activate and the account picker's Confirm
   have no price in scope and stay as they were.
@@ -708,13 +714,13 @@ design's rules live (`buildSummaryView(page, entity, wallet, today, pending)`, `
   block says it all.
 - **The panel.** "Billable" = ACTIVE or CANCELLATION_PENDING. The bundle (`summary.bundle_name`,
   the API's `Super Minty`, at `summary.bundle_amount`) applies only when BOTH are billable; a
-  trial is not billable, so the price is HK$0 while a trial is all that is alive ("Petty Cash
+  trial is not billable, so the price is HKD 0 while a trial is all that is alive ("Petty Cash
   (Free Trial)"), and the amount box is greyed when nothing is charged. Nothing changing → one
   block ("Selected plan", the price, "No pending changes"). Something changing at the period end
   — a cancellation pending, a trial that will convert — → "Current Subscription / Until <period
   end>" (each module tagged "(Active)", "(Cancellation in progress)" or "(Free Trial)"; the
   singles' sum struck through where the bundle price applies; "No additional charges will apply
-  during the trial period." under a trial's HK$0) and a white "Future Subscription / From <the
+  during the trial period." under a trial's HKD 0) and a white "Future Subscription / From <the
   day after>" card (the survivors — "Petty Cash only", the bundle, or "No modules selected").
   **A tag sits BESIDE its module's name**, on the name's baseline in small grey type — "Petty
   Cash (Free Trial)", "Payment Request only" (the user, 2026-09-28, reversing an earlier
@@ -754,8 +760,14 @@ design's rules live (`buildSummaryView(page, entity, wallet, today, pending)`, `
   only trials") — the end of the soonest running, not-cancelled trial, which is the day billing
   would begin. Nothing started at all: no date, no sentence. Both facts come from
   `subscriptionSummary.ts::rowFooter`, derived once for the summary row and the result row.
-- **Money** prints the API's way (`format_trimmed`): the summary's symbol, cents only when they
-  mean something, a symbol that is letters spaced (`HKD 400`).
+- **Money** is a PRICE by the owner's one money rule (2026-10-21, `@minty/shared/money`
+  `formatPrice`, the API's `format_price`): the ISO code, a NON-BREAKING space (U+00A0, so a line
+  never splits the code from its amount - owner 2026-10-21; the API's strings carry it too), the
+  number grouped in threes, a trailing ".00" dropped - `HKD 400`, `HKD 400.50`, `HKD 1,500`. Never a symbol ("HK$"); with no
+  code the number stands alone. The code is read from `summary.currency_code` first, then
+  `summary.currency` (which held a symbol until the API wrote codes only), then a card's
+  `currency_code`. Invoices, the invoice list and billed amounts keep their places ("HKD
+  960.00") and are shown as the API sends them.
 - **"Calculating…"** (section "05·B-C · Calculating… — one per destination, auto-advances after
   1.2s", `2370:2739`): where the panel goes, a white card says "Calculating...." over Minty at
   a desk with a calculator — while the row's page model loads (the cards are already drawn from
@@ -828,9 +840,9 @@ button in 05·B lands". Built 2026-09-22.
   _Start Trial_ (04-G) lands too. The module settings page draws the same frames with the same
   builder, in place (§9): since 2026-10-08 neither of its acts leaves for the list.
 - **The line of money** under the row's lines is the panel's own arithmetic
-  (`subscriptionSummary.ts` `forecast`, in a sentence): "Nothing is being charged." / "HK$400 a
-  month." / "Nothing charged today · HK$400 a month when the trial ends." / "HK$280 a month now ·
-  HK$400 when the trial ends." / "HK$400 until 20 Aug 2026, then HK$280 a month." — "until" being
+  (`subscriptionSummary.ts` `forecast`, in a sentence): "Nothing is being charged." / "HKD 400 a
+  month." / "Nothing charged today · HKD 400 a month when the trial ends." / "HKD 280 a month now ·
+  HKD 400 when the trial ends." / "HKD 400 until 20 Aug 2026, then HKD 280 a month." — "until" being
   the day the removed module ends, the same day its line names.
 - **Layouts** (`components/ChangeResultView.tsx`): the row (`ChangeResultRow` — the company's
   name and ⋮, the headline, the lines with the module names in their colours, the money, _Back to
@@ -1083,7 +1095,7 @@ payer's money does not cover, and the subscription moves.
   "Add a billing account" when there is no account that can pay, **no money line at all** (accepting
   takes nothing), the trials that carry over when there are any (the
   trials that carry over are listed: "Petty Cash free trial carries over until <date>;
-  HK$280 a month after that."), the API's blockers, "Subscription will be charged to your
+  HKD 280 a month after that."), the API's blockers, "Subscription will be charged to your
   selected billing account from the date that transfer is completed.", _Confirm Subscription
   Transfer_ (`POST /transfer/respond {transfer, accept: true, billing_group_id, codes?}`) and
   _Decline_ (`accept: false`, then the screen is read again). Accepting lands on the list with
@@ -1209,8 +1221,9 @@ payer's money does not cover, and the subscription moves.
     POST is optimistic — a failure only means it opens once more, which is the safe direction.
     07-K is the exception and passes the same handler to both: it follows the payer's own
     Withdraw a moment earlier in the same tab, so there is no "seen" to consume.
-  - **Money is in minor units** on both transfer routes (8800 = HK$88.00), unlike the module
-    page's cards — `formatMinor` is the one place it is converted.
+  - **Money is in minor units** on both transfer routes (8800 = HKD 88.00), unlike the module
+    page's cards — `formatMinor` is the one place it is converted, then printed as a price
+    (`formatPrice`: "HKD 88", "HKD 88.50"; it takes no symbol since 2026-10-21).
   - **"to them"**: when the person a request waits on is no longer among the candidates (left
     the company, lost the admin role), the pending sentence names nobody rather than guessing.
   - **The charge is the recipient's**, always: the payer sees "They'll be charged …" against
@@ -1401,7 +1414,9 @@ schema change), which 08-C writes.
 - **Invoice History** (a failed read is said IN the table with _Try again_ - `invoicesError` /
   `reloadInvoices`, logged as `[billing] the account's invoices could not be read`; until
   2026-10-19 it was an empty table reading "Nothing has been billed yet.", which hid the failure):
-  Inv#, Amount (the currency named once in the header), Paid date,
+  Inv#, Amount (the currency's code named once in the header, "Amount (HKD)", read off the
+  API's amounts, which arrive formatted - "HKD 19,383.00", the space non-breaking - and are shown
+  as sent), Paid date,
   **Invoice PDF** and **Billing Breakdown**, _Download csv_ (the two download columns centred,
   as the design sets them). **The Invoice PDF is our own document** (Figma 09-A, 2026-09-29 -
   it had linked Stripe's hosted invoice page): `GET /api/me/invoices/{id}/pdf`, saved as
@@ -1481,7 +1496,7 @@ schema change), which 08-C writes.
     that will have converted by then - never re-priced here, so it cannot quote what the invoice
     will not charge. Estimated, because a trial that lapses or a module cancelled first changes
     the bill. By the currency's code ("HKD 1,500") where the frame writes "HK$1,500" - the
-    user's call.
+    user's call, and since 2026-10-21 the owner's one money rule for every amount.
   - **A card expires in a month, not on a day.** The Expiry column reads "Sep 2026": Stripe
     gives month and year, and the frames' "14 Sep 2026" would be a day nobody can act on.
   - **A non-default card is asked about before it goes.** The design's _Delete_ returns straight

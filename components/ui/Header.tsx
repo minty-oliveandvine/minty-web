@@ -6,20 +6,20 @@
  * minty-payment-request-web's Header/NavMenu are the model, not the code - skeletal by decision.
  */
 
-import { useSyncExternalStore } from "react";
+import { useClientValue } from "@minty/shared/clientValue";
 
 import { getAuth } from "@/lib/auth";
 import { env } from "@/lib/env";
 
 // Cookies are not available during server rendering, and a client value that differs from the
-// server's is a hydration error. useSyncExternalStore renders the server snapshot ("") while
-// hydrating and the cookie's value right after - no effect, no setState-in-effect.
-const noSubscribe = () => () => {};
+// server's is a hydration error. useClientValue (@minty/shared/clientValue) renders the server
+// snapshot ("") while hydrating and the cookie's value right after - no effect, no
+// setState-in-effect.
 const readEntityName = () => getAuth()?.entityName ?? "";
 const serverEntityName = () => "";
 
 export function Header({ title = "Minty" }: { title?: string }) {
-  const entityName = useSyncExternalStore(noSubscribe, readEntityName, serverEntityName);
+  const entityName = useClientValue(readEntityName, serverEntityName);
 
   return (
     <header className="flex h-14 items-center justify-between gap-4 border-b border-line px-4 sm:px-6 lg:px-8">

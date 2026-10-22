@@ -8,32 +8,20 @@
 // through Minty's login (email OTP), but it holds the same SECRET_KEY, so it mints the same
 // token. Nothing is bypassed: minty-subscription-api verifies signature, expiry and the user exactly
 // as it does Flask's. (minty-payment-request-web/e2e/helpers.ts, the same reasoning.)
-import { createHmac } from "node:crypto";
-
+//
+// The token, the credentials it names, the forged token and `reachable` are @minty/shared/e2e's,
+// the same in every app's suite; this file keeps what is minty-web's own.
 import { test, type Page } from "@playwright/test";
+import { credentials, mintModuleToken, reachable, type Credentials } from "@minty/shared/e2e";
 
-const b64url = (input: Buffer | string) =>
-  Buffer.from(input).toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-
-export type Credentials = { secret: string; userId: string; entityId: string; entityName: string };
+export { credentials, forgedToken, mintModuleToken, reachable } from "@minty/shared/e2e";
+export type { Credentials } from "@minty/shared/e2e";
 
 export const BASE_URL = process.env.E2E_BASE_URL || "http://localhost:3000";
 export const SUBSCRIPTION_API_URL = process.env.E2E_SUBSCRIPTION_API_URL || "http://localhost:8001";
 export const PETTY_CASH_URL = process.env.E2E_PETTY_CASH_URL || "http://localhost:8000";
 
-export function credentials(): Credentials | null {
-  const secret = process.env.E2E_JWT_SECRET;
-  const userId = process.env.E2E_MINTY_USER;
-  const entityId = process.env.E2E_MINTY_ENTITY;
-  if (!secret || !userId || !entityId) return null;
-  return {
-    secret,
-    userId,
-    entityId,
-    entityName: process.env.E2E_MINTY_ENTITY_NAME || "E2E Petty Cash Shop",
-  };
-}
-
+/** credentials(), or the spec SKIPS (the package's requireCredentials throws instead). */
 export function requireCredentials(): Credentials {
   const creds = credentials();
   test.skip(
@@ -41,54 +29,6 @@ export function requireCredentials(): Credentials {
     "Set E2E_JWT_SECRET (Minty SECRET_KEY), E2E_MINTY_USER and E2E_MINTY_ENTITY (see e2e/README.md)",
   );
   return creds as Credentials;
-}
-
-/** The claims Minty puts in the module token. `entity_id: ""` is the unscoped token the portal gets. */
-export function mintModuleToken(
-  creds: Credentials,
-  overrides: Record<string, unknown> = {},
-): string {
-  const now = Math.floor(Date.now() / 1000);
-  const header = b64url(JSON.stringify({ alg: "HS256", typ: "JWT" }));
-  const payload = b64url(
-    JSON.stringify({
-      user_id: creds.userId,
-      entity_id: creds.entityId,
-      xero_org_id: "",
-      role: "admin",
-      system_role: "normal",
-      module: "billing",
-      sid: "e2e",
-      billing_enabled: true,
-      petty_cash_enabled: true,
-      exp: now + 1800,
-      iat: now,
-      ...overrides,
-    }),
-  );
-  const signature = b64url(
-    createHmac("sha256", creds.secret).update(`${header}.${payload}`).digest(),
-  );
-  return `${header}.${payload}.${signature}`;
-}
-
-/** A token with a real shape and a wrong signature - what a forged or stale cookie looks like. */
-export function forgedToken(): string {
-  return mintModuleToken({
-    secret: "not-the-shared-key",
-    userId: "nobody",
-    entityId: "",
-    entityName: "",
-  });
-}
-
-export async function reachable(url: string): Promise<boolean> {
-  try {
-    const res = await fetch(url, { redirect: "manual" });
-    return res.status > 0 && res.status < 500;
-  } catch {
-    return false;
-  }
 }
 
 /** The app itself must be up; the API only for the specs that say so. */

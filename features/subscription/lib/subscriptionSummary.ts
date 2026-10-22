@@ -20,7 +20,7 @@
  *   Restoring (a cancellation resumed, a suspension reactivated), Removing (an active module
  *   cancelled); a confirmed trial unticked carries none (the NX-frames).
  * - "Billable" = ACTIVE or CANCELLATION_PENDING. The bundle (`summary.bundle_name`, its price)
- *   applies only when BOTH are billable; a trial is not billable, so the price is HK$0 while a
+ *   applies only when BOTH are billable; a trial is not billable, so the price is HKD 0 while a
  *   trial is the only thing alive, and the amount box is greyed when nothing is charged.
  * - when something changes at the period end - a cancellation pending, a trial that will
  *   convert, or a pending tick - the panel splits into "Current Subscription / Until <period
@@ -29,8 +29,9 @@
  * - the payment method shows when a card is nominated for the company; the footer names the
  *   day the company was created and the next renewal date the panel knows.
  *
- * Money is printed the module page's way: the summary's symbol, whole amounts without cents
- * (`HK$400`; a symbol that is letters gets a space, `HKD 400`, as the API's `format_trimmed`).
+ * Money is printed as a PRICE (owner 2026-10-21: one money rule, `@minty/shared/money`): the
+ * summary's ISO code, a non-breaking space, the number, a trailing ".00" dropped - `HKD 400`, `HKD 400.50`,
+ * `HKD 1,500` (`formatPrice`, the API's `format_price`). Never a symbol; no code, the number alone.
  *
  * `forecast()` is the panel's arithmetic on its own - what bills now, what bills after the
  * change day, and when that is - so the result screens (`lib/changeResult.ts`, Figma 05·C) say
@@ -55,6 +56,7 @@ import type {
   ModulePage,
 } from "@/features/subscription/api/moduleSettings";
 import { resolveModuleState, type ModuleView } from "@/features/subscription/lib/moduleState";
+import { formatPrice, parseAmount } from "@minty/shared/money";
 
 /** The plan names' colours: the design paints each module's name in its own colour. */
 export type PlanTone = "petty" | "payment" | "bundle" | "none";
@@ -148,24 +150,11 @@ const TONE: Record<ModuleCode, PlanTone> = { PETTY_CASH: "petty", PAYMENT_REQUES
 // ---- money ---------------------------------------------------------------------------------
 
 /**
- * `HK$400`, `HK$400.50`, `HKD 1,500` - the API's `format_trimmed` in the browser, thousands
- * grouped as it groups them (`{:,}`). It once printed "HK$1200" beside the API's "HK$1,200".
+ * A card's monthly price in major units. `parseAmount` (`@minty/shared/money`) drops the grouping,
+ * so a "1,500.00" from `formatted_amount` reads as 1500 where `Number()` gave NaN, then 0.
  */
-export function formatMoney(symbol: string, amount: number): string {
-  const whole = Number.isInteger(amount);
-  const places = whole ? 0 : 2;
-  const digits = amount.toLocaleString("en-US", {
-    minimumFractionDigits: places,
-    maximumFractionDigits: places,
-  });
-  const sym = symbol.trim();
-  if (!sym) return digits;
-  return /[A-Za-z]$/.test(sym) ? `${sym} ${digits}` : `${sym}${digits}`;
-}
-
 function amountOf(card: ModuleCard): number {
-  const n = Number(card.amount ?? card.formatted_amount);
-  return Number.isFinite(n) ? n : 0;
+  return parseAmount(card.amount ?? card.formatted_amount) ?? 0;
 }
 
 // ---- dates ---------------------------------------------------------------------------------
@@ -319,8 +308,8 @@ function bundleLine(page: ModulePage): PlanLine {
 // ---- the forecast ----------------------------------------------------------------------------
 
 export type Forecast = {
-  /** The summary's currency symbol. */
-  symbol: string;
+  /** The summary's ISO currency code ("HKD"); "" when none is known. */
+  currency: string;
   /** What bills today: ACTIVE, winding down or not. */
   billed: ModuleCard[];
   trials: ModuleCard[];
@@ -346,8 +335,13 @@ export type Forecast = {
  */
 export function forecast(page: ModulePage, today: Date, pending: PendingTicks = {}): Forecast {
   const cards = page.cards;
-  const symbol =
-    page.summary?.currency ?? page.cards.find((c) => c.currency_code)?.currency_code ?? "";
+  // The CODE first: `currency_code` can never be a symbol, where `currency` was one ("HK$")
+  // before the subscription API wrote codes only (owner 2026-10-21).
+  const currency =
+    page.summary?.currency_code ||
+    page.summary?.currency ||
+    page.cards.find((c) => c.currency_code)?.currency_code ||
+    "";
   const billed = cards.filter(billable);
   const trials = cards.filter(trialing);
   const cancelling = billed.filter(winding);
@@ -368,7 +362,7 @@ export function forecast(page: ModulePage, today: Date, pending: PendingTicks = 
       .filter((d): d is Date => d !== null && d.getTime() > today.getTime())
       .sort((a, b) => a.getTime() - b.getTime())[0] ?? null;
   return {
-    symbol,
+    currency,
     billed,
     trials,
     cancelling,
@@ -399,7 +393,7 @@ export function buildSummaryView(
   const f = forecast(page, today, pending);
   const { billed, trials, cancelling, future, changing, until } = f;
   const changedCards = f.changed;
-  const money = (n: number) => formatMoney(f.symbol, n);
+  const money = (n: number) => formatPrice(n, f.currency);
 
   let panel: SummaryPanel;
   if (!changing) {

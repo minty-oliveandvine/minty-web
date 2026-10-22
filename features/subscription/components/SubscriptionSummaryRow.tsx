@@ -216,7 +216,7 @@ export function PlanLines({ lines, size = "text-title-l" }: { lines: PlanLine[];
 }
 
 /**
- * What the pending change will bill a month, as the panel shows it ("HK$400") - the money a
+ * What the pending change will bill a month, as the panel shows it ("HKD 400") - the money a
  * Confirm or Activate button names (Part 15.19). Null when nothing is pending or it bills nothing.
  */
 export function pendingMonthly(view: SummaryView | null | undefined): string | null {
@@ -225,7 +225,7 @@ export function pendingMonthly(view: SummaryView | null | undefined): string | n
   return block && !block.greyed ? block.price : null;
 }
 
-/** "Confirm Subscription Change · HK$400/month", or the label alone with no amount to name. */
+/** "Confirm Subscription Change · HKD 400/month", or the label alone with no amount to name. */
 export function pricedLabel(label: string, monthly: string | null): string {
   return monthly ? `${label} · ${monthly}/month` : label;
 }

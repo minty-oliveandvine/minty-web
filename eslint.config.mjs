@@ -1,4 +1,5 @@
-// next/core-web-vitals + typescript, plus THE BOUNDARY RULES that keep every feature folder
+// @minty/shared/eslint (next/core-web-vitals + typescript and the folders no app lints, pdf.js's
+// copied worker in public/pdfjs/ among them), plus THE BOUNDARY RULES that keep every feature folder
 // extractable - `features/subscription` (Minty/docs/modernisation/modernisation_plan.md, Part 2 -
 // "it should be easily extracted"), and since 2026-09-29 `features/entities` (the select-company
 // list) and `features/profile` (My Profile), built the same way at the user's word:
@@ -33,14 +34,12 @@
 // AppHeader, Header, TermsGate/TermsModal, Wordmark, Pagination, RequiredMark, SettingsTabs,
 // sheetClasses). No rule changed for any of this: a package is a package, which the rules already
 // allow a feature to import.
-import { defineConfig, globalIgnores } from "eslint/config";
-import nextVitals from "eslint-config-next/core-web-vitals";
-import nextTs from "eslint-config-next/typescript";
+import { defineConfig } from "eslint/config";
+import minty from "@minty/shared/eslint";
 import boundaries from "eslint-plugin-boundaries";
 
 const eslintConfig = defineConfig([
-  ...nextVitals,
-  ...nextTs,
+  ...minty,
   {
     plugins: { boundaries },
     settings: {
@@ -159,16 +158,6 @@ const eslintConfig = defineConfig([
       ],
     },
   },
-  // Override default ignores of eslint-config-next.
-  globalIgnores([
-    // Default ignores of eslint-config-next:
-    ".next/**",
-    "out/**",
-    "build/**",
-    "next-env.d.ts",
-    // pdf.js's worker, copied in from node_modules by next.config.ts (gitignored): not our code.
-    "public/pdfjs/**",
-  ]),
 ]);
 
 export default eslintConfig;

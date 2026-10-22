@@ -17,7 +17,9 @@
  * `docs/features/subscriptions.md` §15 (the estimated amount of the next bill).
  */
 
-import { daysFromToday, TRIAL_SOON_DAYS } from "@/lib/calendarDays";
+import { daysFromToday, MONTHS } from "@minty/shared/dates";
+
+import { TRIAL_SOON_DAYS } from "@/lib/calendarDays";
 
 import type {
   BillingAccount,
@@ -34,12 +36,11 @@ import { BILLING, PORTAL } from "@/features/subscription/lib/paths";
 /**
  * What both pages read the account from: the payer, the billing anchor and every company.
  * `fetchAllPayerSubscriptions` walks the pages and answers exactly this much, so neither page
- * depends on where the paging stopped.
+ * depends on where the paging stopped. `payer` and `billing` may be absent (the shared walk,
+ * `@minty/shared/portal`, does not invent them), so every read of them is optional.
  */
-export type PayerAccount = Pick<
-  PayerSubscriptions,
-  "payer" | "billing" | "entities" | "transfer_outcomes"
->;
+export type PayerAccount = Pick<PayerSubscriptions, "entities" | "transfer_outcomes"> &
+  Partial<Pick<PayerSubscriptions, "payer" | "billing">>;
 
 export const BILLING_TITLE = "Manage billing details and Payment Methods";
 export const OVERVIEW_TITLE = "Subscription & Billing";
@@ -130,8 +131,6 @@ export function cardTitle(card: SavedPaymentMethod): string {
 export function shortCardName(brandLabel: string, last4: string | null): string {
   return last4 ? `${brandLabel || "Card"} ${last4}` : brandLabel || "Card";
 }
-
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 /** "4 / 2029" → "Apr 2029"; a wallet with no expiry keeps the API's own label, or nothing. */
 export function cardExpiry(card: SavedPaymentMethod): string | null {
@@ -382,7 +381,11 @@ export function invoiceRange(page: number, perPage: number, total: number): stri
   return `${first}–${Math.min(page * perPage, total)} of ${total}`;
 }
 
-/** The invoice table's money column names the currency once, in its header (08-B: "Amount (HK$)"). */
+/**
+ * The invoice table's money column names the currency once, in its header: the code the API's
+ * amounts lead with ("HKD 19,383.00" -> "Amount (HKD)"; 08-B draws "Amount (HK$)", but every
+ * amount is written with its code - owner 2026-10-21).
+ */
 export function amountHeader(invoices: InvoiceRow[]): string {
   const symbol = invoices.find((i) => i.amount)?.amount?.replace(/[\d.,\s]+$/, "") ?? "";
   return symbol ? `Amount (${symbol})` : "Amount";

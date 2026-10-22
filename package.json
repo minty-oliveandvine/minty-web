@@ -2,6 +2,7 @@
   "name": "minty-web",
   "version": "0.1.0",
   "private": true,
+  "prettier": "@minty/shared/prettier",
   "scripts": {
     "dev": "next dev -p 3000",
     "build": "next build",

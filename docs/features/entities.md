@@ -58,8 +58,9 @@ three Warning). The card still only leads into the company - only a payer or an 
 on the first two, so nothing new is offered. `role`, `trial_ends_on` and `payment_failed` are
 on every entity Flask sends since 2026-10-19; they are OPTIONAL in `api/entities.ts`, so an
 older Flask still draws the list (missing = no role, no trial ending, no failed payment).
-`TRIAL_SOON_DAYS` and the day count (`daysFromToday`, Hong Kong calendar days) live in `@/lib/calendarDays`, shared with
-the subscription feature's banner, since a feature cannot import another. Flask's own Jinja list
+`TRIAL_SOON_DAYS` lives in `@/lib/calendarDays`, shared with the subscription feature's banner,
+since a feature cannot import another; the day count (`daysFromToday`, Hong Kong calendar days -
+an impossible date counts as no date) is `@minty/shared/dates` since 2026-10-21. Flask's own Jinja list
 keeps its order. Per card (`components/EntityCard`): the name, the person's **role** in plain
 secondary text (`roleLabel`, Flask's `ENTITY_ROLE_LABELS` words - "Admin", "Member", "Shop
 Manager"…; nothing for an unknown or missing role) and, in Needs you, the reason line, the free-trial badge (the design's own tag, named

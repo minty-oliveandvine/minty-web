@@ -40,7 +40,7 @@ export function ChangeDialog({
   modal: ChangeModal;
   entityName: string;
   busy: boolean;
-  /** What the change bills a month ("HK$400"), when the screen already shows it (Part 15.19). */
+  /** What the change bills a month ("HKD 400"), when the screen already shows it (Part 15.19). */
   monthly?: string | null;
   onConfirm: () => void;
   onBack: () => void;

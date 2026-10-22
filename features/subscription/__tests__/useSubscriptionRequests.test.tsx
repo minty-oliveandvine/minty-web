@@ -89,7 +89,7 @@ describe("useSubscriptionRequests", () => {
       ["PETTY_CASH", "unticked"],
       ["PAYMENT_REQUEST", "ticked"],
     ]);
-    expect(r.view?.panel).toMatchObject({ kind: "simple", price: "HK$280" });
+    expect(r.view?.panel).toMatchObject({ kind: "simple", price: "HKD\u00a0280" });
     expect(r.accountId).toBe("acc-harbour");
     expect(r.card?.last4).toBe("4121");
   });

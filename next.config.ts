@@ -1,4 +1,4 @@
-import type { NextConfig } from "next";
+import { withMintyDefaults } from "@minty/shared/next";
 import { copyFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -38,35 +38,14 @@ function copyPdfjsWorker(): void {
 copyPdfjsWorker();
 
 /**
- * Sent with every response (the URL security round, 2026-10-05). Same values in minty-web,
- * minty-payment-request-web and minty-onboarding-web, and in Flask (pettycash/core/http_hardening.py).
- * - Referrer-Policy same-origin: another site never sees a path or query from here (tokens).
- * - frame-ancestors / X-Frame-Options: only this app may frame its pages (clickjacking).
- * - HSTS in production builds only; a browser ignores it over plain http anyway.
+ * withMintyDefaults (@minty/shared/next) supplies what every Minty app sends and needs: the
+ * security headers on every path (the URL security round, 2026-10-05), no X-Powered-By,
+ * `transpilePackages: ["@minty/shared"]` (the package ships .ts source - without it the build
+ * fails on the first .ts file under node_modules) and 127.0.0.1 as an allowed dev origin (Next 16
+ * otherwise never hydrates a page opened at http://127.0.0.1:3000, the address a Windows-hosted
+ * test runner reaches for). Only this app's own settings are below.
  */
-const securityHeaders = [
-  { key: "Referrer-Policy", value: "same-origin" },
-  { key: "X-Content-Type-Options", value: "nosniff" },
-  { key: "Content-Security-Policy", value: "frame-ancestors 'self'" },
-  { key: "X-Frame-Options", value: "SAMEORIGIN" },
-  ...(process.env.NODE_ENV === "production"
-    ? [{ key: "Strict-Transport-Security", value: "max-age=31536000" }]
-    : []),
-];
-
-const nextConfig: NextConfig = {
-  /**
-   * @minty/shared ships .ts/.tsx SOURCE, not a build (modernisation_plan.md Part 3 step 4), so
-   * Next compiles it with this app's own toolchain. Without this the build fails on the first
-   * .ts file under node_modules - loudly, unlike the Tailwind scan, which fails silently (see
-   * the @source line in app/globals.css).
-   */
-  transpilePackages: ["@minty/shared"],
-  async headers() {
-    return [{ source: "/:path*", headers: securityHeaders }];
-  },
-  /** Slightly smaller responses; security-through-obscurity only. */
-  poweredByHeader: false,
+export default withMintyDefaults({
   /**
    * The sibling URLs lib/env.ts reads. Listing them here is what makes Next inline the literal
    * `process.env.X` reads at build time - in client code, server code and proxy.ts alike - under
@@ -78,14 +57,4 @@ const nextConfig: NextConfig = {
     SUBSCRIPTION_API_URL: process.env.SUBSCRIPTION_API_URL ?? "",
     PAYMENT_REQUEST_WEB_URL: process.env.PAYMENT_REQUEST_WEB_URL ?? "",
   },
-  /**
-   * Next 16 refuses dev-only requests (HMR, the hydration payload) from an origin other than the
-   * one the dev server was started as; without this, opening http://127.0.0.1:3000 renders the
-   * HTML and never hydrates - the landing shows "Loading…" forever. 127.0.0.1 is what a
-   * Windows-hosted test runner reaches for, because Node resolves `localhost` to ::1 first and
-   * stalls ~2 s per request. Production is unaffected.
-   */
-  allowedDevOrigins: ["127.0.0.1"],
-};
-
-export default nextConfig;
+});

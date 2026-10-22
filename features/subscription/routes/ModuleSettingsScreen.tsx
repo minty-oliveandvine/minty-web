@@ -9,12 +9,15 @@
  * hands the parameters here; the tests render this directly with a fixture and a pinned `today`.
  */
 
-import { useMemo, useSyncExternalStore } from "react";
+import { useMemo } from "react";
+
+import { moduleClaims } from "@minty/shared/auth";
+import { useClientValue } from "@minty/shared/clientValue";
+import type { ModuleAccess } from "@minty/shared/sidebar";
 
 import { AppHeader } from "@/components/ui/AppHeader";
 import { SettingsTabs } from "@/components/ui/SettingsTabs";
 import { getAuth } from "@/lib/auth";
-import { getModuleClaims, type ModuleClaims } from "@/lib/moduleClaims";
 import { settingsBackLink, settingsTabs } from "@/lib/settingsTabs";
 
 import { AccountPickerDialog } from "@/features/subscription/components/BillingAccountDialogs";
@@ -33,20 +36,19 @@ import { useModulePage, type UseModulePageArgs } from "@/features/subscription/h
 export type ModuleSettingsScreenProps = UseModulePageArgs;
 
 // The cookie is not readable during server rendering; render "" until hydrated (Header.tsx).
-const noSubscribe = () => () => {};
 const readEntityName = () => getAuth()?.entityName ?? "";
 const serverEntityName = () => "";
 // The token's module claims, read the same way; the cookie is not readable on the server, and
-// serialising a fresh object per read would make useSyncExternalStore loop - cache by token.
-let claimsCache: { token: string; claims: ModuleClaims } | null = null;
-const readClaims = (): ModuleClaims | null => {
+// serialising a fresh object per read would make useClientValue loop - cache by token.
+let claimsCache: { token: string; claims: ModuleAccess } | null = null;
+const readClaims = (): ModuleAccess | null => {
   const token = getAuth()?.token ?? "";
   if (!claimsCache || claimsCache.token !== token) {
-    claimsCache = { token, claims: getModuleClaims() };
+    claimsCache = { token, claims: moduleClaims(token) };
   }
   return claimsCache.claims;
 };
-const serverClaims = (): ModuleClaims | null => null;
+const serverClaims = (): ModuleAccess | null => null;
 
 /** The result views take a menu; this page has no row behind them, so there is nothing in it. */
 const noMenu = () => {};
@@ -54,19 +56,19 @@ const noMenu = () => {};
 export function ModuleSettingsScreen(args: ModuleSettingsScreenProps) {
   const m = useModulePage(args);
   const { entityId } = args;
-  const entityName = useSyncExternalStore(noSubscribe, readEntityName, serverEntityName);
+  const entityName = useClientValue(readEntityName, serverEntityName);
 
   // The result views want only these two of a PortalEntity, which is as well: this page has no
   // portal row to hand them, and inventing one would be inventing its country and its payer.
   const resultEntity = { entity_id: entityId, entity_name: m.page?.entity_name ?? entityName };
 
-  const claims = useSyncExternalStore(noSubscribe, readClaims, serverClaims);
+  const claims = useClientValue(readClaims, serverClaims);
 
   // Which modules the company has, for the pills and the drawer: the page model's fresh
   // `has_access` once it is here, the token's claims until then (minty-payment-request-web's
   // `useEntitlements`, the same two sources in the same order) - so the pills never vanish
   // while the page loads or when the API cannot answer.
-  const access = useMemo<ModuleClaims>(() => {
+  const access = useMemo<ModuleAccess>(() => {
     if (m.page) {
       return {
         pettyCash: m.page.cards.some((c) => c.code === "PETTY_CASH" && c.has_access),

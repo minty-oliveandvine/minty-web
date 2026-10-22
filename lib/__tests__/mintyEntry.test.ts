@@ -45,3 +45,25 @@ describe("pettyCashWebUrl", () => {
     expect(pettyCashWebUrl(ID)).toBe("/entities");
   });
 });
+
+describe("pettyCashWebUrl's exact spelling", () => {
+  // Pins pettyCashWebUrl before it moves to @minty/shared (the shared-code refactor, 2026-10-21)
+  beforeEach(() => setAuth(TOKEN, ID, "Olive & Vine"));
+
+  it("orders entity_id, next, return_origin inside the encoded next", () => {
+    const inner = `/handoff/petty-cash-web?entity_id=${ID}&next=%2Fp&return_origin=${encodeURIComponent(window.location.origin)}`;
+    expect(pettyCashWebUrl(ID, "/p")).toBe(
+      `${env.PETTY_CASH_URL}/entity/${ID}/enter?token=${encodeURIComponent(TOKEN)}&next=${encodeURIComponent(inner)}`,
+    );
+  });
+
+  it("an empty next is no next", () => {
+    expect(handoff(pettyCashWebUrl(ID, "")).searchParams.has("next")).toBe(false);
+  });
+
+  it("an empty company id falls back to the cookie's company in /enter, with entity_id= empty", () => {
+    const enter = new URL(pettyCashWebUrl(""));
+    expect(enter.pathname).toBe(`/entity/${ID}/enter`);
+    expect(new URL(enter.searchParams.get("next")!, "https://flask.test").searchParams.get("entity_id")).toBe("");
+  });
+});

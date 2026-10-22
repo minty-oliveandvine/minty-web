@@ -50,3 +50,24 @@ describe("mintyEntryUrl", () => {
     expect(mintyModulesUrl("")).toBe("/entities");
   });
 });
+
+describe("mintyEntryUrl's exact spelling", () => {
+  // Pins mintyEntryUrl before it moves to @minty/shared (the shared-code refactor, 2026-10-21)
+  afterEach(() => clearAuth());
+
+  it("an explicit company wins over the cookie's; id, token and path are each URI-encoded", () => {
+    setAuth("a+b/c=", "e1", "Co");
+    expect(mintyEntryUrl("/x?y=1&z=2", "e 2/3")).toBe(
+      `${env.PETTY_CASH_URL}/entity/e%202%2F3/enter?token=a%2Bb%2Fc%3D&next=%2Fx%3Fy%3D1%26z%3D2`,
+    );
+  });
+
+  it("an empty path is no path: no &next=", () => {
+    setAuth(TOKEN, "e1", "Co");
+    expect(mintyEntryUrl("")).toBe(`${env.PETTY_CASH_URL}/entity/e1/enter?token=${encodeURIComponent(TOKEN)}`);
+  });
+
+  it("a company with no token is still the entity list", () => {
+    expect(mintyEntryUrl("/x", "e1")).toBe("/entities");
+  });
+});

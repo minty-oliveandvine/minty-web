@@ -13,7 +13,7 @@ import { afterEach, beforeEach } from "vitest";
 //
 // Imported INSIDE the hook, never at the top of this file, and that is load-bearing: since
 // 2026-10-12 `@/lib/viewer` pulls in components/ui/sidebarHost (it registers the host), and with
-// it lib/auth, lib/env, lib/hubPaths, lib/mintyEntry, lib/moduleClaims, lib/apiClient and
+// it lib/auth, lib/env, lib/hubPaths, lib/mintyEntry, lib/apiClient and
 // next/navigation - all of them evaluated before any test file's `vi.mock` is registered, which
 // binds their imports to the real modules for good. A test would then mock next/navigation and
 // watch the sidebar ignore it (it did: the menu stopped closing on a move between pages).

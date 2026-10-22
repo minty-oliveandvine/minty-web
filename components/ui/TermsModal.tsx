@@ -29,7 +29,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { ApiError } from "@/lib/apiClient";
 import type { LegalDocumentBody } from "@/lib/legal/document";
 import { LEGAL_PATHS } from "@/lib/legal/paths";
-import { logOut } from "@/lib/logout";
+import { logOut } from "@/lib/handoff";
 import { acceptTerms } from "@/lib/terms";
 
 import styles from "./TermsModal.module.css";

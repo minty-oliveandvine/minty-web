@@ -16,7 +16,9 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, useSyncExternalStore, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
+
+import { useClientValue } from "@minty/shared/clientValue";
 
 import { RequiredMark } from "@/components/ui/RequiredMark";
 import { TermsModal } from "@/components/ui/TermsModal";
@@ -55,7 +57,6 @@ export const LOGIN_COPY = {
   termsUnavailable: "I couldn't load the Terms of Use just now. Mind trying again?",
 } as const;
 
-const noSubscribe = () => () => {};
 const readOrigin = (): string | undefined => window.location.origin;
 const serverNoOrigin = (): string | undefined => undefined;
 
@@ -74,7 +75,7 @@ export function LoginScreen({ arrival }: { arrival: Arrival }) {
   // hydration (they must agree), the browser's right after. Read during render it made the two
   // differ - a hydration mismatch React does not patch, so the link kept the server's address
   // and left a preview set.
-  const origin = useSyncExternalStore(noSubscribe, readOrigin, serverNoOrigin);
+  const origin = useClientValue(readOrigin, serverNoOrigin);
 
   const signup = arrival.mode === "signup";
   const invited = arrival.mode === "invite";

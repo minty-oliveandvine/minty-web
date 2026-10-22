@@ -268,7 +268,9 @@ test.describe("over the live API", () => {
       // The seeded shop just started a card-free Payment Request trial: a trial is not
       // billable, so the plan is the trial at nothing a month, and no card is on file.
       await expect(panel.getByText("(Free Trial)")).toBeVisible();
-      await expect(panel.getByText(/^(HK\$|HKD ?)0$/)).toBeVisible();
+      // A price by its code, a trailing ".00" dropped (owner 2026-10-21: one money rule).
+      // "HKD 0 /month" is one text node, so the price is matched inside it, never as "HKD 0.00".
+      await expect(panel).toContainText(/HKD\s0(?![.\d])/);
       await expect(panel.getByText("Payment method")).toHaveCount(0);
       await expect(open.getByText(/was originally created/)).toBeVisible();
       // The footer's standing terms are not status, so they read under a company that bills

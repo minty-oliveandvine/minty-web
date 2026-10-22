@@ -48,6 +48,8 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { saveBlob, saveTextFile } from "@minty/shared/download";
+
 import { ApiError } from "@/lib/apiClient";
 
 import {
@@ -96,7 +98,6 @@ import {
   breakdownCsv,
   breakdownFilename,
 } from "@/features/subscription/lib/breakdown";
-import { saveBlob, saveTextFile } from "@/features/subscription/lib/download";
 import { BILLING, overviewPath } from "@/features/subscription/lib/paths";
 
 export type BillingStatus = "loading" | "ready" | "error";
@@ -476,7 +477,7 @@ export function useBillingPage({
         invoiceId,
         { setBusy: setPdfBusy, setError: setPdfError, fallback: INVOICE_PDF_FAILED },
         async () =>
-          saveBlob(invoicePdfFilename(reference), await loadInvoicePdf(fixture, invoiceId)),
+          saveBlob(await loadInvoicePdf(fixture, invoiceId), invoicePdfFilename(reference)),
       );
     },
     [download, fixture, invoices],
@@ -519,7 +520,7 @@ export function useBillingPage({
         { setBusy: setBreakdownBusy, setError: setBreakdownError, fallback: BREAKDOWN_FAILED },
         async () => {
           const breakdown = await loadBreakdown(fixture, invoiceId);
-          saveTextFile(breakdownFilename(breakdown.invoice.reference), breakdownCsv(breakdown));
+          saveTextFile(breakdownCsv(breakdown), breakdownFilename(breakdown.invoice.reference));
         },
       ),
     [download, fixture],

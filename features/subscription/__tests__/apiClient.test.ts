@@ -122,7 +122,7 @@ describe("apiFetch", () => {
     const pdf = (type = "application/pdf") =>
       new Response(INVOICE_PDF, { status: 200, headers: { "Content-Type": type } });
 
-    it("returns the file itself, asked for as a PDF with the bearer", async () => {
+    it("returns the file itself, asked for with the bearer", async () => {
       fetchMock.mockResolvedValueOnce(pdf());
       const file = await apiFetchBlob("/api/me/invoices/in_1/pdf");
 
@@ -132,7 +132,8 @@ describe("apiFetch", () => {
       const [url, init] = fetchMock.mock.calls[0];
       expect(String(url)).toBe(`${env.SUBSCRIPTION_API_URL}/api/me/invoices/in_1/pdf`);
       const headers = new Headers(init?.headers);
-      expect(headers.get("Accept")).toBe("application/pdf, application/json");
+      // owner 2026-10-21: one shared module (@minty/shared/apiClient) - it asked for "application/pdf, application/json"
+      expect(headers.get("Accept")).toBe("*/*");
       expect(headers.get("Authorization")).toBe(`Bearer ${TOKEN}`);
       expect(headers.has("X-Entity-Id")).toBe(false);
     });

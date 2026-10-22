@@ -42,7 +42,8 @@ e2e/            Playwright: 08_profile.spec.ts, over a stubbed Flask and billing
 1. `git mv features/profile <new-repo>/features/profile` and `git mv app/profile
    <new-repo>/app/profile`; delete its line from this app's `lib/hubPaths.ts`.
 2. In the new repo, point `@/lib/*` and `@/components/ui/*` at `@minty/shared` (the side menu,
-   `mintyFetch`, `lib/viewer`, `lib/logout`) or copy them across.
+   `mintyFetch`, `lib/viewer`, `lib/handoff`'s `logOut`) or copy them across. Its Flask calls are
+   already `createProfileApi` from `@minty/shared/portal`.
 3. Fill the `subscriptions` slot from wherever the subscription feature lives then — or pass
    nothing, and the profile simply has no overview.
 4. Copy `public/profile/*` (the icons and the caped cat).

@@ -14,9 +14,10 @@
  *   row: one line per module ("… is confirmed. Billing starts the day its trial ends.", "… is
  *   active. Your card has been charged.", "… is restored and billing carries on as before.",
  *   "… free trial has started — 30 days, free.") and one line of money, the panel's own
- *   arithmetic (`forecast`): "Nothing is being charged." / "HK$400 a month." / "Nothing charged
- *   today · HK$400 a month when the trial ends." / "HK$280 a month now · HK$400 when the trial
- *   ends." / "HK$400 until 20 Aug 2026, then HK$280 a month."
+ *   arithmetic (`forecast`): "Nothing is being charged." / "HKD 400 a month." / "Nothing charged
+ *   today · HKD 400 a month when the trial ends." / "HKD 280 a month now · HKD 400 when the trial
+ *   ends." / "HKD 400 until 20 Aug 2026, then HKD 280 a month." (prices: `formatPrice`, the
+ *   code and no trailing ".00" - owner 2026-10-21)
  *
  * The lines come from the DIFFERENCE between the two page models, not from the ticks asked
  * for: a company's consent covers every trial it runs, so confirming one confirms both, and
@@ -35,7 +36,6 @@ import { TRIAL_DAYS } from "@/features/subscription/lib/moduleState";
 import {
   billable,
   forecast,
-  formatMoney,
   isBundleSet,
   longDate,
   rowFooter,
@@ -48,6 +48,7 @@ import {
   type PlanTone,
   type RowFooterFacts,
 } from "@/features/subscription/lib/subscriptionSummary";
+import { formatPrice } from "@minty/shared/money";
 
 export type ResultKind =
   "celebrate" | "updated" | "module_cancelled" | "subscription_cancelled" | "transferred";
@@ -167,7 +168,7 @@ function accessEnd(card: ModuleCard): Date | null {
  * follows is what the ticks bill after the change.
  */
 export function moneyLine(f: Forecast): string {
-  const money = (n: number) => formatMoney(f.symbol, n);
+  const money = (n: number) => formatPrice(n, f.currency);
   const ends = f.cancelling
     .map(accessEnd)
     .filter((d): d is Date => d !== null)

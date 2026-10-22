@@ -1,13 +1,14 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
+import { toFlask } from "@minty/shared/proxy";
+
 // proxy.ts is Next 16's name for what the sibling apps still call proxy.ts (the old
 // convention is deprecated in 16 and this repo starts on the current one).
 
 import { AUTH_COOKIE_NAME } from "@/lib/auth";
 import { handoffUrl } from "@/lib/handoff";
 import { isOpenPath } from "@/lib/hubPaths";
-import { previewSetSlug } from "@/lib/previewSibling";
 
 /**
  * One gate - THE COOKIE. Every page but the landing, sign-in and the maintenance page
@@ -15,7 +16,8 @@ import { previewSetSlug } from "@/lib/previewSibling";
  * browser goes to Flask's login-gated re-handoff for the page it asked for: silent while Flask's
  * session lives, else Flask sends it to this app's /login (features/auth) with the re-handoff as
  * `next`. The cookie's max-age is the token's `exp`, so "no cookie" and "expired token" are the
- * same case here.
+ * same case here. The trip is `toFlask` from `@minty/shared/proxy`: a 307, or on a branch
+ * preview-set host a page that refreshes to Flask (a cross-site redirect chain would lose the set).
  */
 export function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
@@ -83,19 +85,3 @@ export function movedModulePage(pathname: string): string | null {
 export const config = {
   matcher: ["/((?!_next|api|.*\\..*).*)"],
 };
-
-/**
- * Off to Flask. A plain redirect - except on a branch preview-set host, where the trip has to
- * START on a page of this host: a visitor arriving from a link on GitHub or in an email makes
- * the whole redirect chain cross-site, and Flask names a preview set only on a same-site
- * navigation (Minty blueprints/shared/preview_origin.py), so it would hand back to the
- * configured hub instead of the set. A meta refresh is navigated by the page itself.
- */
-export function toFlask(request: NextRequest, url: string): NextResponse {
-  if (previewSetSlug(request.nextUrl.host) === null) return NextResponse.redirect(url);
-  const attr = url.replaceAll("&", "&amp;").replaceAll('"', "&quot;").replaceAll("<", "&lt;");
-  return new NextResponse(
-    `<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="0;url=${attr}"><title>Minty</title>`,
-    { status: 200, headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } },
-  );
-}

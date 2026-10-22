@@ -5,15 +5,18 @@
  * `ModuleSettingsScreen`): the header (Back, "Settings", the company, the initials and the menu),
  * the sticky pill row in a 1024px column, then the tab's heading and its cards in Payment
  * Settings' card look. Which pills show follows the company's modules: the page's own once it is
- * here, the token's claims until then (`lib/moduleClaims.ts`).
+ * here, the token's claims until then (`moduleClaims` from `@minty/shared/auth`).
  */
 
 import { useMemo, type ReactNode } from "react";
 
+import { moduleClaims } from "@minty/shared/auth";
+import type { ModuleAccess } from "@minty/shared/sidebar";
+
 import { AppHeader } from "@/components/ui/AppHeader";
 import { SettingsTabs } from "@/components/ui/SettingsTabs";
+import { getAuth } from "@/lib/auth";
 import type { CompanySettingsTab } from "@/lib/hubPaths";
-import { getModuleClaims, type ModuleClaims } from "@/lib/moduleClaims";
 import { settingsBackLink, settingsTabs } from "@/lib/settingsTabs";
 
 export function SettingsShell({
@@ -32,11 +35,11 @@ export function SettingsShell({
   lead: string;
   children: ReactNode;
 }) {
-  const access = useMemo<ModuleClaims>(
+  const access = useMemo<ModuleAccess>(
     () =>
       modules
         ? { pettyCash: modules.includes("PETTY_CASH"), billing: modules.includes("PAYMENT_REQUEST") }
-        : getModuleClaims(),
+        : moduleClaims(getAuth()?.token),
     [modules],
   );
   return (

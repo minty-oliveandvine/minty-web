@@ -183,7 +183,7 @@ describe("SubscriptionRequestsScreen", () => {
     }
     const panel = within(review).getByRole("region", { name: "Subscription Summary" });
     expect(within(panel).getByText("Payment Request")).toBeInTheDocument();
-    expect(within(panel).getByText("HK$280")).toBeInTheDocument();
+    expect(within(panel).getByText("HKD 280")).toBeInTheDocument();
     // The oldest account that can pay - Harbour Trading - named over its Visa, under a
     // "Billing account" column: the card is shown only as the account's.
     expect(within(panel).getByText("Billing account")).toBeInTheDocument();

@@ -8,9 +8,10 @@
  * (`/auth/email/handoff`), which sets Flask's session and goes on - to the hub's list.
  */
 
+import { withReturnOrigin } from "@minty/shared/previewSibling";
+
 import { ApiError, HOUSE_FALLBACK } from "@/lib/apiClient";
 import { env } from "@/lib/env";
-import { withReturnOrigin } from "@/lib/handoff";
 import { fetchLegalDocument } from "@/lib/legal/client";
 import { TERMS, type LegalDocumentBody } from "@/lib/legal/document";
 

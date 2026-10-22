@@ -31,7 +31,7 @@
  * ends a trial, never the date (Minty's `subscription-restart-screen` note).
  */
 
-import { daysFromToday } from "@/lib/calendarDays";
+import { daysFromToday } from "@minty/shared/dates";
 
 import type { ModuleCard, ModuleCode } from "@/features/subscription/api/moduleSettings";
 

@@ -9,10 +9,12 @@
  * minty-payment-request-web's `SettingsPills`.
  */
 
+import { companyPath } from "@minty/shared/companyRef";
+import type { ModuleAccess } from "@minty/shared/sidebar";
+
 import { env } from "@/lib/env";
-import { companyPath, companySettingsPath, type CompanySettingsTab } from "@/lib/hubPaths";
+import { companySettingsPath, type CompanySettingsTab } from "@/lib/hubPaths";
 import { pettyCashWebUrl } from "@/lib/mintyEntry";
-import type { ModuleClaims } from "@/lib/moduleClaims";
 
 export type SettingsTab = {
   label: string;
@@ -41,7 +43,7 @@ export function settingsBackLink(entityId: string): { href: string; label: strin
 
 export function settingsTabs(
   company: SettingsCompany,
-  access: ModuleClaims,
+  access: ModuleAccess,
   current: CompanySettingsTab,
 ): SettingsTab[] {
   const id = encodeURIComponent(company.id);

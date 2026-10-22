@@ -6,7 +6,9 @@
  * so extraction into an app that mounts it at `/` is a one-line change here (README.md).
  */
 
-import { companyPath, companySettingsPath } from "@/lib/hubPaths";
+import { companyPath } from "@minty/shared/companyRef";
+
+import { companySettingsPath } from "@/lib/hubPaths";
 
 export const SUBSCRIPTION_BASE_PATH = "/subscription";
 

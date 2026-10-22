@@ -7,7 +7,7 @@
  * list - asks here. Each feature's guard test asserts its own base path equals its entry, so
  * the two spellings cannot drift. Extracting a feature deletes its line.
  */
-import { companyRef } from "@minty/shared/companyRef";
+import { companyPath } from "@minty/shared/companyRef";
 
 export const HUB_PATHS = {
   entities: "/entities",
@@ -41,15 +41,13 @@ export function isOpenPath(pathname: string): boolean {
   return OPEN_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 }
 
-/**
- * One company's pages: `/entity/<shortid>/<name>[/…]` (lib/companyRef.ts) - its module choice,
- * then its settings under `/settings/<tab>` (phase 2, 2026-10-05). SINGULAR: the address names
- * one company, like Flask's `/entity/<shortid>/<name>/…` (the plural `/entities` is the LIST
- * and nothing below it - proxy.ts 307s the old plural company addresses here).
+/*
+ * One company's pages are `/entity/<shortid>/<name>[/…]` - `companyPath` from
+ * `@minty/shared/companyRef` (owner 2026-10-21: one shared module) - its module choice, then its
+ * settings under `/settings/<tab>` (phase 2, 2026-10-05). SINGULAR: the address names one
+ * company, like Flask's `/entity/<shortid>/<name>/…` (the plural `/entities` is the LIST and
+ * nothing below it - proxy.ts 307s the old plural company addresses here).
  */
-export function companyPath(entityId: string, entityName: string, sub = ""): string {
-  return `${HUB_PATHS.company}/${companyRef(entityId, entityName)}${sub}`;
-}
 
 /** The settings tabs this app draws; the apps keep their own module settings. */
 export type CompanySettingsTab = "modules" | "users" | "integration";
@@ -65,7 +63,7 @@ export function companySettingsPath(
   entityName: string,
   tab: CompanySettingsTab = "modules",
 ): string {
-  return companyPath(entityId, entityName, `/settings/${tab}`);
+  return companyPath(entityId, entityName, "settings", tab);
 }
 
 /** `/entity/<shortid>/<name>/settings/<tab>` - the area lib/backLink.ts and the menu recognise. */

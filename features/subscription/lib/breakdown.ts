@@ -10,6 +10,8 @@
  * this only writes them down.
  */
 
+import { MONTHS } from "@minty/shared/dates";
+
 import type { BreakdownRow, InvoiceBreakdown } from "@/features/subscription/api/payerPortal";
 import { invoiceFileStem } from "@/features/subscription/lib/billing";
 import { utcDay } from "@/features/subscription/lib/subscriptionSummary";
@@ -28,7 +30,6 @@ export const BREAKDOWN_HEADERS = [
   "Charged for the period",
 ] as const;
 
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const DAY = 86_400_000;
 
 /** "26-Jul-26" - the sample's form, the day unpadded. */

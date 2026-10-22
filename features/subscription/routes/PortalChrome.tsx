@@ -9,20 +9,19 @@
  * then).
  */
 
-import { useSyncExternalStore } from "react";
+import { useClientValue } from "@minty/shared/clientValue";
 
 import { AppHeader } from "@/components/ui/AppHeader";
 import { getAuth } from "@/lib/auth";
 
 import { PortalBackSlot } from "@/features/subscription/components/PortalBack";
 
-// Primitives only: a fresh object per read would make useSyncExternalStore loop.
-const noSubscribe = () => () => {};
+// Primitives only: a fresh object per read would make useClientValue loop.
 const readEntityName = () => getAuth()?.entityName ?? "";
 const serverEmpty = () => "";
 
 export function PortalChrome() {
-  const entityName = useSyncExternalStore(noSubscribe, readEntityName, serverEmpty);
+  const entityName = useClientValue(readEntityName, serverEmpty);
 
   return (
     <AppHeader lead={<PortalBackSlot />} companyName={entityName || "Subscriptions"} />

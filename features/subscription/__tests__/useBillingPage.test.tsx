@@ -34,9 +34,9 @@ import { breakdownCsv } from "@/features/subscription/lib/breakdown";
 
 // What would have been handed to the browser to save - the file itself, not the Blob plumbing.
 const saved = vi.hoisted(() => [] as { filename: string; text?: string; blob?: Blob }[]);
-vi.mock("@/features/subscription/lib/download", () => ({
-  saveTextFile: (filename: string, text: string) => saved.push({ filename, text }),
-  saveBlob: (filename: string, blob: Blob) => saved.push({ filename, blob }),
+vi.mock("@minty/shared/download", () => ({
+  saveTextFile: (text: string, filename: string) => saved.push({ filename, text }),
+  saveBlob: (blob: Blob, filename: string) => saved.push({ filename, blob }),
 }));
 
 const push = vi.fn();
@@ -121,7 +121,7 @@ describe("useBillingPage", () => {
       }
       if (url.pathname === "/api/me/invoices") {
         invoiceQueries.push(url.search);
-        if (options.invoices === false) return reply(500, { error: "nope" });
+        if (options.invoices === false) return reply(500, { error: "The invoices are not available." });
         if (options.invoiceTotal === undefined) return reply(200, invoicePage());
         // An account with more invoices than a page holds: answer the page asked for.
         const perPage = Number(url.searchParams.get("per_page") ?? 10);
@@ -169,7 +169,7 @@ describe("useBillingPage", () => {
     expect(result.current.next.failed).toBe(true);
     expect(result.current.next.failedNames).toEqual(["Willow Court Limited"]);
     // The account's next renewal, estimated - by the currency's code, cents only when any.
-    expect(result.current.next.amount).toBe("HKD 960");
+    expect(result.current.next.amount).toBe("HKD\u00a0960");
     // The invoices are their own read: the first page, ten to a page.
     await waitFor(() => expect(result.current.invoices).toHaveLength(INVOICES.length));
     expect(invoiceQueries).toEqual(["?account=acc-company-a&page=1&per_page=10"]);
@@ -470,7 +470,9 @@ describe("useBillingPage", () => {
     expect(result.current.rows).toHaveLength(2);
     expect(result.current.invoices).toEqual([]);
     // never quiet: the table's failure is named, and logged
-    await waitFor(() => expect(result.current.invoicesError).toBe("nope"));
+    // owner 2026-10-21: one shared module (@minty/shared/errorCopy) - the fixture said "nope", and a
+    // single word is no longer shown; the server's sentence still is
+    await waitFor(() => expect(result.current.invoicesError).toBe("The invoices are not available."));
     expect(errors).toHaveBeenCalledWith("[billing] the account's invoices could not be read", expect.anything());
     errors.mockRestore();
   });

@@ -62,9 +62,10 @@ function blank(code: ModuleCard["code"]): ModuleCard {
     has_access: false,
     subscription_status: null,
     can_cancel: false,
-    // The real catalogue's money (Figma 05·A prices from it): HK$280 a module, HK$400 the bundle.
+    // The real catalogue's money (Figma 05·A prices from it): HKD 280 a module, HKD 400 the bundle.
     amount: "280",
-    formatted_amount: petty ? "HK$68.00" : "HK$88.00",
+    // `format_minor`: a plain grouped decimal, no code (cards.py).
+    formatted_amount: petty ? "68.00" : "88.00",
     currency_code: "HKD",
     billing_interval: "month",
     cancel_at_period_end: false,
@@ -163,7 +164,7 @@ function confirmedTrial(code: ModuleCard["code"], daysLeft: number): ModuleCard 
 
 /** `get_subscription_summary`'s money, as the API answers it for the HKD catalogue. */
 export const SUMMARY: ModuleSummary = {
-  currency: "HK$",
+  currency: "HKD",
   currency_code: "HKD",
   bundle_amount: "400",
   bundle_amount_formatted: "400.00",
@@ -184,9 +185,9 @@ function panelFor(cards: ModuleCard[]): ModulePanel {
   });
   return {
     next_invoice: billed
-      ? { date, amount: "HK$280", overdue: false, includes_extension: false }
+      ? { date, amount: "HKD\u00a0280", overdue: false, includes_extension: false }
       : null,
-    total: billed ? "HK$280" : "HK$0",
+    total: billed ? "HKD\u00a0280" : "HKD\u00a00",
   };
 }
 
@@ -244,7 +245,7 @@ export type SummaryFrame =
  * it, so the same fixture feeds the module page and the open row.
  */
 export const SUMMARY_FIXTURES: Record<SummaryFrame, ModulePage> = {
-  /** Nothing started: two Start Free Trial buttons, "No module selected", HK$0. */
+  /** Nothing started: two Start Free Trial buttons, "No module selected", HKD 0. */
   M11: page([neverStarted("PETTY_CASH"), neverStarted("PAYMENT_REQUEST")]),
   /** Petty Cash on trial (unconfirmed), Payment Request never started. */
   M21: page([trialing("PETTY_CASH", 3), neverStarted("PAYMENT_REQUEST")]),
@@ -262,7 +263,7 @@ export const SUMMARY_FIXTURES: Record<SummaryFrame, ModulePage> = {
   M51: page([cancelling("PETTY_CASH", 15), neverStarted("PAYMENT_REQUEST")]),
   /** Petty Cash suspended (a payment failed), Payment Request never started. */
   M61: page([suspended("PETTY_CASH"), neverStarted("PAYMENT_REQUEST")]),
-  /** Petty Cash's trial confirmed: ticked, HK$0 now, HK$280 from the day after it ends. */
+  /** Petty Cash's trial confirmed: ticked, HKD 0 now, HKD 280 from the day after it ends. */
   N21a: page([confirmedTrial("PETTY_CASH", 3), neverStarted("PAYMENT_REQUEST")]),
 };
 
@@ -296,7 +297,7 @@ export const RESULT_FIXTURES: Record<
   },
   /**
    * A trial confirmed (a card on file, consent still to give) and an expired trial bought back:
-   * HK$280 now, the bundle when the trial ends.
+   * HKD 280 now, the bundle when the trial ends.
    */
   RU23: {
     before: page([

@@ -4,7 +4,9 @@
  * the list moved as it looks.
  */
 
-import { daysFromToday, TRIAL_SOON_DAYS } from "@/lib/calendarDays";
+import { daysFromToday, MONTHS } from "@minty/shared/dates";
+
+import { TRIAL_SOON_DAYS } from "@/lib/calendarDays";
 import { env } from "@/lib/env";
 import { mintyEnterCompanyUrl } from "@/lib/mintyEntry";
 
@@ -131,8 +133,6 @@ const ROLE_LABELS: Record<string, string> = {
 export function roleLabel(role: string | null | undefined): string | null {
   return role ? (ROLE_LABELS[role] ?? null) : null;
 }
-
-const MONTHS =["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 /**
  * "9 Jun 5:42 PM" in the VIEWER's zone - the format and the zone Flask's page ended up with

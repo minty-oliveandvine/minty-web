@@ -31,6 +31,9 @@ import type {
 import { cardTitle, type NextBilling } from "@/features/subscription/lib/billing";
 import { formatMinor } from "@/features/subscription/lib/transfer";
 import { EMAIL_RE, isEmail } from "@minty/shared/emailInput";
+import { ADDRESS_UNAVAILABLE, TOO_LONG } from "@/features/subscription/lib/billingAccountsCopy";
+
+export { ADDRESS_UNAVAILABLE, TOO_LONG };
 
 // --- Copy ---------------------------------------------------------------------------
 
@@ -69,8 +72,6 @@ export const DETAILS_SAVE_FAILED = "That didn't save. Mind trying again?";
 export const NO_CARD_FOR_ADDRESS =
   "This account has no card to keep an address on. Add a card to it first.";
 /** 08-C with no Stripe to draw the address form: no key here, or Stripe.js blocked or down. */
-export const ADDRESS_UNAVAILABLE =
-  "The address form couldn't load, so the address can't be changed right now. The company name and email still can.";
 /** The sheet (onboarding's `BillingSheet`): the card flags on a row, and 01-J's name. */
 export const CARD_EXPIRED_FLAG = "Expired";
 export const CARD_EXPIRING_FLAG = "Expiring soon";
@@ -87,7 +88,6 @@ export const EMAIL_REQUIRED = "Enter the email address invoices should go to.";
 export const EMAIL_INVALID = "That email address doesn't look right.";
 /** `billing_company` / `billing_email` are VARCHAR(255): the limit, and the API's own words. */
 export const FIELD_MAX = 255;
-export const TOO_LONG = "Keep that under 255 characters.";
 
 /** Over the limit as the API counts it - characters, not UTF-16 units (an emoji is one). */
 function tooLong(value: string): boolean {

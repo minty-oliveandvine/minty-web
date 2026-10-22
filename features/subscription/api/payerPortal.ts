@@ -14,7 +14,9 @@
  * the query string or the body (`entity`), as Flask's routes/portal.py did.
  */
 
-import { ApiError, apiFetch, apiFetchBlob } from "@/lib/apiClient";
+import { fetchAllSubscriptions, UNEXPECTED_SHAPE, type AllSubscriptions } from "@minty/shared/portal";
+
+import { ApiError, apiFetch, apiFetchBlob, billingJson } from "@/lib/apiClient";
 
 // --- Subscriptions ------------------------------------------------------------
 
@@ -124,8 +126,6 @@ export type PayerSubscriptionsParams = {
   signal?: AbortSignal;
 };
 
-const UNEXPECTED_SHAPE = "That came back in a shape I didn't expect. Mind trying again?";
-
 export async function fetchPayerSubscriptions(
   params: PayerSubscriptionsParams = {},
 ): Promise<PayerSubscriptions> {
@@ -143,33 +143,18 @@ export async function fetchPayerSubscriptions(
   return data;
 }
 
-/** The API's page-size ceiling (`MAX_PER_PAGE` in Minty's portal route). */
-export const MAX_PER_PAGE = 100;
-
 /**
  * Every company the payer is responsible for, in one list: the design scrolls, it does not
- * page, so the pages are walked here. Sorting and searching happen on the loaded list.
+ * page, so the pages are walked - `fetchAllSubscriptions` from `@minty/shared/portal` (owner
+ * 2026-10-21: one shared module), `per_page=100` one after another, payer, billing and the
+ * transfer outcomes from the FIRST page only. A page of the wrong shape is this app's
+ * `ApiError(502)`. Sorting and searching happen on the loaded list.
  */
-export async function fetchAllPayerSubscriptions(signal?: AbortSignal): Promise<{
-  payer: PayerSubscriptions["payer"];
-  billing: PayerSubscriptions["billing"];
-  entities: PortalEntity[];
-  transfer_outcomes: TransferOutcomeRow[];
-}> {
-  const first = await fetchPayerSubscriptions({ page: 1, perPage: MAX_PER_PAGE, signal });
-  const entities = [...first.entities];
-  for (let page = 2; page <= first.pages; page++) {
-    const next = await fetchPayerSubscriptions({ page, perPage: MAX_PER_PAGE, signal });
-    entities.push(...next.entities);
-  }
-  // From the FIRST page only: the outcomes are a fact about the payer, not about the window
-  // of companies, so every page repeats them and concatenating would show each modal twice.
-  return {
-    payer: first.payer,
-    billing: first.billing,
-    entities,
-    transfer_outcomes: first.transfer_outcomes ?? [],
-  };
+export function fetchAllPayerSubscriptions(signal?: AbortSignal): Promise<AllSubscriptions> {
+  return fetchAllSubscriptions(billingJson, {
+    signal,
+    shapeError: (status, message) => new ApiError(status, message),
+  });
 }
 
 // --- Change subscriber ----------------------------------------------------------
@@ -669,7 +654,7 @@ export type InvoiceRow = {
   description: string;
   description_detail: string;
   memo: string | null;
-  /** Formatted with its own currency symbol, e.g. "HK$400.00". */
+  /** Formatted by the API with its currency's code and places, e.g. "HKD 400.00" - shown as sent. */
   amount: string;
   amount_minor: number;
   currency: string;

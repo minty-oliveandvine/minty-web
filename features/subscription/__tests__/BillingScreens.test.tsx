@@ -39,9 +39,9 @@ const push = vi.fn();
 const replace = vi.fn();
 // What would have been handed to the browser to save.
 const saved = vi.hoisted(() => [] as { filename: string; text?: string; blob?: Blob }[]);
-vi.mock("@/features/subscription/lib/download", () => ({
-  saveTextFile: (filename: string, text: string) => saved.push({ filename, text }),
-  saveBlob: (filename: string, blob: Blob) => saved.push({ filename, blob }),
+vi.mock("@minty/shared/download", () => ({
+  saveTextFile: (text: string, filename: string) => saved.push({ filename, text }),
+  saveBlob: (blob: Blob, filename: string) => saved.push({ filename, blob }),
 }));
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push, replace, back: vi.fn() }),
@@ -207,7 +207,7 @@ describe("the billing page", () => {
     // The invoices are their own read, after the account's.
     expect(await within(invoices).findByText("#11241234113")).toBeInTheDocument();
     expect(
-      within(invoices).getByRole("columnheader", { name: "Amount (HK$)" }),
+      within(invoices).getByRole("columnheader", { name: "Amount (HKD)" }),
     ).toBeInTheDocument();
     // Ten to a page until the payer picks 50 or 100; one page here, so no way on.
     const pages = within(invoices).getByRole("navigation", { name: "Invoice pages" });
@@ -943,7 +943,8 @@ describe("08-A, the portal's landing", () => {
       expect(rows[1]).toHaveTextContent(`${INVOICES[0].date} · ${INVOICES[0].period_start} – ${INVOICES[0].period_end}`);
       expect(within(rows[1]).getByText("Paid")).toHaveAttribute("data-tone", "success");
       expect(within(rows[0]).getByText("Payment failed")).toHaveAttribute("data-tone", "danger");
-      const amount = within(rows[0]).getByText(INVOICES[0].amount);
+      // getByText turns the row's non-breaking space into a plain one, but not the query's
+      const amount = within(rows[0]).getByText(INVOICES[0].amount.replace("\u00a0", " "));
       expect(amount).toHaveClass("text-ink");
       expect(amount).not.toHaveClass("text-danger");
 

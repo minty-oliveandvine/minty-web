@@ -55,7 +55,7 @@ describe("useEntitySummary", () => {
     expect(result.current.status).toBe("loading");
     await waitFor(() => expect(result.current.status).toBe("ready"));
     expect(result.current.view?.paymentMethod?.label).toBe("Visa 4121");
-    expect(result.current.view?.panel).toMatchObject({ kind: "simple", price: "HK$400" });
+    expect(result.current.view?.panel).toMatchObject({ kind: "simple", price: "HKD\u00a0400" });
   });
 
   it("keeps the row when only the card call fails", async () => {
@@ -149,7 +149,7 @@ describe("useEntitySummary", () => {
     release();
     await waitFor(() => expect(result.current.status).toBe("ready"));
     expect(result.current.calculating).toBe(false);
-    expect(result.current.view?.panel).toMatchObject({ kind: "simple", price: "HK$400" });
+    expect(result.current.view?.panel).toMatchObject({ kind: "simple", price: "HKD\u00a0400" });
   });
 
   it("05·B-C: a tick calculates for a beat, then the changed panel", async () => {

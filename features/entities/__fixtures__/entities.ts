@@ -5,7 +5,9 @@
  * `?fixture=` switch (`hooks/useEntityList`).
  */
 
-import { hkIsoDate } from "@/lib/calendarDays";
+// Hong Kong's calendar day, written with Intl here rather than @minty/shared/dates: the Playwright
+// spec 07 reads this fixture, and Playwright will not load the package's .ts source.
+const hkDay = (d: Date) => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Hong_Kong" }).format(d);
 
 import type { EntityListAnswer, EntityRow } from "@/features/entities/api/entities";
 
@@ -13,7 +15,7 @@ const HOUR = 3_600_000;
 
 /** A Hong Kong calendar day `days` from today ("YYYY-MM-DD", as `needsYou` counts). */
 function dayIn(days: number): string {
-  return hkIsoDate(new Date(Date.now() + days * 24 * HOUR));
+  return hkDay(new Date(Date.now() + days * 24 * HOUR));
 }
 
 /** An instant `hours` ago - so a fixture's "last opened" never drifts into the future. */

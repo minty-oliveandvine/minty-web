@@ -30,11 +30,13 @@ is sessionStorage (`features/auth/lib/handover.ts`). Recipe: `features/auth/READ
 
 ## The landing
 
-`/landing?token=<jwt>&next=<path>&entity_id=<id>&entity_name=<name>` (`app/landing/page.tsx`).
-Stores the three values in cookies (`lib/auth.ts`: `minty_token`, `minty_entity_id`,
+`/landing?token=<jwt>&next=<path>&entity_id=<id>&entity_name=<name>` (`app/landing/page.tsx`,
+`useLandingHandoff` from `@minty/shared/landing`).
+Stores the three values in cookies (`lib/auth.ts`, this app's `createCookieAuth({ prefix: "minty" })`
+from `@minty/shared/auth`: `minty_token`, `minty_entity_id`,
 `minty_entity_name`; `SameSite=Lax`, `Secure` on https, **max-age = the token's `exp`**, so an
 expired session is caught by proxy.ts before a page renders) and `router.replace`s to
-`next` — a path on this origin (`lib/safeNext.ts`, through `lib/handoff.ts::safeNext`), else the
+`next` — a path on this origin (`@minty/shared/safeNext`, through `lib/handoff.ts::safeNext`), else the
 entity list (`lib/hubPaths.ts::HUB_HOME`). Reached with no token it goes to Flask's re-handoff for `next`.
 The rule refuses `//host`, any backslash and any control character before checking the
 origin: until 2026-10-05 `/landing?token=x&next=/%5Cevil.com` (or `/%09/evil.com`) passed a
@@ -65,14 +67,19 @@ Flask's login-gated route (Minty's `/handoff/minty-web`, landed 2026-09-21) that
 
 **`return_origin` (branch preview sets, 2026-10-13).** Every trip to Flask - the re-handoff
 (`lib/handoff.ts::handoffUrl`, the request's origin in the proxy), the code sign-in's hand-off and
-Xero sign-in (`features/auth/api/signIn.ts`) - names this app's origin through `withReturnOrigin`.
+Xero sign-in (`features/auth/api/signIn.ts`) - names this app's origin through `withReturnOrigin`
+(`@minty/shared/previewSibling`). `lib/handoff.ts` is this app's `createHandoff({ route:
+"/handoff/minty-web" })` from `@minty/shared/handoff` - with no `companyFromNext`, since Flask's
+minty-web hand-off takes a full company id only - and the proxy's trip is `toFlask` from
+`@minty/shared/proxy` (a 307, or a refreshing page on a preview-set host; the URL is escaped for
+`&`, `"`, `<` and `>`).
 Flask uses it only where `PREVIEW_ORIGIN_REGEX` admits it, to hand back into
 `pr-<branch>-my.dailyminty.com` (Minty `docs/features/authentication.md` 6.1); a normal host's
-origin leaves any set. The sidebar's Bills link stays in the set through `lib/previewSibling.ts`.
-Both helpers are COPIES of `@minty/shared/previewSibling` while this app stays on `v0.1` (owner,
-2026-10-13); delete them when it moves to the Part 13 design and `v0.2`+. The copy already knows
-Petty Cash's preview label as **`pettycash`** (`pr-<branch>-pettycash.dailyminty.com`; it was
-`petty-cash` until Step 5, 2026-10-19), as `@minty/shared` v0.5 will.
+origin leaves any set. The sidebar's Bills link stays in the set through
+`@minty/shared/previewSibling` (this app's copy, and the `withReturnOrigin` copy in
+`lib/handoff.ts`, were deleted in the shared-code refactor, 2026-10-21). Petty Cash's preview
+label is **`pettycash`** (`pr-<branch>-pettycash.dailyminty.com`; it was `petty-cash` until
+Step 5, 2026-10-19).
 
 **Into the Petty Cash app (Step 5, 2026-10-19).** Every Petty Cash link here - the sidebar's
 Dashboard and Reports, the module choice's Petty Cash door, the Petty Cash Settings pill and the
@@ -91,8 +98,9 @@ The entity list and My Profile read Flask's bearer routes (`GET /api/me/entities
 `PATCH /api/me/profile` - Minty's `blueprints/shared/hub_api.py`): the same bearer, the base
 `PETTY_CASH_URL`, and never `X-Entity-Id` (Flask's CORS allows only `Authorization` and
 `Content-Type`; a company travels as `?entity=`). A 401 re-authenticates keeping the cookie's
-company - except for the header's initials (`lib/viewer.ts`, `onUnauthorized: "reject"`),
-which are decoration and must never move the page. Flask refuses a token for a deactivated
+company - except for the header's initials (`lib/viewer.ts` → the sidebar host's `loadViewer`
+from `@minty/shared/portal` over `flaskDecorationJson`, `onUnauthorized: "reject"`), which are
+decoration and must never move the page. Flask refuses a token for a deactivated
 account like a bad one.
 
 ## The Terms gate (`components/ui/TermsGate.tsx`)
@@ -113,7 +121,8 @@ app does not hold, or a fingerprint that differs, means the two services are dep
 and the gate fails open rather than show a document Flask would misrecord.
 
 - **A gate, not a dialog.** No close button, no click-outside, no Escape; focus stays inside.
-  _Cancel_ is Log Out (`lib/logout.ts`) - someone who will not agree has nowhere else to go.
+  _Cancel_ is Log Out (`lib/handoff.ts::logOut`, over `@minty/shared/handoff`'s `logoutUrl`) -
+  someone who will not agree has nowhere else to go.
 - **Accepting** posts `{accepted: true, terms_version, document_hash}` - the version and
   fingerprint on screen - to `POST /api/me/terms/accept`. Flask runs its checks
   (`consent.accept_current_terms`), compares that hash to its own manifest (a canary against a
@@ -144,13 +153,23 @@ none; the module settings page (`/api/entities/{id}/*`) names its company, becau
 be the unscoped one when the page is reached from the portal — the same convention minty-payment-request-web
 uses with minty-payment-request-api. A **401** clears the cookies and sends the browser to the re-handoff
 for the current page, once (several requests fail together; one navigation). Nothing retries.
+**No token at all makes no request** - it is the same 401 at once.
+
+Since the shared-code refactor (2026-10-21) the client is `createBearerClient` from
+`@minty/shared/apiClient`; `lib/apiClient.ts` only configures it (where each call goes, what a
+401 means - the subscription API's re-handoff keeps the company the CALL named, Flask's the
+cookie's) and keeps the names the app imports (`apiFetch`, `apiFetchBlob`, `mintyFetch`, plus
+`billingJson`/`flaskJson`/`flaskDecorationJson` for `@minty/shared/portal`). A refusal's
+sentence is the body's `error`, then `detail`, then `message`, shown only when it reads as prose
+(`@minty/shared/errorCopy`: no codes, single words, markup or statuses) - otherwise the house
+line. A query drops `undefined`, `null` and `""`; a file is asked for with `Accept: */*`.
 
 ## What this app never does
 
 - **Mint or refresh a token.** `jwt` is not a dependency; the only signing in the repo is
   `e2e/helpers.ts`, which mints the token Flask would, with the shared secret, for the browser
   tests. minty-payment-request-web's `refreshToken` was deliberately not ported.
-- **Verify a token.** `lib/auth.ts::decodeJwtPayload` reads `exp` to size the cookie; the
+- **Verify a token.** `decodeJwtPayload` (`@minty/shared/auth`, UTF-8) reads `exp` to size the cookie; the
   signature is the API's to check on every request.
 - **Hold a company's data outside the cookie.** No local storage, no session; the three cookies
   are the whole client state, and clearing them is signing out of this app (Minty's session is
@@ -159,7 +178,10 @@ for the current page, once (several requests fail together; one navigation). Not
 ## Configuration
 
 `PETTY_CASH_URL` (the re-handoff, sign-in's calls and "Back to Minty"), `SUBSCRIPTION_API_URL`,
-`PAYMENT_REQUEST_WEB_URL` — all inlined at build time (`next.config.ts` `env`, read in `lib/env.ts`).
+`PAYMENT_REQUEST_WEB_URL` — all inlined at build time (`next.config.ts` `env`, read in `lib/env.ts`
+through `envUrl` from `@minty/shared/env`). Blank (or a lone `/`) means the owner's local port in
+development and tests; a **production build with one unset throws**, naming it - CI and every
+Vercel environment set all three.
 
 ## Tests
 

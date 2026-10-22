@@ -141,8 +141,8 @@ describe("the next bill, when the accounts could not be read", () => {
 describe("the invoice table", () => {
   it("takes the API's own money and dates, and names the currency in its header", () => {
     const lines = invoiceLines(INVOICES);
-    expect(lines[0]).toMatchObject({ reference: "#11241234113", amount: "HK$19,383" });
-    expect(amountHeader(INVOICES)).toBe("Amount (HK$)");
+    expect(lines[0]).toMatchObject({ reference: "#11241234113", amount: "HKD\u00a019,383.00" });
+    expect(amountHeader(INVOICES)).toBe("Amount (HKD)");
     expect(amountHeader([])).toBe("Amount");
   });
 
@@ -426,7 +426,7 @@ describe("the position (08-A as a Decision dashboard)", () => {
       reference: "#11241234113",
       date: INVOICES[0].date,
       period: `${INVOICES[0].period_start} – ${INVOICES[0].period_end}`,
-      amount: "HK$19,383",
+      amount: "HKD\u00a019,383.00",
       status: { label: "Paid", tone: "success" },
     });
     // a declined charge is "Payment failed", Danger - open or given up
@@ -447,5 +447,20 @@ describe("the position (08-A as a Decision dashboard)", () => {
     // no period named, none shown
     expect(recentInvoices([{ ...INVOICES[0], period_start: null }])[0].period).toBeNull();
     expect(recentInvoices([])).toEqual([]);
+  });
+});
+
+describe("cardExpiry's month names", () => {
+  // Pins cardExpiry's MONTHS table before it moves to @minty/shared (the shared-code refactor, 2026-10-21)
+  it("is a three-letter month and the full year, a month out of range clamped into Jan..Dec", () => {
+    expect(cardExpiry(card("a", "Visa", "1", 1, 2030))).toBe("Jan 2030");
+    expect(cardExpiry(card("a", "Visa", "1", 12, 2030))).toBe("Dec 2030");
+    expect(cardExpiry(card("a", "Visa", "1", 13, 2030))).toBe("Dec 2030");
+    expect(cardExpiry(card("a", "Visa", "1", -2, 2030))).toBe("Jan 2030");
+  });
+
+  it("a zero month or year is no expiry: the API's own label stands", () => {
+    expect(cardExpiry(card("a", "Visa", "1", 0, 2030))).toBe("00/30");
+    expect(cardExpiry(card("a", "Visa", "1", 4, 0, { expiry: "soon" }))).toBe("soon");
   });
 });

@@ -104,7 +104,7 @@ describe("the Bill to block", () => {
       addressLines: ["Unit 10, 1/F, ABC Building", "2 ABC Street", "Quarry Bay, Hong Kong"],
       date: "28 Sep 2026",
       // Its next renewal, estimated by the API - per ACCOUNT, where the date is the payer's.
-      amount: "HKD 960",
+      amount: "HKD\u00a0960",
       failed: true,
       failedNames: ["Willow Court Limited"],
     });
