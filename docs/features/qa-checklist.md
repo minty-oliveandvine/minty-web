@@ -335,7 +335,7 @@ stripe_payment_method_id = '<pm_id>';` — if the row still reads back, that's a
       `payer_billing_group` row rather than losing them.
 - [ ] _Retry payment_ appears only on an invoice flagged `retryable`; an older declined/abandoned
       invoice shows red with no action button.
-- [ ] Download an Invoice PDF — saved as `Inv-<reference>.pdf`.
+- [ ] Download an Invoice PDF — saved as `INV-<ACCOUNT>-YYYYMM-NNNN.pdf` (an invoice from before numbers: `Inv-<reference>.pdf`).
 - [ ] Click the Inv# itself (not the download column) — opens a view-only preview dialog with no
       Download/Print/Open control and nothing saved to disk; only invoices the processor still
       has (paid/open/uncollectible) have one at all (`has_pdf`).

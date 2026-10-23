@@ -68,4 +68,12 @@ describe("the billing breakdown CSV", () => {
     expect(invoicePdfFilename("#11241234113")).toBe("Inv-11241234113.pdf");
     expect(invoicePdfFilename("in_1UJ9BX")).toBe("Inv-in_1UJ9BX.pdf");
   });
+
+  // An invoice number already reads "INV-", so its files are named after it as it stands.
+  it("names an invoice number's files without doubling the prefix", () => {
+    expect(invoicePdfFilename("INV-ACME-202610-0042")).toBe("INV-ACME-202610-0042.pdf");
+    expect(breakdownFilename("INV-ACME-202610-0042")).toBe(
+      "INV-ACME-202610-0042 Breakdown by Entity.csv",
+    );
+  });
 });

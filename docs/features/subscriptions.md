@@ -1426,7 +1426,11 @@ schema change), which 08-C writes.
   as the design sets them). **The Invoice PDF is our own document** (Figma 09-A, 2026-09-29 -
   it had linked Stripe's hosted invoice page): `GET /api/me/invoices/{id}/pdf`, saved as
   `Inv-<reference>.pdf` - named by the page, since CORS keeps the API's `Content-Disposition`
-  from it (`lib/billing.ts::invoicePdfFilename`, the breakdown's stem). **Bill to** is the
+  from it (`lib/billing.ts::invoicePdfFilename`, the breakdown's stem). **The reference is the
+  invoice number** (2026-10-23, owner): `INV-<ACCOUNT>-YYYYMM-NNNN`, e.g. `INV-ACME-202610-0042`,
+  given by minty-subscription-api when the invoice is issued; an invoice from before it keeps
+  Stripe's id. A number names its files as it stands (`INV-ACME-202610-0042.pdf` and its
+  breakdown CSV), an older reference behind `Inv-` (`invoiceFileBase`). **Bill to** is the
   invoice's billing account, read when it is downloaded - its name, billing email and the
   charged card's address, as 08-B prints them; the lines are 09-A's plan lines with the
   companies listed under each (a company row is one Stripe invoice item). Only an invoice the

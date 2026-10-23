@@ -290,9 +290,19 @@ export function invoiceFileStem(reference: string): string {
   return reference.replace(/^#/, "").trim();
 }
 
-/** "Inv-11241234113.pdf" - the invoice's own PDF, named as its breakdown's CSV is. */
+/**
+ * What an invoice's file names start with: an invoice number as it stands
+ * ("INV-ACME-202610-0042"), an older reference behind "Inv-" ("Inv-11241234113"). The API
+ * names the PDF by the same rule (`InvoiceDocument.filename`).
+ */
+export function invoiceFileBase(reference: string): string {
+  const stem = invoiceFileStem(reference);
+  return stem.startsWith("INV-") ? stem : `Inv-${stem}`;
+}
+
+/** "INV-ACME-202610-0042.pdf" - the invoice's own PDF, named as its breakdown's CSV is. */
 export function invoicePdfFilename(reference: string): string {
-  return `Inv-${invoiceFileStem(reference)}.pdf`;
+  return `${invoiceFileBase(reference)}.pdf`;
 }
 
 /**
