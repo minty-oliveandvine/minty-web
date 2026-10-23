@@ -132,7 +132,7 @@ export const INVOICES: InvoiceRow[] = [
     description: "Renewal · Super Minty",
     description_detail: "Petty Cash + Payment Request",
     memo: null,
-    amount: "HK$19,383",
+    amount: "HKD 19,383.00",
     amount_minor: 1938300,
     currency: "HKD",
     status: "paid",
@@ -154,7 +154,7 @@ export const INVOICES: InvoiceRow[] = [
     description: "Renewal · Super Minty",
     description_detail: "Petty Cash + Payment Request",
     memo: null,
-    amount: "HK$15,311",
+    amount: "HKD 15,311.00",
     amount_minor: 1531100,
     currency: "HKD",
     status: "paid",
@@ -176,7 +176,7 @@ export const INVOICES: InvoiceRow[] = [
     description: "Renewal · Super Minty",
     description_detail: "Petty Cash + Payment Request",
     memo: null,
-    amount: "HK$15,311",
+    amount: "HKD 15,311.00",
     amount_minor: 1531100,
     currency: "HKD",
     status: "paid",
@@ -373,7 +373,7 @@ const COMPANY_A: BillingAccount = {
   ],
   in_dunning: false,
   past_due: true,
-  next_bill: { amount: "HK$960.00", amount_minor: 96000, currency: "HKD" },
+  next_bill: { amount: "HKD 960.00", amount_minor: 96000, currency: "HKD" },
 };
 
 const VINE: BillingAccount = {
@@ -401,7 +401,7 @@ const VINE: BillingAccount = {
   ],
   in_dunning: false,
   past_due: false,
-  next_bill: { amount: "HK$680.00", amount_minor: 68000, currency: "HKD" },
+  next_bill: { amount: "HKD 680.00", amount_minor: 68000, currency: "HKD" },
 };
 
 const UNNAMED: BillingAccount = {
@@ -419,7 +419,7 @@ const UNNAMED: BillingAccount = {
   companies: [company("e-halcyon-labs-limited", "Halcyon Labs Limited", true)],
   in_dunning: true,
   past_due: true,
-  next_bill: { amount: "HK$280.00", amount_minor: 28000, currency: "HKD" },
+  next_bill: { amount: "HKD 280.00", amount_minor: 28000, currency: "HKD" },
 };
 
 const COUNTRIES = [

@@ -23,10 +23,11 @@ import {
 } from "@/features/subscription/lib/transfer";
 
 describe("formatMinor", () => {
+  // owner 2026-10-21: one money rule (@minty/shared/money) - a price by its code, never a
+  // symbol, so formatMinor no longer takes one (it printed "HK$88" when handed "HK$").
   it("turns the engine's minor units into the page's money", () => {
-    expect(formatMinor(8800, "HKD")).toBe("HKD 88");
-    expect(formatMinor(8850, "HKD")).toBe("HKD 88.50");
-    expect(formatMinor(8800, "HKD", "HK$")).toBe("HK$88");
+    expect(formatMinor(8800, "HKD")).toBe("HKD\u00a088");
+    expect(formatMinor(8850, "HKD")).toBe("HKD\u00a088.50");
     expect(formatMinor(28000, null)).toBe("280");
   });
 });

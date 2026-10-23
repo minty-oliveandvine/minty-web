@@ -133,8 +133,8 @@ describe("the next bill, when the accounts could not be read", () => {
 describe("the invoice table", () => {
   it("takes the API's own money and dates, and names the currency in its header", () => {
     const lines = invoiceLines(INVOICES);
-    expect(lines[0]).toMatchObject({ reference: "#11241234113", amount: "HK$19,383" });
-    expect(amountHeader(INVOICES)).toBe("Amount (HK$)");
+    expect(lines[0]).toMatchObject({ reference: "#11241234113", amount: "HKD 19,383.00" });
+    expect(amountHeader(INVOICES)).toBe("Amount (HKD)");
     expect(amountHeader([])).toBe("Amount");
   });
 

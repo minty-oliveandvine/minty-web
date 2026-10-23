@@ -103,8 +103,9 @@ export type ModulePage = {
 };
 
 /**
- * What the Subscription Summary (Figma 05·A) reads of the API's `summary`: the currency's
- * symbol as `currency_info` records it (`HK$`, or the code itself when none is recorded), the
+ * What the Subscription Summary (Figma 05·A) reads of the API's `summary`: the currency - its
+ * ISO code in both `currency_code` and `currency` ("HKD"; the API wrote a symbol in `currency`
+ * before the owner's one money rule of 2026-10-21, so the code field is read first), the
  * bundle - its price in MAJOR units as a decimal string ("400"), the codes it covers and its
  * name (`Super Minty`, the API's; the design writes "SuperMinty"). Everything else the API puts
  * beside these stays opaque.

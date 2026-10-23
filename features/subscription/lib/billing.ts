@@ -351,7 +351,11 @@ export function invoiceRange(page: number, perPage: number, total: number): stri
   return `${first}–${Math.min(page * perPage, total)} of ${total}`;
 }
 
-/** The invoice table's money column names the currency once, in its header (08-B: "Amount (HK$)"). */
+/**
+ * The invoice table's money column names the currency once, in its header: the code the API's
+ * amounts lead with ("HKD 19,383.00" -> "Amount (HKD)"; 08-B draws "Amount (HK$)", but every
+ * amount is written with its code - owner 2026-10-21).
+ */
 export function amountHeader(invoices: InvoiceRow[]): string {
   const symbol = invoices.find((i) => i.amount)?.amount?.replace(/[\d.,\s]+$/, "") ?? "";
   return symbol ? `Amount (${symbol})` : "Amount";

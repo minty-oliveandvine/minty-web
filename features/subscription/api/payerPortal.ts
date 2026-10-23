@@ -669,7 +669,7 @@ export type InvoiceRow = {
   description: string;
   description_detail: string;
   memo: string | null;
-  /** Formatted with its own currency symbol, e.g. "HK$400.00". */
+  /** Formatted by the API with its currency's code and places, e.g. "HKD 400.00" - shown as sent. */
   amount: string;
   amount_minor: number;
   currency: string;

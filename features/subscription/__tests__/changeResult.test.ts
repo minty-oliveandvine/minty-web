@@ -46,18 +46,18 @@ describe("buildChangeResult (05·C)", () => {
     expect(text(r)).toEqual(["Super Minty is confirmed. Billing starts the day its trial ends."]);
     expect(r.lines.map((l) => l.module.tone)).toEqual(["bundle"]);
     expect(r.lines.map((l) => l.module.code)).toEqual(["BUNDLE"]);
-    expect(r.money).toBe("Nothing charged today · HK$400 a month when the trial ends.");
+    expect(r.money).toBe("Nothing charged today · HKD 400 a month when the trial ends.");
     expect(r.footer.createdOn).not.toBeNull();
   });
 
-  it("RU23: a trial confirmed and an expired trial bought back - HK$280 now, the bundle after", () => {
+  it("RU23: a trial confirmed and an expired trial bought back - HKD 280 now, the bundle after", () => {
     const r = build("RU23");
     expect(r.kind).toBe("celebrate");
     expect(text(r)).toEqual([
       "Petty Cash is confirmed. Billing starts the day its trial ends.",
       "Payment Request is active. Your card has been charged.",
     ]);
-    expect(r.money).toBe("HK$280 a month now · HK$400 when the trial ends.");
+    expect(r.money).toBe("HKD 280 a month now · HKD 400 when the trial ends.");
   });
 
   it("RU24: a removal and an addition in one change - Subscription updated, until/then", () => {
@@ -74,20 +74,20 @@ describe("buildChangeResult (05·C)", () => {
       "Petty Cash is available now.",
     ]);
     // "until" is the day the removed module ends - the same day the line above names.
-    expect(r.money).toBe(`HK$280 until ${shortDate(day)}, then HK$280 a month.`);
+    expect(r.money).toBe(`HKD\u00a0280 until ${shortDate(day)}, then HKD\u00a0280 a month.`);
   });
 
   it("RV14: a trial started beside an active module - 30 days free, the other's price", () => {
     const r = build("RV14");
     expect(r.kind).toBe("celebrate");
     expect(text(r)).toEqual(["Petty Cash free trial has started — 30 days, free."]);
-    expect(r.money).toBe("HK$280 a month.");
+    expect(r.money).toBe("HKD\u00a0280 a month.");
   });
 
   it("RV51: a cancellation resumed - restored, billing carries on", () => {
     const r = build("RV51");
     expect(text(r)).toEqual(["Petty Cash is restored and billing carries on as before."]);
-    expect(r.money).toBe("HK$280 a month.");
+    expect(r.money).toBe("HKD\u00a0280 a month.");
   });
 
   it("RV44: one module removed while the other keeps running - the module cancellation page", () => {
@@ -123,7 +123,7 @@ describe("buildChangeResult (05·C)", () => {
     expect(text(resumed)).toEqual([
       "Payment Request is restored and billing carries on as before.",
     ]);
-    expect(resumed.money).toBe("HK$400 a month.");
+    expect(resumed.money).toBe("HKD\u00a0400 a month.");
   });
 
   it("RV41: the only paid module removed - the subscription cancellation page", () => {
@@ -176,17 +176,17 @@ describe("outcomeOf", () => {
 describe("moneyLine", () => {
   it("says the panel's numbers in the design's five sentences", () => {
     const f = RESULT_FIXTURES;
-    expect(moneyLine(forecast(f.RV44.before, TODAY))).toBe("HK$400 a month.");
+    expect(moneyLine(forecast(f.RV44.before, TODAY))).toBe("HKD\u00a0400 a month.");
     expect(moneyLine(forecast(f.RU22.after, TODAY))).toBe(
-      "Nothing charged today · HK$400 a month when the trial ends.",
+      "Nothing charged today · HKD\u00a0400 a month when the trial ends.",
     );
     expect(moneyLine(forecast(f.RU23.after, TODAY))).toBe(
-      "HK$280 a month now · HK$400 when the trial ends.",
+      "HKD\u00a0280 a month now · HKD\u00a0400 when the trial ends.",
     );
-    expect(moneyLine(forecast(f.RV41.before, TODAY))).toBe("HK$280 a month.");
+    expect(moneyLine(forecast(f.RV41.before, TODAY))).toBe("HKD\u00a0280 a month.");
     expect(moneyLine(forecast(f.RNX21a.after, TODAY))).toBe(NOTHING_CHARGED);
     expect(moneyLine(forecast(f.RV44.after, TODAY))).toMatch(
-      /^HK\$400 until \d{1,2} \w+ \d{4}, then HK\$280 a month\.$/,
+      /^HKD\u00a0400 until \d{1,2} \w+ \d{4}, then HKD\u00a0280 a month\.$/,
     );
   });
 });

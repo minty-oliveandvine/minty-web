@@ -674,13 +674,13 @@ design's rules live (`buildSummaryView(page, entity, wallet, today, pending)`, `
   block says it all.
 - **The panel.** "Billable" = ACTIVE or CANCELLATION_PENDING. The bundle (`summary.bundle_name`,
   the API's `Super Minty`, at `summary.bundle_amount`) applies only when BOTH are billable; a
-  trial is not billable, so the price is HK$0 while a trial is all that is alive ("Petty Cash
+  trial is not billable, so the price is HKD 0 while a trial is all that is alive ("Petty Cash
   (Free Trial)"), and the amount box is greyed when nothing is charged. Nothing changing → one
   block ("Selected plan", the price, "No pending changes"). Something changing at the period end
   — a cancellation pending, a trial that will convert — → "Current Subscription / Until <period
   end>" (each module tagged "(Active)", "(Cancellation in progress)" or "(Free Trial)"; the
   singles' sum struck through where the bundle price applies; "No additional charges will apply
-  during the trial period." under a trial's HK$0) and a white "Future Subscription / From <the
+  during the trial period." under a trial's HKD 0) and a white "Future Subscription / From <the
   day after>" card (the survivors — "Petty Cash only", the bundle, or "No modules selected").
   **A tag sits BESIDE its module's name**, on the name's baseline in small grey type — "Petty
   Cash (Free Trial)", "Payment Request only" (the user, 2026-09-28, reversing an earlier
@@ -720,8 +720,14 @@ design's rules live (`buildSummaryView(page, entity, wallet, today, pending)`, `
   only trials") — the end of the soonest running, not-cancelled trial, which is the day billing
   would begin. Nothing started at all: no date, no sentence. Both facts come from
   `subscriptionSummary.ts::rowFooter`, derived once for the summary row and the result row.
-- **Money** prints the API's way (`format_trimmed`): the summary's symbol, cents only when they
-  mean something, a symbol that is letters spaced (`HKD 400`).
+- **Money** is a PRICE by the owner's one money rule (2026-10-21, `@minty/shared/money`
+  `formatPrice`, the API's `format_price`): the ISO code, a NON-BREAKING space (U+00A0, so a line
+  never splits the code from its amount - owner 2026-10-21; the API's strings carry it too), the
+  number grouped in threes, a trailing ".00" dropped - `HKD 400`, `HKD 400.50`, `HKD 1,500`. Never a symbol ("HK$"); with no
+  code the number stands alone. The code is read from `summary.currency_code` first, then
+  `summary.currency` (which held a symbol until the API wrote codes only), then a card's
+  `currency_code`. Invoices, the invoice list and billed amounts keep their places ("HKD
+  960.00") and are shown as the API sends them.
 - **"Calculating…"** (section "05·B-C · Calculating… — one per destination, auto-advances after
   1.2s", `2370:2739`): where the panel goes, a white card says "Calculating...." over Minty at
   a desk with a calculator — while the row's page model loads (the cards are already drawn from
@@ -794,9 +800,9 @@ button in 05·B lands". Built 2026-09-22.
   _Start Trial_ (04-G) lands too. The module settings page draws the same frames with the same
   builder, in place (§9): since 2026-10-08 neither of its acts leaves for the list.
 - **The line of money** under the row's lines is the panel's own arithmetic
-  (`subscriptionSummary.ts` `forecast`, in a sentence): "Nothing is being charged." / "HK$400 a
-  month." / "Nothing charged today · HK$400 a month when the trial ends." / "HK$280 a month now ·
-  HK$400 when the trial ends." / "HK$400 until 20 Aug 2026, then HK$280 a month." — "until" being
+  (`subscriptionSummary.ts` `forecast`, in a sentence): "Nothing is being charged." / "HKD 400 a
+  month." / "Nothing charged today · HKD 400 a month when the trial ends." / "HKD 280 a month now ·
+  HKD 400 when the trial ends." / "HKD 400 until 20 Aug 2026, then HKD 280 a month." — "until" being
   the day the removed module ends, the same day its line names.
 - **Layouts** (`components/ChangeResultView.tsx`): the row (`ChangeResultRow` — the company's
   name and ⋮, the headline, the lines with the module names in their colours, the money, _Back to
@@ -1050,7 +1056,7 @@ payer's money does not cover, and the subscription moves.
   "Add a billing account" when there is no account that can pay, **no money line at all** (accepting
   takes nothing), the trials that carry over when there are any (the
   trials that carry over are listed: "Petty Cash free trial carries over until <date>;
-  HK$280 a month after that."), the API's blockers, "Subscription will be charged to your
+  HKD 280 a month after that."), the API's blockers, "Subscription will be charged to your
   selected billing account from the date that transfer is completed.", _Confirm Subscription
   Transfer_ (`POST /transfer/respond {transfer, accept: true, billing_group_id, codes?}`) and
   _Decline_ (`accept: false`, then the screen is read again). Accepting lands on the list with
@@ -1177,7 +1183,7 @@ payer's money does not cover, and the subscription moves.
     POST is optimistic — a failure only means it opens once more, which is the safe direction.
     07-K is the exception and passes the same handler to both: it follows the payer's own
     Withdraw a moment earlier in the same tab, so there is no "seen" to consume.
-  - **Money is in minor units** on both transfer routes (8800 = HK$88.00), unlike the module
+  - **Money is in minor units** on both transfer routes (8800 = HKD 88.00), unlike the module
     page's cards — `formatMinor` is the one place it is converted.
   - **"to them"**: when the person a request waits on is no longer among the candidates (left
     the company, lost the admin role), the pending sentence names nobody rather than guessing.

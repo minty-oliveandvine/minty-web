@@ -333,7 +333,7 @@ test.describe("billing", () => {
     await expect(rows.first()).toContainText("Sep 2026");
 
     const invoices = body(page).getByRole("region", { name: "Invoice History" });
-    await expect(invoices).toContainText("Amount (HK$)");
+    await expect(invoices).toContainText("Amount (HKD)");
     await expect(invoices).toContainText("#11241234113");
     // Its PDF is our own document, downloaded - and named here after the invoice, since CORS
     // keeps the API's Content-Disposition from the page.

@@ -169,7 +169,7 @@ describe("useBillingPage", () => {
     expect(result.current.next.failed).toBe(true);
     expect(result.current.next.failedNames).toEqual(["Willow Court Limited"]);
     // The account's next renewal, estimated - by the currency's code, cents only when any.
-    expect(result.current.next.amount).toBe("HKD 960");
+    expect(result.current.next.amount).toBe("HKD 960");
     // The invoices are their own read: the first page, ten to a page.
     await waitFor(() => expect(result.current.invoices).toHaveLength(INVOICES.length));
     expect(invoiceQueries).toEqual(["?account=acc-company-a&page=1&per_page=10"]);

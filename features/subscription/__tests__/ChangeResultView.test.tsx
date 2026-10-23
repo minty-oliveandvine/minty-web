@@ -87,7 +87,7 @@ describe("ChangeResultRow", () => {
     expect(lines).toHaveLength(1);
     expect(within(lines[0]).getByText("Super Minty")).toHaveClass("text-[#161f2e]");
     expect(
-      within(row).getByText("Nothing charged today · HK$400 a month when the trial ends."),
+      within(row).getByText("Nothing charged today · HKD 400 a month when the trial ends."),
     ).toBeInTheDocument();
     expect(within(row).getByText(/was originally created/)).toBeInTheDocument();
     expect(row.querySelector("img")).toHaveAttribute("src", "/portal/minty-celebrating.png");
@@ -121,7 +121,7 @@ describe("ChangeResultRow", () => {
     expect(within(row).getByRole("heading", { level: 4 })).toHaveClass("text-[#161f2e]");
     expect(within(row).getByText(/is scheduled to end on/)).toBeInTheDocument();
     expect(within(row).getByText(/is available now\./)).toBeInTheDocument();
-    expect(within(row).getByText(/^HK\$280 until .*, then HK\$280 a month\.$/)).toBeInTheDocument();
+    expect(within(row).getByText(/^HKD 280 until .*, then HKD 280 a month\.$/)).toBeInTheDocument();
   });
 });
 

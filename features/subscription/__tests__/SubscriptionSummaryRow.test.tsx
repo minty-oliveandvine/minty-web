@@ -107,7 +107,7 @@ describe("SubscriptionSummaryRow", () => {
     ).toBeTruthy();
     // Bare, at the design's size: the card-shaped field is cropped away, flush right.
     expect(mark!.querySelector("svg")).toHaveAttribute("preserveAspectRatio", "xMaxYMid meet");
-    expect(within(p).getByText("HK$400")).toBeInTheDocument();
+    expect(within(p).getByText("HKD 400")).toBeInTheDocument();
     expect(within(p).getByText("/month")).toBeInTheDocument();
     expect(within(p).getByText("No pending changes")).toBeInTheDocument();
 
@@ -167,14 +167,14 @@ describe("SubscriptionSummaryRow", () => {
     expect(on.onStartTrial).not.toHaveBeenCalled();
   });
 
-  it("M11: nothing started - Start Free Trial under each card, no module selected, HK$0 greyed", async () => {
+  it("M11: nothing started - Start Free Trial under each card, no module selected, HKD 0 greyed", async () => {
     // No card nominated yet either - the panel has no payment-method column.
     const { on } = show("M11", null);
     const buttons = screen.getAllByRole("button", { name: /^Start Free Trial ·/ });
     expect(buttons).toHaveLength(2);
     expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
     expect(within(panel()).getByText("No module selected")).toBeInTheDocument();
-    expect(within(panel()).getByText("HK$0").parentElement).toHaveAttribute("data-greyed", "true");
+    expect(within(panel()).getByText("HKD 0").parentElement).toHaveAttribute("data-greyed", "true");
     expect(within(panel()).queryByText("Payment method")).not.toBeInTheDocument();
 
     await userEvent.click(
@@ -183,7 +183,7 @@ describe("SubscriptionSummaryRow", () => {
     expect(on.onStartTrial).toHaveBeenCalledWith("PAYMENT_REQUEST");
   });
 
-  it("M21: a trial - the ⓘ line, an unticked box that confirms, Free Trial at HK$0", async () => {
+  it("M21: a trial - the ⓘ line, an unticked box that confirms, Free Trial at HKD 0", async () => {
     const { on } = show("M21");
     expect(screen.getByText(TRIAL_NOTICE)).toBeInTheDocument();
     const box = screen.getByRole("checkbox", { name: "Petty Cash subscription" });
@@ -196,7 +196,7 @@ describe("SubscriptionSummaryRow", () => {
     expect(lineOf(within(p).getByText("(Free Trial)"))).toHaveTextContent(
       /^Petty Cash\s*\(Free Trial\)$/,
     );
-    expect(within(p).getByText("HK$0")).toBeInTheDocument();
+    expect(within(p).getByText("HKD 0")).toBeInTheDocument();
     expect(screen.getByRole("article", { name: "Petty Cash" })).toHaveAttribute(
       "data-ticked",
       "false",
@@ -211,11 +211,11 @@ describe("SubscriptionSummaryRow", () => {
     expect(lineOf(within(p).getByText("(Cancellation in progress)"))).toHaveTextContent(
       /^Payment Request\s*\(Cancellation in progress\)$/,
     );
-    expect(within(p).getByText("HK$560")).toBeInTheDocument();
-    expect(within(p).getByText("HK$400")).toBeInTheDocument();
+    expect(within(p).getByText("HKD 560")).toBeInTheDocument();
+    expect(within(p).getByText("HKD 400")).toBeInTheDocument();
     expect(within(p).getByText(/Future Subscription/)).toBeInTheDocument();
     expect(lineOf(within(p).getByText("only"))).toHaveTextContent(/^Petty Cash\s*only$/);
-    expect(within(p).getByText("HK$280")).toBeInTheDocument();
+    expect(within(p).getByText("HKD 280")).toBeInTheDocument();
     expect(within(p).queryByText("No pending changes")).not.toBeInTheDocument();
     expect(
       screen.getByRole("checkbox", { name: "Payment Request subscription" }),
@@ -249,7 +249,7 @@ describe("SubscriptionSummaryRow", () => {
     );
     const p = panel();
     expect(within(p).getByText(/Current Subscription/)).toBeInTheDocument();
-    expect(within(p).getByText("HK$560")).toBeInTheDocument();
+    expect(within(p).getByText("HKD 560")).toBeInTheDocument();
     expect(within(p).getByText(/Future Subscription/)).toBeInTheDocument();
     expect(within(p).getByText("only")).toBeInTheDocument();
 

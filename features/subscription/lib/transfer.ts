@@ -11,7 +11,7 @@
  *   NOTHING - the API takes no money for days that have not started and parks the charge until
  *   they do - so neither the `quote` on those rows nor the inherited trials are drawn.
  *
- * Money from these routes is in MINOR units (the engine's invoices: 8800 = HK$88.00) - unlike
+ * Money from these routes is in MINOR units (the engine's invoices: 8800 = HKD 88.00) - unlike
  * the module page's cards - so it is formatted here, once. Pure.
  */
 
@@ -21,12 +21,8 @@ import type {
   SubscriberCandidate,
   SubscriberOptions,
 } from "@/features/subscription/api/payerPortal";
-import {
-  formatMoney,
-  longDate,
-  shortDate,
-  utcDay,
-} from "@/features/subscription/lib/subscriptionSummary";
+import { longDate, shortDate, utcDay } from "@/features/subscription/lib/subscriptionSummary";
+import { formatPrice } from "@minty/shared/money";
 
 export const PICK_HEADING = "SELECT NEW SUBSCRIBER FOR THIS ENTITY (Admin Role Only)";
 export const INVITE_HEADING = "Invite someone new";
@@ -59,15 +55,14 @@ export const TRANSFER_ACCOUNTS_LEAD = "Choose the billing account that pays for 
 /** 07-D's link beside the card when there is no account to bill yet. */
 export const ADD_BILLING_ACCOUNT = "Add a billing account";
 
-/** Minor units → "HK$88.00" / "HKD 88.00" (the currency code when no symbol is known). */
-export function formatMinor(
-  amount: number,
-  currency: string | null,
-  symbol?: string | null,
-): string {
+/**
+ * Minor units as a price → "HKD 88", "HKD 88.50" (`formatPrice`: the ISO code, a non-breaking space, a
+ * trailing ".00" dropped - owner 2026-10-21); the number alone with no code. Never a symbol.
+ */
+export function formatMinor(amount: number, currency: string | null): string {
   const major = amount / 100;
   const shown = Number.isInteger(major) ? major : Number(major.toFixed(2));
-  return formatMoney(symbol || currency || "", shown);
+  return formatPrice(shown, currency);
 }
 
 /**

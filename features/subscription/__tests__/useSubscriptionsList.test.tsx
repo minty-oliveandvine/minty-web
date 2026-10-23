@@ -1254,7 +1254,7 @@ describe("useSubscriptionsList", () => {
     expect(result.current.result?.result.lines.map((l) => l.text)).toEqual([
       "Petty Cash free trial has started — 30 days, free.",
     ]);
-    expect(result.current.result?.result.money).toBe("HK$280 a month.");
+    expect(result.current.result?.result.money).toBe("HKD\u00a0280 a month.");
     expect(result.current.openEntityId).toBe(e.entity_id);
   });
 

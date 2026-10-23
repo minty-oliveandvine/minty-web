@@ -207,7 +207,7 @@ describe("the billing page", () => {
     // The invoices are their own read, after the account's.
     expect(await within(invoices).findByText("#11241234113")).toBeInTheDocument();
     expect(
-      within(invoices).getByRole("columnheader", { name: "Amount (HK$)" }),
+      within(invoices).getByRole("columnheader", { name: "Amount (HKD)" }),
     ).toBeInTheDocument();
     // Ten to a page until the payer picks 50 or 100; one page here, so no way on.
     const pages = within(invoices).getByRole("navigation", { name: "Invoice pages" });

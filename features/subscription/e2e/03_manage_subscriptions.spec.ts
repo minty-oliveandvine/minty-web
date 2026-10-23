@@ -375,9 +375,9 @@ test.describe("manage subscriptions", () => {
       row.getByRole("checkbox", { name: "Payment Request subscription" }),
     ).not.toBeChecked();
     await expect(panel.getByText("(Cancellation in progress)")).toBeVisible();
-    await expect(panel.getByText("HK$400")).toBeVisible();
+    await expect(panel.getByText("HKD 400")).toBeVisible();
     await expect(panel.getByText("Future Subscription")).toBeVisible();
-    await expect(panel.getByText("HK$280")).toBeVisible();
+    await expect(panel.getByText("HKD 280")).toBeVisible();
     await expect(row.getByText(/was originally created/)).toBeVisible();
     // One open at a time: opening another closes this one.
     await body(page).getByRole("button", { name: "Open Mino Market Limited" }).click();
@@ -531,7 +531,7 @@ test.describe("manage subscriptions", () => {
     await expect(result).toContainText(
       "Payment Request is restored and billing carries on as before.",
     );
-    await expect(result).toContainText("HK$400 a month.");
+    await expect(result).toContainText("HKD 400 a month.");
     expect(posts.map((p) => [p.url.split("/modules/")[1], p.body, p.entity])).toEqual([
       ["renew", { code: "PAYMENT_REQUEST" }, "e-kestrel-foods-limited"],
     ]);
