@@ -12,21 +12,21 @@ It is for the **Next.js apps only**. Flask keeps its own sidebar and CSS and is 
 from the same code. My Profile and its Subscriptions Overview are `@minty/shared/profile`'s, in
 the provider's look, with no PASSWORD row.
 
-| Consumer | takes |
-|---|---|
-| `minty-web` (here) | the tokens **and** the components |
-| `minty-payment-request-web` | the tokens **and** the components |
-| `minty-onboarding-web` | `theme.css` only |
-| `minty-www` | nothing — Tailwind v3 / React 18 / Next 14 |
+| Consumer                    | takes                                      |
+| --------------------------- | ------------------------------------------ |
+| `minty-web` (here)          | the tokens **and** the components          |
+| `minty-payment-request-web` | the tokens **and** the components          |
+| `minty-onboarding-web`      | `theme.css` only                           |
+| `minty-www`                 | nothing — Tailwind v3 / React 18 / Next 14 |
 
 ## What came out of this repo
 
-| Was | Now |
-|---|---|
-| `components/ui/{Sidebar,SideMenu,NavMenu,ViewerBadge}.tsx` | shims re-exporting `@minty/shared/sidebar` |
-| `lib/viewer.ts` | a shim over `@minty/shared/viewer` |
-| `lib/{safeNext,companyRef,leaveGuard,emailInput}.ts` | **deleted**; ~23 call sites import `@minty/shared/<name>` |
-| the `@theme` font block in `app/globals.css` | `@import "@minty/shared/theme.css";` |
+| Was                                                        | Now                                                       |
+| ---------------------------------------------------------- | --------------------------------------------------------- |
+| `components/ui/{Sidebar,SideMenu,NavMenu,ViewerBadge}.tsx` | shims re-exporting `@minty/shared/sidebar`                |
+| `lib/viewer.ts`                                            | a shim over `@minty/shared/viewer`                        |
+| `lib/{safeNext,companyRef,leaveGuard,emailInput}.ts`       | **deleted**; ~23 call sites import `@minty/shared/<name>` |
+| the `@theme` font block in `app/globals.css`               | `@import "@minty/shared/theme.css";`                      |
 
 899 lines of component became 54 lines of shim. Each shim's first line is
 `import "@/components/ui/sidebarHost";` — **load-bearing**: it registers this app's host before
@@ -63,7 +63,7 @@ Three parts of its shape exist for reasons worth keeping:
 ```css
 /* app/globals.css */
 @import "tailwindcss";
-@import "@minty/shared/theme.css";           /* tokens - a bad specifier fails the build */
+@import "@minty/shared/theme.css"; /* tokens - a bad specifier fails the build */
 @import "material-symbols/outlined.css";
 @source "../node_modules/@minty/shared/src"; /* AFTER every @import */
 ```
@@ -83,9 +83,9 @@ modules for good.
 
 ## Guards
 
-| Test | Catches |
-|---|---|
-| `app/__tests__/packagedStyles.test.ts` | a lost `@import`/`@source`, a local token redeclared, `@source` out of order, and the packaged sidebar's own declarations missing from the compiled CSS |
+| Test                                   | Catches                                                                                                                                                    |
+| -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `app/__tests__/packagedStyles.test.ts` | a lost `@import`/`@source`, a local token redeclared, `@source` out of order, and the packaged sidebar's own declarations missing from the compiled CSS    |
 | `app/__tests__/packagedAssets.test.ts` | a `/menu/*` file the package renders that this app's `public/` does not serve (Next cannot serve one from `node_modules`) — a broken image is not an error |
 
 ## Changing it

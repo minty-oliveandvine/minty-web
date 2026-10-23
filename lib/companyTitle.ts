@@ -22,7 +22,8 @@ export function companyPageMetadata(page: string): (props: CompanyPageProps) => 
     const jar = await cookies();
     const entityId = jar.get(ENTITY_ID_COOKIE_NAME)?.value ?? "";
     const company = jar.get(ENTITY_NAME_COOKIE_NAME)?.value?.trim();
-    const named = entityId !== "" && (entityId === ref || shortIdOf(entityId) === ref.toLowerCase());
+    const named =
+      entityId !== "" && (entityId === ref || shortIdOf(entityId) === ref.toLowerCase());
     return { title: named && company ? `${page} - ${company}` : page };
   };
 }

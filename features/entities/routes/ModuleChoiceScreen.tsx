@@ -17,7 +17,11 @@ import { HUB_PATHS, companySettingsPath } from "@/lib/hubPaths";
 
 import { fetchEntities } from "@/features/entities/api/entities";
 import { ModuleChoiceButton } from "@/features/entities/components/ModuleChoiceButton";
-import { MODULE_CHOICE_TITLE, moduleChoices, type ModuleChoice } from "@/features/entities/lib/moduleChoice";
+import {
+  MODULE_CHOICE_TITLE,
+  moduleChoices,
+  type ModuleChoice,
+} from "@/features/entities/lib/moduleChoice";
 
 export const MODULE_CHOICE_COPY = {
   title: MODULE_CHOICE_TITLE,
@@ -27,9 +31,16 @@ export const MODULE_CHOICE_COPY = {
   retry: "Try again",
 } as const;
 
-type Load = { state: "loading" } | { state: "ready"; choices: ModuleChoice[] } | { state: "failed" };
+type Load =
+  { state: "loading" } | { state: "ready"; choices: ModuleChoice[] } | { state: "failed" };
 
-export function ModuleChoiceScreen({ entityId, entityName }: { entityId: string; entityName: string }) {
+export function ModuleChoiceScreen({
+  entityId,
+  entityName,
+}: {
+  entityId: string;
+  entityName: string;
+}) {
   const [load, setLoad] = useState<Load>({ state: "loading" });
   const [attempt, setAttempt] = useState(0);
 
@@ -70,9 +81,13 @@ export function ModuleChoiceScreen({ entityId, entityName }: { entityId: string;
           <span className="material-symbols-outlined text-[20px] text-[#00838F]" aria-hidden>
             corporate_fare
           </span>
-          <span className="min-w-0 truncate text-sm font-semibold text-[#474747]">{entityName}</span>
+          <span className="min-w-0 truncate text-sm font-semibold text-[#474747]">
+            {entityName}
+          </span>
         </div>
-        <h1 className="text-center text-lg font-bold text-black sm:text-xl md:text-2xl">{MODULE_CHOICE_COPY.title}</h1>
+        <h1 className="text-center text-lg font-bold text-black sm:text-xl md:text-2xl">
+          {MODULE_CHOICE_COPY.title}
+        </h1>
 
         {load.state === "loading" ? (
           <p className="text-sm text-muted" role="status">
@@ -82,7 +97,11 @@ export function ModuleChoiceScreen({ entityId, entityName }: { entityId: string;
         {load.state === "failed" ? (
           <div className="text-center" role="alert">
             <p className="text-sm text-danger">{MODULE_CHOICE_COPY.failed}</p>
-            <button type="button" className="mt-2 min-h-11 text-sm underline" onClick={() => setAttempt((n) => n + 1)}>
+            <button
+              type="button"
+              className="mt-2 min-h-11 text-sm underline"
+              onClick={() => setAttempt((n) => n + 1)}
+            >
               {MODULE_CHOICE_COPY.retry}
             </button>
           </div>
@@ -90,7 +109,10 @@ export function ModuleChoiceScreen({ entityId, entityName }: { entityId: string;
         {load.state === "ready" && load.choices.length === 0 ? (
           <p className="text-center text-sm text-ink-soft">
             {MODULE_CHOICE_COPY.none}{" "}
-            <a className="font-semibold text-teal-strong underline" href={companySettingsPath(entityId, entityName)}>
+            <a
+              className="font-semibold text-teal-strong underline"
+              href={companySettingsPath(entityId, entityName)}
+            >
               {MODULE_CHOICE_COPY.settings}
             </a>
           </p>

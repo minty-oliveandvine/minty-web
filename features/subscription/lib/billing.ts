@@ -304,9 +304,7 @@ export function failedLabel(date: string | null, today: Date = new Date()): stri
   const raised = (date ?? "").trim();
   const match = /^(\d{1,2} [A-Za-z]{3}) (\d{4})$/.exec(raised);
   if (!match) return raised ? `${FAILED} ${raised}` : FAILED;
-  return Number(match[2]) === today.getFullYear()
-    ? `${FAILED} ${match[1]}`
-    : `${FAILED} ${raised}`;
+  return Number(match[2]) === today.getFullYear() ? `${FAILED} ${match[1]}` : `${FAILED} ${raised}`;
 }
 
 export function invoiceLines(invoices: InvoiceRow[], today: Date = new Date()): InvoiceLine[] {

@@ -102,7 +102,15 @@ const CATS = {
   thinking: { src: "/portal/minty-thinking.png", file: [235, 276], art: [35, 9, 217, 265] },
 } as const;
 
-function CatArt({ cat, width, className = "" }: { cat: keyof typeof CATS; width: number; className?: string }) {
+function CatArt({
+  cat,
+  width,
+  className = "",
+}: {
+  cat: keyof typeof CATS;
+  width: number;
+  className?: string;
+}) {
   const { src, file, art } = CATS[cat];
   const [left, top, right, bottom] = art;
   const scale = width / (right - left);
@@ -314,9 +322,7 @@ function CardMenu({
         aria-label={`${UPDATE_CARD} · ${row.title}`}
         data-attention={attention || undefined}
         className={`h-[38px] w-[112px] rounded-lg border bg-white text-[13px] font-semibold hover:bg-[#f7f9fa] ${
-          attention
-            ? "border-[#e3a1a1] text-[#dc5a5a]"
-            : "border-[#d8dee4] text-[#292e38]"
+          attention ? "border-[#e3a1a1] text-[#dc5a5a]" : "border-[#d8dee4] text-[#292e38]"
         }`}
       >
         {UPDATE_CARD}
@@ -776,7 +782,9 @@ export function InvoiceHistoryTable({
             </select>
           </div>
           <div className="flex items-center gap-2">
-            <span aria-live="polite">{invoiceRange(paging.page, paging.perPage, paging.total)}</span>
+            <span aria-live="polite">
+              {invoiceRange(paging.page, paging.perPage, paging.total)}
+            </span>
             <button
               type="button"
               onClick={() => onPage(paging.page - 1)}

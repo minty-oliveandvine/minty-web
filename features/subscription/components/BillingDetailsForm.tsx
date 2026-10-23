@@ -237,7 +237,10 @@ export function BillingDetailsForm({
       className="mx-auto flex w-full max-w-[720px] flex-col gap-[18px] rounded-[16px] border border-[#e9ecf0] bg-white px-8 pb-6 pt-7"
     >
       <Field id="billing-company" label="Billing Company" error={errors.company}>
-        <input {...input("company", "(e.g. Vine Consulting Limited)")} autoComplete="organization" />
+        <input
+          {...input("company", "(e.g. Vine Consulting Limited)")}
+          autoComplete="organization"
+        />
       </Field>
       <Field id="billing-email" label="Billing email" error={emailError}>
         <input

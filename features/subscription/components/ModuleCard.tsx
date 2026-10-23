@@ -19,9 +19,17 @@ import type { ModuleStatusLine, ModuleView } from "@/features/subscription/lib/m
  * 556x384 PNGs, `pettycash-icon.png` / `payment-icon.png`, and the same two accents).
  * `width`/`height` are the PNG's own pixels, not the drawn size.
  */
-export const MODULE_ART: Record<ModuleCode, { src: string; width: number; height: number; accent: string }> = {
+export const MODULE_ART: Record<
+  ModuleCode,
+  { src: string; width: number; height: number; accent: string }
+> = {
   PETTY_CASH: { src: "/modules/petty-cash.png", width: 556, height: 384, accent: "#f5b945" },
-  PAYMENT_REQUEST: { src: "/modules/payment-request.png", width: 556, height: 384, accent: "#3aa6f5" },
+  PAYMENT_REQUEST: {
+    src: "/modules/payment-request.png",
+    width: 556,
+    height: 384,
+    accent: "#3aa6f5",
+  },
 };
 
 /** The card's frame and its inner card, outer edge to outer edge: 360 + 2 x 3px. */
@@ -106,7 +114,9 @@ export function ModuleCardShell({
           <p aria-hidden className="text-xl font-bold tracking-[-0.01em] text-[#16202e]">
             {name}
           </p>
-          <p className="whitespace-pre-line text-[15px] leading-[1.55] text-[#4a4d4b]">{description}</p>
+          <p className="whitespace-pre-line text-[15px] leading-[1.55] text-[#4a4d4b]">
+            {description}
+          </p>
         </div>
       </div>
     </article>

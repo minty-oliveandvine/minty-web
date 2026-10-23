@@ -95,7 +95,9 @@ describe("useAddCard", () => {
     const accounts = {
       ...ACCOUNTS,
       accounts: ACCOUNTS.accounts.map((a) =>
-        a.id === "acc-company-a" && a.address ? { ...a, address: { ...a.address, country: "SG" } } : a,
+        a.id === "acc-company-a" && a.address
+          ? { ...a, address: { ...a.address, country: "SG" } }
+          : a,
       ),
     };
     fetchMock.mockImplementation(async (input) => {

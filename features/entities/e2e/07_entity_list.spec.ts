@@ -122,7 +122,9 @@ test.describe("the entity list", () => {
         "Scenario 9",
         "Scenario 10",
       ]);
-      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+        true,
+      );
     }
     await main.getByRole("textbox", { name: "Search company" }).fill("trial");
     await expect(cards).toHaveCount(3);

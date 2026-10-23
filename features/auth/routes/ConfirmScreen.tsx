@@ -59,7 +59,16 @@ function contextOnArrival(): ConfirmContext | null {
   if (handed) return handed;
   const email = (new URLSearchParams(window.location.search).get("email") ?? "").trim();
   if (!isEmail(email)) return null;
-  return { email, login: true, invite: "", firstName: "", lastName: "", termsAccepted: false, termsVersion: "", next: "" };
+  return {
+    email,
+    login: true,
+    invite: "",
+    firstName: "",
+    lastName: "",
+    termsAccepted: false,
+    termsVersion: "",
+    next: "",
+  };
 }
 
 export function ConfirmScreen() {
@@ -129,7 +138,8 @@ export function ConfirmScreen() {
       setVerifying(false);
       if (err instanceof ApiError && err.status === 429) setLocked(true);
       // a code Flask looked at and refused counts; an unreachable server does not
-      else if (err instanceof ApiError && err.status >= 400) setAttemptsLeft((a) => Math.max(0, a - 1));
+      else if (err instanceof ApiError && err.status >= 400)
+        setAttemptsLeft((a) => Math.max(0, a - 1));
       setError(err instanceof ApiError ? err.message : String(err));
     }
   };
@@ -182,7 +192,11 @@ export function ConfirmScreen() {
           </button>
         ) : (
           <span className="text-quiet">
-            {resending ? CONFIRM_COPY.resending : locked ? CONFIRM_COPY.resend : `${CONFIRM_COPY.resend} in ${resendIn}s`}
+            {resending
+              ? CONFIRM_COPY.resending
+              : locked
+                ? CONFIRM_COPY.resend
+                : `${CONFIRM_COPY.resend} in ${resendIn}s`}
           </span>
         )}
       </p>

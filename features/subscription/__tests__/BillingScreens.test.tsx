@@ -213,7 +213,9 @@ describe("the billing page", () => {
     const pages = within(invoices).getByRole("navigation", { name: "Invoice pages" });
     expect(within(pages).getByLabelText("Rows per page")).toHaveValue("10");
     expect(
-      within(within(pages).getByLabelText("Rows per page")).getAllByRole("option").map((o) => o.textContent),
+      within(within(pages).getByLabelText("Rows per page"))
+        .getAllByRole("option")
+        .map((o) => o.textContent),
     ).toEqual(["10", "50", "100"]);
     expect(pages).toHaveTextContent(/1–\d+ of \d+/);
     expect(within(pages).getByRole("button", { name: "Next page" })).toBeDisabled();
@@ -221,7 +223,9 @@ describe("the billing page", () => {
 
     // The two downloads, centred as the design sets them; the breakdown is saved as a CSV.
     for (const header of ["Invoice PDF", "Billing Breakdown"]) {
-      expect(within(invoices).getByRole("columnheader", { name: header })).toHaveClass("text-center");
+      expect(within(invoices).getByRole("columnheader", { name: header })).toHaveClass(
+        "text-center",
+      );
     }
     saved.length = 0;
     await user.click(
@@ -639,7 +643,9 @@ describe("the card screens", () => {
     await user.click(within(asked).getByRole("button", { name: GO_BACK_UPPER }));
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(push).not.toHaveBeenCalled();
-    expect(within(form).getByLabelText("Billing Company")).toHaveValue("Company A Limited Holdings");
+    expect(within(form).getByLabelText("Billing Company")).toHaveValue(
+      "Company A Limited Holdings",
+    );
 
     // Discarding puts the saved value back and then goes.
     await user.click(within(form).getByRole("button", { name: "Go Back" }));
@@ -698,7 +704,9 @@ describe("the card screens", () => {
     expect(save).toBeEnabled();
     await user.click(save);
 
-    await waitFor(() => expect(push).toHaveBeenCalledWith("/subscription/billing?account=acc-company-a"));
+    await waitFor(() =>
+      expect(push).toHaveBeenCalledWith("/subscription/billing?account=acc-company-a"),
+    );
     expect(posts).toEqual([
       {
         account: "acc-company-a",
@@ -1016,7 +1024,9 @@ describe("08-A, the portal's landing", () => {
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
 
     // What a click on the card does, for the keyboard - out of sight until it is focused.
-    const choose = within(card).getByRole("button", { name: "Choose which billing account to show" });
+    const choose = within(card).getByRole("button", {
+      name: "Choose which billing account to show",
+    });
     choose.focus();
     await user.keyboard("{Enter}");
     const picker = await screen.findByRole("dialog", { name: "Billing Accounts" });
@@ -1038,7 +1048,10 @@ describe("08-A, the portal's landing", () => {
     expect(within(sheet).getByRole("heading", { name: "New billing account" })).toBeVisible();
     expect(sheet).toHaveTextContent("never stored by Minty");
     // English only: a text field with the email keyboard (lib/emailInput.ts), not type=email.
-    expect(within(sheet).getByLabelText(/^Billing Email\s*\*?$/)).toHaveAttribute("inputmode", "email");
+    expect(within(sheet).getByLabelText(/^Billing Email\s*\*?$/)).toHaveAttribute(
+      "inputmode",
+      "email",
+    );
     expect(within(sheet).getByLabelText(/^Billing company\s*\*?$/)).toBeRequired();
     expect(push).not.toHaveBeenCalled();
 
@@ -1046,7 +1059,10 @@ describe("08-A, the portal's landing", () => {
     await user.click(within(sheet).getByRole("button", { name: "Save billing account" }));
     expect(within(sheet).getByText("Enter the email address invoices should go to.")).toBeVisible();
     expect(within(sheet).getByText("Enter the company name to invoice.")).toBeVisible();
-    expect(within(sheet).getByLabelText(/^Billing Email\s*\*?$/)).toHaveAttribute("aria-invalid", "true");
+    expect(within(sheet).getByLabelText(/^Billing Email\s*\*?$/)).toHaveAttribute(
+      "aria-invalid",
+      "true",
+    );
     expect(fetchMock).not.toHaveBeenCalled();
 
     // Cancel is 01-D's arrow back to the list.

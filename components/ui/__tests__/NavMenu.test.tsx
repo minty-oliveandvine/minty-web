@@ -42,7 +42,10 @@ describe("NavMenu", () => {
     const profile = await menu.findByRole("link", { name: "Olive Vine, My Profile" });
     expect(profile).toHaveAttribute("href", "/profile");
     expect(profile).toHaveTextContent("OV");
-    expect(menu.getByRole("link", { name: "Select Entity" })).toHaveAttribute("aria-current", "page");
+    expect(menu.getByRole("link", { name: "Select Entity" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
     expect(menu.getByRole("link", { name: "Manage subscriptions" })).toHaveAttribute(
       "href",
       "/subscription",
@@ -70,7 +73,10 @@ describe("NavMenu", () => {
     const menu = await openMenu();
     const petty = within(menu.getByRole("group", { name: "Petty Cash" }));
     // Petty Cash is its own app since Step 5: Flask's hand-off mints its token for this company
-    expect(petty.getByRole("link", { name: "Dashboard" })).toHaveAttribute("href", pettyCashWebUrl("e1"));
+    expect(petty.getByRole("link", { name: "Dashboard" })).toHaveAttribute(
+      "href",
+      pettyCashWebUrl("e1"),
+    );
     expect(petty.getByRole("link", { name: "Reports" })).toHaveAttribute(
       "href",
       pettyCashWebUrl("e1", "/entity/e1/olive-shop/petty-cash/reports"),
@@ -115,7 +121,10 @@ describe("NavMenu", () => {
     const nav = screen.getByRole("navigation", { name: "Main navigation" });
     const cat = nav.querySelector('img[src*="sidepanel_cat"]');
     expect(cat).not.toBeNull();
-    for (const below of [menu.getByRole("link", { name: "Settings" }), menu.getByRole("button", { name: "Logout" })]) {
+    for (const below of [
+      menu.getByRole("link", { name: "Settings" }),
+      menu.getByRole("button", { name: "Logout" }),
+    ]) {
       expect(cat!.compareDocumentPosition(below) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     }
   });
@@ -144,7 +153,13 @@ describe("the header's avatar, without a sidebar around it", () => {
     setAuth(TOKEN, "", "");
     at("/subscription");
     _setViewerLoaderForTests(() => Promise.resolve({ name: "Olive Vine", initials: "OV" }));
-    render(<AppHeader title="Subscriptions" back={{ href: "/entities", label: "Entity List" }} companyName="Subscriptions" />);
+    render(
+      <AppHeader
+        title="Subscriptions"
+        back={{ href: "/entities", label: "Entity List" }}
+        companyName="Subscriptions"
+      />,
+    );
 
     const badge = await screen.findByRole("link", { name: "Olive Vine, My Profile" });
     expect(badge).toHaveTextContent("OV");
@@ -166,8 +181,12 @@ describe("the header's avatar, without a sidebar around it", () => {
           <NavMenu />
           {leave.open ? (
             <div data-leave-dialog="">
-              <button type="button" onClick={leave.stay}>{GO_BACK_UPPER}</button>
-              <button type="button" onClick={leave.discard}>{DISCARD_CHANGES}</button>
+              <button type="button" onClick={leave.stay}>
+                {GO_BACK_UPPER}
+              </button>
+              <button type="button" onClick={leave.discard}>
+                {DISCARD_CHANGES}
+              </button>
               <p>{LEAVE_TITLE}</p>
             </div>
           ) : null}

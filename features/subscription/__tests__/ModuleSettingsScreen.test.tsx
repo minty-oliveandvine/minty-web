@@ -75,7 +75,10 @@ describe("ModuleSettingsScreen", () => {
 
     expect(screen.getByRole("heading", { level: 1, name: "Settings" })).toBeInTheDocument();
     // "Back" goes where the person came from; its href is the new-tab fallback
-    expect(screen.getByRole("link", { name: "Back" })).toHaveAttribute("href", pettyCashWebUrl("e1"));
+    expect(screen.getByRole("link", { name: "Back" })).toHaveAttribute(
+      "href",
+      pettyCashWebUrl("e1"),
+    );
     expect(screen.getByText("Olive & Vine Limited")).toBeInTheDocument();
     // the initials: My Profile (a link to the page here - no sidebar around a lone screen)
     expect(screen.getByRole("link", { name: "Olive Vine, My Profile" })).toHaveTextContent("OV");
@@ -87,7 +90,10 @@ describe("ModuleSettingsScreen", () => {
       "href",
       "/profile",
     );
-    expect(drawer.getByRole("link", { name: "Select Entity" })).toHaveAttribute("href", "/entities");
+    expect(drawer.getByRole("link", { name: "Select Entity" })).toHaveAttribute(
+      "href",
+      "/entities",
+    );
     expect(drawer.getByRole("group", { name: "Petty Cash" })).toBeInTheDocument();
     expect(drawer.queryByRole("group", { name: "Payment Request" })).toBeNull(); // billing off in A
     expect(drawer.getByRole("link", { name: "Settings" })).toHaveAttribute("aria-current", "page");
@@ -258,7 +264,9 @@ describe("ModuleSettingsScreen", () => {
     it("replaces Manage Subscription on an unconfirmed trial, and leaves Start Free Trial", async () => {
       await show(unactivated);
 
-      expect(under("Petty Cash").getByRole("button", { name: "Activate Subscription" })).toBeVisible();
+      expect(
+        under("Petty Cash").getByRole("button", { name: "Activate Subscription" }),
+      ).toBeVisible();
       expect(screen.queryByRole("button", { name: "Manage Subscription" })).toBeNull();
       // Anyone may still start a free trial: it is free and commits nobody.
       expect(
@@ -275,7 +283,9 @@ describe("ModuleSettingsScreen", () => {
 
       expect(screen.getAllByRole("button", { name: "Activate Subscription" })).toHaveLength(1);
       // Drawn once between the cards, as the shared Manage Subscription is, not under either.
-      expect(under("Petty Cash").queryByRole("button", { name: "Activate Subscription" })).toBeNull();
+      expect(
+        under("Petty Cash").queryByRole("button", { name: "Activate Subscription" }),
+      ).toBeNull();
     });
 
     /** The AFTER-model: the trial now converts, so `needs_card` is false and it reads confirmed. */

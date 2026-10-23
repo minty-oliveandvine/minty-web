@@ -10,10 +10,18 @@
 import { RequiredMark } from "@/components/ui/RequiredMark";
 import { type FormEvent } from "react";
 
-import { SHEET_INPUT, SHEET_INPUT_OK, SHEET_LABEL, SHEET_PRIMARY } from "@/components/ui/sheetClasses";
+import {
+  SHEET_INPUT,
+  SHEET_INPUT_OK,
+  SHEET_LABEL,
+  SHEET_PRIMARY,
+} from "@/components/ui/sheetClasses";
 
 import type { IntegrationPage } from "@/features/company-settings/api/companySettings";
-import type { DetailsChanges, DetailsDraft } from "@/features/company-settings/hooks/useDetailsDraft";
+import type {
+  DetailsChanges,
+  DetailsDraft,
+} from "@/features/company-settings/hooks/useDetailsDraft";
 
 export function DetailsForm({
   page,
@@ -52,7 +60,11 @@ export function DetailsForm({
           disabled={!page.can_rename || busy}
           onChange={(e) => draft.setName(e.target.value)}
         />
-        {!page.can_rename && page.can_edit ? <p className="mt-1.5 text-[12.5px] text-gray-500">Only an admin can rename the company.</p> : null}
+        {!page.can_rename && page.can_edit ? (
+          <p className="mt-1.5 text-[12.5px] text-gray-500">
+            Only an admin can rename the company.
+          </p>
+        ) : null}
       </div>
       <div className="min-w-0">
         <label htmlFor="company-country" className={SHEET_LABEL}>
@@ -101,7 +113,11 @@ export function DetailsForm({
       ) : null}
       {page.can_edit ? (
         <div className="flex justify-end md:col-span-2">
-          <button type="submit" className={`${SHEET_PRIMARY} w-full sm:w-auto`} disabled={!dirty || busy}>
+          <button
+            type="submit"
+            className={`${SHEET_PRIMARY} w-full sm:w-auto`}
+            disabled={!dirty || busy}
+          >
             {busy ? "Saving…" : "Save Changes"}
           </button>
         </div>

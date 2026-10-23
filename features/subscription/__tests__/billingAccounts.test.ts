@@ -240,8 +240,9 @@ describe("opening an account - its identity", () => {
   });
 
   it("refuses what the API would: more than 255 characters, counted as the API counts", () => {
-    expect(validateIdentity({ company: "x".repeat(256), email: `${"a".repeat(250)}@acme.test` }))
-      .toEqual({ company: TOO_LONG, email: TOO_LONG });
+    expect(
+      validateIdentity({ company: "x".repeat(256), email: `${"a".repeat(250)}@acme.test` }),
+    ).toEqual({ company: TOO_LONG, email: TOO_LONG });
     expect(validateIdentity({ company: "x".repeat(255), email: "ap@acme.test" })).toEqual({});
     // 255 emoji are 510 UTF-16 units and still 255 characters to Python's len().
     expect(validateIdentity({ company: "🙂".repeat(255), email: "ap@acme.test" })).toEqual({});
@@ -273,12 +274,19 @@ describe("08-C, the form", () => {
   });
 
   it("reads Stripe's value and the API's alike - trimmed, blanks for nulls, country upper-cased", () => {
-    expect(cardAddress(" Rebecca Park ", { line1: " 1 ABC St ", line2: null, country: "hk" })).toEqual(
-      {
-        name: "Rebecca Park",
-        address: { line1: "1 ABC St", line2: "", city: "", state: "", postal_code: "", country: "HK" },
+    expect(
+      cardAddress(" Rebecca Park ", { line1: " 1 ABC St ", line2: null, country: "hk" }),
+    ).toEqual({
+      name: "Rebecca Park",
+      address: {
+        line1: "1 ABC St",
+        line2: "",
+        city: "",
+        state: "",
+        postal_code: "",
+        country: "HK",
       },
-    );
+    });
   });
 
   it("sends only what changed - the address as a whole, the cardholder only when renamed", () => {
@@ -320,7 +328,10 @@ describe("08-C, the form", () => {
   });
 
   it("offers the registry's countries, and the card's own when the registry lacks it", () => {
-    const list = [{ code: "HK", name: "Hong Kong" }, { code: "SG", name: "Singapore" }];
+    const list = [
+      { code: "HK", name: "Hong Kong" },
+      { code: "SG", name: "Singapore" },
+    ];
     expect(allowedCountries(list, "HK")).toEqual(["HK", "SG"]);
     expect(allowedCountries(list, "ZZ")).toEqual(["ZZ", "HK", "SG"]);
     // No registry to go by: Stripe's whole list, and the API still checks what comes back.

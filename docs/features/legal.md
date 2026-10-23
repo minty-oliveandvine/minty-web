@@ -61,11 +61,11 @@ stays on `my.dailyminty.com`. Flask's `/legal/terms` and `/legal/privacy` are de
 
 ## Who reads a document, and how
 
-| Reader | Asks Flask | Asks this app |
-|---|---|---|
-| The Terms gate (`components/ui/TermsGate.tsx`) | `GET /api/me/terms` — which version is owed, its `sha256`, whether it is a re-acceptance | `GET /api/legal/terms/<version>` — the wording |
-| Sign-up's tick box (`features/auth/api/signIn.ts::signUpTerms`) | `GET /legal/current` — the live version | `GET /api/legal/terms/<version>` |
-| The pages | nothing | the registry directly |
+| Reader                                                          | Asks Flask                                                                               | Asks this app                                  |
+| --------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| The Terms gate (`components/ui/TermsGate.tsx`)                  | `GET /api/me/terms` — which version is owed, its `sha256`, whether it is a re-acceptance | `GET /api/legal/terms/<version>` — the wording |
+| Sign-up's tick box (`features/auth/api/signIn.ts::signUpTerms`) | `GET /legal/current` — the live version                                                  | `GET /api/legal/terms/<version>`               |
+| The pages                                                       | nothing                                                                                  | the registry directly                          |
 
 **The two must agree.** Before drawing anything, the gate compares Flask's version and
 fingerprint with the document it just read. A mismatch, or a version this app does not hold,

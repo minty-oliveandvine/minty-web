@@ -187,13 +187,17 @@ describe("useBillingPage", () => {
     ).length;
 
     act(() => result.current.goToInvoicePage(2));
-    await waitFor(() => expect(invoiceQueries.at(-1)).toBe("?account=acc-company-a&page=2&per_page=10"));
+    await waitFor(() =>
+      expect(invoiceQueries.at(-1)).toBe("?account=acc-company-a&page=2&per_page=10"),
+    );
     // A new size starts at the first page.
     act(() => result.current.setInvoicesPerPage(50));
     await waitFor(() =>
       expect(invoiceQueries.at(-1)).toBe("?account=acc-company-a&page=1&per_page=50"),
     );
-    await waitFor(() => expect(result.current.invoicePaging).toMatchObject({ page: 1, perPage: 50 }));
+    await waitFor(() =>
+      expect(result.current.invoicePaging).toMatchObject({ page: 1, perPage: 50 }),
+    );
     // Turning pages never re-reads the accounts (a Stripe read at the API).
     expect(
       fetchMock.mock.calls.filter((c) => String(c[0]).includes("/billing/accounts")).length,
@@ -392,7 +396,11 @@ describe("useBillingPage", () => {
     serve(accountsFor(WALLET_TWO), {
       "/api/me/invoices/in_failed/retry": {
         status: 200,
-        body: { ok: true, status: "paid", message: "Payment received — your subscription is active again." },
+        body: {
+          ok: true,
+          status: "paid",
+          message: "Payment received — your subscription is active again.",
+        },
       },
     });
     const { result } = renderHook(() => useBillingPage());
@@ -404,7 +412,10 @@ describe("useBillingPage", () => {
     await act(async () => result.current.retryInvoice("in_failed"));
 
     expect(posts).toEqual([{ path: "/api/me/invoices/in_failed/retry", body: {} }]);
-    expect(result.current.retryNotice).toEqual({ tone: "ok", text: "Payment received — your subscription is active again." });
+    expect(result.current.retryNotice).toEqual({
+      tone: "ok",
+      text: "Payment received — your subscription is active again.",
+    });
     expect(result.current.declined).toBe(false);
     expect(result.current.retrying).toBeNull();
     // Read again - a paid retry clears the amber block - without the page's loading state.
@@ -471,7 +482,10 @@ describe("useBillingPage", () => {
     expect(result.current.invoices).toEqual([]);
     // never quiet: the table's failure is named, and logged
     await waitFor(() => expect(result.current.invoicesError).toBe("nope"));
-    expect(errors).toHaveBeenCalledWith("[billing] the account's invoices could not be read", expect.anything());
+    expect(errors).toHaveBeenCalledWith(
+      "[billing] the account's invoices could not be read",
+      expect.anything(),
+    );
     errors.mockRestore();
   });
 

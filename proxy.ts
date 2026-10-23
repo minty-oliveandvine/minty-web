@@ -96,6 +96,9 @@ export function toFlask(request: NextRequest, url: string): NextResponse {
   const attr = url.replaceAll("&", "&amp;").replaceAll('"', "&quot;").replaceAll("<", "&lt;");
   return new NextResponse(
     `<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="0;url=${attr}"><title>Minty</title>`,
-    { status: 200, headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } },
+    {
+      status: 200,
+      headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" },
+    },
   );
 }

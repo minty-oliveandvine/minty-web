@@ -16,7 +16,10 @@ import { IntegrationScreen } from "@/features/company-settings/routes/Integratio
 import { UsersScreen } from "@/features/company-settings/routes/UsersScreen";
 
 const router = { push: vi.fn(), replace: vi.fn(), back: vi.fn() };
-vi.mock("next/navigation", () => ({ useRouter: () => router, usePathname: () => "/entity/e1/olive-shop/settings/users" }));
+vi.mock("next/navigation", () => ({
+  useRouter: () => router,
+  usePathname: () => "/entity/e1/olive-shop/settings/users",
+}));
 
 const ID = "e1";
 const COMPANY = { id: ID, name: "Olive Shop" };
@@ -37,20 +40,70 @@ function flask(routes: Record<string, Route>) {
 }
 const sent = (key: string) =>
   fetchMock.mock.calls
-    .filter(([input, init]) => `${((init as RequestInit)?.method ?? "GET").toUpperCase()} ${new URL(String(input)).pathname}` === key)
+    .filter(
+      ([input, init]) =>
+        `${((init as RequestInit)?.method ?? "GET").toUpperCase()} ${new URL(String(input)).pathname}` ===
+        key,
+    )
     .map(([, init]) => JSON.parse(String((init as RequestInit).body ?? "null")));
 
 const MEMBERS: UsersPage["members"] = [
-  { id: "u1", first_name: "Ada", last_name: "Admin", email: "ada@test.com", initials: "AA", role: "admin", role_label: "Admin", subscriber: true, is_you: true, can_change_role: true, can_remove: true },
-  { id: "u2", first_name: "Cas", last_name: "O'Brien", email: "cas@test.com", initials: "CO", role: "cashier", role_label: "Cashier", subscriber: false, is_you: false, can_change_role: true, can_remove: true },
-  { id: "u3", first_name: "Boss", last_name: "Person", email: "boss@test.com", initials: "BP", role: "admin", role_label: "Admin", subscriber: false, is_you: false, can_change_role: false, can_remove: false },
+  {
+    id: "u1",
+    first_name: "Ada",
+    last_name: "Admin",
+    email: "ada@test.com",
+    initials: "AA",
+    role: "admin",
+    role_label: "Admin",
+    subscriber: true,
+    is_you: true,
+    can_change_role: true,
+    can_remove: true,
+  },
+  {
+    id: "u2",
+    first_name: "Cas",
+    last_name: "O'Brien",
+    email: "cas@test.com",
+    initials: "CO",
+    role: "cashier",
+    role_label: "Cashier",
+    subscriber: false,
+    is_you: false,
+    can_change_role: true,
+    can_remove: true,
+  },
+  {
+    id: "u3",
+    first_name: "Boss",
+    last_name: "Person",
+    email: "boss@test.com",
+    initials: "BP",
+    role: "admin",
+    role_label: "Admin",
+    subscriber: false,
+    is_you: false,
+    can_change_role: false,
+    can_remove: false,
+  },
 ];
 const USERS: UsersPage = {
   company: COMPANY,
   modules: ["PETTY_CASH"],
   members: MEMBERS,
   invitations: [
-    { id: "i1", email: "<svg/onload=alert(1)>@x.co", first_name: "", last_name: "", role: "cashier", role_label: "Cashier", created_at: null, resend_cooldown: 0, can_manage: true },
+    {
+      id: "i1",
+      email: "<svg/onload=alert(1)>@x.co",
+      first_name: "",
+      last_name: "",
+      role: "cashier",
+      role_label: "Cashier",
+      created_at: null,
+      resend_cooldown: 0,
+      can_manage: true,
+    },
   ],
   roles: [
     { value: "admin", label: "Admin" },
@@ -111,7 +164,10 @@ describe("UsersScreen", () => {
     });
     showUsers();
 
-    await userEvent.selectOptions(await screen.findByRole("combobox", { name: "Role of Cas O'Brien" }), "accountant");
+    await userEvent.selectOptions(
+      await screen.findByRole("combobox", { name: "Role of Cas O'Brien" }),
+      "accountant",
+    );
 
     expect(await screen.findByText("Role saved.")).toBeInTheDocument();
     expect(sent("PATCH /api/me/company/users/u2")).toEqual([{ role: "accountant" }]);
@@ -121,7 +177,8 @@ describe("UsersScreen", () => {
   it("removing asks first; on Flask's refusal its sentence is shown and the dialog closes", async () => {
     flask({
       "GET /api/me/company/users": () => json(USERS),
-      "DELETE /api/me/company/users/u2": () => json({ error: "I can't remove the person who pays for this company." }, 409),
+      "DELETE /api/me/company/users/u2": () =>
+        json({ error: "I can't remove the person who pays for this company." }, 409),
     });
     showUsers();
 
@@ -130,14 +187,17 @@ describe("UsersScreen", () => {
     expect(dialog.getByRole("heading", { name: "Remove Cas O'Brien?" })).toBeInTheDocument();
     await userEvent.click(dialog.getByRole("button", { name: "Remove" }));
 
-    expect(await screen.findByText("I can't remove the person who pays for this company.")).toBeInTheDocument();
+    expect(
+      await screen.findByText("I can't remove the person who pays for this company."),
+    ).toBeInTheDocument();
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   });
 
   it("invites with the address, the role and both names - Send waits for them; Enter sends", async () => {
     flask({
       "GET /api/me/company/users": () => json(USERS),
-      "POST /api/me/company/invitations": () => json({ invitation_id: "i2", email_sent: true, message: "Invitation sent." }, 201),
+      "POST /api/me/company/invitations": () =>
+        json({ invitation_id: "i2", email_sent: true, message: "Invitation sent." }, 201),
     });
     showUsers();
 
@@ -160,7 +220,8 @@ describe("UsersScreen", () => {
   it("a resend still cooling down counts down what Flask said", async () => {
     flask({
       "GET /api/me/company/users": () => json(USERS),
-      "POST /api/me/company/invitations/i1/resend": () => json({ error: "Please wait a moment.", retry_after: 42 }, 429),
+      "POST /api/me/company/invitations/i1/resend": () =>
+        json({ error: "Please wait a moment.", retry_after: 42 }, 429),
     });
     showUsers();
 
@@ -171,7 +232,15 @@ describe("UsersScreen", () => {
   });
 
   it("shows what Flask flashed on the way here, once", async () => {
-    flask({ "GET /api/me/company/users": (url) => json({ ...USERS, notices: url.searchParams.get("flash") ? [{ category: "success", message: "Invitation accepted." }] : [] }) });
+    flask({
+      "GET /api/me/company/users": (url) =>
+        json({
+          ...USERS,
+          notices: url.searchParams.get("flash")
+            ? [{ category: "success", message: "Invitation accepted." }]
+            : [],
+        }),
+    });
     showUsers("signed");
     expect(await screen.findByText("Invitation accepted.")).toBeInTheDocument();
   });
@@ -188,7 +257,13 @@ const INTEGRATION: IntegrationPage = {
     { id: "c-hkd", name: "Hong Kong Dollar" },
     { id: "c-sgd", name: "Singapore Dollar" },
   ],
-  xero: { status: "connected", connected: true, needs_reconnect: false, organisation: "Olive Shop Ltd", last_connected_at: "2026-09-01T02:00:00Z" },
+  xero: {
+    status: "connected",
+    connected: true,
+    needs_reconnect: false,
+    organisation: "Olive Shop Ltd",
+    last_connected_at: "2026-09-01T02:00:00Z",
+  },
   can_edit: true,
   can_rename: true,
   notices: [],
@@ -240,7 +315,11 @@ describe("IntegrationScreen", () => {
       "PATCH /api/me/company/integration": (_u, init) =>
         JSON.parse(String(init.body)).name === "Other Co"
           ? json({ error: "Oh, someone got there first! Do you have another name in mind?" }, 422)
-          : json({ ...INTEGRATION, company: { ...INTEGRATION.company, country_code: "SG" }, message: "Settings saved!" }),
+          : json({
+              ...INTEGRATION,
+              company: { ...INTEGRATION.company, country_code: "SG" },
+              message: "Settings saved!",
+            }),
     });
     showIntegration();
 
@@ -258,7 +337,10 @@ describe("IntegrationScreen", () => {
   });
 
   it("read-only: says so, and offers nothing to change", async () => {
-    flask({ "GET /api/me/company/integration": () => json({ ...INTEGRATION, can_edit: false, can_rename: false }) });
+    flask({
+      "GET /api/me/company/integration": () =>
+        json({ ...INTEGRATION, can_edit: false, can_rename: false }),
+    });
     showIntegration();
 
     expect(await screen.findByText(/view-only access/)).toBeInTheDocument();
@@ -271,7 +353,16 @@ describe("IntegrationScreen", () => {
     flask({
       "GET /api/me/company/integration": () => json(INTEGRATION),
       "POST /api/me/company/xero/disconnect": () =>
-        json({ ...INTEGRATION, xero: { ...INTEGRATION.xero, status: "disconnected", connected: false, organisation: null }, message: "You're disconnected from Xero." }),
+        json({
+          ...INTEGRATION,
+          xero: {
+            ...INTEGRATION.xero,
+            status: "disconnected",
+            connected: false,
+            organisation: null,
+          },
+          message: "You're disconnected from Xero.",
+        }),
     });
     showIntegration();
 
@@ -280,7 +371,9 @@ describe("IntegrationScreen", () => {
     const lastConnected = screen.getByText(/^Last connected: /).textContent;
     expect(lastConnected).not.toContain("N/A");
     await userEvent.click(screen.getByRole("button", { name: "Disconnect" }));
-    await userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Disconnect" }));
+    await userEvent.click(
+      within(screen.getByRole("dialog")).getByRole("button", { name: "Disconnect" }),
+    );
 
     // Disconnected, but it was connected once: the date stays and the way back is a Reconnect.
     expect(await screen.findByText("You're disconnected from Xero.")).toBeInTheDocument();
@@ -298,7 +391,16 @@ describe("IntegrationScreen", () => {
   it("a company never connected says N/A and offers Connect", async () => {
     flask({
       "GET /api/me/company/integration": () =>
-        json({ ...INTEGRATION, xero: { status: "disconnected", connected: false, needs_reconnect: false, organisation: null, last_connected_at: null } }),
+        json({
+          ...INTEGRATION,
+          xero: {
+            status: "disconnected",
+            connected: false,
+            needs_reconnect: false,
+            organisation: null,
+            last_connected_at: null,
+          },
+        }),
     });
     showIntegration();
 
@@ -307,7 +409,13 @@ describe("IntegrationScreen", () => {
   });
 
   it("a connection revoked at Xero asks for a reconnect", async () => {
-    flask({ "GET /api/me/company/integration": () => json({ ...INTEGRATION, xero: { ...INTEGRATION.xero, needs_reconnect: true, connected: false } }) });
+    flask({
+      "GET /api/me/company/integration": () =>
+        json({
+          ...INTEGRATION,
+          xero: { ...INTEGRATION.xero, needs_reconnect: true, connected: false },
+        }),
+    });
     showIntegration();
 
     expect(await screen.findByText("Reconnect needed")).toBeInTheDocument();
@@ -328,7 +436,9 @@ describe("IntegrationScreen", () => {
     const asked = screen.getByRole("dialog");
     expect(asked).toHaveAccessibleName(LEAVE_TITLE);
     expect(within(asked).getByText("You have unsaved changes.")).toBeInTheDocument();
-    expect(within(asked).getByText("Your changes will be lost if you leave this page.")).toBeInTheDocument();
+    expect(
+      within(asked).getByText("Your changes will be lost if you leave this page."),
+    ).toBeInTheDocument();
     expect(went).toEqual([]);
 
     await userEvent.click(within(asked).getByRole("button", { name: GO_BACK_UPPER }));
@@ -337,7 +447,9 @@ describe("IntegrationScreen", () => {
     expect(country).toHaveValue("SG"); // still being edited
 
     await userEvent.click(screen.getByRole("link", { name: "Users" }));
-    await userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: DISCARD_CHANGES }));
+    await userEvent.click(
+      within(screen.getByRole("dialog")).getByRole("button", { name: DISCARD_CHANGES }),
+    );
     expect(country).toHaveValue("HK"); // the saved value back
     expect(went).toEqual([expect.stringContaining("/settings/users")]);
   });
@@ -345,11 +457,18 @@ describe("IntegrationScreen", () => {
   it("the Xero link asks too, and after a save nothing is asked", async () => {
     // Not connected, so the Xero card offers the link out to Flask's OAuth - the exit that would
     // otherwise drop a typed name on the way there and back.
-    const loose = { ...INTEGRATION, xero: { ...INTEGRATION.xero, status: "disconnected", connected: false, organisation: null } };
+    const loose = {
+      ...INTEGRATION,
+      xero: { ...INTEGRATION.xero, status: "disconnected", connected: false, organisation: null },
+    };
     flask({
       "GET /api/me/company/integration": () => json(loose),
       "PATCH /api/me/company/integration": () =>
-        json({ ...loose, company: { ...loose.company, country_code: "SG" }, message: "Settings saved!" }),
+        json({
+          ...loose,
+          company: { ...loose.company, country_code: "SG" },
+          message: "Settings saved!",
+        }),
     });
     const went = navigationRecorder();
     showIntegration();
@@ -357,7 +476,9 @@ describe("IntegrationScreen", () => {
     await userEvent.selectOptions(await screen.findByLabelText(/^Country\s*\*?$/), "SG");
     await userEvent.click(screen.getByRole("link", { name: "Reconnect to Xero" }));
     expect(screen.getByRole("dialog")).toHaveAccessibleName(LEAVE_TITLE);
-    await userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: GO_BACK_UPPER }));
+    await userEvent.click(
+      within(screen.getByRole("dialog")).getByRole("button", { name: GO_BACK_UPPER }),
+    );
 
     await userEvent.click(screen.getByRole("button", { name: "Save Changes" }));
     expect(await screen.findByText("Settings saved!")).toBeInTheDocument();
@@ -377,17 +498,26 @@ describe("IntegrationScreen", () => {
     organisation: "Vine Cafe Ltd",
     can_move: true,
   };
-  const REFUSED = { ...INTEGRATION, xero: { ...INTEGRATION.xero, status: "disconnected", connected: false, organisation: null } };
+  const REFUSED = {
+    ...INTEGRATION,
+    xero: { ...INTEGRATION.xero, status: "disconnected", connected: false, organisation: null },
+  };
 
   it("a refused connect says which company holds the organisation, and moves it on asking", async () => {
     flask({
       "GET /api/me/company/integration": (url) =>
         json({
           ...REFUSED,
-          notices: [{ category: "error", message: 'This Xero organisation is already connected to "Vine Cafe".' }],
+          notices: [
+            {
+              category: "error",
+              message: 'This Xero organisation is already connected to "Vine Cafe".',
+            },
+          ],
           xero_conflict: url.searchParams.get("xero_conflict") ? HELD : null,
         }),
-      "POST /api/me/company/xero/release": () => json({ message: '"Vine Cafe" is disconnected from Xero.' }),
+      "POST /api/me/company/xero/release": () =>
+        json({ message: '"Vine Cafe" is disconnected from Xero.' }),
     });
     showIntegration("signed-conflict");
 
@@ -400,13 +530,17 @@ describe("IntegrationScreen", () => {
     await userEvent.click(dialog.getByRole("button", { name: "Move it here" }));
 
     // The company freed is the OTHER one, named in the body - never the one being viewed.
-    await waitFor(() => expect(sent("POST /api/me/company/xero/release")).toEqual([{ entity_id: "e2" }]));
+    await waitFor(() =>
+      expect(sent("POST /api/me/company/xero/release")).toEqual([{ entity_id: "e2" }]),
+    );
   });
 
   it("the move's refusal stays in the dialog, so it can be tried again", async () => {
     flask({
-      "GET /api/me/company/integration": (url) => json({ ...REFUSED, xero_conflict: url.searchParams.get("xero_conflict") ? HELD : null }),
-      "POST /api/me/company/xero/release": () => json({ error: "I couldn't disconnect \"Vine Cafe\" from Xero." }, 502),
+      "GET /api/me/company/integration": (url) =>
+        json({ ...REFUSED, xero_conflict: url.searchParams.get("xero_conflict") ? HELD : null }),
+      "POST /api/me/company/xero/release": () =>
+        json({ error: 'I couldn\'t disconnect "Vine Cafe" from Xero.' }, 502),
     });
     showIntegration("signed-conflict");
 
@@ -421,7 +555,12 @@ describe("IntegrationScreen", () => {
   it("no permission on the other company offers no move, only who to ask", async () => {
     flask({
       "GET /api/me/company/integration": (url) =>
-        json({ ...REFUSED, xero_conflict: url.searchParams.get("xero_conflict") ? { ...HELD, can_move: false } : null }),
+        json({
+          ...REFUSED,
+          xero_conflict: url.searchParams.get("xero_conflict")
+            ? { ...HELD, can_move: false }
+            : null,
+        }),
     });
     showIntegration("signed-conflict");
 
@@ -434,7 +573,10 @@ describe("IntegrationScreen", () => {
   });
 
   it("without the hand-over there is no dialog", async () => {
-    flask({ "GET /api/me/company/integration": (url) => json({ ...REFUSED, xero_conflict: url.searchParams.get("xero_conflict") ? HELD : null }) });
+    flask({
+      "GET /api/me/company/integration": (url) =>
+        json({ ...REFUSED, xero_conflict: url.searchParams.get("xero_conflict") ? HELD : null }),
+    });
     showIntegration();
 
     await screen.findByRole("link", { name: "Reconnect to Xero" });
@@ -442,7 +584,10 @@ describe("IntegrationScreen", () => {
   });
 
   it("a viewer who may change nothing is never asked", async () => {
-    flask({ "GET /api/me/company/integration": () => json({ ...INTEGRATION, can_edit: false, can_rename: false }) });
+    flask({
+      "GET /api/me/company/integration": () =>
+        json({ ...INTEGRATION, can_edit: false, can_rename: false }),
+    });
     const went = navigationRecorder();
     showIntegration();
 

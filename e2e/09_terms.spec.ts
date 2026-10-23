@@ -313,8 +313,7 @@ test.describe("the two repos agree about the Terms", () => {
     });
     expect(owed.ok()).toBeTruthy();
     const answer = (await owed.json()) as
-      | { owed: false }
-      | { owed: true; document: { version: string; sha256: string } };
+      { owed: false } | { owed: true; document: { version: string; sha256: string } };
     if (answer.owed) {
       expect(answer.document.version).toBe(version);
       expect(

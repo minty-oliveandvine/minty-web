@@ -27,8 +27,7 @@ export const SHEET_INPUT =
 export const SHEET_INPUT_OK =
   "border-[#d7dee2] focus:border-[#4fc7c7] focus:shadow-[0_0_0_3px_rgba(79,199,199,0.18)]";
 /** `.billing-input.is-invalid` - the border AND the message under it; colour alone is no signal. */
-export const SHEET_INPUT_BAD =
-  "border-[#b4231f] focus:shadow-[0_0_0_3px_rgba(180,35,31,0.15)]";
+export const SHEET_INPUT_BAD = "border-[#b4231f] focus:shadow-[0_0_0_3px_rgba(180,35,31,0.15)]";
 /** `.billing-fielderror` */
 export const SHEET_FIELD_ERROR = "mt-1.5 text-[12.5px] leading-[1.4] text-[#b4231f]";
 /** `.billing-error` - half a point larger than the mandate: it is read once, under pressure. */

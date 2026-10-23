@@ -31,7 +31,10 @@ export function PendingInvitations({
         const wait = cooldowns[inv.id] ?? 0;
         const name = `${inv.first_name} ${inv.last_name}`.trim();
         return (
-          <li key={inv.id} className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <li
+            key={inv.id}
+            className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between"
+          >
             <div className="min-w-0">
               <p className="truncate font-medium text-gray-900">{inv.email}</p>
               <p className="truncate text-sm text-gray-500">

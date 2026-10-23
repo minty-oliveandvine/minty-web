@@ -29,9 +29,13 @@ function walk(dir: string, out: string[] = []): string[] {
 }
 
 const rel = (f: string) => relative(ROOT, f).replace(/\\/g, "/");
-// a page may also carry its tab title (`generateMetadata`, lib/companyTitle.ts) - still one line
-const REEXPORT = /^export \{ \w+ as default(, \w+ as generateMetadata)? \} from "@\/features\/company-settings";\n?$/;
-const TABS = ["users", "integration"].map((tab) => join(ROOT, "app", "entity", "[ref]", "[slug]", "settings", tab));
+// a page may also carry its tab title (`generateMetadata`, lib/companyTitle.ts) - still one
+// statement, however Prettier wraps it
+const REEXPORT =
+  /^export \{\s*\w+ as default(,\s*\w+ as generateMetadata)?,?\s*\} from "@\/features\/company-settings";\n?$/;
+const TABS = ["users", "integration"].map((tab) =>
+  join(ROOT, "app", "entity", "[ref]", "[slug]", "settings", tab),
+);
 
 describe("the two tabs' route files are re-exports only", () => {
   const files = TABS.flatMap((dir) => walk(dir));
@@ -43,20 +47,25 @@ describe("the two tabs' route files are re-exports only", () => {
     ]);
   });
 
-  it.each(files.map((f) => [rel(f), f]))("%s is a single re-export from the feature index", (_n, file) => {
-    const code = readFileSync(file, "utf8")
-      .replace(/\r\n/g, "\n")
-      .split("\n")
-      .filter((line) => !line.trim().startsWith("//") && line.trim() !== "")
-      .join("\n");
-    expect(code + "\n").toMatch(REEXPORT);
-  });
+  it.each(files.map((f) => [rel(f), f]))(
+    "%s is a single re-export from the feature index",
+    (_n, file) => {
+      const code = readFileSync(file, "utf8")
+        .replace(/\r\n/g, "\n")
+        .split("\n")
+        .filter((line) => !line.trim().startsWith("//") && line.trim() !== "")
+        .join("\n");
+      expect(code + "\n").toMatch(REEXPORT);
+    },
+  );
 });
 
 describe("the shell's spelling of the tabs", () => {
   it("agrees with the feature's own", () => {
     expect(usersPath("e 1", "Olive Shop")).toBe(companySettingsPath("e 1", "Olive Shop", "users"));
-    expect(integrationPath("e 1", "Olive Shop")).toBe(companySettingsPath("e 1", "Olive Shop", "integration"));
+    expect(integrationPath("e 1", "Olive Shop")).toBe(
+      companySettingsPath("e 1", "Olive Shop", "integration"),
+    );
   });
 });
 

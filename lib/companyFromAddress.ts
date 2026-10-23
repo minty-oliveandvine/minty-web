@@ -23,9 +23,7 @@ import { redirectToHandoff } from "@/lib/handoff";
 export type AddressedCompany = { id: string; name: string };
 
 export type CompanyResolution =
-  | { state: "loading" }
-  | { state: "ready"; company: AddressedCompany }
-  | { state: "unknown" };
+  { state: "loading" } | { state: "ready"; company: AddressedCompany } | { state: "unknown" };
 
 /** The person's companies whose id starts with `shortId` (Flask's hub list; bearer). */
 async function companiesStartingWith(shortId: string): Promise<AddressedCompany[]> {
@@ -60,7 +58,10 @@ export function useCompanyFromAddress(
     };
 
     const fullId = ref.length > 8 ? ref : null;
-    if (auth?.entityId && (auth.entityId === fullId || shortIdOf(auth.entityId) === ref.toLowerCase())) {
+    if (
+      auth?.entityId &&
+      (auth.entityId === fullId || shortIdOf(auth.entityId) === ref.toLowerCase())
+    ) {
       settle({ id: auth.entityId, name: auth.entityName });
       return () => {
         cancelled = true;

@@ -50,5 +50,6 @@ export const AUTH_PRIMARY =
   "inline-flex min-h-12 w-full items-center justify-center rounded-lg bg-secondary px-5 text-[15px] font-semibold text-white transition-colors hover:bg-teal-strong focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-strong disabled:cursor-not-allowed disabled:bg-gray-300";
 export const AUTH_GHOST =
   "inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-5 text-[15px] font-semibold text-ink transition-colors hover:bg-gray-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-strong";
-export const AUTH_LINK = "font-semibold text-teal-strong underline underline-offset-2 hover:text-secondary";
+export const AUTH_LINK =
+  "font-semibold text-teal-strong underline underline-offset-2 hover:text-secondary";
 export const AUTH_ERROR = "text-center text-[13px] text-danger";

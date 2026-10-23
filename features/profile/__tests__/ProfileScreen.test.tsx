@@ -62,7 +62,9 @@ describe("ProfileScreen", () => {
     expect(who.getByText("JB")).toBeInTheDocument();
     expect(who.getByText("Shop Manager")).toBeInTheDocument();
     // asked about the cookie's company, of Flask
-    expect(String(fetchMock.mock.calls[0][0])).toBe(`${env.PETTY_CASH_URL}/api/me/profile?entity=e-company-a`);
+    expect(String(fetchMock.mock.calls[0][0])).toBe(
+      `${env.PETTY_CASH_URL}/api/me/profile?entity=e-company-a`,
+    );
 
     expect(details().getByText("John")).toBeInTheDocument();
     expect(details().getByText("Birmingha")).toBeInTheDocument();
@@ -111,7 +113,9 @@ describe("ProfileScreen", () => {
     expect(init?.method).toBe("PATCH");
     expect(JSON.parse(String(init?.body))).toEqual({ first_name: "Jonathan" });
     expect(screen.getByText("Your profile is saved.")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { level: 2, name: "Jonathan Birmingha" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { level: 2, name: "Jonathan Birmingha" }),
+    ).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Open navigation menu" }));
     const menu = within(screen.getByRole("navigation", { name: "Main navigation" }));
@@ -131,7 +135,9 @@ describe("ProfileScreen", () => {
     serve({ error: "That email address is already in use." }, 422);
     await user.click(details().getByRole("button", { name: "Save" }));
 
-    expect(await details().findByRole("alert")).toHaveTextContent("That email address is already in use.");
+    expect(await details().findByRole("alert")).toHaveTextContent(
+      "That email address is already in use.",
+    );
     expect(details().getByRole("textbox", { name: "Email" })).toHaveValue("taken@x.com");
   });
 
@@ -177,6 +183,8 @@ describe("ProfileScreen", () => {
     expect(alert).toHaveTextContent("Your profile didn't come through. Mind trying again?");
     serve(SCOPED);
     await userEvent.click(within(alert).getByRole("button", { name: "Try again" }));
-    await waitFor(() => expect(screen.getByRole("heading", { level: 2, name: "John Birmingha" })).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByRole("heading", { level: 2, name: "John Birmingha" })).toBeInTheDocument(),
+    );
   });
 });

@@ -27,7 +27,10 @@ const navigate = vi.fn<(url: string) => void>();
 
 function serve(answer: EntityListAnswer | { error: string }, status = 200) {
   fetchMock.mockResolvedValueOnce(
-    new Response(JSON.stringify(answer), { status, headers: { "Content-Type": "application/json" } }),
+    new Response(JSON.stringify(answer), {
+      status,
+      headers: { "Content-Type": "application/json" },
+    }),
   );
 }
 
@@ -125,7 +128,12 @@ describe("EntityListScreen", () => {
   });
 
   it("says what Flask flashed on the way here, once, and drops the spent hand-over", async () => {
-    serve({ ...LIST, notices: [{ category: "error", message: "Hmm, I looked everywhere but couldn't find that one." }] });
+    serve({
+      ...LIST,
+      notices: [
+        { category: "error", message: "Hmm, I looked everywhere but couldn't find that one." },
+      ],
+    });
     show("signed-hand-over");
 
     expect(
@@ -135,7 +143,9 @@ describe("EntityListScreen", () => {
       `${env.PETTY_CASH_URL}/api/me/entities?flash=signed-hand-over`,
     );
     await waitFor(() => expect(replace).toHaveBeenCalledWith("/entities"));
-    expect(screen.getAllByText("Hmm, I looked everywhere but couldn't find that one.")).toHaveLength(1);
+    expect(
+      screen.getAllByText("Hmm, I looked everywhere but couldn't find that one."),
+    ).toHaveLength(1);
   });
 
   it("a token minted inside a company goes back for one that is not, before reading anything", async () => {
@@ -166,8 +176,14 @@ describe("EntityListScreen", () => {
 
     await userEvent.click(screen.getByRole("button", { name: "Open navigation menu" }));
     const menu = within(screen.getByRole("navigation", { name: "Main navigation" }));
-    expect(menu.getByRole("link", { name: "Olive Vine, My Profile" })).toHaveAttribute("href", "/profile");
-    expect(menu.getByRole("link", { name: "Select Entity" })).toHaveAttribute("aria-current", "page");
+    expect(menu.getByRole("link", { name: "Olive Vine, My Profile" })).toHaveAttribute(
+      "href",
+      "/profile",
+    );
+    expect(menu.getByRole("link", { name: "Select Entity" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
     expect(menu.queryByRole("link", { name: "Settings" })).toBeNull();
   });
 });

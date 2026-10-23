@@ -26,8 +26,14 @@ async function stubFlask(page: Page): Promise<Asked> {
     status: "success",
     redirect_url: `${PETTY_CASH_URL}/auth/email/handoff?h=signed`,
   });
-  await answer("/auth/notices", { notices: [{ category: "info", message: "Please log in to access this page." }] });
-  await answer("/legal/current", { terms_version: "beta-1", privacy_version: "beta-1", effective_date: "18 September 2026" });
+  await answer("/auth/notices", {
+    notices: [{ category: "info", message: "Please log in to access this page." }],
+  });
+  await answer("/legal/current", {
+    terms_version: "beta-1",
+    privacy_version: "beta-1",
+    effective_date: "18 September 2026",
+  });
   await answer("/legal/invite-terms-status", { terms_required: true });
   await page.route(`${PETTY_CASH_URL}/auth/email/handoff**`, (route) =>
     route.fulfill({ status: 200, contentType: "text/html", body: "<p>Flask signs you in</p>" }),
@@ -40,7 +46,9 @@ test.describe("sign-in", () => {
     await requireApp();
   });
 
-  test("log in by code on a phone: Flask's message, the code, then Flask's hand-off with next", async ({ page }) => {
+  test("log in by code on a phone: Flask's message, the code, then Flask's hand-off with next", async ({
+    page,
+  }) => {
     await page.setViewportSize({ width: 360, height: 780 });
     const asked = await stubFlask(page);
     await page.goto("/login?next=%2Fprofile&flash=signed");
@@ -70,7 +78,9 @@ test.describe("sign-in", () => {
     });
   });
 
-  test("sign-up: the Terms open from the box and unlock only at the end of the document", async ({ page }) => {
+  test("sign-up: the Terms open from the box and unlock only at the end of the document", async ({
+    page,
+  }) => {
     const asked = await stubFlask(page);
     await page.goto("/signup");
 
@@ -106,7 +116,9 @@ test.describe("sign-in", () => {
     });
   });
 
-  test("an invitation: the address is fixed, the secret leaves the address bar, Xero keeps it", async ({ page }) => {
+  test("an invitation: the address is fixed, the secret leaves the address bar, Xero keeps it", async ({
+    page,
+  }) => {
     await stubFlask(page);
     await page.goto("/login?invite=secret-token&email=ivy%40example.com&fn=Ivy&ln=Lee");
 
@@ -135,7 +147,9 @@ test.describe("sign-in", () => {
       for (const path of ["/login", "/signup", "/login/confirm?email=a%40b.com"]) {
         await page.goto(path);
         await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-        const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+        const overflow = await page.evaluate(
+          () => document.documentElement.scrollWidth - window.innerWidth,
+        );
         expect(overflow, path).toBeLessThanOrEqual(0);
       }
     });

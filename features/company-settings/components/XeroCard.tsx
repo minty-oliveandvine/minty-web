@@ -26,7 +26,9 @@ export function xeroConnectUrl(entityId: string): string {
 function when(iso: string | null): string | null {
   if (!iso) return null;
   const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? null : d.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+  return Number.isNaN(d.getTime())
+    ? null
+    : d.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
 }
 
 export function XeroCard({
@@ -45,22 +47,40 @@ export function XeroCard({
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0">
-        <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${badge.className}`}>{badge.text}</span>
-        {xero.organisation ? <p className="mt-2 truncate font-medium text-gray-900">{xero.organisation}</p> : null}
+        <span
+          className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${badge.className}`}
+        >
+          {badge.text}
+        </span>
+        {xero.organisation ? (
+          <p className="mt-2 truncate font-medium text-gray-900">{xero.organisation}</p>
+        ) : null}
         <p className="text-sm text-gray-500">Last connected: {since ?? "N/A"}</p>
         {state === "reconnect" ? (
-          <p className="mt-1 text-sm text-danger">This company has been disconnected from Xero. Reconnect it to keep your data in sync.</p>
+          <p className="mt-1 text-sm text-danger">
+            This company has been disconnected from Xero. Reconnect it to keep your data in sync.
+          </p>
         ) : null}
       </div>
       {page.can_edit ? (
         <div className="flex shrink-0 flex-wrap gap-2">
           {state === "connected" ? null : (
-            <a href={xeroConnectUrl(page.company.id)} className={`${ACTION} bg-secondary text-white hover:bg-teal-strong`}>
-              {state === "reconnect" || xero.last_connected_at ? "Reconnect to Xero" : "Connect to Xero"}
+            <a
+              href={xeroConnectUrl(page.company.id)}
+              className={`${ACTION} bg-secondary text-white hover:bg-teal-strong`}
+            >
+              {state === "reconnect" || xero.last_connected_at
+                ? "Reconnect to Xero"
+                : "Connect to Xero"}
             </a>
           )}
           {state === "off" ? null : (
-            <button type="button" onClick={onDisconnect} disabled={busy} className={`${ACTION} border border-gray-300 text-red-600 hover:bg-red-50 disabled:opacity-50`}>
+            <button
+              type="button"
+              onClick={onDisconnect}
+              disabled={busy}
+              className={`${ACTION} border border-gray-300 text-red-600 hover:bg-red-50 disabled:opacity-50`}
+            >
               Disconnect
             </button>
           )}

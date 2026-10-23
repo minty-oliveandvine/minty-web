@@ -43,9 +43,13 @@ describe("mintyFetch", () => {
 
   it("a refusal rejects with the sentence Flask gave", async () => {
     setAuth(TOKEN, "", "");
-    fetchMock.mockResolvedValueOnce(answer(422, { error: "That email address is already in use." }));
+    fetchMock.mockResolvedValueOnce(
+      answer(422, { error: "That email address is already in use." }),
+    );
 
-    await expect(mintyFetch("/api/me/profile", { method: "PATCH", json: {} })).rejects.toMatchObject({
+    await expect(
+      mintyFetch("/api/me/profile", { method: "PATCH", json: {} }),
+    ).rejects.toMatchObject({
       status: 422,
       message: "That email address is already in use.",
     });
@@ -68,9 +72,11 @@ describe("mintyFetch", () => {
     setAuth(TOKEN, "", "");
     fetchMock.mockResolvedValueOnce(answer(401, { error: "unauthorized" }));
 
-    await expect(mintyFetch("/api/me/profile", { onUnauthorized: "reject" })).rejects.toMatchObject({
-      status: 401,
-    });
+    await expect(mintyFetch("/api/me/profile", { onUnauthorized: "reject" })).rejects.toMatchObject(
+      {
+        status: 401,
+      },
+    );
     expect(navigate).not.toHaveBeenCalled();
   });
 });

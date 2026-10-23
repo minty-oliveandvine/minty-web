@@ -40,7 +40,7 @@ export function sortRows(rows: EntityRow[]): EntityRow[] {
   );
 }
 
-const MONTHS =["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 /**
  * "9 Jun 5:42 PM" in the VIEWER's zone - the format and the zone Flask's page ended up with

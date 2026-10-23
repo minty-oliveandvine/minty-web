@@ -9,10 +9,10 @@ all** — no asterisk anywhere, and six forms with no invalid state in the JSX e
 
 ## The two halves
 
-| Half | What | Why |
-|---|---|---|
-The mark | `components/ui/RequiredMark.tsx`, coloured by `SHEET_REQUIRED` in `components/ui/sheetClasses.ts` | For the eye |
-The announcement | `aria-required="true"` (or the native `required`) on the **control** | For everyone else |
+| Half             | What                                                                                              | Why               |
+| ---------------- | ------------------------------------------------------------------------------------------------- | ----------------- |
+| The mark         | `components/ui/RequiredMark.tsx`, coloured by `SHEET_REQUIRED` in `components/ui/sheetClasses.ts` | For the eye       |
+| The announcement | `aria-required="true"` (or the native `required`) on the **control**                              | For everyone else |
 
 The mark is **`aria-hidden`**, because an asterisk read aloud is "star". That is why the
 attribute on the control is not optional: hide the mark without it and the field becomes
@@ -22,18 +22,18 @@ labelled `Email *` has the accessible name "Email", asserted in
 
 `SHEET_REQUIRED` is **mirrored into `minty-onboarding-web/app/globals.css`** as
 `.billing-label .req`, because `sheetClasses.ts` is a copy of onboarding's `.billing-*` rules
-and its own header says: *"the same dialog in two apps must be the same dialog, so a change to
-one is a change to the other."* Change both or neither.
+and its own header says: _"the same dialog in two apps must be the same dialog, so a change to
+one is a change to the other."_ Change both or neither.
 
 ## Where it is applied
 
-| Form | Fields marked |
-|---|---|
-`features/company-settings/components/InviteDialog.tsx` | Email, Role, First name, Last name |
-`features/company-settings/components/DetailsForm.tsx` | Company name, Country, Currency |
-`features/auth/routes/LoginScreen.tsx` | First name, Last name (sign-up only), Email |
-`features/subscription/components/AccountSheet.tsx` | `IdentityField`'s `{label}` — one renderer, so Billing Email and Billing company both get it |
-`features/subscription/components/CardCaptureForm.tsx` | the "Payment method" caption |
+| Form                                                    | Fields marked                                                                                |
+| ------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `features/company-settings/components/InviteDialog.tsx` | Email, Role, First name, Last name                                                           |
+| `features/company-settings/components/DetailsForm.tsx`  | Company name, Country, Currency                                                              |
+| `features/auth/routes/LoginScreen.tsx`                  | First name, Last name (sign-up only), Email                                                  |
+| `features/subscription/components/AccountSheet.tsx`     | `IdentityField`'s `{label}` — one renderer, so Billing Email and Billing company both get it |
+| `features/subscription/components/CardCaptureForm.tsx`  | the "Payment method" caption                                                                 |
 
 `components/ui/__tests__/requiredFieldsMarked.test.ts` locks this list by reading the source,
 because several of these forms sit behind API mocks and a branch no test renders is exactly
@@ -59,8 +59,8 @@ where a marker goes missing.
 ## The red state, and where it cannot reach
 
 `SHEET_INPUT_BAD` (`sheetClasses.ts`) is the invalid border — correct red `#b4231f`, paired
-with `SHEET_FIELD_ERROR` under the field. Its own note is the rule: *"the border AND the
-message under it; colour alone is no signal."*
+with `SHEET_FIELD_ERROR` under the field. Its own note is the rule: _"the border AND the
+message under it; colour alone is no signal."_
 
 **`InviteDialog` and `LoginScreen` gate on a disabled primary button**, so a refused submit
 never happens and the red can never show. The `*` is the whole fix there. A disabled button

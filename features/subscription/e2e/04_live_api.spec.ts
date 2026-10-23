@@ -208,7 +208,13 @@ test.describe("over the live API", () => {
     /** 08-C, with Stripe's form open on what the card holds. */
     const form = async () => {
       // not "networkidle": Stripe's iframes can keep the network busy - the field's value is the wait
-      await handoff(page, c, `/subscription/billing/details?account=${id}`, { entity_id: "" }, { idle: false });
+      await handoff(
+        page,
+        c,
+        `/subscription/billing/details?account=${id}`,
+        { entity_id: "" },
+        { idle: false },
+      );
       const region = body(page).getByRole("region", { name: "Address (Stripe)" });
       const stripe = region.locator('iframe[title="Secure address input frame"]').contentFrame();
       await expect(stripe.getByLabel("Address line 1")).toHaveValue(address!.line1!, {

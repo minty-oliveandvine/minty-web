@@ -169,12 +169,7 @@ export function AccountPickerDialog({
       onDismiss={onClose}
     >
       <AccountTargetList rows={rows} picked={picked} busy={busy} onPick={setPicked} />
-      <button
-        type="button"
-        onClick={() => setAdding(true)}
-        disabled={busy}
-        className={SHEET_ADD}
-      >
+      <button type="button" onClick={() => setAdding(true)} disabled={busy} className={SHEET_ADD}>
         {NEW_BILLING_ACCOUNT}
       </button>
       {error && (
@@ -270,12 +265,7 @@ export function MoveCompanyDialog({
             />
           ))}
         </ul>
-        <button
-          type="button"
-          onClick={() => setStep("form")}
-          disabled={busy}
-          className={SHEET_ADD}
-        >
+        <button type="button" onClick={() => setStep("form")} disabled={busy} className={SHEET_ADD}>
           {NEW_BILLING_ACCOUNT}
         </button>
         {error && (

@@ -207,9 +207,7 @@ describe("SubscriptionSummaryRow", () => {
     show("M45");
     const p = panel();
     expect(within(p).getByText(/Current Subscription/)).toBeInTheDocument();
-    expect(lineOf(within(p).getByText("(Active)"))).toHaveTextContent(
-      /^Petty Cash\s*\(Active\)$/,
-    );
+    expect(lineOf(within(p).getByText("(Active)"))).toHaveTextContent(/^Petty Cash\s*\(Active\)$/);
     expect(lineOf(within(p).getByText("(Cancellation in progress)"))).toHaveTextContent(
       /^Payment Request\s*\(Cancellation in progress\)$/,
     );

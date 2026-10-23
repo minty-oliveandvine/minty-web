@@ -50,7 +50,10 @@ export const LIST: EntityListAnswer = {
       trial_modules: ["PETTY_CASH"],
       trial_module_names: ["Petty Cash"],
     }),
-    row({ id: "e-scenario-10", name: "Digitalisation - Scenario 10 - Resume Module After A Renewal" }),
+    row({
+      id: "e-scenario-10",
+      name: "Digitalisation - Scenario 10 - Resume Module After A Renewal",
+    }),
     row({
       id: "e-scenario-2",
       name: "Digitalisation - Scenario 2: 1 Trial + Not started",
@@ -59,7 +62,11 @@ export const LIST: EntityListAnswer = {
       trial_module_names: ["Payment Request", "Petty Cash"],
       last_accessed_by: null,
     }),
-    row({ id: "e-scenario-9", name: "Digitalisation - Scenario 9 - Modules Cancelled On Different Dates", modules: BOTH }),
+    row({
+      id: "e-scenario-9",
+      name: "Digitalisation - Scenario 9 - Modules Cancelled On Different Dates",
+      modules: BOTH,
+    }),
     row({ id: "e-scenario-8", name: "Digitalisation - Scenario 8 - Both Active", modules: BOTH }),
   ],
   notices: [],

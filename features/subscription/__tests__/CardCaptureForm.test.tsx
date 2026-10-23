@@ -249,9 +249,7 @@ describe("CardCaptureForm", () => {
   });
 
   it("the page look stays the billing page's: Save, the first-card note, Stripe's own theme", async () => {
-    render(
-      <CardCaptureForm handle={HANDLE} firstCard onSaved={onSaved} onCancel={vi.fn()} />,
-    );
+    render(<CardCaptureForm handle={HANDLE} firstCard onSaved={onSaved} onCancel={vi.fn()} />);
     expect(await screen.findByRole("button", { name: "Save" })).toBeInTheDocument();
     expect(screen.getByText(/first payment method on your billing account/)).toBeInTheDocument();
     expect(screen.queryByText("Payment method")).toBeNull();

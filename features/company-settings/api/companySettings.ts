@@ -82,20 +82,37 @@ export type IntegrationPage = {
   message?: string;
 };
 
-const q = (entityId: string, extra: Record<string, string | undefined> = {}) => ({ entity: entityId, ...extra });
+const q = (entityId: string, extra: Record<string, string | undefined> = {}) => ({
+  entity: entityId,
+  ...extra,
+});
 
-export function fetchUsers(entityId: string, flash?: string | null, signal?: AbortSignal): Promise<UsersPage> {
-  return mintyFetch<UsersPage>("/api/me/company/users", { query: q(entityId, { flash: flash || undefined }), signal });
+export function fetchUsers(
+  entityId: string,
+  flash?: string | null,
+  signal?: AbortSignal,
+): Promise<UsersPage> {
+  return mintyFetch<UsersPage>("/api/me/company/users", {
+    query: q(entityId, { flash: flash || undefined }),
+    signal,
+  });
 }
 
 export function inviteMember(
   entityId: string,
   invite: { email: string; role: string; first_name: string; last_name: string },
 ): Promise<{ invitation_id: string; email_sent: boolean; message: string }> {
-  return mintyFetch("/api/me/company/invitations", { method: "POST", query: q(entityId), json: invite });
+  return mintyFetch("/api/me/company/invitations", {
+    method: "POST",
+    query: q(entityId),
+    json: invite,
+  });
 }
 
-export function cancelInvitation(entityId: string, invitationId: string): Promise<{ message: string }> {
+export function cancelInvitation(
+  entityId: string,
+  invitationId: string,
+): Promise<{ message: string }> {
   return mintyFetch(`/api/me/company/invitations/${encodeURIComponent(invitationId)}/cancel`, {
     method: "POST",
     query: q(entityId),
@@ -103,14 +120,21 @@ export function cancelInvitation(entityId: string, invitationId: string): Promis
 }
 
 /** 429 = still cooling down: `ApiError.body.retry_after` says for how long. */
-export function resendInvitation(entityId: string, invitationId: string): Promise<{ message: string; resend_cooldown: number }> {
+export function resendInvitation(
+  entityId: string,
+  invitationId: string,
+): Promise<{ message: string; resend_cooldown: number }> {
   return mintyFetch(`/api/me/company/invitations/${encodeURIComponent(invitationId)}/resend`, {
     method: "POST",
     query: q(entityId),
   });
 }
 
-export function changeRole(entityId: string, memberId: string, role: string): Promise<{ message: string; role: string }> {
+export function changeRole(
+  entityId: string,
+  memberId: string,
+  role: string,
+): Promise<{ message: string; role: string }> {
   return mintyFetch(`/api/me/company/users/${encodeURIComponent(memberId)}`, {
     method: "PATCH",
     query: q(entityId),
@@ -119,7 +143,10 @@ export function changeRole(entityId: string, memberId: string, role: string): Pr
 }
 
 export function removeMember(entityId: string, memberId: string): Promise<{ message: string }> {
-  return mintyFetch(`/api/me/company/users/${encodeURIComponent(memberId)}`, { method: "DELETE", query: q(entityId) });
+  return mintyFetch(`/api/me/company/users/${encodeURIComponent(memberId)}`, {
+    method: "DELETE",
+    query: q(entityId),
+  });
 }
 
 export function fetchIntegration(
@@ -138,11 +165,18 @@ export function saveIntegration(
   entityId: string,
   changes: { name?: string; country_code?: string; currency_id?: string },
 ): Promise<IntegrationPage> {
-  return mintyFetch<IntegrationPage>("/api/me/company/integration", { method: "PATCH", query: q(entityId), json: changes });
+  return mintyFetch<IntegrationPage>("/api/me/company/integration", {
+    method: "PATCH",
+    query: q(entityId),
+    json: changes,
+  });
 }
 
 export function disconnectXero(entityId: string): Promise<IntegrationPage> {
-  return mintyFetch<IntegrationPage>("/api/me/company/xero/disconnect", { method: "POST", query: q(entityId) });
+  return mintyFetch<IntegrationPage>("/api/me/company/xero/disconnect", {
+    method: "POST",
+    query: q(entityId),
+  });
 }
 
 /**

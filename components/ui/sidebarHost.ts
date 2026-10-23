@@ -20,7 +20,12 @@ import { mintyFetch } from "@/lib/apiClient";
 import { getAuth } from "@/lib/auth";
 import { env } from "@/lib/env";
 import { previewSetSlug, siblingUrl } from "@/lib/previewSibling";
-import { COMPANY_SETTINGS_PATTERN, companyPath, companySettingsPath, HUB_PATHS } from "@/lib/hubPaths";
+import {
+  COMPANY_SETTINGS_PATTERN,
+  companyPath,
+  companySettingsPath,
+  HUB_PATHS,
+} from "@/lib/hubPaths";
 import { logOut } from "@/lib/logout";
 import { mintyEntryUrl, pettyCashWebUrl } from "@/lib/mintyEntry";
 import { getModuleClaims } from "@/lib/moduleClaims";
@@ -58,7 +63,10 @@ export const sidebarHost: SidebarHost = {
     subscriptions: () => HUB_PATHS.subscription,
     pettyCashDashboard: () => pettyCashWebUrl(getAuth()?.entityId ?? ""),
     pettyCashReports: (entityId) =>
-      pettyCashWebUrl(entityId, companyPath(entityId, getAuth()?.entityName ?? "", "/petty-cash/reports")),
+      pettyCashWebUrl(
+        entityId,
+        companyPath(entityId, getAuth()?.entityName ?? "", "/petty-cash/reports"),
+      ),
     bills: () => billsHref(typeof window === "undefined" ? null : window.location.host),
     settings: () => companySettingsPath(getAuth()?.entityId ?? "", getAuth()?.entityName ?? ""),
     profile: () => HUB_PATHS.profile,

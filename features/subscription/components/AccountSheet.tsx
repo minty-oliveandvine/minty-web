@@ -218,7 +218,9 @@ function BrandChip({ card }: { card: SavedPaymentMethod | null }) {
       aria-hidden="true"
       className="inline-flex h-9 w-14 flex-none items-center justify-center rounded-[7px] border border-[#eff1f3] bg-white"
     >
-      {card && <CardBrand brand={card.brand} label={card.brand_label} className="h-[30px] w-[46px]" />}
+      {card && (
+        <CardBrand brand={card.brand} label={card.brand_label} className="h-[30px] w-[46px]" />
+      )}
     </span>
   );
 }
@@ -550,9 +552,7 @@ export type NewAccountSheet = {
 
 export function useNewAccountSheet(onOpened: (opened: OpenedAccount) => void): NewAccountSheet {
   const [saving, setSaving] = useState(false);
-  const [opened, setOpened] = useState<(OpenedAccount & { card: SavedPaymentMethod }) | null>(
-    null,
-  );
+  const [opened, setOpened] = useState<(OpenedAccount & { card: SavedPaymentMethod }) | null>(null);
 
   const saved = useCallback(
     (result: OpenedAccount) => {

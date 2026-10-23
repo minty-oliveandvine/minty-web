@@ -14,13 +14,15 @@ describe("movedModulePage", () => {
   });
 
   it("moves the full-id address with a placeholder name the page corrects", () => {
-    expect(movedModulePage("/subscription/entities/360812e1-9f94-46a3-aa31-347e21afde8e/modules")).toBe(
-      "/entity/360812e1-9f94-46a3-aa31-347e21afde8e/company/settings/modules",
-    );
+    expect(
+      movedModulePage("/subscription/entities/360812e1-9f94-46a3-aa31-347e21afde8e/modules"),
+    ).toBe("/entity/360812e1-9f94-46a3-aa31-347e21afde8e/company/settings/modules");
   });
 
   it("moves a company's plural address to the singular one, path and depth kept", () => {
-    expect(movedModulePage("/entities/360812e1/olive-and-vine")).toBe("/entity/360812e1/olive-and-vine");
+    expect(movedModulePage("/entities/360812e1/olive-and-vine")).toBe(
+      "/entity/360812e1/olive-and-vine",
+    );
     expect(movedModulePage("/entities/360812e1/olive-and-vine/settings/users")).toBe(
       "/entity/360812e1/olive-and-vine/settings/users",
     );

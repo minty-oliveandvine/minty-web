@@ -162,9 +162,7 @@ describe("ManageSubscriptionsScreen", { timeout: 30_000 }, () => {
       rowOf(unactivated.entity_name).queryByRole("button", { name: /Activate Subscription/ }),
     ).toBeNull();
 
-    await userEvent.click(
-      screen.getByRole("button", { name: `Open ${unactivated.entity_name}` }),
-    );
+    await userEvent.click(screen.getByRole("button", { name: `Open ${unactivated.entity_name}` }));
     const panel = within(
       await screen.findByRole("region", { name: "Subscription Summary" }, AFTER_BEAT),
     );
@@ -177,9 +175,7 @@ describe("ManageSubscriptionsScreen", { timeout: 30_000 }, () => {
     // Change's slot, since a company with no subscriber has to get one before anything can be
     // confirmed.
     const item = screen.getByRole("region", { name: "Subscription Summary" }).closest("li")!;
-    await userEvent.click(
-      within(item).getByRole("checkbox", { name: "Petty Cash subscription" }),
-    );
+    await userEvent.click(within(item).getByRole("checkbox", { name: "Petty Cash subscription" }));
     const activate = await within(item).findByRole(
       "button",
       { name: "Activate Subscription" },
@@ -202,7 +198,9 @@ describe("ManageSubscriptionsScreen", { timeout: 30_000 }, () => {
     // happens). First the activation - no `codes`, because naming them is its own way to buy a
     // lapsed module back and `applyChange` already owns that path. Then the tick.
     await waitFor(() => expect(posts).toHaveLength(2));
-    expect(posts[0][0]).toBe(`/api/entities/${unactivated.entity_id}/modules/activate-subscription`);
+    expect(posts[0][0]).toBe(
+      `/api/entities/${unactivated.entity_id}/modules/activate-subscription`,
+    );
     expect(posts[0][1]).toEqual({ account: "acc-company-a" });
     expect(posts[0][1]).not.toHaveProperty("codes");
     expect(posts[1][0]).toBe(`/api/entities/${unactivated.entity_id}/modules/authorize-billing`);
@@ -404,13 +402,18 @@ describe("ManageSubscriptionsScreen", { timeout: 30_000 }, () => {
 
     // ...and from a click anywhere on the row.
     await userEvent.click(screen.getByText("Kestrel Foods Limited"));
-    const clicked = await screen.findByRole("region", { name: "Subscription Summary", busy: false });
+    const clicked = await screen.findByRole("region", {
+      name: "Subscription Summary",
+      busy: false,
+    });
     const clickedRow = clicked.closest("li") as HTMLElement;
     expect(clickedRow).toHaveAttribute("data-entity", "e-kestrel-foods-limited");
     expect(
       within(clickedRow).getByRole("button", { name: "Close Kestrel Foods Limited" }),
     ).toHaveFocus();
-    await userEvent.click(within(clickedRow).getByRole("button", { name: "Close Kestrel Foods Limited" }));
+    await userEvent.click(
+      within(clickedRow).getByRole("button", { name: "Close Kestrel Foods Limited" }),
+    );
 
     await userEvent.click(screen.getByRole("button", { name: "Sort by Entity Name" }));
     const names = screen.getAllByRole("listitem").map((li) => li.querySelector("p")?.textContent);
@@ -489,11 +492,7 @@ describe("ManageSubscriptionsScreen", { timeout: 30_000 }, () => {
     // The panel calculates for a beat (05·B-C) before the change and its button appear.
     expect(within(item).getByRole("status")).toHaveTextContent("Calculating");
     await userEvent.click(
-      await within(item).findByRole(
-        "button",
-        { name: "Confirm Subscription Change" },
-        AFTER_BEAT,
-      ),
+      await within(item).findByRole("button", { name: "Confirm Subscription Change" }, AFTER_BEAT),
     );
     const dialog = await screen.findByRole("dialog");
     expect(dialog).toHaveAccessibleName("Remove Petty Cash?");
@@ -525,7 +524,11 @@ describe("ManageSubscriptionsScreen", { timeout: 30_000 }, () => {
                 ...a,
                 companies: [
                   ...a.companies,
-                  { entity_id: lantern.entity_id, entity_name: lantern.entity_name, past_due: false },
+                  {
+                    entity_id: lantern.entity_id,
+                    entity_name: lantern.entity_name,
+                    past_due: false,
+                  },
                 ],
               }
             : a,
@@ -621,7 +624,8 @@ describe("ManageSubscriptionsScreen", { timeout: 30_000 }, () => {
       if (url.pathname === "/api/me/billing/accounts") return reply(200, ACCOUNTS);
       if (init?.method === "POST") {
         posts.push([url.pathname, JSON.parse(String(init.body ?? "{}"))]);
-        if (url.pathname.endsWith("/accounts/move")) return reply(200, { ...ACCOUNTS, moved: null });
+        if (url.pathname.endsWith("/accounts/move"))
+          return reply(200, { ...ACCOUNTS, moved: null });
         await paid;
         return reply(200, { ok: true });
       }
@@ -644,11 +648,7 @@ describe("ManageSubscriptionsScreen", { timeout: 30_000 }, () => {
       within(item).getByRole("checkbox", { name: "Payment Request subscription" }),
     );
     await userEvent.click(
-      await within(item).findByRole(
-        "button",
-        { name: "Confirm Subscription Change" },
-        AFTER_BEAT,
-      ),
+      await within(item).findByRole("button", { name: "Confirm Subscription Change" }, AFTER_BEAT),
     );
 
     // The change's modal asks first; nothing is read about accounts or posted yet.
@@ -713,11 +713,7 @@ describe("ManageSubscriptionsScreen", { timeout: 30_000 }, () => {
     await showResult("RV41");
     // The result screen lands after the row's own reads and the calculating beat: under a full
     // file run the default second is not always enough.
-    const page = await screen.findByRole(
-      "region",
-      { name: "Cancellation Scheduled" },
-      AFTER_BEAT,
-    );
+    const page = await screen.findByRole("region", { name: "Cancellation Scheduled" }, AFTER_BEAT);
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Cancellation Scheduled");
     expect(within(page).getByRole("heading", { level: 2 })).toHaveTextContent(
       "Thank you for being part of Minty",

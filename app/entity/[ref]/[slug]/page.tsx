@@ -1,1 +1,4 @@
-export { ModuleChoice as default, moduleChoiceMetadata as generateMetadata } from "@/features/entities";
+export {
+  ModuleChoice as default,
+  moduleChoiceMetadata as generateMetadata,
+} from "@/features/entities";

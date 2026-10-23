@@ -31,14 +31,20 @@ export type UsersTab = {
   /** Seconds left before an invitation may be sent again, by id (counted down here). */
   cooldowns: Record<string, number>;
   reload: () => void;
-  invite: (invite: { email: string; role: string; first_name: string; last_name: string }) => Promise<boolean>;
+  invite: (invite: {
+    email: string;
+    role: string;
+    first_name: string;
+    last_name: string;
+  }) => Promise<boolean>;
   resend: (invitationId: string) => Promise<void>;
   cancel: (invitationId: string) => Promise<boolean>;
   setRole: (memberId: string, role: string) => Promise<void>;
   remove: (memberId: string) => Promise<boolean>;
 };
 
-const message = (err: unknown) => (err instanceof ApiError ? err.message : "Something went wrong on my end. Mind trying again?");
+const message = (err: unknown) =>
+  err instanceof ApiError ? err.message : "Something went wrong on my end. Mind trying again?";
 
 export function useUsersTab(entityId: string, flash: string | null): UsersTab {
   const { showToast } = useToast();
@@ -76,7 +82,10 @@ export function useUsersTab(entityId: string, flash: string | null): UsersTab {
   useEffect(() => {
     if (!counting) return;
     const id = window.setInterval(
-      () => setCooldowns((c) => Object.fromEntries(Object.entries(c).map(([k, s]) => [k, Math.max(0, s - 1)]))),
+      () =>
+        setCooldowns((c) =>
+          Object.fromEntries(Object.entries(c).map(([k, s]) => [k, Math.max(0, s - 1)])),
+        ),
       1000,
     );
     return () => window.clearInterval(id);
@@ -84,7 +93,11 @@ export function useUsersTab(entityId: string, flash: string | null): UsersTab {
 
   const reload = useCallback(() => setAttempt((n) => n + 1), []);
 
-  async function act<T>(key: string, call: () => Promise<T>, said: (answer: T) => string): Promise<T | null> {
+  async function act<T>(
+    key: string,
+    call: () => Promise<T>,
+    said: (answer: T) => string,
+  ): Promise<T | null> {
     setBusy(key);
     try {
       const answer = await call();
@@ -127,17 +140,34 @@ export function useUsersTab(entityId: string, flash: string | null): UsersTab {
         showToast(answer.message, "success");
         setCooldowns((c) => ({ ...c, [invitationId]: answer.resend_cooldown }));
       } catch (err) {
-        const wait = err instanceof ApiError ? Number((err.body as { retry_after?: number } | null)?.retry_after ?? 0) : 0;
+        const wait =
+          err instanceof ApiError
+            ? Number((err.body as { retry_after?: number } | null)?.retry_after ?? 0)
+            : 0;
         if (wait > 0) setCooldowns((c) => ({ ...c, [invitationId]: wait }));
         showToast(message(err), "error");
       } finally {
         setBusy(null);
       }
     },
-    cancel: async (invitationId) => (await act(invitationId, () => cancelInvitation(entityId, invitationId), (a) => a.message)) !== null,
+    cancel: async (invitationId) =>
+      (await act(
+        invitationId,
+        () => cancelInvitation(entityId, invitationId),
+        (a) => a.message,
+      )) !== null,
     setRole: async (memberId, role) => {
-      await act(memberId, () => changeRole(entityId, memberId, role), (a) => a.message);
+      await act(
+        memberId,
+        () => changeRole(entityId, memberId, role),
+        (a) => a.message,
+      );
     },
-    remove: async (memberId) => (await act(memberId, () => removeMember(entityId, memberId), (a) => a.message)) !== null,
+    remove: async (memberId) =>
+      (await act(
+        memberId,
+        () => removeMember(entityId, memberId),
+        (a) => a.message,
+      )) !== null,
   };
 }

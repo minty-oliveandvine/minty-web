@@ -32,12 +32,18 @@ describe("pettyCashWebUrl", () => {
   });
 
   it("names a page on the Petty Cash app as the hand-off's next", () => {
-    const target = handoff(pettyCashWebUrl(ID, "/entity/360812e1/olive-and-vine/petty-cash/reports"));
-    expect(target.searchParams.get("next")).toBe("/entity/360812e1/olive-and-vine/petty-cash/reports");
+    const target = handoff(
+      pettyCashWebUrl(ID, "/entity/360812e1/olive-and-vine/petty-cash/reports"),
+    );
+    expect(target.searchParams.get("next")).toBe(
+      "/entity/360812e1/olive-and-vine/petty-cash/reports",
+    );
   });
 
   it("names this page's origin, so Flask can hand back into a preview set", () => {
-    expect(handoff(pettyCashWebUrl(ID)).searchParams.get("return_origin")).toBe(window.location.origin);
+    expect(handoff(pettyCashWebUrl(ID)).searchParams.get("return_origin")).toBe(
+      window.location.origin,
+    );
   });
 
   it("falls back to the entity list with no token", () => {

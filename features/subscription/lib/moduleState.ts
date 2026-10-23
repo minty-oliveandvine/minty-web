@@ -46,12 +46,7 @@ export type ModuleState =
 
 /** What the CTA does; the hook maps each to a handler, the component to a label and a look. */
 export type ModuleCtaKind =
-  | "reactivate"
-  | "resume"
-  | "manage"
-  | "start_trial"
-  | "activate"
-  | "activate_trial";
+  "reactivate" | "resume" | "manage" | "start_trial" | "activate" | "activate_trial";
 
 export type ModuleCtaVariant = "filled" | "outline" | "link";
 

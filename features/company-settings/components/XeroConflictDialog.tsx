@@ -54,20 +54,20 @@ export function XeroConflictDialog({
       onDismiss={onClose}
     >
       <p>
-        {org ? <strong className="font-semibold">{org}</strong> : "That Xero organisation"} is already connected to{" "}
-        <strong className="font-semibold">{conflict.entity_name}</strong>, and a Xero organisation can only be linked to
-        one company at a time.
+        {org ? <strong className="font-semibold">{org}</strong> : "That Xero organisation"} is
+        already connected to <strong className="font-semibold">{conflict.entity_name}</strong>, and
+        a Xero organisation can only be linked to one company at a time.
       </p>
       {conflict.can_move ? (
         <p>
           I can disconnect it from {conflict.entity_name} and take you to Xero to connect it to{" "}
-          <strong className="font-semibold">{companyName}</strong> instead. {conflict.entity_name} stops publishing to
-          Xero, and the Xero accounts and contacts kept for it are cleared.
+          <strong className="font-semibold">{companyName}</strong> instead. {conflict.entity_name}{" "}
+          stops publishing to Xero, and the Xero accounts and contacts kept for it are cleared.
         </p>
       ) : (
         <p>
-          Ask an accountant or admin of {conflict.entity_name} to disconnect it from Xero there first, then connect{" "}
-          <strong className="font-semibold">{companyName}</strong> again.
+          Ask an accountant or admin of {conflict.entity_name} to disconnect it from Xero there
+          first, then connect <strong className="font-semibold">{companyName}</strong> again.
         </p>
       )}
       {error ? (

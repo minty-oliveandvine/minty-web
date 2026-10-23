@@ -4,5 +4,8 @@
  * here and nothing else may import anything deeper (eslint.config.mjs, boundaries/entry-point).
  */
 
-export { CompanyIntegrationPage, CompanyUsersPage } from "@/features/company-settings/routes/CompanySettingsPages";
+export {
+  CompanyIntegrationPage,
+  CompanyUsersPage,
+} from "@/features/company-settings/routes/CompanySettingsPages";
 export { integrationMetadata, usersMetadata } from "@/features/company-settings/lib/metadata";

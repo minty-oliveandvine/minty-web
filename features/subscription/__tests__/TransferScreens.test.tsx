@@ -145,7 +145,9 @@ describe("SubscriptionRequestsScreen", () => {
       within(empty).getByText(/When someone asks you to take over billing/),
     ).toBeInTheDocument();
     expect(empty.querySelector("img")).toHaveAttribute("src", "/portal/minty-dont.png");
-    await userEvent.click(within(empty).getByRole("button", { name: "Back to Manage Subscription" }));
+    await userEvent.click(
+      within(empty).getByRole("button", { name: "Back to Manage Subscription" }),
+    );
     expect(push).toHaveBeenCalledWith("/subscription/subscriptions");
   });
 

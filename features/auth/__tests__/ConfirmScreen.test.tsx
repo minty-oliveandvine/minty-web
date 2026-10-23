@@ -8,7 +8,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { env } from "@/lib/env";
 import { _resetHandoffForTests } from "@/lib/handoff";
 
-import { readConfirmContext, saveConfirmContext, type ConfirmContext } from "@/features/auth/lib/handover";
+import {
+  readConfirmContext,
+  saveConfirmContext,
+  type ConfirmContext,
+} from "@/features/auth/lib/handover";
 import { CONFIRM_COPY, ConfirmScreen } from "@/features/auth/routes/ConfirmScreen";
 
 const replace = vi.fn();
@@ -57,7 +61,9 @@ describe("ConfirmScreen", () => {
 
   it("verifies the code with everything handed over, then leaves for Flask's hand-off", async () => {
     saveConfirmContext(CONTEXT);
-    fetchMock.mockResolvedValue(json({ status: "success", redirect_url: `${env.PETTY_CASH_URL}/auth/email/handoff?h=x` }));
+    fetchMock.mockResolvedValue(
+      json({ status: "success", redirect_url: `${env.PETTY_CASH_URL}/auth/email/handoff?h=x` }),
+    );
     render(<ConfirmScreen />);
 
     expect(await screen.findByText(/j\*\*\*@example\.com/)).toBeInTheDocument();
@@ -66,7 +72,9 @@ describe("ConfirmScreen", () => {
 
     const back = encodeURIComponent(window.location.origin);
     await waitFor(() =>
-      expect(navigate).toHaveBeenCalledWith(`${env.PETTY_CASH_URL}/auth/email/handoff?h=x&return_origin=${back}`),
+      expect(navigate).toHaveBeenCalledWith(
+        `${env.PETTY_CASH_URL}/auth/email/handoff?h=x&return_origin=${back}`,
+      ),
     );
     const body = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
     expect(body).toMatchObject({ email: "jane@example.com", code: "123456", next: "/profile" });
@@ -76,7 +84,9 @@ describe("ConfirmScreen", () => {
   it("refuses a hand-off that is not Flask's, and says so", async () => {
     const error = vi.spyOn(console, "error").mockImplementation(() => {});
     saveConfirmContext(CONTEXT);
-    fetchMock.mockResolvedValue(json({ status: "success", redirect_url: "https://evil.example/x" }));
+    fetchMock.mockResolvedValue(
+      json({ status: "success", redirect_url: "https://evil.example/x" }),
+    );
     render(<ConfirmScreen />);
 
     await typeCode("123456");
@@ -84,7 +94,9 @@ describe("ConfirmScreen", () => {
 
     const back = encodeURIComponent(window.location.origin);
     await waitFor(() =>
-      expect(navigate).toHaveBeenCalledWith(`${new URL(env.PETTY_CASH_URL).toString()}?return_origin=${back}`),
+      expect(navigate).toHaveBeenCalledWith(
+        `${new URL(env.PETTY_CASH_URL).toString()}?return_origin=${back}`,
+      ),
     );
     expect(error).toHaveBeenCalled();
     error.mockRestore();

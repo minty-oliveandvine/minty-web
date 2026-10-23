@@ -38,7 +38,7 @@ e2e/            Playwright: 07_entity_list.spec.ts and 11_module_choice.spec.ts,
 ## Extraction recipe
 
 1. `git mv features/entities <new-repo>/features/entities` and `git mv app/entities
-   <new-repo>/app/entities`; delete its line from this app's `lib/hubPaths.ts`.
+<new-repo>/app/entities`; delete its line from this app's `lib/hubPaths.ts`.
 2. In the new repo, point `@/lib/*` and `@/components/ui/*` at `@minty/shared` (the side menu,
    the initials badge, `mintyFetch`, `mintyEnterCompanyUrl`) or copy them across.
 3. Copy `public/entities/*` (the doors, the empty desk, the till, the free-trial tag).

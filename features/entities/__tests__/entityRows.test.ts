@@ -61,7 +61,9 @@ describe("entityRows", () => {
     expect(lastAccessedLabel(new Date(2026, 11, 31, 12, 0).toISOString())).toBe("31 Dec 12:00 PM");
     expect(lastAccessedLabel(null)).toBeNull();
     expect(lastAccessedLabel("not a date")).toBeNull();
-    expect(lastOpenedLabel("9 Jun 5:42 PM", "Olive Vine")).toBe("Last opened 9 Jun 5:42 PM by Olive Vine");
+    expect(lastOpenedLabel("9 Jun 5:42 PM", "Olive Vine")).toBe(
+      "Last opened 9 Jun 5:42 PM by Olive Vine",
+    );
     expect(lastOpenedLabel("9 Jun 5:42 PM", null)).toBe("Last opened 9 Jun 5:42 PM");
   });
 

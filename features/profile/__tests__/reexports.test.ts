@@ -64,7 +64,9 @@ describe("app/layout.tsx composes the sidebar's My Profile, and nothing else of 
   });
 
   it("puts the overview card into the panel and the panel into the sidebar, over the Terms gate", () => {
-    expect(layout).toContain(
+    // One element however Prettier wraps it: whitespace collapsed, none before a closing `>`.
+    const flat = layout.replace(/\s+/g, " ").replace(/ >/g, ">");
+    expect(flat).toContain(
       // main draws the original design (the owner, 2026-10-20)
       '<SidebarProvider look="classic" profile={<ProfilePanel subscriptions={<SubscriptionsOverviewCard />} />}>',
     );

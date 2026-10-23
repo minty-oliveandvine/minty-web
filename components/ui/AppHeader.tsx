@@ -66,7 +66,9 @@ export function AppHeader({
       // Its row has a fixed height so a bar sticking under it can use `--app-header-h`.
       className={`sticky top-0 z-40 bg-white ${noBorder ? "" : "border-b border-gray-200"} pt-[env(safe-area-inset-top,0px)]`}
     >
-      <div className={`relative mx-auto flex w-full max-w-[1920px] ${lead ? "@container" : ""} flex h-16 flex-row items-center justify-between gap-2 px-4 sm:h-18 sm:gap-3 sm:px-6`}>
+      <div
+        className={`relative mx-auto flex w-full max-w-[1920px] ${lead ? "@container" : ""} flex h-16 flex-row items-center justify-between gap-2 px-4 sm:h-18 sm:gap-3 sm:px-6`}
+      >
         <div className="flex min-w-0 min-h-10 flex-1 items-center sm:min-h-0">
           <div className="flex min-w-0 flex-1 flex-nowrap items-center gap-2 sm:gap-3">
             {lead}

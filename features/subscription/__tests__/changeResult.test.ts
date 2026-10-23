@@ -43,9 +43,7 @@ describe("buildChangeResult (05·C)", () => {
     expect(r.kind).toBe("celebrate");
     expect(r.layout).toBe("row");
     expect(r.headline).toEqual({ module: null, text: CONGRATULATIONS });
-    expect(text(r)).toEqual([
-      "Super Minty is confirmed. Billing starts the day its trial ends.",
-    ]);
+    expect(text(r)).toEqual(["Super Minty is confirmed. Billing starts the day its trial ends."]);
     expect(r.lines.map((l) => l.module.tone)).toEqual(["bundle"]);
     expect(r.lines.map((l) => l.module.code)).toEqual(["BUNDLE"]);
     expect(r.money).toBe("Nothing charged today · HK$400 a month when the trial ends.");

@@ -89,7 +89,9 @@ describe("the sidebar", () => {
     expect(menu()).toBeNull();
     expect(profileMounts).toBe(1);
     // the keyboard lands on the new view's first control
-    await waitFor(() => expect(screen.getByRole("button", { name: "Back to the menu" })).toHaveFocus());
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Back to the menu" })).toHaveFocus(),
+    );
 
     await userEvent.click(screen.getByRole("button", { name: "Back to the menu" }));
     expect(menu()).not.toBeNull();
