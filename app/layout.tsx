@@ -27,6 +27,9 @@ const jakarta = Plus_Jakarta_Sans({
 export const metadata: Metadata = {
   title: "Minty",
   description: "Minty - subscriptions, billing and invoices.",
+  // A shared link's preview card: the image is app/opengraph-image.png (and twitter-image.png).
+  openGraph: { siteName: "Minty", type: "website" },
+  twitter: { card: "summary_large_image" },
 };
 
 // Every page's shell, and the second place two features meet (eslint.config.mjs: app/layout
