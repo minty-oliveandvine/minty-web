@@ -35,7 +35,9 @@ these cards with `innerHTML`, which let an invited address run script.
 ## Entity & Integration
 
 The company's name (admins), country and currency (accountants and up), saved with only what
-changed; Flask's refusal stays under the form. Read-only below that, with the reason said. The
+changed; Flask's refusal stays under the form. An emptied name is never sent (Flask refuses it):
+"The company name is still empty. Add the company name to continue." shows under the field once
+Save is tried or the field is left, and goes as soon as the user types. Read-only below that, with the reason said. The
 Xero card: Connected / Reconnect needed (a grant revoked at Xero, or no token) / Not connected, the
 organisation and "Last connected:" always - kept through a disconnect, "N/A" only when the company
 was never connected (Flask sends `last_connected_at` as is, no fallback). A company connected once

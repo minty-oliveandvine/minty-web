@@ -12,6 +12,8 @@
  * is unchanged, but the dirty flag can no longer be left over from a form that has gone.
  *
  * The name counts only where the viewer may rename (an admin): a disabled field is never dirty.
+ * An emptied name is still a change (the leave guard must hold it), but `nameMissing` stops the
+ * form sending it: Flask refuses an empty name.
  */
 
 import { useState } from "react";
@@ -30,6 +32,8 @@ export type DetailsDraft = {
   /** Only what differs from the saved values - the body of the PATCH. */
   changes: DetailsChanges;
   dirty: boolean;
+  /** The viewer may rename and the name is blank - nothing may be sent until one is typed. */
+  nameMissing: boolean;
   /** "Discard changes": the saved values back. */
   reset: () => void;
 };
@@ -71,6 +75,7 @@ export function useDetailsDraft(page: IntegrationPage | null): DetailsDraft {
     setCurrency: (value) => setDraft((was) => ({ ...was, currency: value })),
     changes,
     dirty: Object.keys(changes).length > 0,
+    nameMissing: Boolean(page?.can_rename) && !fields.name.trim(),
     reset: () => setDraft(savedFields(page)),
   };
 }
