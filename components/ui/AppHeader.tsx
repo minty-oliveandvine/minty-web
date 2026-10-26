@@ -69,7 +69,12 @@ export function AppHeader({
       <div
         className={`relative mx-auto flex w-full max-w-[1920px] ${lead ? "@container" : ""} flex h-16 flex-row items-center justify-between gap-2 px-4 sm:h-18 sm:gap-3 sm:px-6`}
       >
-        <div className="flex min-w-0 min-h-10 flex-1 items-center sm:min-h-0">
+        {/* The title stays whole and the company gives way (the owner, 2026-10-26): this side
+            never shrinks below the way back + title, and the company's side does instead. A
+            page-drawn lead keeps the old shrinkable side (it lines itself up in cqw). */}
+        <div
+          className={`flex min-h-10 flex-1 items-center sm:min-h-0 ${lead ? "min-w-0" : "shrink-0"}`}
+        >
           <div className="flex min-w-0 flex-1 flex-nowrap items-center gap-2 sm:gap-3">
             {lead}
             {!lead && back ? (
@@ -98,7 +103,7 @@ export function AppHeader({
               />
             ) : null}
             {lead || centerTitle || !title ? null : (
-              <h1 className="min-w-0 cursor-default truncate text-base font-semibold text-black sm:text-lg">
+              <h1 className="shrink-0 cursor-default whitespace-nowrap text-base font-semibold text-black sm:text-lg">
                 {title}
               </h1>
             )}
@@ -109,7 +114,9 @@ export function AppHeader({
             {title}
           </h1>
         ) : null}
-        <div className="flex min-w-0 shrink-0 items-center justify-end gap-1.5 sm:gap-3">
+        <div
+          className={`flex min-w-0 items-center justify-end gap-1.5 sm:gap-3 ${lead ? "shrink-0" : ""}`}
+        >
           {companyName ? (
             <>
               <span
