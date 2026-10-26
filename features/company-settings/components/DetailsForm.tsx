@@ -4,14 +4,17 @@
  * The company's name, country and currency (Flask's Entity & Integration form). The name is an
  * admin's to change; the country and currency an accountant's and up. Only what changed is sent;
  * a currency picked explicitly wins, and a country alone brings its own currency (Flask's rule).
- * Enter saves.
+ * Enter saves. An emptied name is never sent: the field says so once Save is tried or the field is
+ * left, and the message goes as soon as a name is typed.
  */
 
 import { RequiredMark } from "@/components/ui/RequiredMark";
-import { type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 
 import {
+  SHEET_FIELD_ERROR,
   SHEET_INPUT,
+  SHEET_INPUT_BAD,
   SHEET_INPUT_OK,
   SHEET_LABEL,
   SHEET_PRIMARY,
@@ -22,6 +25,8 @@ import type {
   DetailsChanges,
   DetailsDraft,
 } from "@/features/company-settings/hooks/useDetailsDraft";
+
+export const NAME_MISSING = "The company name is still empty. Add the company name to continue.";
 
 export function DetailsForm({
   page,
@@ -38,9 +43,17 @@ export function DetailsForm({
   onSave: (changes: DetailsChanges) => void;
 }) {
   const { name, country, currency, dirty } = draft;
+  // Set when Save is tried or the name field is left, unset by typing: the message shows while the
+  // name is blank, and goes the moment the user types.
+  const [checkName, setCheckName] = useState(false);
+  const nameError = checkName && draft.nameMissing;
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
+    if (draft.nameMissing) {
+      setCheckName(true);
+      return;
+    }
     if (dirty && !busy && page.can_edit) onSave(draft.changes);
   };
 
@@ -55,11 +68,23 @@ export function DetailsForm({
           id="company-name"
           type="text"
           maxLength={100}
-          className={`${SHEET_INPUT} ${SHEET_INPUT_OK}`}
+          className={`${SHEET_INPUT} ${nameError ? SHEET_INPUT_BAD : SHEET_INPUT_OK}`}
           value={name}
           disabled={!page.can_rename || busy}
-          onChange={(e) => draft.setName(e.target.value)}
+          aria-required
+          aria-invalid={nameError || undefined}
+          aria-describedby={nameError ? "company-name-error" : undefined}
+          onChange={(e) => {
+            setCheckName(false);
+            draft.setName(e.target.value);
+          }}
+          onBlur={() => setCheckName(true)}
         />
+        {nameError ? (
+          <p id="company-name-error" className={SHEET_FIELD_ERROR}>
+            {NAME_MISSING}
+          </p>
+        ) : null}
         {!page.can_rename && page.can_edit ? (
           <p className="mt-1.5 text-body-s text-ink-2">Only an admin can rename the company.</p>
         ) : null}

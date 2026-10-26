@@ -336,6 +336,28 @@ describe("IntegrationScreen", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("someone got there first");
   });
 
+  it("an emptied company name is never sent: it says so under the field until one is typed", async () => {
+    flask({ "GET /api/me/company/integration": () => json(INTEGRATION) });
+    showIntegration();
+    const missing = "The company name is still empty. Add the company name to continue.";
+
+    const name = await screen.findByLabelText(/^Company name\s*\*?$/);
+    await userEvent.clear(name);
+    expect(screen.queryByText(missing)).toBeNull(); // not while the field is still being edited
+    await userEvent.tab(); // left empty
+    expect(screen.getByText(missing)).toBeInTheDocument();
+    expect(name).toHaveAttribute("aria-invalid", "true");
+
+    await userEvent.type(name, "O");
+    expect(screen.queryByText(missing)).toBeNull(); // clears as they type
+    await userEvent.clear(name);
+    await userEvent.click(screen.getByRole("button", { name: "Save Changes" }));
+    expect(screen.getByText(missing)).toBeInTheDocument();
+    await userEvent.type(name, "   {Enter}");
+    expect(screen.getByText(missing)).toBeInTheDocument();
+    expect(sent("PATCH /api/me/company/integration")).toEqual([]);
+  });
+
   it("read-only: says so, and offers nothing to change", async () => {
     flask({
       "GET /api/me/company/integration": () =>
