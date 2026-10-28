@@ -34,7 +34,7 @@
 // AppHeader, Header, TermsGate/TermsModal, Wordmark, Pagination, RequiredMark, SettingsTabs,
 // sheetClasses). No rule changed for any of this: a package is a package, which the rules already
 // allow a feature to import.
-import { defineConfig } from "eslint/config";
+import { defineConfig, globalIgnores } from "eslint/config";
 import minty from "@minty/shared/eslint";
 import boundaries from "eslint-plugin-boundaries";
 
@@ -161,6 +161,8 @@ const eslintConfig = defineConfig([
       ],
     },
   },
+  // The Cloudflare Workers build (OpenNext) and wrangler's local state: generated, not ours.
+  globalIgnores([".open-next/**", ".wrangler/**"]),
 ]);
 
 export default eslintConfig;
