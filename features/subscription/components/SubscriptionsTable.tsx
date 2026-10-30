@@ -33,6 +33,7 @@ import {
 import { ModuleCellView } from "@/features/subscription/components/ModuleCellView";
 import { RowMenu } from "@/features/subscription/components/RowMenu";
 import {
+  EntityNameLink,
   SubscriptionSummaryRow,
   fromControl,
   type SummaryRowHandlers,
@@ -134,8 +135,8 @@ function Row({ row, focused, on }: { row: SubscriptionRow; focused: boolean; on:
       {/* The closed row carries no Activate button (the user, 2026-10-08): activating is asked
           inside the OPEN row, where Confirm Subscription Change sits - see
           SubscriptionSummaryRow. */}
-      <p className="min-w-0 truncate text-xl font-bold text-black sm:text-[25px]">
-        {row.entity.entity_name}
+      <p className="min-w-0 text-xl font-bold text-black sm:text-[25px]">
+        <EntityNameLink entity={row.entity} />
       </p>
       {row.cells.map((cell) => (
         <ModuleCellView

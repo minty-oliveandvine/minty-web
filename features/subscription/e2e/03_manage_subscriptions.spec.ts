@@ -318,8 +318,10 @@ test.describe("manage subscriptions", () => {
     await stubApi(page, subscriptionsPage());
     await handoff(page, creds(), "/subscription/subscriptions", { entity_id: "" });
 
-    // The company's name, not the chevron.
-    await body(page).getByText("Kestrel Foods Limited").click();
+    // The card, not the chevron (nor the name, which is a link).
+    await body(page)
+      .locator("li[data-entity='e-kestrel-foods-limited']")
+      .click({ position: { x: 6, y: 6 } });
     const opened = body(page).locator("li[data-open]");
     await expect(opened).toHaveAttribute("data-entity", "e-kestrel-foods-limited");
 
@@ -330,10 +332,44 @@ test.describe("manage subscriptions", () => {
     await expect(body(page).locator("li[data-open]")).toHaveCount(1);
     await page.keyboard.press("Escape");
 
-    // The strip closes it, as the chevron does.
-    await opened.getByRole("heading", { level: 3, name: "Kestrel Foods Limited" }).click();
+    // The strip closes it, as the chevron does - beside the name, which is a link.
+    const strip = opened
+      .getByRole("heading", { level: 3, name: "Kestrel Foods Limited" })
+      .locator("..");
+    const { width } = (await strip.boundingBox())!;
+    await strip.click({ position: { x: width - 140, y: 4 } });
     await expect(body(page).locator("li[data-open]")).toHaveCount(0);
   });
+
+  for (const width of [360, 768, 1440]) {
+    test(`at ${width}px a company's name opens its module settings, closed or open`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height: 780 });
+      await stubApi(page, subscriptionsPage());
+      await handoff(page, creds(), "/subscription/subscriptions", { entity_id: "" });
+      const name = "Kestrel Foods Limited";
+      // The exact address is pinned by the unit test (modulesPath); Playwright cannot load
+      // @minty/shared's .ts, so here it is the company's Module tab by shape.
+      const href = /^\/entity\/[^/]+\/kestrel[^/]*\/settings\/modules$/i;
+      const row = body(page).locator("li[data-entity='e-kestrel-foods-limited']");
+
+      const closed = row.getByRole("link", { name });
+      await expect(closed).toHaveAttribute("href", href);
+      expect((await closed.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+
+      await row.getByRole("button", { name: `Open ${name}` }).click();
+      const open = row.getByRole("heading", { level: 3, name }).getByRole("link", { name });
+      await expect(open).toHaveAttribute("href", href);
+      expect((await open.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+      expect(
+        await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1),
+      ).toBe(true);
+
+      await open.click();
+      await expect(page).toHaveURL((url) => href.test(url.pathname));
+    });
+  }
 
   test("a module card's Activate / Resume lands on the row with that module ticked", async ({
     page,

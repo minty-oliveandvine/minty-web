@@ -24,6 +24,7 @@ import type { ModuleCode } from "@/features/subscription/api/moduleSettings";
 import type { PortalEntity } from "@/features/subscription/api/payerPortal";
 import type { MenuItem } from "@/features/subscription/lib/portalRows";
 import type { ModuleStatusLine } from "@/features/subscription/lib/moduleState";
+import { modulesPath } from "@/features/subscription/lib/paths";
 import {
   ACTIVATE_SUBSCRIPTION,
   CONFIRM_CHANGE,
@@ -105,6 +106,24 @@ export const PLAN_TONE: Record<PlanLine["tone"], string> = {
 export function fromControl(e: { target: EventTarget | null }): boolean {
   const el = e.target as HTMLElement | null;
   return Boolean(el?.closest("button, a, input, [role='menu'], [role='menuitem']"));
+}
+
+/**
+ * A row's company name, closed or open: a link to that company's module settings (the owner,
+ * 2026-10-30). Every listed company is one the person pays for or administers, so every name
+ * links. An `<a>`, so `fromControl` keeps the row from toggling under it. It truncates itself (its
+ * parent must not clip), and its padding, cancelled by the margin, makes a 44px tap target
+ * without moving the row.
+ */
+export function EntityNameLink({ entity }: { entity: PortalEntity }) {
+  return (
+    <a
+      href={modulesPath(entity.entity_id, entity.entity_name)}
+      className="-my-2.5 block truncate rounded-md py-2.5 transition-colors hover:text-[#2e9b9b] focus-visible:text-[#2e9b9b] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4fc7c7]"
+    >
+      {entity.entity_name}
+    </a>
+  );
 }
 
 export function SummaryModuleCard({
@@ -430,8 +449,8 @@ export function SubscriptionSummaryRow({
         }}
         className="flex cursor-pointer items-center justify-between gap-4"
       >
-        <h3 className="min-w-0 truncate text-xl font-bold text-black sm:text-[25px]">
-          {entity.entity_name}
+        <h3 className="min-w-0 text-xl font-bold text-black sm:text-[25px]">
+          <EntityNameLink entity={entity} />
         </h3>
         <div className="flex shrink-0 items-center gap-2 sm:gap-4">
           <button

@@ -562,15 +562,20 @@ re-homed and redrawn to Figma section "04 · Manage Subscriptions — the payer 
 - **Start Trial from the list** (04-G/H): a confirmation card, then the company's `start-trial`
   action with `X-Entity-Id` (the `/api/me/*` surface is read-only), then the result row (§12). A
   refusal is a toast and the card stays.
-- **The whole row is that chevron's click target** (2026-09-23): the company's name, a module
-  cell, the space between them. A row's own controls are not — the ⋮ and its menu (which render
-  inline in the same `<li>`, not through a portal), a cell's _Start Trial_ / _Subscribe_, and the
-  chevron itself do only their own job (`fromControl` in `SubscriptionSummaryRow.tsx` is the one
+- **The whole row is that chevron's click target** (2026-09-23): a module cell, the space
+  between them. A row's own controls are not — the company's name (a link, below), the ⋮ and its
+  menu (which render inline in the same `<li>`, not through a portal), a cell's _Start Trial_ /
+  _Subscribe_, and the chevron itself do only their own job (`fromControl` in `SubscriptionSummaryRow.tsx` is the one
   guard both rows share). On an OPEN row only the header strip closes it, never the panel below —
   a click on a checkbox or a module card must not collapse the row. Pointer affordance only: the
   chevron keeps the accessible name and stays the sole focusable control, so "Open <Company>"
   still names exactly one element. Ticks pending: closing this way asks "Leave without saving?"
   like every other way out.
+- **The company's name opens its module settings** (owner, 2026-10-30), on the closed row and in
+  the open row's header alike: a link to `/entity/<shortid>/<name>/settings/modules`
+  (`modulesPath`; `EntityNameLink` in `SubscriptionSummaryRow.tsx`), never a toggle. Every listed
+  company is one the person pays for or administers, so every name links. The API's
+  `settings_path` (Flask's old `/entity/settings/module/<id>`) is not used.
 - **A row's chevron opens it in place** — the Subscription Summary of §11 (Figma 05·A), one
   company at a time; the chevron on the open row closes it.
 - **The open row takes the view** (2026-10-02, the user: "should focus on the open row"). However

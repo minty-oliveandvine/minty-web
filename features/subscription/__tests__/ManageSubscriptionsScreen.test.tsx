@@ -19,6 +19,7 @@ import {
 } from "@/features/subscription/__fixtures__/subscriptions";
 import type { PayerSubscriptions } from "@/features/subscription/api/payerPortal";
 import { CALCULATING_MS } from "@/features/subscription/hooks/useEntitySummary";
+import { modulesPath } from "@/features/subscription/lib/paths";
 import { ManageSubscriptionsScreen } from "@/features/subscription/routes/ManageSubscriptionsScreen";
 
 const push = vi.fn();
@@ -108,6 +109,11 @@ async function show(
 // because 59 files build their jsdom environments at once on a 2-core runner and the beat is
 // real time. A waiting budget costs nothing when the app is quick, so it is generous.
 const AFTER_BEAT = { timeout: CALCULATING_MS + 6000 };
+
+/** A company's card in the list, by its id. */
+function rowElement(entityId: string): HTMLElement {
+  return document.querySelector(`li[data-entity="${entityId}"]`) as HTMLElement;
+}
 
 const rowOf = (name: string) => within(screen.getByText(name).closest("li") as HTMLElement);
 
@@ -344,8 +350,8 @@ describe("ManageSubscriptionsScreen", { timeout: 30_000 }, () => {
   it("the whole row opens the company, but its own controls do not", async () => {
     await show(subscriptionsPage());
 
-    // The name, not the chevron.
-    await userEvent.click(screen.getByText("Kestrel Foods Limited"));
+    // The card, not the chevron.
+    await userEvent.click(rowElement("e-kestrel-foods-limited"));
     const open = await screen.findByRole("region", { name: "Subscription Summary", busy: false });
     expect(open.closest("li")).toHaveAttribute("data-entity", "e-kestrel-foods-limited");
 
@@ -401,7 +407,7 @@ describe("ManageSubscriptionsScreen", { timeout: 30_000 }, () => {
     expect(screen.queryByRole("region", { name: "Subscription Summary" })).not.toBeInTheDocument();
 
     // ...and from a click anywhere on the row.
-    await userEvent.click(screen.getByText("Kestrel Foods Limited"));
+    await userEvent.click(rowElement("e-kestrel-foods-limited"));
     const clicked = await screen.findByRole("region", {
       name: "Subscription Summary",
       busy: false,
@@ -418,6 +424,24 @@ describe("ManageSubscriptionsScreen", { timeout: 30_000 }, () => {
     await userEvent.click(screen.getByRole("button", { name: "Sort by Entity Name" }));
     const names = screen.getAllByRole("listitem").map((li) => li.querySelector("p")?.textContent);
     expect(names[0]).toBe("Aetheria Capital Limited");
+  });
+
+  it("a company's name opens its module settings, closed or open, and leaves the row alone", async () => {
+    await show(subscriptionsPage());
+    const name = "Kestrel Foods Limited";
+    const href = modulesPath("e-kestrel-foods-limited", name);
+
+    const closed = within(rowElement("e-kestrel-foods-limited")).getByRole("link", { name });
+    expect(closed).toHaveAttribute("href", href);
+    await userEvent.click(closed);
+    expect(screen.queryByRole("region", { name: "Subscription Summary" })).toBeNull();
+
+    await userEvent.click(screen.getByRole("button", { name: `Open ${name}` }));
+    const open = await screen.findByRole("region", { name: "Subscription Summary", busy: false });
+    const heading = within(open.closest("li") as HTMLElement).getByRole("heading", { name });
+    expect(within(heading).getByRole("link", { name })).toHaveAttribute("href", href);
+    await userEvent.click(within(heading).getByRole("link", { name }));
+    expect(screen.getByRole("region", { name: "Subscription Summary" })).toBeInTheDocument();
   });
 
   it("opens the company from ?entity= and brings it into view", async () => {
