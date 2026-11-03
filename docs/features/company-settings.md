@@ -35,7 +35,11 @@ these cards with `innerHTML`, which let an invited address run script.
 ## Entity & Integration
 
 The company's name (admins), country and currency (accountants and up), saved with only what
-changed; Flask's refusal stays under the form. An emptied name is never sent (Flask refuses it):
+changed. **This is the one place the country and currency change after the company is created**
+(owner, 2026-11-03; Petty Cash Settings no longer has a card for them, and its Setup Required
+gate's "Choose your company's currency" links here): a country sent alone brings its own
+currency, and the currency rebuilds the company's notes and coins (`entity_cash_setting`, Flask's
+`sync_cash_settings`); Flask's refusal stays under the form. An emptied name is never sent (Flask refuses it):
 "The company name is still empty. Add the company name to continue." shows under the field once
 Save is tried or the field is left, and goes as soon as the user types. Read-only below that, with the reason said. The
 Xero card: Connected / Reconnect needed (a grant revoked at Xero, or no token) / Not connected, the
