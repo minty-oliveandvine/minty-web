@@ -168,18 +168,17 @@ describe("EntityListScreen", () => {
     const header = within(screen.getByRole("banner"));
     expect(header.getByRole("heading", { level: 1, name: "Select Company" })).toBeInTheDocument();
     expect(screen.getByRole("banner").querySelector('img[src="/minty-mark.png"]')).not.toBeNull();
-    // no sidebar around a screen rendered on its own: the initials are the way to the page
-    const badge = await header.findByRole("link", { name: "Olive Vine, My Profile" });
-    expect(badge).toHaveAttribute("href", "/profile");
+    // no sidebar around a screen rendered on its own: the initials fall back to a link to the list,
+    // named for it - there is no /profile page (@minty/shared v0.12)
+    const badge = await header.findByRole("link", { name: "Select Entity" });
+    expect(badge).toHaveAttribute("href", "/entities");
     expect(badge).toHaveAttribute("title", "Olive Vine");
     expect(badge).toHaveTextContent("OV");
 
     await userEvent.click(screen.getByRole("button", { name: "Open navigation menu" }));
     const menu = within(screen.getByRole("navigation", { name: "Main navigation" }));
-    expect(menu.getByRole("link", { name: "Olive Vine, My Profile" })).toHaveAttribute(
-      "href",
-      "/profile",
-    );
+    // and the menu's person is plain text: no sheet to open it in
+    expect(menu.queryByRole("link", { name: /My Profile/ })).toBeNull();
     expect(menu.getByRole("link", { name: "Select Entity" })).toHaveAttribute(
       "aria-current",
       "page",

@@ -32,11 +32,11 @@ export const metadata: Metadata = {
   twitter: { card: "summary_large_image" },
 };
 
-// Every page's shell, and the second place two features meet (eslint.config.mjs: app/layout
+// Every page's shell, and the one place two features meet (eslint.config.mjs: app/layout
 // may import the profile and subscription indexes, and nothing else of a feature's): the
 // sidebar's My Profile view is the profile feature's panel with the subscription feature's
-// overview card in its slot - the same composition as app/profile/page.tsx. Under it, the Terms
-// gate over every page.
+// overview card in its slot (My Profile opens only as this sheet - no /profile page since
+// 2026-11-03). Under it, the Terms gate over every page.
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" className={`${inter.variable} ${jakarta.variable}`}>

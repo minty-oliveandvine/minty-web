@@ -80,16 +80,16 @@ describe("ModuleSettingsScreen", () => {
       pettyCashWebUrl("e1"),
     );
     expect(screen.getByText("Olive & Vine Limited")).toBeInTheDocument();
-    // the initials: My Profile (a link to the page here - no sidebar around a lone screen)
-    expect(screen.getByRole("link", { name: "Olive Vine, My Profile" })).toHaveTextContent("OV");
-    // the side menu (Figma 02-D, inside a company): the person first - the way to My Profile -
-    // then Select Entity, the sections the company has, and Settings (this page) above Logout
+    // the initials: a link to the entity list here, named for it - no sidebar around a lone
+    // screen, and there is no /profile page (@minty/shared v0.12)
+    expect(screen.getByRole("link", { name: "Select Entity" })).toHaveTextContent("OV");
+    // the side menu (Figma 02-D, inside a company): the person first (the way to My Profile where
+    // a sheet can open it), then Select Entity, the sections the company has, and Settings (this
+    // page) above Logout
     await userEvent.click(screen.getByRole("button", { name: "Open navigation menu" }));
     const drawer = within(screen.getByRole("navigation", { name: "Main navigation" }));
-    expect(drawer.getByRole("link", { name: "Olive Vine, My Profile" })).toHaveAttribute(
-      "href",
-      "/profile",
-    );
+    // the person, as text: no sheet to open it in
+    expect(drawer.queryByRole("link", { name: /My Profile/ })).toBeNull();
     expect(drawer.getByRole("link", { name: "Select Entity" })).toHaveAttribute(
       "href",
       "/entities",

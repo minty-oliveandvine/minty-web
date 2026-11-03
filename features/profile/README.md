@@ -2,25 +2,22 @@
 
 My Profile (Figma 10-A / 10-B, `43YI3MYtTfX5Xzz6dRoRuT` 1410:3314 / 1410:3364), moved from
 minty-payment-request-web on 2026-09-29 with the new design and built, at the user's word, "the same way
-as subscription is extractable". Drawn twice from one body: the sidebar's My Profile view on
-every page of this app (`ProfilePanel`), and the `/profile` page for Minty's `/profile` router
-(`ProfilePage`) - `docs/features/profile.md`. minty-payment-request-web carries a COPY of this folder
-(without the page) since 2026-09-30, and Flask a Jinja port: change all three until
+as subscription is extractable". It opens only as the sidebar's My Profile sheet on
+every page of this app (`ProfilePanel`); the `/profile` page was removed on 2026-11-03 (owner) and
+that address is a 404 - `docs/features/profile.md`. minty-payment-request-web carries a COPY of this
+folder since 2026-09-30, and Flask a Jinja port: change all three until
 `@minty/shared` takes it (the same doc says how).
 
 ## Layout
 
 ```
-index.ts        the ONLY public surface: ProfilePage + ProfilePanel (each with its one slot) + PROFILE_BASE_PATH
+index.ts        the ONLY public surface: ProfilePanel (with its one slot)
 api/            profile.ts - Flask's GET / PATCH /api/me/profile (mintyFetch), and profileApi for the package
-lib/            profileView (pure: the page title, the back arrow), paths
-components/     ProfileParts - the /profile page's titlebar only
-routes/         ProfilePage (Suspense + the query string) -> ProfileScreen (the page: the package's
-                useProfile + ProfileBody); ProfilePanel (the package's panel, with this app's api and toast)
+routes/         ProfilePanel (the package's panel, with this app's api and toast)
 (@minty/shared/profile, v0.6, in the original look here: the body - head, details card, Log Out, states -
  useProfile, the panel and its titlebar, the plan label and what a save sends; the Subscriptions Overview card too)
-__fixtures__/   SCOPED / SUPERMINTY / UNSCOPED - Vitest, Playwright and ?fixture=
-__tests__/      Vitest: the rules, the screen, the composition guard
+__fixtures__/   SCOPED / SUPERMINTY / UNSCOPED - Vitest and Playwright
+__tests__/      Vitest: the panel, the composition guard
 e2e/            Playwright: 08_profile.spec.ts, over a stubbed Flask and billing API
 ```
 
@@ -28,19 +25,18 @@ e2e/            Playwright: 08_profile.spec.ts, over a stubbed Flask and billing
 
 1. This folder imports only itself, `@/lib/**`, `@/components/ui/**` and packages — never
    `@/app/**`, never another feature.
-2. Nothing outside imports `@/features/profile/*` except `app/profile/**` and `app/layout.tsx`,
-   and they import the index only.
-3. The two composition files: `app/profile/page.tsx` puts the subscription feature's
-   `SubscriptionsOverviewCard` into `ProfilePage`'s `subscriptions` slot and does nothing else
-   (`__tests__/reexports.test.ts` pins it word for word); `app/layout.tsx` puts the same card
-   into `ProfilePanel`'s slot and the panel into the sidebar's (the guard pins those imports and
-   that expression). `eslint.config.mjs` lets both import exactly those two indexes. The profile
+2. Nothing outside imports `@/features/profile/*` except `app/layout.tsx`, and it imports the
+   index only.
+3. The one composition: `app/layout.tsx` puts the subscription feature's
+   `SubscriptionsOverviewCard` into `ProfilePanel`'s slot and the panel into the sidebar's
+   (`__tests__/reexports.test.ts` pins those imports and that expression, and that there is no
+   `app/profile`). `eslint.config.mjs` lets it import exactly those two indexes. The profile
    never reaches into the subscription feature: features meet only in `app/`.
 
 ## Extraction recipe
 
-1. `git mv features/profile <new-repo>/features/profile` and `git mv app/profile
-<new-repo>/app/profile`; delete its line from this app's `lib/hubPaths.ts`.
+1. `git mv features/profile <new-repo>/features/profile` and compose `ProfilePanel` into the new
+   repo's sidebar as `app/layout.tsx` does here.
 2. In the new repo, point `@/lib/*` and `@/components/ui/*` at `@minty/shared` (the side menu,
    `mintyFetch`, `lib/viewer`, `lib/logout`) or copy them across.
 3. Fill the `subscriptions` slot from wherever the subscription feature lives then — or pass

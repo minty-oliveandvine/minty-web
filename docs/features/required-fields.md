@@ -41,7 +41,7 @@ where a marker goes missing.
 
 ## Four places it deliberately does NOT appear
 
-1. **`features/profile/components/DetailsCard.tsx` — Email.** Mandatory (`profileView.ts`
+1. **`@minty/shared/profile`'s details card — Email.** Mandatory (the package
    refuses a blank), but the card shows no visible label for it, only a mail tile. There is
    nowhere to hang an asterisk, so it carries `aria-required` alone. Giving it a visible label
    is a layout decision, not a code one.

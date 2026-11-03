@@ -69,7 +69,6 @@ export const sidebarHost: SidebarHost = {
       ),
     bills: () => billsHref(typeof window === "undefined" ? null : window.location.host),
     settings: () => companySettingsPath(getAuth()?.entityId ?? "", getAuth()?.entityName ?? ""),
-    profile: () => HUB_PATHS.profile,
   },
 
   /**
@@ -79,9 +78,8 @@ export const sidebarHost: SidebarHost = {
    */
   usePathname: () => usePathname() ?? "",
 
-  /** Which of this app's pages is showing. It has all four, unlike the payments app. */
+  /** Which of this app's pages is showing. Never "profile": My Profile is only the sheet. */
   currentOf: (pathname) => {
-    if (pathname === HUB_PATHS.profile) return "profile";
     if (pathname === HUB_PATHS.entities) return "entities";
     if (COMPANY_SETTINGS_PATTERN.test(pathname)) return "settings";
     if (pathname === HUB_PATHS.subscription || pathname.startsWith(`${HUB_PATHS.subscription}/`)) {

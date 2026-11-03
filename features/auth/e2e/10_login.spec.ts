@@ -51,7 +51,7 @@ test.describe("sign-in", () => {
   }) => {
     await page.setViewportSize({ width: 360, height: 780 });
     const asked = await stubFlask(page);
-    await page.goto("/login?next=%2Fprofile&flash=signed");
+    await page.goto("/login?next=%2Fentities&flash=signed");
 
     await expect(page.getByText("Please log in to access this page.")).toBeVisible();
     await page.getByLabel("Email").fill("jane@example.com");
@@ -74,7 +74,7 @@ test.describe("sign-in", () => {
     expect(asked.find((a) => a.path === "/auth/email/verify-code")?.body).toMatchObject({
       email: "jane@example.com",
       code: "123456",
-      next: "/profile",
+      next: "/entities",
     });
   });
 
@@ -134,9 +134,9 @@ test.describe("sign-in", () => {
 
   test("the old sign-up address redirects to /signup", async ({ page }) => {
     await stubFlask(page);
-    await page.goto("/login?mode=signup&next=%2Fprofile");
+    await page.goto("/login?mode=signup&next=%2Fentities");
 
-    await expect(page).toHaveURL(/\/signup\?next=%2Fprofile$/);
+    await expect(page).toHaveURL(/\/signup\?next=%2Fentities$/);
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Create your account");
   });
 

@@ -74,14 +74,14 @@ run" below).
 - [ ] Clearing the email entirely is refused client-side first: "We'll need an email here."
 - [ ] A malformed or already-taken email is refused in Flask's own wording, shown under the
       field with what was typed.
-- [ ] PASSWORD · _Change_ opens the Xero account page, not an in-app password form.
+- [ ] There is no PASSWORD row (Minty holds no password - since 2026-10-20).
 - [ ] After Save, the header's initials and the side menu's name update immediately — no need to
       reload or wait for a new token.
 - [ ] The "Subscriptions Overview" card's figures match the portal landing's for the same payer.
 - [ ] Force that card's read to fail (e.g. offline) — it shows its own refusal with _Try again_,
       the rest of the profile still renders.
-- [ ] The sidebar panel and the `/profile` page show identical content for the same person/company
-      (they share one body).
+- [ ] My Profile opens only as the sidebar's sheet (the header's initials, the menu's name), on
+      every page; `/profile` answers a plain 404 with no redirect (no page since 2026-11-03).
 - [ ] **DB:** `SELECT email, first_name, last_name, username FROM pettycashv3.user WHERE id =
 '<id>';` — Save writes only the changed field(s) to `email`/`first_name`/`last_name`;
       `username` only moves too when it currently mirrors the old email (sign-in/OTP reads
@@ -402,7 +402,7 @@ before the walk — never the production payer's account.
 - [authentication.md](authentication.md) — the gate, the Terms modal, the token rules behind
   the first section.
 - [entities.md](entities.md) — the entity list and the module choice screen.
-- [profile.md](profile.md) — My Profile, in the sidebar and as a page.
+- [profile.md](profile.md) — My Profile, the sidebar's sheet.
 - [company-settings.md](company-settings.md) — the Users and Entity & Integration tabs.
 - [subscriptions.md](subscriptions.md) — the module settings page, Manage Subscriptions,
   transfers and billing accounts; §7 names every automated test these items are derived from.

@@ -7,7 +7,7 @@ import { inSettingsArea, stepsBack } from "@/lib/backLink";
 
 const ORIGIN = "https://hub.minty.test";
 const MODULES = `${ORIGIN}/entity/e1/olive-shop/settings/modules`;
-const PROFILE = `${ORIGIN}/profile`;
+const USERS = `${ORIGIN}/entity/e1/olive-shop/settings/users`;
 
 /** A tab's history as the Navigation API reports it: only THIS origin's run of entries, each
  * `index` its place in that run (not in the whole tab), the current one last. */
@@ -17,32 +17,36 @@ function nav(urls: string[]) {
 }
 
 describe("inSettingsArea", () => {
-  it("knows the module page and My Profile, and nothing else", () => {
+  it("knows a company's settings tabs, and nothing else", () => {
     expect(inSettingsArea(MODULES, ORIGIN)).toBe(true);
-    expect(inSettingsArea(`${PROFILE}?fixture=a`, ORIGIN)).toBe(true);
+    expect(inSettingsArea(`${USERS}?fixture=a`, ORIGIN)).toBe(true);
+    // My Profile is the sidebar's sheet, not a page (no /profile since 2026-11-03)
+    expect(inSettingsArea(`${ORIGIN}/profile`, ORIGIN)).toBe(false);
     expect(inSettingsArea(`${ORIGIN}/entities`, ORIGIN)).toBe(false);
     expect(inSettingsArea(`${ORIGIN}/subscription`, ORIGIN)).toBe(false);
-    expect(inSettingsArea("https://elsewhere.test/profile", ORIGIN)).toBe(false);
+    expect(
+      inSettingsArea("https://elsewhere.test/entity/e1/olive-shop/settings/users", ORIGIN),
+    ).toBe(false);
     expect(inSettingsArea(null, ORIGIN)).toBe(false);
   });
 });
 
 describe("stepsBack", () => {
   it("goes back to the last page outside the area, past reloads of this one", () => {
-    // /entities -> modules -> profile -> modules (now), all in this tab
-    const n = nav([`${ORIGIN}/entities`, MODULES, PROFILE, MODULES]);
+    // /entities -> modules -> users -> modules (now), all in this tab
+    const n = nav([`${ORIGIN}/entities`, MODULES, USERS, MODULES]);
     expect(stepsBack(n, ORIGIN, 4)).toBe(3);
   });
 
   it("leaves the app when the person came from another one", () => {
-    // [Flask, Payments] -> modules -> profile (now): the tab holds 4 entries, this run 2
-    const n = nav([MODULES, PROFILE]);
+    // [Flask, Payments] -> modules -> users (now): the tab holds 4 entries, this run 2
+    const n = nav([MODULES, USERS]);
     expect(stepsBack(n, ORIGIN, 4)).toBe(2);
   });
 
   it("answers 0 when the tab started here (the fallback is followed)", () => {
     expect(stepsBack(nav([MODULES]), ORIGIN, 1)).toBe(0);
-    expect(stepsBack(nav([MODULES, PROFILE]), ORIGIN, 2)).toBe(0);
+    expect(stepsBack(nav([MODULES, USERS]), ORIGIN, 2)).toBe(0);
   });
 
   it("is unknown without the Navigation API", () => {

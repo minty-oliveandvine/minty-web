@@ -4,7 +4,7 @@
  *
  * Route components only, plus where the feature is mounted - and ONE self-contained widget,
  * `SubscriptionsOverviewCard`, which the shell composes into My Profile's slot
- * (`app/profile/page.tsx`): it reads its own data and draws itself, so the profile knows
+ * (`app/layout.tsx`, the sidebar's sheet): it reads its own data and draws itself, so the profile knows
  * nothing about subscriptions. No API clients, no hooks, no plain components leak out: the
  * shell renders what it is given and knows nothing about how it works, which is what makes the
  * folder liftable (README.md).

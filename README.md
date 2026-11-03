@@ -45,8 +45,7 @@ API is an ordinary error on every screen.
 app/                    shell routes only: layout · globals.css · page (→ /entities) · landing · maintenance
 app/subscription/       one-line re-exports from "@/features/subscription"
 app/entities/           one-line re-export from "@/features/entities"
-app/profile/            a composition: the My Profile page with the subscription feature's overview card in its slot
-app/layout.tsx          the other composition: every page's shell - the sidebar (its My Profile view is the profile
+app/layout.tsx          the one composition: every page's shell - the sidebar (its My Profile view is the profile
                         feature's panel, the overview card in its slot) over the Terms gate
 features/subscription/  a bounded folder — index.ts is its whole public surface; README.md has the extraction recipe
 features/entities/      the entity list, bounded the same way
@@ -66,8 +65,8 @@ eslint.config.mjs       next + typescript + the BOUNDARY RULES (eslint-plugin-bo
 
 1. `features/<name>/**` imports only itself, `@/lib/**`, `@/components/ui/**` and packages.
 2. Nothing outside imports `@/features/<name>/*` except its own `app/` folder, and only the index
-   (and `app/profile/page.tsx` the subscription index too, for the overview card).
-3. Each `app/<folder>/**` is one-line re-exports - `app/profile/page.tsx` the one composition -
+   (and `app/layout.tsx` the profile and subscription indexes, for the sidebar's My Profile).
+3. Each `app/<folder>/**` is one-line re-exports - `app/layout.tsx` the one composition -
    asserted by each feature's `__tests__/reexports.test.ts`.
 
 ## Run it

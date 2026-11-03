@@ -34,7 +34,7 @@ const CONTEXT: ConfirmContext = {
   lastName: "",
   termsAccepted: false,
   termsVersion: "",
-  next: "/profile",
+  next: "/entities",
 };
 
 async function typeCode(code: string) {
@@ -77,7 +77,7 @@ describe("ConfirmScreen", () => {
       ),
     );
     const body = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
-    expect(body).toMatchObject({ email: "jane@example.com", code: "123456", next: "/profile" });
+    expect(body).toMatchObject({ email: "jane@example.com", code: "123456", next: "/entities" });
     expect(readConfirmContext()).toBeNull();
   });
 

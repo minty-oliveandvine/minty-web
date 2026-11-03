@@ -1,7 +1,7 @@
 /**
  * My Profile per state - Figma 10-A (opened inside a company with Payment Request), 10-B's
  * header (a SuperMinty company) and the profile opened from the entity list (no company).
- * Shared by Vitest, Playwright's `page.route` stubs and the dev-only `?fixture=` switch.
+ * Shared by Vitest and Playwright's `page.route` stubs (SCOPED is SUPERMINTY's base).
  */
 
 import type { Profile } from "@/features/profile/api/profile";
@@ -32,10 +32,3 @@ export const SUPERMINTY: Profile = {
 };
 
 export const UNSCOPED: Profile = { user: USER, entity: null };
-
-export const FIXTURES = { SCOPED, SUPERMINTY, UNSCOPED } as const;
-export type ProfileFixture = keyof typeof FIXTURES;
-
-export function isProfileFixture(name: string | null | undefined): name is ProfileFixture {
-  return name === "SCOPED" || name === "SUPERMINTY" || name === "UNSCOPED";
-}

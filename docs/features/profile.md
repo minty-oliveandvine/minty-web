@@ -1,21 +1,23 @@
 # My Profile (`features/profile`)
 
-The person's own page (Figma 10-A / 10-B, `43YI3MYtTfX5Xzz6dRoRuT` 1410:3314 / 1410:3364),
-moved from minty-payment-request-web on 2026-09-29 with the new design, and drawn in two places - one
-body, so the two cannot drift. **Since v0.6 that body is `@minty/shared/profile`'s** (the owner,
-2026-10-20: one implementation for every app, in two designs - this branch draws the original,
-`look="classic"`); this feature keeps only its Flask calls (`api/profile.ts` `profileApi`), the
-page's titlebar and back arrow, and the dev-only `?fixture=` switch:
+The person's own profile (Figma 10-A / 10-B, `43YI3MYtTfX5Xzz6dRoRuT` 1410:3314 / 1410:3364),
+moved from minty-payment-request-web on 2026-09-29 with the new design. **Since v0.6 its body is
+`@minty/shared/profile`'s** (the owner, 2026-10-20: one implementation for every app, in two
+designs - this branch draws the original, `look="classic"`); this feature keeps only its Flask
+calls (`api/profile.ts` `profileApi`) and the panel that hands them to the package.
 
-- **the sidebar's My Profile** (`routes/ProfilePanel.tsx`) on every page of this app - the user's
-  call, 2026-09-29: one sidebar, two views (`components/ui/Sidebar.tsx`). It slides over the page;
-  nothing navigates. 440 px wide from 640 px up (10-A is drawn at 375; widened at the user's
-  word so an ordinary email shows whole), the whole screen on a phone. It never scrolls
-  sideways: beside the caped cat, the company name keeps 74 px clear on both sides and wraps
-  (the cat once hung past the edge under a long name);
-- **the `/profile` page** (`routes/ProfilePage.tsx`) - for Minty's `/profile` router and the links
-  that still use it. A phone gets it as drawn, a wider screen the same column centred at up to
-  560 px.
+**My Profile is the sidebar's sheet and nothing else** (`routes/ProfilePanel.tsx`) on every page
+of this app - the user's call, 2026-09-29: one sidebar, two views (`components/ui/Sidebar.tsx`).
+It slides over the page; nothing navigates. 440 px wide from 640 px up (10-A is drawn at 375;
+widened at the user's word so an ordinary email shows whole), the whole screen on a phone. It
+never scrolls sideways: beside the caped cat, the company name keeps 74 px clear on both sides
+and wraps (the cat once hung past the edge under a long name).
+
+**No `/profile` page (the owner, 2026-11-03):** the full-screen page that used to sit beside the
+sheet is gone, with its titlebar, back arrow and dev-only `?fixture=` switch; `/profile` is a
+plain 404 (no redirect). The package's sidebar falls back to a link only when no sheet fills its
+slot, and that fallback (`components/ui/sidebarHost.ts` `links.profile`) is the entity list -
+`app/layout.tsx` always fills it.
 
 **History - the other apps carried copies from 2026-09-30** (the user's "build it now and transfer
 later to shared"): minty-payment-request-web holds COPIES of `components/ui/{Sidebar,SideMenu,ViewerBadge,NavMenu}.tsx`,
@@ -31,13 +33,11 @@ user's call, 2026-09-30); here it stays the module settings page.
 
 - **The header's initials** open the sidebar on My Profile; **the menu's name** (the avatar and
   the name at its top) switches to it; the panel's ‹ goes back to the menu, its × closes the
-  sidebar. On the `/profile` page itself the menu's name only closes the sidebar - that page IS
-  the profile. The panel is mounted only once asked for, so nothing is read before then.
-- **Minty's `/profile`** (`blueprints/entity/routes/modules.py::open_profile`) — every "open my
-  profile" link in Minty's ~20 page headers and in the payments app goes through it, and it
-  opens minty-web's `/profile` page (always, since 2026-10-01).
-  `?entity_id=` scopes it to the company it was opened from. The page's titlebar is sticky (2026-09-29, the user: every header in
-  minty-web stays put while the page scrolls).
+  sidebar. That is the only way in, on every page. The panel is mounted only once asked for, so
+  nothing is read before then.
+- **Minty's `/profile`** (`blueprints/entity/routes/modules.py::open_profile`), which older
+  "open my profile" links still reach, hands off to minty-web's entity list (`/entities`) since
+  2026-11-03, where the initials open the sheet. It no longer opens a profile page here.
 
 ## What it shows
 
@@ -46,7 +46,7 @@ Request" in its blue, "Petty Cash" in its amber (`#ea9713`, the pair the subscri
 draw the two modules in), or "SuperMinty" in teal with the caped cat for both — and the person's role there
 ("Shop Manager"). Opened from the entity list there is no company, so none of the three is
 shown. Then the avatar and the name; the details card (first name, last name, email - no PASSWORD
-row since 2026-10-20); the subscription feature's "Subscriptions Overview" in the page's slot; Log Out.
+row since 2026-10-20); the subscription feature's "Subscriptions Overview" in the sheet's slot; Log Out.
 
 All of it is one read: Flask's `GET /api/me/profile[?entity=<id>]`
 (`blueprints/user_management/routes/me_api.py`) — identity is Flask's until minty-accounts-api
@@ -75,22 +75,24 @@ reversing the "its APIs stay" of 09-29 for minty-payment-request-api only).
 figures over the same read (`lib/billing.ts::overview`), so the profile and the portal never
 disagree; _Manage Subscription_ goes to 08-A; paying for no company it is 10-B's quiet card;
 a read that fails (a 404 included) says so in the card, with _Try again_. The profile cannot import it (the
-boundary rules), so the shell composes the two - in `app/profile/page.tsx` for the page and in
-`app/layout.tsx` for the sidebar - the only two files where features meet (both pinned by
-`__tests__/reexports.test.ts`).
+boundary rules), so the shell composes the two in `app/layout.tsx`, for the sidebar - the only file where
+features meet (pinned by `__tests__/reexports.test.ts`, which also holds that there is no
+`app/profile`).
 
 ## Log Out and the way back
 
 _Log Out_ is the side menu's Logout (`lib/logout.ts`): the token goes, and Minty's `/logout`
-ends the session everywhere. On the page, the back arrow returns to the page the person came
-from, whichever app (`components/ui/BackLink.tsx`, `lib/backLink.ts`; no `?from=bills` since
-2026-10-05); its `href`, for a new tab, is the company it was opened from (Minty's module
-selector) or - opened from the list - the list. In the sidebar, ‹ is the menu.
+ends the session everywhere. In the sheet, ‹ is the menu and × closes the sidebar, leaving the
+person on the page they were on - the sheet never adds a history entry, so it is not part of
+`lib/backLink.ts`'s settings area.
 
 ## Tests
 
-`features/profile/__tests__/` (the rules, the screen: head, card, edit, refusal, slot, Log Out;
-the panel in the sidebar; the two composition guards), `components/ui/__tests__/Sidebar.test.tsx`,
-`features/subscription/__tests__/SubscriptionsOverviewCard.test.tsx`, Playwright
-`features/profile/e2e/08_profile.spec.ts` (the page, and the sidebar from both doors). Flask's
-side: Minty's `tests/test_hub_profile.py`.
+`features/profile/__tests__/` (the panel in the sidebar; the composition guard, and no
+`app/profile`), `components/ui/__tests__/Sidebar.test.tsx` (the sheet on any address, and the
+no-sheet fallback to the list), `features/subscription/__tests__/SubscriptionsOverviewCard.test.tsx`;
+the body's head, card, edit, refusal and Log Out are `@minty/shared/profile`'s, tested there.
+Playwright `features/profile/e2e/08_profile.spec.ts`: the sheet from both doors, at desktop and
+phone widths; 10-A inside a company (its name, plan and role, the details, no PASSWORD row, the
+overview's Manage Subscription); opened from the list with no company named; an edit saved in
+place, with the menu naming the person anew; and `/profile` answering 404. Flask's side: Minty's `tests/test_hub_profile.py`.

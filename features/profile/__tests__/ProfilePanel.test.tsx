@@ -1,6 +1,6 @@
 // My Profile in the sidebar (one sidebar, two views - 2026-09-29): the header's initials open
-// it over the page, it reads the profile only then, draws the same body as the /profile page,
-// and its titlebar goes back to the menu or closes the sidebar.
+// it over the page, it reads the profile only then, draws @minty/shared/profile's body (the only
+// My Profile there is - no /profile page since 2026-11-03), and its titlebar goes back to the menu or closes the sidebar.
 
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";

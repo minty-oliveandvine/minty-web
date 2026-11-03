@@ -3,7 +3,7 @@
  *
  * It replaced the `?from=bills` flag, which told only two places apart and was dropped by most
  * links on the way. "Came from" = the last page in this tab's history OUTSIDE this app's settings
- * area (the module page and My Profile): reloads and in-page moves add entries inside the area,
+ * area (a company's settings tabs): reloads and in-page moves add entries inside the area,
  * and Back skips them.
  *
  * - Navigation API: walk back over this origin's entries. The first one outside the area is the
@@ -16,8 +16,9 @@
 
 import { COMPANY_SETTINGS_PATTERN } from "@/lib/hubPaths";
 
-// A company's settings tabs (/entity/<shortid>/<name>/settings/<tab>) and My Profile.
-const SETTINGS_AREA = [COMPANY_SETTINGS_PATTERN, /^\/profile\/?$/];
+// A company's settings tabs (/entity/<shortid>/<name>/settings/<tab>). My Profile is the
+// sidebar's sheet over a page (no `/profile` page since 2026-11-03), never a history entry.
+const SETTINGS_AREA = [COMPANY_SETTINGS_PATTERN];
 
 type NavEntry = { index: number; url: string | null };
 type NavigationLike = { currentEntry: NavEntry | null; entries(): NavEntry[] };

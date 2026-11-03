@@ -9,13 +9,12 @@
 //   1. features/<name>/** imports only itself, @/lib/**, @/components/ui/** and packages -
 //      never @/app/** and never another feature;
 //   2. nothing outside imports @/features/<name>/* except app/<its folder>/**, and it may import
-//      only the index (features/<name>/index.ts is the feature's whole public surface). The TWO
-//      exceptions are the places features meet: app/profile may also import the subscription
-//      feature's index - My Profile's "Subscriptions Overview" card is that feature's, composed
-//      into the profile's slot there - and app/layout.tsx may import both of those indexes, for
-//      the same composition in the sidebar's My Profile view (since 2026-09-29);
-//   3. app/<folder>/** are re-exports only (app/profile/page.tsx and app/layout.tsx: those two
-//      compositions) - asserted by each feature's __tests__/reexports.test.ts, since ESLint
+//      only the index (features/<name>/index.ts is the feature's whole public surface). The ONE
+//      exception is the place features meet: app/layout.tsx may import the profile and
+//      subscription indexes - My Profile's "Subscriptions Overview" card is the subscription
+//      feature's, composed into the sidebar's My Profile sheet (since 2026-09-29; the `/profile`
+//      page and its app/profile composition went 2026-11-03);
+//   3. app/<folder>/** are re-exports only (app/layout.tsx: that composition) - asserted by each feature's __tests__/reexports.test.ts, since ESLint
 //      cannot see "only".
 //
 // Extraction later = `git mv features/<name> app/<folder>` into the new repo and point @/lib and
@@ -71,7 +70,6 @@ const eslintConfig = defineConfig([
           mode: "full",
         },
         { type: "app-entities", pattern: "app/entities/**/*", mode: "full" },
-        { type: "app-profile", pattern: "app/profile/**/*", mode: "full" },
         { type: "app-auth", pattern: "app/login/**/*", mode: "full" },
         // the rest of the shell's routes
         { type: "app", pattern: "app/**/*", mode: "full" },
@@ -111,16 +109,6 @@ const eslintConfig = defineConfig([
               allow: ["shared", "app-auth", ["feature", { name: "auth" }]],
             },
             {
-              from: "app-profile",
-              allow: [
-                "shared",
-                "app-profile",
-                ["feature", { name: "profile" }],
-                // the "Subscriptions Overview" card, composed into the profile's slot
-                ["feature", { name: "subscription" }],
-              ],
-            },
-            {
               from: "app-layout",
               allow: [
                 "shared",
@@ -150,7 +138,6 @@ const eslintConfig = defineConfig([
                 "app-layout",
                 "app-subscription",
                 "app-entities",
-                "app-profile",
                 "app-auth",
                 "app-company-settings",
                 "proxy",

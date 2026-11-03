@@ -14,6 +14,7 @@ vi.mock("next/navigation", () => ({ usePathname: () => nav.pathname }));
 import { AppHeader } from "@/components/ui/AppHeader";
 import { NavMenu } from "@/components/ui/NavMenu";
 import { SidebarProvider, useSidebar } from "@/components/ui/Sidebar";
+import { sidebarHost } from "@/components/ui/sidebarHost";
 import { setAuth } from "@/lib/auth";
 import { _setViewerLoaderForTests } from "@/lib/viewer";
 
@@ -98,17 +99,16 @@ describe("the sidebar", () => {
     expect(profile()).toBeNull();
   });
 
-  it("on the /profile page the menu's name only closes it - that page IS the profile", async () => {
+  it("no page is My Profile: on any address the menu's name opens the sheet (no /profile page)", async () => {
     at("/profile");
     render(app(<NavMenu />));
     await userEvent.click(screen.getByRole("button", { name: "Open navigation menu" }));
     const name = await within(menu()!).findByRole("button", { name: "Olive Vine, My Profile" });
-    expect(name).toHaveAttribute("aria-current", "page");
+    expect(name).not.toHaveAttribute("aria-current");
 
     await userEvent.click(name);
-    expect(menu()).toBeNull();
-    expect(profile()).toBeNull();
-    expect(profileMounts).toBe(0);
+    expect(within(profile()!).getByText("Olive's profile")).toBeInTheDocument();
+    expect(profileMounts).toBe(1);
   });
 
   it("Escape and a click beside it close it; the keyboard goes back to whichever opened it", async () => {
@@ -148,20 +148,23 @@ describe("the sidebar", () => {
     expect(drawer.getByRole("link", { name: "Settings" })).toHaveAttribute("aria-current", "page");
   });
 
-  it("without a profile slot, the initials and the menu's name are links to the /profile page", async () => {
+  // no profile slot (app/layout.tsx always fills it): there is no /profile page to fall back to,
+  // so the initials lead to the entity list, named for it, and the menu's name is plain text
+  // (@minty/shared v0.12)
+  it("without a profile slot, the initials link to the entity list and the menu's name is text", async () => {
     render(
       <SidebarProvider>
         <AppHeader title="Select Company" showLogo />
       </SidebarProvider>,
     );
-    expect(await screen.findByRole("link", { name: "Olive Vine, My Profile" })).toHaveAttribute(
+    expect(await screen.findByRole("link", { name: "Select Entity" })).toHaveAttribute(
       "href",
-      "/profile",
+      "/entities",
     );
     await userEvent.click(screen.getByRole("button", { name: "Open navigation menu" }));
-    expect(within(menu()!).getByRole("link", { name: "Olive Vine, My Profile" })).toHaveAttribute(
-      "href",
-      "/profile",
-    );
+    const drawer = within(menu()!);
+    expect(drawer.queryByRole("link", { name: /My Profile/ })).toBeNull();
+    expect(drawer.queryByRole("button", { name: /My Profile/ })).toBeNull();
+    expect("profile" in sidebarHost.links).toBe(false);
   });
 });

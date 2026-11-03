@@ -57,14 +57,14 @@ describe("mintyFetch", () => {
 
   it("a 401 goes back for a fresh token, keeping the company the cookie names", async () => {
     setAuth(TOKEN, "e1", "Olive Shop");
-    window.history.replaceState({}, "", "/profile");
+    window.history.replaceState({}, "", "/subscription");
     fetchMock.mockResolvedValueOnce(answer(401, { error: "unauthorized" }));
 
     await expect(mintyFetch("/api/me/profile")).rejects.toBeInstanceOf(ApiError);
     expect(navigate).toHaveBeenCalledTimes(1);
     const target = new URL(navigate.mock.calls[0][0]);
     expect(target.pathname).toBe("/handoff/minty-web");
-    expect(target.searchParams.get("next")).toBe("/profile");
+    expect(target.searchParams.get("next")).toBe("/subscription");
     expect(target.searchParams.get("entity_id")).toBe("e1");
   });
 

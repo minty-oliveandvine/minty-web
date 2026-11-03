@@ -81,7 +81,7 @@ describe("LoginScreen", () => {
 
   it("logs in by code: Flask is asked in log-in mode, the hand-over keeps next, then the code's page", async () => {
     flask({ "/auth/email/request-code": () => json({ status: "success" }) });
-    show("next=%2Fprofile");
+    show("next=%2Fentities");
 
     expect(screen.getByRole("heading", { name: LOGIN_COPY.loginTitle })).toBeInTheDocument();
     const send = screen.getByRole("button", { name: LOGIN_COPY.sendLogin });
@@ -95,7 +95,7 @@ describe("LoginScreen", () => {
     expect(readConfirmContext()).toMatchObject({
       email: "jane@example.com",
       login: true,
-      next: "/profile",
+      next: "/entities",
     });
   });
 
@@ -240,6 +240,6 @@ describe("LoginScreen", () => {
   it("refuses a next that leaves the site", () => {
     expect(readArrival(new URLSearchParams("next=%2F%2Fevil.example")).next).toBe("");
     expect(readArrival(new URLSearchParams("next=https%3A%2F%2Fevil.example")).next).toBe("");
-    expect(readArrival(new URLSearchParams("next=%2Fprofile")).next).toBe("/profile");
+    expect(readArrival(new URLSearchParams("next=%2Fentities")).next).toBe("/entities");
   });
 });

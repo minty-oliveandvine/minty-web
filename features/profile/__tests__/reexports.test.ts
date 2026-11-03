@@ -1,10 +1,10 @@
-// Boundary rule 3 for My Profile (eslint.config.mjs cannot express "only"): app/profile holds
-// ONE file, the composition that puts the subscription feature's overview card into the
-// profile's slot, and app/layout.tsx makes the same composition for the sidebar's My Profile -
-// the only two places the two features meet. And rule 2 from the other side: nothing outside
-// the feature reaches past its index.
+// Boundary rule 3 for My Profile (eslint.config.mjs cannot express "only"): app/layout.tsx is
+// the ONE composition, putting the subscription feature's overview card into the sidebar's My
+// Profile - the only place the two features meet (there is no app/profile: the `/profile` page
+// went 2026-11-03). And rule 2 from the other side: nothing outside the feature reaches past its
+// index.
 
-import { readFileSync, readdirSync, statSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -33,23 +33,9 @@ const code = (file: string) =>
     .filter((line) => !line.trim().startsWith("//") && line.trim() !== "")
     .join("\n");
 
-const COMPOSITION = [
-  'import { ProfilePage } from "@/features/profile";',
-  'import { SubscriptionsOverviewCard } from "@/features/subscription";',
-  "export default function Page() {",
-  "  return <ProfilePage subscriptions={<SubscriptionsOverviewCard />} />;",
-  "}",
-].join("\n");
-
-describe("app/profile is the one composition and nothing else", () => {
-  const files = walk(join(ROOT, "app", "profile"));
-
-  it("has the profile's page only", () => {
-    expect(files.map(rel)).toEqual(["app/profile/page.tsx"]);
-  });
-
-  it("app/profile/page.tsx composes the two feature indexes and does nothing else", () => {
-    expect(code(files[0])).toBe(COMPOSITION);
+describe("My Profile has no page of its own", () => {
+  it("app/profile does not exist - the sidebar's sheet is the only way in", () => {
+    expect(existsSync(join(ROOT, "app", "profile"))).toBe(false);
   });
 });
 

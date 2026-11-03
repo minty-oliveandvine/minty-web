@@ -1,8 +1,7 @@
-// My Profile in a browser (Figma 10-A / 10-B), over a STUBBED Flask and billing API: the page in
-// the real app - the route, the company it was opened from, the subscription feature's card in
-// its slot, an edit saved in place and the menu naming the person anew - and the same profile in
-// the sidebar, from both of its doors; not the backends (Minty's tests/test_hub_profile.py
-// covers Flask's side). Located by role and text.
+// My Profile in a browser (Figma 10-A / 10-B), over a STUBBED Flask and billing API: the sidebar's
+// sheet, from both of its doors, at desktop and phone widths - and `/profile`, which is no page
+// (a 404: the sheet is the only way in since 2026-11-03); not the backends (Minty's
+// tests/test_hub_profile.py covers Flask's side). Located by role and text.
 import { expect, test, type Page } from "@playwright/test";
 
 import {
@@ -11,6 +10,7 @@ import {
   PETTY_CASH_URL,
   handoff,
   requireApp,
+  stubBillingApi,
 } from "../../../e2e/helpers";
 import { SCOPED, SUPERMINTY, UNSCOPED } from "../__fixtures__/profile";
 import type { Profile } from "../api/profile";
@@ -71,20 +71,18 @@ const PAYER_LIST = {
 
 async function stub(page: Page, profile: Profile, saved?: Profile): Promise<unknown[]> {
   const sent: unknown[] = [];
+  // As Flask does: once a save has landed, every later read answers the saved profile.
+  let current = profile;
   await page.route(`${PETTY_CASH_URL}/api/me/profile**`, (route) => {
     const req = route.request();
     if (req.method() === "PATCH") {
       sent.push(req.postDataJSON());
-      return route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify(saved ?? profile),
-      });
+      current = saved ?? profile;
     }
     return route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify(profile),
+      body: JSON.stringify(current),
     });
   });
   await page.route(`${SUBSCRIPTION_API_URL}/api/me/subscriptions**`, (route) =>
@@ -97,59 +95,20 @@ async function stub(page: Page, profile: Profile, saved?: Profile): Promise<unkn
   return sent;
 }
 
+/** The header's initials open the sidebar on My Profile; the sheet, once its read has landed. */
+async function openSheet(page: Page) {
+  await page
+    .getByRole("banner")
+    .getByRole("button", { name: /, My Profile$/ })
+    .click();
+  const panel = page.getByRole("region", { name: "My Profile" });
+  await expect(panel.getByRole("region", { name: "Your details" })).toBeVisible();
+  return panel;
+}
+
 test.describe("My Profile", () => {
   test.beforeEach(async () => {
     await requireApp();
-  });
-
-  test("10-A: opened inside a company - its plan, the role, the details, the overview", async ({
-    page,
-  }) => {
-    await stub(page, SCOPED);
-    await handoff(page, creds(), "/profile");
-
-    const main = page.getByRole("main");
-    await expect(page.getByRole("heading", { level: 1, name: "My Profile" })).toBeVisible();
-    const who = main.getByRole("region", { name: "Who you are" });
-    await expect(who.getByText("Company A Limited")).toBeVisible();
-    await expect(who.getByText("Payment Request")).toBeVisible();
-    await expect(who.getByText("Shop Manager")).toBeVisible();
-    await expect(
-      main.getByRole("region", { name: "Your details" }).getByText("john.doe@oliveandvinehk.com"),
-    ).toBeVisible();
-    // no PASSWORD row: Minty holds no password (the owner, 2026-10-20)
-    await expect(main.getByText(/password/i)).toHaveCount(0);
-
-    const overview = main.getByRole("region", { name: "Subscriptions Overview" });
-    await expect(overview.getByRole("link", { name: "Manage Subscription" })).toHaveAttribute(
-      "href",
-      "/subscription",
-    );
-  });
-
-  test("an edit is saved in place and the menu names the person anew", async ({ page }) => {
-    const saved: Profile = {
-      ...SCOPED,
-      user: { ...SCOPED.user, first_name: "Jonathan", name: "Jonathan Birmingha" },
-    };
-    const sent = await stub(page, SCOPED, saved);
-    await handoff(page, creds(), "/profile");
-
-    const details = page.getByRole("region", { name: "Your details" });
-    await details.getByRole("button", { name: "Edit" }).click();
-    await details.getByRole("textbox", { name: "FIRST NAME" }).fill("Jonathan");
-    await details.getByRole("button", { name: "Save" }).click();
-
-    await expect(details.getByText("Jonathan", { exact: true })).toBeVisible();
-    expect(sent).toEqual([{ first_name: "Jonathan" }]);
-    await page.getByRole("button", { name: "Open navigation menu" }).click();
-    const menu = page.getByRole("navigation", { name: "Main navigation" });
-    const name = menu.getByRole("button", { name: "Jonathan Birmingha, My Profile" });
-    await expect(name).toBeVisible();
-    // on the profile page the menu's name only closes the sidebar - this page IS the profile
-    await name.click();
-    await expect(menu).toBeHidden();
-    await expect(page).toHaveURL(/\/profile$/);
   });
 
   test("the sidebar's My Profile: from the header's initials, and from the menu's name, over the page", async ({
@@ -172,6 +131,10 @@ test.describe("My Profile", () => {
       .click();
     await expect(panel.getByRole("heading", { level: 2, name: "John Birmingha" })).toBeVisible();
     await expect(panel.getByRole("region", { name: "Your details" })).toBeVisible();
+    // opened from the list: no company to name
+    await expect(
+      panel.getByRole("region", { name: "Who you are" }).getByText("Company A Limited"),
+    ).toHaveCount(0);
     await expect(page).toHaveURL(/\/entities$/);
 
     // ‹ back to the menu, and the menu's name back again
@@ -241,15 +204,78 @@ test.describe("My Profile", () => {
     expect(measured.catPastEdge).toBeLessThanOrEqual(0);
   });
 
-  test("opened from the entity list: no company to name, and the way back is the list", async ({
+  test("10-A in the sheet, inside a company - its plan, the role, the details, the overview", async ({
+    page,
+  }) => {
+    // the billing API, stubbed first: over a real one (when running locally) the stub's token is
+    // a 401 that leaves the app; stub()'s two reads, registered after, win (newest route first)
+    await stubBillingApi(page);
+    await stub(page, SCOPED);
+    await handoff(page, creds(), "/subscription");
+
+    const panel = await openSheet(page);
+    const who = panel.getByRole("region", { name: "Who you are" });
+    await expect(who.getByText("Company A Limited")).toBeVisible();
+    await expect(who.getByText("Payment Request")).toBeVisible();
+    await expect(who.getByText("Shop Manager")).toBeVisible();
+    await expect(
+      panel.getByRole("region", { name: "Your details" }).getByText("john.doe@oliveandvinehk.com"),
+    ).toBeVisible();
+    // no PASSWORD row: Minty holds no password (the owner, 2026-10-20)
+    await expect(panel.getByText(/password/i)).toHaveCount(0);
+
+    const overview = panel.getByRole("region", { name: "Subscriptions Overview" });
+    await expect(overview.getByRole("link", { name: "Manage Subscription" })).toHaveAttribute(
+      "href",
+      "/subscription",
+    );
+  });
+
+  test("an edit in the sheet is saved in place and the menu names the person anew", async ({
+    page,
+  }) => {
+    const saved: Profile = {
+      ...SCOPED,
+      user: { ...SCOPED.user, first_name: "Jonathan", name: "Jonathan Birmingha" },
+    };
+    await stubBillingApi(page);
+    const sent = await stub(page, SCOPED, saved);
+    await handoff(page, creds(), "/subscription");
+
+    const panel = await openSheet(page);
+    const details = panel.getByRole("region", { name: "Your details" });
+    await details.getByRole("button", { name: "Edit" }).click();
+    await details.getByRole("textbox", { name: "FIRST NAME" }).fill("Jonathan");
+    await details.getByRole("button", { name: "Save" }).click();
+
+    await expect(details.getByText("Jonathan", { exact: true })).toBeVisible();
+    expect(sent).toEqual([{ first_name: "Jonathan" }]);
+    await expect(page).toHaveURL(/\/subscription$/); // saved in place - nothing navigates
+
+    // ‹ back to the menu: it names the person anew, and the name opens the sheet again
+    await panel.getByRole("button", { name: "Back to the menu" }).click();
+    const menu = page.getByRole("navigation", { name: "Main navigation" });
+    const name = menu.getByRole("button", { name: "Jonathan Birmingha, My Profile" });
+    await expect(name).toBeVisible();
+    await name.click();
+    await expect(details.getByText("Jonathan", { exact: true })).toBeVisible();
+  });
+
+  test("/profile is no page - My Profile opens only as the sidebar's sheet (owner, 2026-11-03)", async ({
     page,
   }) => {
     await stub(page, UNSCOPED);
-    await handoff(page, { ...creds(), entityId: "", entityName: "" }, "/profile");
+    await page.route(`${PETTY_CASH_URL}/api/me/entities**`, (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ entities: [], notices: [] }),
+      }),
+    );
+    await handoff(page, { ...creds(), entityId: "", entityName: "" }, "/entities");
 
-    const who = page.getByRole("main").getByRole("region", { name: "Who you are" });
-    await expect(who.getByRole("heading", { name: "John Birmingha" })).toBeVisible();
-    await expect(who.getByText("Company A Limited")).toHaveCount(0);
-    await expect(page.getByRole("link", { name: "Back" })).toHaveAttribute("href", "/entities");
+    const response = await page.goto("/profile");
+    expect(response?.status()).toBe(404);
+    await expect(page).toHaveURL(/\/profile$/); // no redirect
   });
 });
