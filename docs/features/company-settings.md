@@ -62,7 +62,9 @@ on is a real disconnect of another company and that is asked for:
   id, which Flask authorizes on that company (`XERO_SETTINGS_UPDATE` there) and leaves
   `disconnected`; then the browser goes back through `/xero_reconnect` for this one. Two steps,
   because the refused attempt's grant was handed back to Xero.
-- **No permission there** → no _Move it here_, only the company to ask and _Close_.
+- **No permission there, or not development** → no _Move it here_ (Flask sends `can_move`
+  true only when `APP_ENV=development`, and refuses the release elsewhere; owner, 2026-11-03),
+  only "disconnect it from <company> first, then connect again" and _Close_.
 - _**Go back**_, Escape and the backdrop change nothing, on either company.
 
 A refused release stays **in** the dialog (`role="alert"`) and it stays open to retry — the

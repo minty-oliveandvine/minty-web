@@ -574,7 +574,7 @@ describe("IntegrationScreen", () => {
     expect(dialog.getByRole("button", { name: "Move it here" })).toBeEnabled();
   });
 
-  it("no permission on the other company offers no move, only who to ask", async () => {
+  it("no move offered (no permission there, or not development): disconnect it there first", async () => {
     flask({
       "GET /api/me/company/integration": (url) =>
         json({
@@ -587,7 +587,7 @@ describe("IntegrationScreen", () => {
     showIntegration("signed-conflict");
 
     const dialog = within(await screen.findByRole("dialog"));
-    expect(dialog.getByText(/Ask an accountant or admin of Vine Cafe/)).toBeInTheDocument();
+    expect(dialog.getByText(/Disconnect it from Vine Cafe first/)).toBeInTheDocument();
     expect(dialog.queryByRole("button", { name: "Move it here" })).toBeNull();
 
     await userEvent.click(dialog.getByRole("button", { name: "Close" }));

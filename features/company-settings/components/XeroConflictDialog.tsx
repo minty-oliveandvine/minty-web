@@ -12,8 +12,9 @@
  * one. The button says so, and the second step is a navigation - which is why a failure is
  * shown in the card rather than as a toast that would not outlive it.
  *
- * Without permission on the other company there is nothing to offer, so the card names it
- * and the only way out is Close.
+ * Without permission on the other company, or outside development (Flask offers the move
+ * only there; owner, 2026-11-03), there is nothing to offer, so the card says to disconnect
+ * it on the other company first and the only way out is Close.
  */
 
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -66,8 +67,9 @@ export function XeroConflictDialog({
         </p>
       ) : (
         <p>
-          Ask an accountant or admin of {conflict.entity_name} to disconnect it from Xero there
-          first, then connect <strong className="font-semibold">{companyName}</strong> again.
+          Disconnect it from {conflict.entity_name} first (an accountant or admin of{" "}
+          {conflict.entity_name} can do that in its settings), then connect{" "}
+          <strong className="font-semibold">{companyName}</strong> again.
         </p>
       )}
       {error ? (
