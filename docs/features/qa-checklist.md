@@ -53,7 +53,8 @@ run" below).
 - [ ] Search matches case-insensitively, anywhere in the name (not just the start).
 - [ ] A card's last-opened time renders in the viewer's own timezone; hovering shows "By
       <name>"; a never-opened company shows grey "Not opened yet".
-- [ ] The "+" / empty-state _Create Entity_ goes to Minty's onboarding wizard, not an in-app form.
+- [ ] The cat's "Create company" / empty-state _Create Entity_ goes to Minty's onboarding wizard, not an in-app form.
+- [ ] The Minty cat (bottom right, every signed-in page): its pop-up opens and closes (Escape, a click outside); "Talk to Minty" walks topic → message → Send and the message arrives at `CONTACT_EMAIL`; nothing moves under reduced motion; at 360 / 768 / 1440 it covers no control.
 - [ ] A company still onboarding resumes the wizard on click; one module on goes straight into
       it; two modules land on "Choose Module Type".
 - [ ] On "Choose Module Type", the two doors reflect the company's actual modules

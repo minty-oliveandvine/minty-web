@@ -9,13 +9,16 @@
  * width on a phone) and its spacing: the doors, the search box and the companies' rows.
  *
  * Under the header the screen scrolls as one, so the scrollbar is the screen's own right edge;
- * the header stays, the search box stays at the top while the rows scroll under it, and the
- * "+" is held to the bottom-right corner.
+ * the header stays, the search box stays at the top while the rows scroll under it. A new
+ * company is "Create company" in the Minty cat's pop-up at the bottom right (`useContactActions`;
+ * a floating "+" there until 2026-11-05) - except on the empty page, whose own button says it.
  */
+
+import { useContactActions, type ContactAction } from "@minty/shared/contact";
+import { useMemo } from "react";
 
 import { EntityCard } from "@/features/entities/components/EntityCard";
 import {
-  AddEntityButton,
   CompanySearch,
   DoorsHero,
   EntityListEmpty,
@@ -25,10 +28,18 @@ import {
   SelectCompanyHeader,
 } from "@/features/entities/components/EntityListParts";
 import { useEntityList, type UseEntityListArgs } from "@/features/entities/hooks/useEntityList";
+import { CREATE_COMPANY, createEntityHref } from "@/features/entities/lib/entityRows";
+
+const NONE: ContactAction[] = [];
 
 export function EntityListScreen(args: UseEntityListArgs) {
   const list = useEntityList(args);
   const empty = list.status === "ready" && !list.hasEntities;
+  const create = useMemo<ContactAction[]>(
+    () => [{ id: "create-company", label: CREATE_COMPANY, icon: "add", href: createEntityHref() }],
+    [],
+  );
+  useContactActions(empty ? NONE : create);
 
   return (
     <div className="flex h-dvh flex-col bg-gray-50">
@@ -57,7 +68,6 @@ export function EntityListScreen(args: UseEntityListArgs) {
           )}
         </main>
       </div>
-      {empty ? null : <AddEntityButton />}
     </div>
   );
 }

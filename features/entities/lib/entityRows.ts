@@ -18,7 +18,8 @@ export const EMPTY_TITLE = "No Entity Found";
 export const EMPTY_TEXT =
   "You don't have any entities created yet. Connect to Xero to get started and manage your business entities.";
 export const CREATE_ENTITY = "Create Entity";
-export const ADD_ENTITY = "Add a new entity";
+/** The Minty cat's pop-up line for a new company (the floating "+" until 2026-11-05). */
+export const CREATE_COMPANY = "Create company";
 export const LOAD_FAILED = "Your companies didn't load. Mind trying again?";
 
 /** Case-insensitive, anywhere in the name - Flask's `filterCompanies`, as a person types. */

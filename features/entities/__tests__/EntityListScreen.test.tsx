@@ -1,11 +1,14 @@
 // "Select Company" as a person sees it: the grid of cards (Flask's cards, across the whole
-// screen since 2026-09-29), search, the "+", the empty and failed states, what Flask flashed on
+// screen since 2026-09-29), search, "Create company" in the Minty cat's pop-up (it was a floating
+// "+" until 2026-11-05), the empty and failed states, what Flask flashed on
 // the way here, and the header bar - the initials (My Profile) and the side menu.
 
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { ContactLauncher } from "@/components/ui/ContactLauncher";
+import { SidebarProvider } from "@/components/ui/Sidebar";
 import { ToastProvider } from "@/components/ui/Toast";
 import { setAuth } from "@/lib/auth";
 import { env } from "@/lib/env";
@@ -19,6 +22,7 @@ import { EntityListScreen } from "@/features/entities/routes/EntityListScreen";
 const replace = vi.fn();
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), replace, back: vi.fn() }),
+  usePathname: () => "/entities",
 }));
 
 const TOKEN = "h.eyJ1c2VyX2lkIjoidTEifQ.s";
@@ -37,7 +41,10 @@ function serve(answer: EntityListAnswer | { error: string }, status = 200) {
 function show(flash: string | null = null) {
   render(
     <ToastProvider>
-      <EntityListScreen flash={flash} />
+      <SidebarProvider look="classic">
+        <EntityListScreen flash={flash} />
+        <ContactLauncher />
+      </SidebarProvider>
     </ToastProvider>,
   );
 }
@@ -51,6 +58,8 @@ describe("EntityListScreen", () => {
     setAuth(TOKEN, "", "");
     window.history.replaceState({}, "", "/entities");
     replace.mockReset();
+    // the cat is drawn only once the person is known; stubbed, so it reaches no network
+    _setViewerLoaderForTests(() => Promise.resolve({ name: "Olive Vine", initials: "OV" }));
   });
 
   afterEach(() => {
@@ -81,7 +90,10 @@ describe("EntityListScreen", () => {
     expect(within(scenario).getByRole("img", { name: "Not opened yet" })).toBeInTheDocument();
     expect(list().getAllByRole("link")).toHaveLength(LIST.entities.length);
 
-    expect(screen.getByRole("link", { name: "Add a new entity" })).toHaveAttribute(
+    // no floating "+" any more: a new company is the cat's pop-up's first line
+    expect(screen.queryByRole("link", { name: "Add a new entity" })).toBeNull();
+    await userEvent.click(await screen.findByRole("button", { name: "Talk to Minty" }));
+    expect(screen.getByRole("menuitem", { name: "Create company" })).toHaveAttribute(
       "href",
       `${env.PETTY_CASH_URL}/entity/create`,
     );
@@ -103,7 +115,7 @@ describe("EntityListScreen", () => {
     expect(screen.getByText("No companies found.")).toBeInTheDocument();
   });
 
-  it("with no company at all, the empty page and a way to create one - and no +", async () => {
+  it("with no company at all, the empty page and a way to create one - and none in the cat", async () => {
     serve(EMPTY);
     show();
 
@@ -112,7 +124,8 @@ describe("EntityListScreen", () => {
       "href",
       `${env.PETTY_CASH_URL}/entity/create`,
     );
-    expect(screen.queryByRole("link", { name: "Add a new entity" })).toBeNull();
+    await userEvent.click(await screen.findByRole("button", { name: "Talk to Minty" }));
+    expect(screen.queryByRole("menuitem", { name: "Create company" })).toBeNull();
     expect(screen.queryByRole("textbox", { name: "Search company" })).toBeNull();
   });
 

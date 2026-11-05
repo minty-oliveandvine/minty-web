@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import type { ReactNode } from "react";
 
+import { ContactLauncher } from "@/components/ui/ContactLauncher";
 import { SidebarProvider } from "@/components/ui/Sidebar";
 import { TermsGate } from "@/components/ui/TermsGate";
 import { ToastProvider } from "@/components/ui/Toast";
@@ -36,7 +37,8 @@ export const metadata: Metadata = {
 // may import the profile and subscription indexes, and nothing else of a feature's): the
 // sidebar's My Profile view is the profile feature's panel with the subscription feature's
 // overview card in its slot (My Profile opens only as this sheet - no /profile page since
-// 2026-11-03). Under it, the Terms gate over every page.
+// 2026-11-03). Under it, the Terms gate over every page, and the Minty cat at the bottom right
+// (drawn only for someone signed in).
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" className={`${inter.variable} ${jakarta.variable}`}>
@@ -47,6 +49,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             profile={<ProfilePanel subscriptions={<SubscriptionsOverviewCard />} />}
           >
             <TermsGate>{children}</TermsGate>
+            <ContactLauncher />
           </SidebarProvider>
         </ToastProvider>
       </body>
