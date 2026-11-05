@@ -5,9 +5,10 @@
  */
 
 import type { Invitation } from "@/features/company-settings/api/companySettings";
-
-const BUTTON =
-  "inline-flex min-h-11 items-center justify-center rounded-lg px-3 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-strong disabled:cursor-not-allowed disabled:opacity-50";
+import {
+  SETTINGS_DANGER,
+  SETTINGS_OUTLINE,
+} from "@/features/company-settings/components/buttonClasses";
 
 export function PendingInvitations({
   invitations,
@@ -45,7 +46,7 @@ export function PendingInvitations({
               <div className="flex shrink-0 gap-2">
                 <button
                   type="button"
-                  className={`${BUTTON} border border-gray-300 text-ink hover:bg-gray-50`}
+                  className={SETTINGS_OUTLINE}
                   disabled={busy === inv.id || wait > 0}
                   onClick={() => onResend(inv.id)}
                 >
@@ -53,7 +54,7 @@ export function PendingInvitations({
                 </button>
                 <button
                   type="button"
-                  className={`${BUTTON} text-red-600 hover:bg-red-50`}
+                  className={SETTINGS_DANGER}
                   disabled={busy === inv.id}
                   onClick={() => onCancel(inv)}
                 >

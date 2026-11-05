@@ -100,6 +100,13 @@ company, the initials, the menu), the sticky pill row in a 1024px column, then P
 cards. Members stack on a phone (name over role and actions), one line from 640px; every control is
 at least 44px; nothing is wider than the screen at 360 / 768 / 1440 (`e2e/12_company_settings.spec.ts`).
 
+Every button on the two tabs, the Invite dialog's included, comes from
+`components/buttonClasses.ts` (2026-11-05): `SETTINGS_PRIMARY` (the flat teal: Save Changes,
+Invite, Send invitation, Connect / Reconnect to Xero), `SETTINGS_OUTLINE` (Resend, the dialog's
+Cancel) and `SETTINGS_DANGER` (Disconnect, cancelling an invitation). Disabled is the same
+everywhere: half opacity, the not-allowed cursor, no hover. The billing sheets' gradient
+`SHEET_PRIMARY` is not used here; the shared `ConfirmDialog` keeps its own buttons.
+
 The browser tab names the company (2026-10-05), as Flask's and Payment Request's do: "Users -
 <company>", "Entity & Integration - <company>" (and the Module tab's "Modules - <company>"). The
 words are the pills' (`SETTINGS_TAB_LABELS`, `lib/settingsTabs.ts`); the title is the server's

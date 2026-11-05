@@ -12,6 +12,10 @@ import { setAuth } from "@/lib/auth";
 import { env } from "@/lib/env";
 
 import type { IntegrationPage, UsersPage } from "@/features/company-settings/api/companySettings";
+import {
+  SETTINGS_OUTLINE,
+  SETTINGS_PRIMARY,
+} from "@/features/company-settings/components/buttonClasses";
 import { IntegrationScreen } from "@/features/company-settings/routes/IntegrationScreen";
 import { UsersScreen } from "@/features/company-settings/routes/UsersScreen";
 
@@ -215,6 +219,20 @@ describe("UsersScreen", () => {
     expect(sent("POST /api/me/company/invitations")).toEqual([
       { email: "new@test.com", role: "shop_manager", first_name: "New", last_name: "Person" },
     ]);
+  });
+
+  it("Invite and Send invitation are the page's one main button", async () => {
+    flask({ "GET /api/me/company/users": () => json(USERS) });
+    showUsers();
+
+    const invite = await screen.findByRole("button", { name: "Invite" });
+    expect(invite.className).toContain(SETTINGS_PRIMARY);
+    await userEvent.click(invite);
+    const dialog = within(screen.getByRole("dialog"));
+    expect(dialog.getByRole("button", { name: "Send invitation" }).className).toContain(
+      SETTINGS_PRIMARY,
+    );
+    expect(dialog.getByRole("button", { name: "Cancel" }).className).toContain(SETTINGS_OUTLINE);
   });
 
   it("a resend still cooling down counts down what Flask said", async () => {
@@ -428,6 +446,30 @@ describe("IntegrationScreen", () => {
 
     expect(await screen.findByText("Last connected: N/A")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Connect to Xero" })).toBeInTheDocument();
+  });
+
+  it("Save Changes and Connect to Xero are the same button", async () => {
+    flask({
+      "GET /api/me/company/integration": () =>
+        json({
+          ...INTEGRATION,
+          xero: {
+            status: "disconnected",
+            connected: false,
+            needs_reconnect: false,
+            organisation: null,
+            last_connected_at: null,
+          },
+        }),
+    });
+    showIntegration();
+
+    expect((await screen.findByRole("button", { name: "Save Changes" })).className).toContain(
+      SETTINGS_PRIMARY,
+    );
+    expect(screen.getByRole("link", { name: "Connect to Xero" }).className).toContain(
+      SETTINGS_PRIMARY,
+    );
   });
 
   it("a connection revoked at Xero asks for a reconnect", async () => {

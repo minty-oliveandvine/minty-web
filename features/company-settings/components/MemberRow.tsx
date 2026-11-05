@@ -79,7 +79,7 @@ export function MemberRow({
             onClick={onRemove}
             disabled={busy}
             aria-label={`Remove ${name}`}
-            className="inline-flex h-11 w-11 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-strong disabled:opacity-50"
+            className="inline-flex h-11 w-11 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-strong disabled:cursor-not-allowed disabled:opacity-50"
           >
             {/* Flask's Users tab's trash icon, as it was */}
             <svg

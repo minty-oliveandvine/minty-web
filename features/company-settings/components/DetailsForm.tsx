@@ -17,10 +17,10 @@ import {
   SHEET_INPUT_BAD,
   SHEET_INPUT_OK,
   SHEET_LABEL,
-  SHEET_PRIMARY,
 } from "@/components/ui/sheetClasses";
 
 import type { IntegrationPage } from "@/features/company-settings/api/companySettings";
+import { SETTINGS_PRIMARY } from "@/features/company-settings/components/buttonClasses";
 import type {
   DetailsChanges,
   DetailsDraft,
@@ -140,7 +140,7 @@ export function DetailsForm({
         <div className="flex justify-end md:col-span-2">
           <button
             type="submit"
-            className={`${SHEET_PRIMARY} w-full sm:w-auto`}
+            className={`${SETTINGS_PRIMARY} w-full sm:w-auto`}
             disabled={!dirty || busy}
           >
             {busy ? "Saving…" : "Save Changes"}

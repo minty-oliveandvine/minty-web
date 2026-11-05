@@ -9,15 +9,16 @@
 import { mintyEntryUrl } from "@/lib/mintyEntry";
 
 import type { IntegrationPage } from "@/features/company-settings/api/companySettings";
+import {
+  SETTINGS_DANGER,
+  SETTINGS_PRIMARY,
+} from "@/features/company-settings/components/buttonClasses";
 
 const BADGE: Record<"connected" | "reconnect" | "off", { text: string; className: string }> = {
   connected: { text: "Connected", className: "bg-[#eefbfb] text-[#1b9aa0]" },
   reconnect: { text: "Reconnect needed", className: "bg-[#fff5f5] text-danger" },
   off: { text: "Not connected", className: "bg-gray-100 text-gray-600" },
 };
-
-const ACTION =
-  "inline-flex min-h-11 items-center justify-center rounded-lg px-4 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-strong";
 
 export function xeroConnectUrl(entityId: string): string {
   return mintyEntryUrl(`/xero_reconnect?entity_id=${encodeURIComponent(entityId)}`, entityId);
@@ -65,10 +66,7 @@ export function XeroCard({
       {page.can_edit ? (
         <div className="flex shrink-0 flex-wrap gap-2">
           {state === "connected" ? null : (
-            <a
-              href={xeroConnectUrl(page.company.id)}
-              className={`${ACTION} bg-secondary text-white hover:bg-teal-strong`}
-            >
+            <a href={xeroConnectUrl(page.company.id)} className={SETTINGS_PRIMARY}>
               {state === "reconnect" || xero.last_connected_at
                 ? "Reconnect to Xero"
                 : "Connect to Xero"}
@@ -79,7 +77,7 @@ export function XeroCard({
               type="button"
               onClick={onDisconnect}
               disabled={busy}
-              className={`${ACTION} border border-gray-300 text-red-600 hover:bg-red-50 disabled:opacity-50`}
+              className={`${SETTINGS_DANGER} border border-gray-300`}
             >
               Disconnect
             </button>

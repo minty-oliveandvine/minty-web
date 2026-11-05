@@ -4,7 +4,7 @@
  * Invite someone: their address (English only - `lib/emailInput.ts`), the role (only those this
  * person may give), and their first and last names - required: a new invitee's account is made from them when they
  * sign in by code. On the modal family's frame (`components/ui/ModalFrame`), in the sheet's
- * field and button look; Enter sends.
+ * field look and the settings tabs' buttons (`buttonClasses.ts`); Enter sends.
  */
 
 import { useId, useState, type FormEvent } from "react";
@@ -13,18 +13,20 @@ import { ModalFrame } from "@/components/ui/ModalFrame";
 import { RequiredMark } from "@/components/ui/RequiredMark";
 import {
   SHEET_FIELD,
-  SHEET_GHOST,
   SHEET_INPUT,
   SHEET_INPUT_OK,
   SHEET_LABEL,
   SHEET_PAIR,
   SHEET_PAIR_BACK,
   SHEET_PAIR_MAIN,
-  SHEET_PRIMARY,
 } from "@/components/ui/sheetClasses";
 import { EMAIL_ASCII_HINT, isEmail, useEmailInput } from "@minty/shared/emailInput";
 
 import type { RoleOption } from "@/features/company-settings/api/companySettings";
+import {
+  SETTINGS_OUTLINE,
+  SETTINGS_PRIMARY,
+} from "@/features/company-settings/components/buttonClasses";
 
 export function InviteDialog({
   roles,
@@ -147,7 +149,7 @@ export function InviteDialog({
         <div className={SHEET_PAIR}>
           <button
             type="button"
-            className={`${SHEET_GHOST} ${SHEET_PAIR_BACK}`}
+            className={`${SETTINGS_OUTLINE} ${SHEET_PAIR_BACK}`}
             onClick={onClose}
             disabled={busy}
           >
@@ -155,7 +157,7 @@ export function InviteDialog({
           </button>
           <button
             type="submit"
-            className={`${SHEET_PRIMARY} ${SHEET_PAIR_MAIN}`}
+            className={`${SETTINGS_PRIMARY} ${SHEET_PAIR_MAIN}`}
             disabled={!canSend}
           >
             {busy ? "Sending…" : "Send invitation"}

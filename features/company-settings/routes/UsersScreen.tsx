@@ -14,6 +14,7 @@ import { useState } from "react";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 import type { Invitation, Member } from "@/features/company-settings/api/companySettings";
+import { SETTINGS_PRIMARY } from "@/features/company-settings/components/buttonClasses";
 import { InviteDialog } from "@/features/company-settings/components/InviteDialog";
 import { MemberRow } from "@/features/company-settings/components/MemberRow";
 import { PendingInvitations } from "@/features/company-settings/components/PendingInvitations";
@@ -77,7 +78,7 @@ export function UsersScreen({
                 <button
                   type="button"
                   onClick={() => setInviting(true)}
-                  className="inline-flex min-h-11 items-center gap-1.5 rounded-lg bg-secondary px-4 text-sm font-semibold text-white transition-colors hover:bg-teal-strong focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-strong"
+                  className={SETTINGS_PRIMARY}
                 >
                   <span className="material-symbols-outlined text-[20px]" aria-hidden>
                     person_add
