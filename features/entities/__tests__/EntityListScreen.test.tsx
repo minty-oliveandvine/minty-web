@@ -81,7 +81,10 @@ describe("EntityListScreen", () => {
     const card = within(five);
     expect(card.getByRole("img", { name: "Free trial: Petty Cash" })).toBeInTheDocument();
     expect(card.getByRole("img", { name: "Petty Cash module" })).toBeInTheDocument();
-    expect(card.getByRole("img", { name: "Bills module" })).toBeInTheDocument();
+    // the sidebar's Payment Request icon
+    expect(
+      card.getByRole("img", { name: "Bills module" }).querySelector("img")?.getAttribute("src"),
+    ).toBe("/menu/payment-request.svg");
     expect(card.getByRole("img", { name: /^Last opened .+ by Olive Vine$/ })).toBeInTheDocument();
 
     // setup in progress: the pill over the card, the grey clock of a company nobody opened yet

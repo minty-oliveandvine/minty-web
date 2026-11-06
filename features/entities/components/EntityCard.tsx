@@ -127,15 +127,21 @@ export function EntityCard({ row }: { row: EntityRow }) {
             </span>
           ) : null}
           {row.modules.includes("PAYMENT_REQUEST") ? (
+            // The sidebar's Payment Request icon (@minty/shared SideMenu), its own disc included.
             <span
-              className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[#DBEAFE] text-[#2563EB]"
+              className="inline-flex h-7 w-7"
               role="img"
               title="Bills"
               aria-label="Bills module"
             >
-              <svg className="h-4 w-4" viewBox="0 -960 960 960" fill="currentColor" aria-hidden>
-                <path d="M200-280v-280h80v280h-80Zm240 0v-280h80v280h-80ZM80-120v-80h800v80H80Zm600-160v-280h80v280h-80ZM80-640v-60l400-220 400 220v60H80Zm178-80h444-444Zm0 0h444L480-841 258-720Z" />
-              </svg>
+              <Image
+                className="h-7 w-7"
+                src="/menu/payment-request.svg"
+                alt=""
+                width={76}
+                height={76}
+                unoptimized
+              />
             </span>
           ) : null}
           <LastOpened row={row} />
