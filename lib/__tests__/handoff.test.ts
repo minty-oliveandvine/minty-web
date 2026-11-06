@@ -3,10 +3,10 @@
 // spellings are refused, and why `/\evil.com` was an open redirect - is tested in @minty/shared
 // (src/lib/__tests__/safeNext.test.ts), where the one implementation now lives.
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { env } from "@/lib/env";
-import { handoffUrl, safeNext, withReturnOrigin } from "@/lib/handoff";
+import { handoffUrl, postNavigate, safeNext, withReturnOrigin } from "@/lib/handoff";
 import { HUB_HOME } from "@/lib/hubPaths";
 
 describe("handoff's safeNext", () => {
@@ -45,5 +45,30 @@ describe("withReturnOrigin", () => {
     const target = new URL(withReturnOrigin(`${env.PETTY_CASH_URL}/auth/email/handoff?t=abc`));
     expect(target.searchParams.get("t")).toBe("abc");
     expect(target.searchParams.get("return_origin")).toBe(window.location.origin);
+  });
+});
+
+// Minty's /logout takes a POST only (a GET answers 405), from a front end's Origin: a top-level
+// form POST, never fetch and never location.
+describe("postNavigate", () => {
+  it("submits a hidden, empty POST form to the address, with a referrer policy that keeps Origin", () => {
+    const submitted: HTMLFormElement[] = [];
+    vi.spyOn(HTMLFormElement.prototype, "submit").mockImplementation(function (
+      this: HTMLFormElement,
+    ) {
+      submitted.push(this);
+    });
+
+    postNavigate(`${env.PETTY_CASH_URL}/logout`);
+
+    expect(submitted).toHaveLength(1);
+    const [form] = submitted;
+    expect(form.getAttribute("method")).toBe("POST");
+    expect(form.getAttribute("action")).toBe(`${env.PETTY_CASH_URL}/logout`);
+    expect(form.hidden).toBe(true);
+    expect(form.elements).toHaveLength(0);
+    expect(form.isConnected).toBe(true);
+    const meta = document.head.querySelector('meta[name="referrer"]');
+    expect(meta?.getAttribute("content")).toBe("strict-origin");
   });
 });

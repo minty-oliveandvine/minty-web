@@ -228,13 +228,20 @@ test.describe("the Terms gate", () => {
     page,
   }) => {
     await stubFlask(page);
-    await page.route(`${PETTY_CASH_URL}/logout`, (route) =>
-      route.fulfill({ status: 200, contentType: "text/html", body: "<title>logged out</title>" }),
-    );
+    const methods: string[] = [];
+    await page.route(`${PETTY_CASH_URL}/logout`, (route) => {
+      methods.push(route.request().method());
+      return route.fulfill({
+        status: 200,
+        contentType: "text/html",
+        body: "<title>logged out</title>",
+      });
+    });
     const { dialog } = await arrive(page);
 
     await dialog.getByRole("button", { name: "Cancel" }).click();
     await page.waitForURL(`${PETTY_CASH_URL}/logout`);
+    expect(methods).toEqual(["POST"]); // Minty's /logout answers a GET with 405
     const jar = await page.context().cookies(BASE_URL);
     expect(jar.find((c) => c.name === "minty_token")?.value ?? "").toBe("");
   });

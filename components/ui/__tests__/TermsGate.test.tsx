@@ -241,8 +241,14 @@ describe("TermsGate", () => {
 
   it("Cancel logs out - someone who will not agree has nowhere else to go", async () => {
     await owed();
+    const submit = vi.spyOn(HTMLFormElement.prototype, "submit").mockImplementation(() => {});
     await userEvent.click(screen.getByRole("button", { name: TERMS_COPY.cancel }));
-    expect(navigate).toHaveBeenCalledWith(`${env.PETTY_CASH_URL}/logout`);
+    // a POST (Minty's /logout answers a GET with 405), never a navigation
+    expect(submit).toHaveBeenCalledTimes(1);
+    const form = submit.mock.contexts[0] as HTMLFormElement;
+    expect(form.getAttribute("method")).toBe("POST");
+    expect(form.getAttribute("action")).toBe(`${env.PETTY_CASH_URL}/logout`);
+    expect(navigate).not.toHaveBeenCalled();
     expect(getAuth()).toBeNull();
   });
 
