@@ -7,7 +7,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import {
-  PETTY_CASH_URL,
+  ACCOUNTS_API_URL,
   SUBSCRIPTION_API_URL,
   credentials,
   handoff,
@@ -112,7 +112,7 @@ const HELD = {
 async function stubFlask(page: Page) {
   const asked: { method: string; path: string; body: unknown }[] = [];
   const answer = (path: string, handler: (method: string, body: unknown) => [number, unknown]) =>
-    page.route(`${PETTY_CASH_URL}${path}**`, (route) => {
+    page.route(`${ACCOUNTS_API_URL}${path}**`, (route) => {
       const req = route.request();
       if (req.method() === "OPTIONS") return route.fulfill({ status: 204 });
       const raw = req.postData();
@@ -128,7 +128,7 @@ async function stubFlask(page: Page) {
   ]);
   // `?xero_conflict=` on the read is Flask saying the connect was refused: another company holds
   // the organisation. Signed in reality; the stub only has to answer it.
-  await page.route(`${PETTY_CASH_URL}/api/me/company/integration**`, (route) => {
+  await page.route(`${ACCOUNTS_API_URL}/api/me/company/integration**`, (route) => {
     const req = route.request();
     if (req.method() === "OPTIONS") return route.fulfill({ status: 204 });
     const raw = req.postData();
@@ -161,7 +161,7 @@ async function stubFlask(page: Page) {
     200,
     { message: '"Vine Cafe" is disconnected from Xero.' },
   ]);
-  await page.route(`${PETTY_CASH_URL}/api/me/profile**`, (route) =>
+  await page.route(`${ACCOUNTS_API_URL}/api/me/profile**`, (route) =>
     route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -352,7 +352,7 @@ test.describe("company settings", () => {
     // The second half is a navigation to Flask's OAuth start, which this stub does not answer:
     // catch it instead, so the test can see where the browser was sent.
     let wentTo = "";
-    await page.route(`${PETTY_CASH_URL}/entity/**`, (route) => {
+    await page.route(`${ACCOUNTS_API_URL}/entity/**`, (route) => {
       wentTo = route.request().url();
       return route.fulfill({
         status: 200,

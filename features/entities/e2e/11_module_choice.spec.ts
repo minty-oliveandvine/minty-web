@@ -5,7 +5,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import {
-  PETTY_CASH_URL,
+  ACCOUNTS_API_URL,
   SUBSCRIPTION_API_URL,
   credentials,
   handoff,
@@ -36,14 +36,14 @@ async function stubFlask(page: Page, modules: string[]) {
     last_accessed_at: null,
     last_accessed_by: null,
   };
-  await page.route(`${PETTY_CASH_URL}/api/me/entities**`, (route) =>
+  await page.route(`${ACCOUNTS_API_URL}/api/me/entities**`, (route) =>
     route.fulfill({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({ entities: [row], notices: [] }),
     }),
   );
-  await page.route(`${PETTY_CASH_URL}/api/me/profile**`, (route) =>
+  await page.route(`${ACCOUNTS_API_URL}/api/me/profile**`, (route) =>
     route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -68,7 +68,7 @@ async function stubFlask(page: Page, modules: string[]) {
     }),
   );
   // Where the doors lead: Minty's /enter, answered here so the browser stays put.
-  await page.route(`${PETTY_CASH_URL}/entity/**/enter**`, (route) =>
+  await page.route(`${ACCOUNTS_API_URL}/entity/**/enter**`, (route) =>
     route.fulfill({
       status: 200,
       contentType: "text/html",
@@ -106,14 +106,14 @@ test.describe("module choice", () => {
     );
 
     await page.getByRole("link", { name: "Payment Request" }).click();
-    await expect(page).toHaveURL(new RegExp(`${PETTY_CASH_URL}/entity/${COMPANY.id}/enter`));
+    await expect(page).toHaveURL(new RegExp(`${ACCOUNTS_API_URL}/entity/${COMPANY.id}/enter`));
   });
 
   test("one module goes straight into it", async ({ page }) => {
     await stubFlask(page, ["PETTY_CASH"]);
     await handoff(page, creds(), "/entity/360812e1/olive-and-vine");
     await expect(page).toHaveURL(
-      new RegExp(`${PETTY_CASH_URL}/entity/${COMPANY.id}/enter.*%2Fhandoff%2Fpetty-cash-web`),
+      new RegExp(`${ACCOUNTS_API_URL}/entity/${COMPANY.id}/enter.*%2Fhandoff%2Fpetty-cash-web`),
     );
   });
 

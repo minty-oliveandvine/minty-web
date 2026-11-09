@@ -136,7 +136,7 @@ describe("ModuleSettingsScreen", () => {
     const tabs = within(screen.getByRole("navigation", { name: "Settings sections" }));
     expect(tabs.getByRole("link", { name: "Payment Request Settings" })).toHaveAttribute(
       "href",
-      `${env.PETTY_CASH_URL}/entity/e1/settings/payment-request`,
+      `${env.ACCOUNTS_API_URL}/entity/e1/settings/payment-request`,
     );
     expect(tabs.queryByRole("link", { name: "Petty Cash Settings" })).toBeNull();
     await userEvent.click(screen.getByRole("button", { name: "Open navigation menu" }));

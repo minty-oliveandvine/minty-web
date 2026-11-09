@@ -101,7 +101,7 @@ describe("TermsGate", () => {
 
     // Flask for the version (bearer), then this app for that version's text (same origin).
     const [url, init] = fetchMock.mock.calls[0];
-    expect(String(url)).toBe(`${env.PETTY_CASH_URL}/api/me/terms`);
+    expect(String(url)).toBe(`${env.ACCOUNTS_API_URL}/api/me/terms`);
     expect(new Headers(init?.headers).get("Authorization")).toBe(`Bearer ${TOKEN}`);
     const [docUrl, docInit] = fetchMock.mock.calls[1];
     expect(String(docUrl)).toBe("/api/legal/terms/beta-1");
@@ -155,7 +155,7 @@ describe("TermsGate", () => {
 
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     const [url, init] = fetchMock.mock.calls[2];
-    expect(String(url)).toBe(`${env.PETTY_CASH_URL}/api/me/terms/accept`);
+    expect(String(url)).toBe(`${env.ACCOUNTS_API_URL}/api/me/terms/accept`);
     expect(init?.method).toBe("POST");
     // The hash of what was shown rides along: Flask compares it to its manifest and refuses a
     // mismatch. It is never the hash Flask stores.
@@ -216,7 +216,7 @@ describe("TermsGate", () => {
     expect(await screen.findByText("New wording.")).toBeInTheDocument();
     expect(tickBox()).not.toBeChecked();
     expect(calledUrls().slice(3)).toEqual([
-      `${env.PETTY_CASH_URL}/api/me/terms`,
+      `${env.ACCOUNTS_API_URL}/api/me/terms`,
       "/api/legal/terms/beta-2",
     ]);
   });
@@ -247,7 +247,7 @@ describe("TermsGate", () => {
     expect(submit).toHaveBeenCalledTimes(1);
     const form = submit.mock.contexts[0] as HTMLFormElement;
     expect(form.getAttribute("method")).toBe("POST");
-    expect(form.getAttribute("action")).toBe(`${env.PETTY_CASH_URL}/logout`);
+    expect(form.getAttribute("action")).toBe(`${env.ACCOUNTS_API_URL}/logout`);
     expect(navigate).not.toHaveBeenCalled();
     expect(getAuth()).toBeNull();
   });

@@ -27,7 +27,7 @@ export function safeNext(raw: string | null | undefined, fallback: string = HUB_
 export function handoffUrl(next: string, entityId?: string, origin?: string): string {
   const qs = new URLSearchParams({ next: safeNext(next) });
   if (entityId) qs.set("entity_id", entityId);
-  return withReturnOrigin(`${env.PETTY_CASH_URL}/handoff/minty-web?${qs.toString()}`, origin);
+  return withReturnOrigin(`${env.ACCOUNTS_API_URL}/handoff/minty-web?${qs.toString()}`, origin);
 }
 
 /** `url` (a Flask address) naming this app's origin as `return_origin`; unchanged with none. */

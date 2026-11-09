@@ -62,7 +62,7 @@ describe("ConfirmScreen", () => {
   it("verifies the code with everything handed over, then leaves for Flask's hand-off", async () => {
     saveConfirmContext(CONTEXT);
     fetchMock.mockResolvedValue(
-      json({ status: "success", redirect_url: `${env.PETTY_CASH_URL}/auth/email/handoff?h=x` }),
+      json({ status: "success", redirect_url: `${env.ACCOUNTS_API_URL}/auth/email/handoff?h=x` }),
     );
     render(<ConfirmScreen />);
 
@@ -73,7 +73,7 @@ describe("ConfirmScreen", () => {
     const back = encodeURIComponent(window.location.origin);
     await waitFor(() =>
       expect(navigate).toHaveBeenCalledWith(
-        `${env.PETTY_CASH_URL}/auth/email/handoff?h=x&return_origin=${back}`,
+        `${env.ACCOUNTS_API_URL}/auth/email/handoff?h=x&return_origin=${back}`,
       ),
     );
     const body = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
@@ -95,7 +95,7 @@ describe("ConfirmScreen", () => {
     const back = encodeURIComponent(window.location.origin);
     await waitFor(() =>
       expect(navigate).toHaveBeenCalledWith(
-        `${new URL(env.PETTY_CASH_URL).toString()}?return_origin=${back}`,
+        `${new URL(env.ACCOUNTS_API_URL).toString()}?return_origin=${back}`,
       ),
     );
     expect(error).toHaveBeenCalled();

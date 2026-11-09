@@ -80,7 +80,7 @@ describe("ContactLauncher", () => {
     expect(await chat.findByText(/Sent! We'll reply to olive@test.com/)).toBeInTheDocument();
     expect(await screen.findByText("Message sent. We'll reply by email.")).toBeInTheDocument();
     const [url, init] = fetchMock.mock.calls[0];
-    expect(String(url)).toBe(`${env.PETTY_CASH_URL}/api/me/contact`);
+    expect(String(url)).toBe(`${env.ACCOUNTS_API_URL}/api/me/contact`);
     expect(init?.method).toBe("POST");
     expect(new Headers(init?.headers).get("Authorization")).toBe(`Bearer ${TOKEN}`);
     expect(JSON.parse(String(init?.body))).toEqual({

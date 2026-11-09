@@ -74,7 +74,7 @@ const nextConfig: NextConfig = {
    * A change needs `npm run dev` restarted or `npm run build` rerun.
    */
   env: {
-    PETTY_CASH_URL: process.env.PETTY_CASH_URL ?? "",
+    ACCOUNTS_API_URL: process.env.ACCOUNTS_API_URL ?? "",
     SUBSCRIPTION_API_URL: process.env.SUBSCRIPTION_API_URL ?? "",
     PAYMENT_REQUEST_WEB_URL: process.env.PAYMENT_REQUEST_WEB_URL ?? "",
   },

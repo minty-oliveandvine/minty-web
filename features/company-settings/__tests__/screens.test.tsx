@@ -421,7 +421,7 @@ describe("IntegrationScreen", () => {
     expect(screen.getByText(/^Last connected: /)).toHaveTextContent(lastConnected ?? "");
     expect(screen.getByRole("link", { name: "Reconnect to Xero" })).toHaveAttribute(
       "href",
-      expect.stringContaining(`${env.PETTY_CASH_URL}/entity/${ID}/enter?token=`),
+      expect.stringContaining(`${env.ACCOUNTS_API_URL}/entity/${ID}/enter?token=`),
     );
     expect(screen.getByRole("link", { name: "Reconnect to Xero" }).getAttribute("href")).toContain(
       encodeURIComponent(`/xero_reconnect?entity_id=${ID}`),

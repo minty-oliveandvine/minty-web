@@ -19,7 +19,7 @@ export type Credentials = { secret: string; userId: string; entityId: string; en
 
 export const BASE_URL = process.env.E2E_BASE_URL || "http://localhost:3000";
 export const SUBSCRIPTION_API_URL = process.env.E2E_SUBSCRIPTION_API_URL || "http://localhost:8001";
-export const PETTY_CASH_URL = process.env.E2E_PETTY_CASH_URL || "http://localhost:8000";
+export const ACCOUNTS_API_URL = process.env.E2E_ACCOUNTS_API_URL || "http://localhost:8002";
 
 export function credentials(): Credentials | null {
   const secret = process.env.E2E_JWT_SECRET;
@@ -116,7 +116,7 @@ export async function requireStack(): Promise<void> {
  * 09_terms.spec.ts reads both from the app for exactly that reason.
  */
 export async function answerTerms(page: Page, answer: unknown = { owed: false }): Promise<void> {
-  await page.route(`${PETTY_CASH_URL}/api/me/terms`, (route) =>
+  await page.route(`${ACCOUNTS_API_URL}/api/me/terms`, (route) =>
     route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(answer) }),
   );
 }
@@ -170,7 +170,7 @@ export async function stubBillingApi(page: Page): Promise<void> {
  * real navigation there with Flask down would be a connection error that hides the assertion.
  */
 export async function stubFlaskHandoff(page: Page): Promise<void> {
-  await page.route(`${PETTY_CASH_URL}/handoff/minty-web**`, (route) =>
+  await page.route(`${ACCOUNTS_API_URL}/handoff/minty-web**`, (route) =>
     route.fulfill({ status: 200, contentType: "text/html", body: "<title>handoff stub</title>" }),
   );
 }
@@ -184,7 +184,7 @@ export async function stubFlaskHandoff(page: Page): Promise<void> {
  */
 export async function bounceFlaskHandoff(page: Page, creds: Credentials): Promise<string[]> {
   const asked: string[] = [];
-  await page.route(`${PETTY_CASH_URL}/handoff/minty-web**`, (route) => {
+  await page.route(`${ACCOUNTS_API_URL}/handoff/minty-web**`, (route) => {
     const url = new URL(route.request().url());
     asked.push(url.search);
     const entityId = url.searchParams.get("entity_id") ?? "";

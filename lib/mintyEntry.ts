@@ -18,7 +18,7 @@ export function mintyEntryUrl(path?: string, entityId?: string): string {
   const auth = getAuth();
   const company = entityId || auth?.entityId;
   if (company && auth?.token) {
-    const base = `${env.PETTY_CASH_URL}/entity/${encodeURIComponent(company)}/enter?token=${encodeURIComponent(auth.token)}`;
+    const base = `${env.ACCOUNTS_API_URL}/entity/${encodeURIComponent(company)}/enter?token=${encodeURIComponent(auth.token)}`;
     return path ? `${base}&next=${encodeURIComponent(path)}` : base;
   }
   return HUB_PATHS.entities;

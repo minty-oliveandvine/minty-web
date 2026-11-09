@@ -7,7 +7,7 @@ import { expect, test, type Page } from "@playwright/test";
 import {
   SUBSCRIPTION_API_URL,
   credentials,
-  PETTY_CASH_URL,
+  ACCOUNTS_API_URL,
   handoff,
   requireApp,
   stubBillingApi,
@@ -73,7 +73,7 @@ async function stub(page: Page, profile: Profile, saved?: Profile): Promise<unkn
   const sent: unknown[] = [];
   // As Flask does: once a save has landed, every later read answers the saved profile.
   let current = profile;
-  await page.route(`${PETTY_CASH_URL}/api/me/profile**`, (route) => {
+  await page.route(`${ACCOUNTS_API_URL}/api/me/profile**`, (route) => {
     const req = route.request();
     if (req.method() === "PATCH") {
       sent.push(req.postDataJSON());
@@ -115,7 +115,7 @@ test.describe("My Profile", () => {
     page,
   }) => {
     await stub(page, UNSCOPED);
-    await page.route(`${PETTY_CASH_URL}/api/me/entities**`, (route) =>
+    await page.route(`${ACCOUNTS_API_URL}/api/me/entities**`, (route) =>
       route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -161,7 +161,7 @@ test.describe("My Profile", () => {
       ...SUPERMINTY,
       entity: { ...SUPERMINTY.entity!, name: "Digitalisation - Scenario 5 - Free trial + Active" },
     });
-    await page.route(`${PETTY_CASH_URL}/api/me/entities**`, (route) =>
+    await page.route(`${ACCOUNTS_API_URL}/api/me/entities**`, (route) =>
       route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -265,7 +265,7 @@ test.describe("My Profile", () => {
     page,
   }) => {
     await stub(page, UNSCOPED);
-    await page.route(`${PETTY_CASH_URL}/api/me/entities**`, (route) =>
+    await page.route(`${ACCOUNTS_API_URL}/api/me/entities**`, (route) =>
       route.fulfill({
         status: 200,
         contentType: "application/json",

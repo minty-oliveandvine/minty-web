@@ -11,5 +11,5 @@ import { postNavigate } from "@/lib/handoff";
 
 export function logOut() {
   clearAuth();
-  postNavigate(`${env.PETTY_CASH_URL}/logout`);
+  postNavigate(`${env.ACCOUNTS_API_URL}/logout`);
 }

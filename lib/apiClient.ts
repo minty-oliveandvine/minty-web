@@ -171,7 +171,7 @@ export async function apiFetchBlob(path: string, init: ApiRequest = {}): Promise
 export async function mintyFetch<T = unknown>(path: string, init: MintyRequest = {}): Promise<T> {
   const { onUnauthorized = "handoff", ...rest } = init;
   const flask: Backend = {
-    base: env.PETTY_CASH_URL,
+    base: env.ACCOUNTS_API_URL,
     onUnauthorized,
     handoffEntityId: getAuth()?.entityId || undefined,
   };

@@ -14,7 +14,7 @@ const ID = "360812e1-9f94-46a3-aa31-347e21afde8e";
 /** The `/handoff/petty-cash-web` address `/enter` is told to go on to. */
 function handoff(href: string): URL {
   const enter = new URL(href);
-  expect(`${enter.origin}${enter.pathname}`).toBe(`${env.PETTY_CASH_URL}/entity/${ID}/enter`);
+  expect(`${enter.origin}${enter.pathname}`).toBe(`${env.ACCOUNTS_API_URL}/entity/${ID}/enter`);
   expect(enter.searchParams.get("token")).toBe(TOKEN);
   const next = enter.searchParams.get("next");
   expect(next).toMatch(/^\/handoff\/petty-cash-web\?/);

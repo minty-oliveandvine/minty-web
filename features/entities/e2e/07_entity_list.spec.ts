@@ -11,7 +11,7 @@ import {
   SUBSCRIPTION_API_URL,
   bounceFlaskHandoff,
   credentials,
-  PETTY_CASH_URL,
+  ACCOUNTS_API_URL,
   handoff,
   requireApp,
   storedScope,
@@ -41,7 +41,7 @@ const VIEWER = {
 
 async function stubFlask(page: Page, list: EntityListAnswer = LIST): Promise<string[]> {
   const asked: string[] = [];
-  await page.route(`${PETTY_CASH_URL}/api/me/entities**`, (route) => {
+  await page.route(`${ACCOUNTS_API_URL}/api/me/entities**`, (route) => {
     asked.push(new URL(route.request().url()).search);
     return route.fulfill({
       status: 200,
@@ -49,7 +49,7 @@ async function stubFlask(page: Page, list: EntityListAnswer = LIST): Promise<str
       body: JSON.stringify(list),
     });
   });
-  await page.route(`${PETTY_CASH_URL}/api/me/profile**`, (route) =>
+  await page.route(`${ACCOUNTS_API_URL}/api/me/profile**`, (route) =>
     route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(VIEWER) }),
   );
   // The sidebar's My Profile carries the subscription feature's overview card, which reads the
@@ -97,7 +97,7 @@ test.describe("the entity list", () => {
     await cat.click();
     await expect(page.getByRole("menuitem", { name: "Create company" })).toHaveAttribute(
       "href",
-      `${PETTY_CASH_URL}/entity/create`,
+      `${ACCOUNTS_API_URL}/entity/create`,
     );
     await page.keyboard.press("Escape");
 

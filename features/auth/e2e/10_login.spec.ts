@@ -5,7 +5,7 @@
 
 import { expect, test, type Page } from "@playwright/test";
 
-import { BASE_URL, PETTY_CASH_URL, requireApp } from "../../../e2e/helpers";
+import { BASE_URL, ACCOUNTS_API_URL, requireApp } from "../../../e2e/helpers";
 
 type Asked = { path: string; body: unknown }[];
 
@@ -16,7 +16,7 @@ type Asked = { path: string; body: unknown }[];
 async function stubFlask(page: Page): Promise<Asked> {
   const asked: Asked = [];
   const answer = (path: string, body: unknown, status = 200) =>
-    page.route(`${PETTY_CASH_URL}${path}**`, (route) => {
+    page.route(`${ACCOUNTS_API_URL}${path}**`, (route) => {
       const raw = route.request().postData();
       asked.push({ path, body: raw ? JSON.parse(raw) : null });
       return route.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) });
@@ -24,7 +24,7 @@ async function stubFlask(page: Page): Promise<Asked> {
   await answer("/auth/email/request-code", { status: "success" });
   await answer("/auth/email/verify-code", {
     status: "success",
-    redirect_url: `${PETTY_CASH_URL}/auth/email/handoff?h=signed`,
+    redirect_url: `${ACCOUNTS_API_URL}/auth/email/handoff?h=signed`,
   });
   await answer("/auth/notices", {
     notices: [{ category: "info", message: "Please log in to access this page." }],
@@ -35,7 +35,7 @@ async function stubFlask(page: Page): Promise<Asked> {
     effective_date: "18 September 2026",
   });
   await answer("/legal/invite-terms-status", { terms_required: true });
-  await page.route(`${PETTY_CASH_URL}/auth/email/handoff**`, (route) =>
+  await page.route(`${ACCOUNTS_API_URL}/auth/email/handoff**`, (route) =>
     route.fulfill({ status: 200, contentType: "text/html", body: "<p>Flask signs you in</p>" }),
   );
   return asked;
@@ -65,7 +65,7 @@ test.describe("sign-in", () => {
 
     // Flask's hand-off, naming this page's origin as return_origin (lib/handoff.ts withReturnOrigin)
     await expect(page).toHaveURL(
-      `${PETTY_CASH_URL}/auth/email/handoff?h=signed&return_origin=${encodeURIComponent(new URL(BASE_URL).origin)}`,
+      `${ACCOUNTS_API_URL}/auth/email/handoff?h=signed&return_origin=${encodeURIComponent(new URL(BASE_URL).origin)}`,
     );
     expect(asked.find((a) => a.path === "/auth/email/request-code")?.body).toEqual({
       email: "jane@example.com",
@@ -128,7 +128,7 @@ test.describe("sign-in", () => {
     await expect(page.getByLabel("Email")).toHaveAttribute("readonly", "");
     await expect(page.getByRole("link", { name: /Log in with Xero/ })).toHaveAttribute(
       "href",
-      `${PETTY_CASH_URL}/xero_auth?invite=secret-token&return_origin=${encodeURIComponent(new URL(page.url()).origin)}`,
+      `${ACCOUNTS_API_URL}/xero_auth?invite=secret-token&return_origin=${encodeURIComponent(new URL(page.url()).origin)}`,
     );
   });
 

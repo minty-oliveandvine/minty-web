@@ -207,7 +207,7 @@ describe("LoginScreen", () => {
     await waitFor(() =>
       expect(screen.getByRole("link", { name: /Log in with Xero/ })).toHaveAttribute(
         "href",
-        `${env.PETTY_CASH_URL}/xero_auth?invite=secret&next=%2Fentity&return_origin=${encodeURIComponent(window.location.origin)}`,
+        `${env.ACCOUNTS_API_URL}/xero_auth?invite=secret&next=%2Fentity&return_origin=${encodeURIComponent(window.location.origin)}`,
       ),
     );
   });
@@ -224,7 +224,7 @@ describe("LoginScreen", () => {
       </ToastProvider>,
     );
     const href = /href="([^"]*xero_auth[^"]*)"/.exec(html)?.[1].replace(/&amp;/g, "&");
-    expect(href).toBe(`${env.PETTY_CASH_URL}/xero_auth?invite=secret`);
+    expect(href).toBe(`${env.ACCOUNTS_API_URL}/xero_auth?invite=secret`);
   });
 
   it("shows what Flask flashed on the way here", async () => {

@@ -45,7 +45,7 @@ export function settingsTabs(
   current: CompanySettingsTab,
 ): SettingsTab[] {
   const id = encodeURIComponent(company.id);
-  const flask = env.PETTY_CASH_URL;
+  const flask = env.ACCOUNTS_API_URL;
   const hub = (tab: CompanySettingsTab) => companySettingsPath(company.id, company.name, tab);
   const tab = (label: string, page: CompanySettingsTab | null, href: string): SettingsTab =>
     page === current ? { label, current: true } : { label, href };

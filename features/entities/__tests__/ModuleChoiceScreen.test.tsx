@@ -39,7 +39,7 @@ const serve = (entities: EntityRow[], status = 200) =>
     }),
   );
 const enter = (path: string) =>
-  `${env.PETTY_CASH_URL}/entity/${ID}/enter?token=${encodeURIComponent(TOKEN)}&next=${encodeURIComponent(path)}`;
+  `${env.ACCOUNTS_API_URL}/entity/${ID}/enter?token=${encodeURIComponent(TOKEN)}&next=${encodeURIComponent(path)}`;
 
 describe("moduleChoices", () => {
   beforeEach(() => setAuth(TOKEN, ID, "Olive & Vine"));

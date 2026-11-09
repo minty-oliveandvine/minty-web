@@ -6,8 +6,8 @@ npx playwright install chromium   # once
 npm run test:e2e                  # against a stack that is already running
 ```
 
-Real browser, stack already up (this app :3000 `npm run dev`, minty-subscription-api :8000, Minty
-:8000). **Nothing is started here.** Specs skip with a reason when a service or the credentials
+Real browser, stack already up (this app :3000 `npm run dev`, minty-subscription-api :8001, minty-accounts-api
+:8002). **Nothing is started here.** Specs skip with a reason when a service or the credentials
 are missing.
 
 Two folders, one runner (`playwright.config.ts`): `e2e/` holds the shell's specs; each
@@ -26,13 +26,13 @@ real credentials, an unanswered check would put the panel over every other spec.
 The specs arrive the way Minty sends people: `/landing?token=<jwt>`. They mint that JWT
 themselves with the shared `SECRET_KEY` (see `e2e/helpers.ts` for why nothing is bypassed):
 
-| Variable                                                           | What                                                                                                                                    |
-| ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------- |
-| `E2E_JWT_SECRET`                                                   | the `SECRET_KEY` shared by Minty and minty-subscription-api                                                                             |
-| `E2E_MINTY_USER` / `E2E_MINTY_ENTITY`                              | the identity `Minty/scripts/e2e_seed.py --print` creates                                                                                |
-| `E2E_MINTY_SUBSCRIPTION_ENTITY`                                    | the seed's second company (`E2E Subscription Shop`), reset to "never held anything" on every seed run - the live trial journey's target |
-| `E2E_MINTY_ENTITY_NAME`                                            | optional, default `E2E Petty Cash Shop`                                                                                                 |
-| `E2E_BASE_URL` / `E2E_SUBSCRIPTION_API_URL` / `E2E_PETTY_CASH_URL` | the three hosts; default the local ports (`E2E_PETTY_CASH_URL` must equal the app's `PETTY_CASH_URL`)                                   |
+| Variable                                                             | What                                                                                                                                    |
+| -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `E2E_JWT_SECRET`                                                     | the `SECRET_KEY` shared by Minty and minty-subscription-api                                                                             |
+| `E2E_MINTY_USER` / `E2E_MINTY_ENTITY`                                | the identity `Minty/scripts/e2e_seed.py --print` creates                                                                                |
+| `E2E_MINTY_SUBSCRIPTION_ENTITY`                                      | the seed's second company (`E2E Subscription Shop`), reset to "never held anything" on every seed run - the live trial journey's target |
+| `E2E_MINTY_ENTITY_NAME`                                              | optional, default `E2E Petty Cash Shop`                                                                                                 |
+| `E2E_BASE_URL` / `E2E_SUBSCRIPTION_API_URL` / `E2E_ACCOUNTS_API_URL` | the three hosts; default the local ports (`E2E_ACCOUNTS_API_URL` must equal the app's `ACCOUNTS_API_URL`)                               |
 
 Run the seed in the Minty repo before every run. Never commit any of these values. Report the
 run time (mm:ss) with the result.

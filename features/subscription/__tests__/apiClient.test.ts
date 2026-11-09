@@ -114,7 +114,7 @@ describe("apiFetch", () => {
     expect(getAuth()).toBeNull();
     expect(navigated).toHaveLength(1);
     const target = new URL(navigated[0]);
-    expect(target.origin + target.pathname).toBe(`${env.PETTY_CASH_URL}/handoff/minty-web`);
+    expect(target.origin + target.pathname).toBe(`${env.ACCOUNTS_API_URL}/handoff/minty-web`);
     expect(target.searchParams.get("next")).toBe("/subscription/billing?page=2");
   });
 

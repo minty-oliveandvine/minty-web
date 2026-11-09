@@ -28,7 +28,7 @@ export function Header({ title = "Minty" }: { title?: string }) {
         {entityName && <span className="text-sm text-muted">{entityName}</span>}
       </div>
       <nav aria-label="Primary">
-        <a className="text-sm underline" href={env.PETTY_CASH_URL}>
+        <a className="text-sm underline" href={env.ACCOUNTS_API_URL}>
           Back to Minty
         </a>
       </nav>

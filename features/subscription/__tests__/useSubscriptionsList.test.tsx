@@ -449,7 +449,7 @@ describe("useSubscriptionsList", () => {
 
     act(() => result.current.dismissResult());
     expect(left).toEqual([
-      `${env.PETTY_CASH_URL}/handoff/minty-web?next=%2Fsubscription&return_origin=${encodeURIComponent(window.location.origin)}`,
+      `${env.ACCOUNTS_API_URL}/handoff/minty-web?next=%2Fsubscription&return_origin=${encodeURIComponent(window.location.origin)}`,
     ]);
     expect(push).not.toHaveBeenCalled();
     // The company's token is dropped on the way out; the landing stores the new one.

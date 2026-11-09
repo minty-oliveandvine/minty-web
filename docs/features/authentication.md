@@ -56,7 +56,7 @@ Flask mint the payer's token, back through `/landing`. This app still mints noth
 ## The gate (`proxy.ts`)
 
 **The cookie.** Every page but `/landing` and `/maintenance` (`OPEN_PATHS`, `lib/hubPaths.ts`)
-needs `minty_token`. Without it: `307` to `PETTY_CASH_URL/handoff/minty-web?next=<page>` —
+needs `minty_token`. Without it: `307` to `ACCOUNTS_API_URL/handoff/minty-web?next=<page>` —
 Flask's login-gated route (Minty's `/handoff/minty-web`, landed 2026-09-21) that mints the same token and comes back to
 `/landing`. Silent while the Flask session (24 h) is alive; when it is not, Flask's
 `login_required` sends the browser to this app's `/login` with that route as `next`.
@@ -78,7 +78,7 @@ settings page's Back fallback - is `lib/mintyEntry.ts::pettyCashWebUrl`: Minty's
 (rebuilding the Flask session from the cookie token), on to Flask's login-gated
 `/handoff/petty-cash-web?entity_id=<id>&next=<path on that app>&return_origin=<this origin>`,
 which mints minty-petty-cash-web's token for that company. Flask, not this app, knows that app's
-address, so there is no `PETTY_CASH_WEB_URL` here; `PETTY_CASH_URL` still means Flask.
+address, so there is no `PETTY_CASH_WEB_URL` here; `ACCOUNTS_API_URL` is the accounts service (minty-accounts-api, which replaced Flask).
 
 There is no second gate. The subscription feature's dark switch (`NEXT_PUBLIC_SUBSCRIPTION_ENABLED`
 and its `/not-available` page) was removed on 2026-10-01: subscriptions are simply on.
@@ -87,7 +87,7 @@ and its `/not-available` page) was removed on 2026-10-01: subscriptions are simp
 
 The entity list and My Profile read Flask's bearer routes (`GET /api/me/entities`, `GET` /
 `PATCH /api/me/profile` - Minty's `blueprints/shared/hub_api.py`): the same bearer, the base
-`PETTY_CASH_URL`, and never `X-Entity-Id` (Flask's CORS allows only `Authorization` and
+`ACCOUNTS_API_URL`, and never `X-Entity-Id` (Flask's CORS allows only `Authorization` and
 `Content-Type`; a company travels as `?entity=`). A 401 re-authenticates keeping the cookie's
 company - except for the header's initials (`lib/viewer.ts`, `onUnauthorized: "reject"`),
 which are decoration and must never move the page. Flask refuses a token for a deactivated
@@ -156,8 +156,9 @@ for the current page, once (several requests fail together; one navigation). Not
 
 ## Configuration
 
-`PETTY_CASH_URL` (the re-handoff, sign-in's calls and "Back to Minty"), `SUBSCRIPTION_API_URL`,
+`ACCOUNTS_API_URL` (the re-handoff, sign-in's calls and "Back to Minty"), `SUBSCRIPTION_API_URL`,
 `PAYMENT_REQUEST_WEB_URL` — all inlined at build time (`next.config.ts` `env`, read in `lib/env.ts`).
+`ACCOUNTS_API_URL` was named `PETTY_CASH_URL` until 2026-11-06.
 
 ## Tests
 

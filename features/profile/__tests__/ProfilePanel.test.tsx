@@ -70,7 +70,7 @@ describe("ProfilePanel", () => {
     expect(
       await view.findByRole("heading", { level: 2, name: UNSCOPED.user.name }),
     ).toBeInTheDocument();
-    expect(String(fetchMock.mock.calls[0][0])).toBe(`${env.PETTY_CASH_URL}/api/me/profile`);
+    expect(String(fetchMock.mock.calls[0][0])).toBe(`${env.ACCOUNTS_API_URL}/api/me/profile`);
     // the same body as the page: the details card, the slot, Log Out
     expect(view.getByRole("region", { name: "Your details" })).toBeInTheDocument();
     expect(view.getByText("The overview card")).toBeInTheDocument();

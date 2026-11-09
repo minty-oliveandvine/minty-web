@@ -23,7 +23,7 @@ type FlaskAnswer = { status?: string; message?: string; error?: string; [key: st
 async function call(path: string, init: RequestInit = {}): Promise<FlaskAnswer> {
   let res: Response;
   try {
-    res = await fetch(`${env.PETTY_CASH_URL}${path}`, {
+    res = await fetch(`${env.ACCOUNTS_API_URL}${path}`, {
       ...init,
       credentials: "omit",
       headers: {
@@ -94,7 +94,7 @@ export async function verifyCode(context: ConfirmContext, code: string): Promise
 }
 
 export function flaskDestination(redirectUrl: unknown): string {
-  const flask = new URL(env.PETTY_CASH_URL);
+  const flask = new URL(env.ACCOUNTS_API_URL);
   if (typeof redirectUrl === "string" && redirectUrl) {
     try {
       const target = new URL(redirectUrl, flask);
@@ -118,7 +118,7 @@ export function xeroSignInUrl(args: { invite?: string; next?: string }, origin?:
   if (args.invite) qs.set("invite", args.invite);
   if (args.next) qs.set("next", args.next);
   const query = qs.toString();
-  const url = `${env.PETTY_CASH_URL}/xero_auth${query ? `?${query}` : ""}`;
+  const url = `${env.ACCOUNTS_API_URL}/xero_auth${query ? `?${query}` : ""}`;
   return origin ? withReturnOrigin(url, origin) : url;
 }
 

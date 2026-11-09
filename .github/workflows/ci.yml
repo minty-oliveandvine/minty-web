@@ -15,6 +15,6 @@ jobs:
     with:
       extra-scripts: format:check
       build-env: |
-        PETTY_CASH_URL=http://localhost:8010
-        SUBSCRIPTION_API_URL=http://localhost:8000
+        ACCOUNTS_API_URL=http://localhost:8002
+        SUBSCRIPTION_API_URL=http://localhost:8001
         PAYMENT_REQUEST_WEB_URL=http://localhost:3020

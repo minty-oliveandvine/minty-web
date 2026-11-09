@@ -4,7 +4,13 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import { LIST } from "../features/entities/__fixtures__/entities";
-import { PETTY_CASH_URL, SUBSCRIPTION_API_URL, credentials, handoff, requireApp } from "./helpers";
+import {
+  ACCOUNTS_API_URL,
+  SUBSCRIPTION_API_URL,
+  credentials,
+  handoff,
+  requireApp,
+} from "./helpers";
 
 const STUB = {
   secret: "stub-flask-never-sees-this",
@@ -22,12 +28,12 @@ async function stubFlask(page: Page) {
     contentType: "application/json",
     body: JSON.stringify(body),
   });
-  await page.route(`${PETTY_CASH_URL}/api/me/entities**`, (route) => route.fulfill(json(LIST)));
-  await page.route(`${PETTY_CASH_URL}/api/me/profile**`, (route) => route.fulfill(json(VIEWER)));
+  await page.route(`${ACCOUNTS_API_URL}/api/me/entities**`, (route) => route.fulfill(json(LIST)));
+  await page.route(`${ACCOUNTS_API_URL}/api/me/profile**`, (route) => route.fulfill(json(VIEWER)));
   await page.route(`${SUBSCRIPTION_API_URL}/api/me/subscriptions**`, (route) =>
     route.fulfill(json({ error: "not_found" }, 404)),
   );
-  await page.route(`${PETTY_CASH_URL}/api/me/contact`, (route) => {
+  await page.route(`${ACCOUNTS_API_URL}/api/me/contact`, (route) => {
     if (route.request().method() === "OPTIONS") return route.fulfill({ status: 204 });
     sent.push(route.request().postDataJSON());
     return route.fulfill(json({ sent: true, reply_to: "o@x.com" }));
@@ -56,7 +62,7 @@ test.describe("the Minty cat", () => {
     await cat.click();
     await expect(page.getByRole("menuitem", { name: "Create company" })).toHaveAttribute(
       "href",
-      `${PETTY_CASH_URL}/entity/create`,
+      `${ACCOUNTS_API_URL}/entity/create`,
     );
     await page.getByRole("menuitem", { name: "Talk to Minty" }).click();
 

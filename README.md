@@ -2,7 +2,7 @@
 
 Minty's Next.js hub — port **3000**. Born in Part 2 of `Minty/docs/modernisation/modernisation_plan.md`
 with one feature, **subscriptions** (the payer portal from minty-payment-request-web and the module
-settings page from Flask's Jinja), talking to `minty-subscription-api` (:8000). Since 2026-09-29 it
+settings page from Flask's Jinja), talking to `minty-subscription-api` (:8001). Since 2026-09-29 it
 also has the **entity list** ("Select Company", its first page, from Flask's Jinja) and **My
 Profile** (from minty-payment-request-web, redrawn to Figma 10-A/10-B), over Flask's bearer routes -
 Part 3 step 4, pulled forward; since phase 2 (2026-10-05) also **sign-in** (`/login`, from Flask
@@ -82,7 +82,7 @@ to `public/pdfjs/` whenever `next dev` or `next build` starts - gitignored, neve
 it cannot (no `npm ci` yet), it says so with a `console.error` and the server starts anyway; the
 preview then cannot draw.
 
-The three variables are `PETTY_CASH_URL` (8010), `SUBSCRIPTION_API_URL` (8000) and
+The three variables are `ACCOUNTS_API_URL` (8002, minty-accounts-api), `SUBSCRIPTION_API_URL` (8001) and
 `PAYMENT_REQUEST_WEB_URL` (3020) - plain names, inlined at build time through `next.config.ts`'s
 `env` and read only in `lib/env.ts`. In the docker stack (`Minty/docker/stack`) this is the
 `minty-web` service on host port 3000.
@@ -111,6 +111,6 @@ Node test runner prefers because `localhost` resolves to `::1` first and stalls)
 ## Cross-cutting rules (from the plan; every repo carries them)
 
 1. Flask is the only minter — this app stores and forwards the token, never mints or refreshes it.
-2. Ports: slot N gives `30N0` for the `-web` and `80N0` for its API — the hub is slot 0: this app 3000; its API, minty-subscription-api, is 8000.
+2. Ports: slot N gives `30N0` for the `-web` and `80N0` for its API — the hub is slot 0: this app 3000; its API, minty-subscription-api, is 8001 (8000 was Flask's, retired).
 3. One cutover map per app, never inline base URLs — `lib/env.ts` is that map for the three hosts this app calls.
 4. `MAINTENANCE_MODE` will be honoured from Part 3 step 2 (the shared packages); `app/maintenance` is its page.

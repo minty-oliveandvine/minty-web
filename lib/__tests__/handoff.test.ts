@@ -42,7 +42,7 @@ describe("handoffUrl", () => {
 
 describe("withReturnOrigin", () => {
   it("adds the origin to a Flask address, keeping what it had", () => {
-    const target = new URL(withReturnOrigin(`${env.PETTY_CASH_URL}/auth/email/handoff?t=abc`));
+    const target = new URL(withReturnOrigin(`${env.ACCOUNTS_API_URL}/auth/email/handoff?t=abc`));
     expect(target.searchParams.get("t")).toBe("abc");
     expect(target.searchParams.get("return_origin")).toBe(window.location.origin);
   });
@@ -59,12 +59,12 @@ describe("postNavigate", () => {
       submitted.push(this);
     });
 
-    postNavigate(`${env.PETTY_CASH_URL}/logout`);
+    postNavigate(`${env.ACCOUNTS_API_URL}/logout`);
 
     expect(submitted).toHaveLength(1);
     const [form] = submitted;
     expect(form.getAttribute("method")).toBe("POST");
-    expect(form.getAttribute("action")).toBe(`${env.PETTY_CASH_URL}/logout`);
+    expect(form.getAttribute("action")).toBe(`${env.ACCOUNTS_API_URL}/logout`);
     expect(form.hidden).toBe(true);
     expect(form.elements).toHaveLength(0);
     expect(form.isConnected).toBe(true);

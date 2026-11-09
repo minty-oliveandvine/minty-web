@@ -17,7 +17,7 @@ import {
   answerTerms,
   BASE_URL,
   credentials,
-  PETTY_CASH_URL,
+  ACCOUNTS_API_URL,
   handoff,
   mintModuleToken,
   reachable,
@@ -74,14 +74,14 @@ const COMPANY = {
 /** The list and the viewer behind the gate; returns every acceptance posted. */
 async function stubFlask(page: Page, acceptStatus = 200): Promise<unknown[]> {
   const posted: unknown[] = [];
-  await page.route(`${PETTY_CASH_URL}/api/me/entities**`, (route) =>
+  await page.route(`${ACCOUNTS_API_URL}/api/me/entities**`, (route) =>
     route.fulfill({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({ entities: [COMPANY], notices: [] }),
     }),
   );
-  await page.route(`${PETTY_CASH_URL}/api/me/profile**`, (route) =>
+  await page.route(`${ACCOUNTS_API_URL}/api/me/profile**`, (route) =>
     route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -98,7 +98,7 @@ async function stubFlask(page: Page, acceptStatus = 200): Promise<unknown[]> {
       }),
     }),
   );
-  await page.route(`${PETTY_CASH_URL}/api/me/terms/accept`, (route) => {
+  await page.route(`${ACCOUNTS_API_URL}/api/me/terms/accept`, (route) => {
     posted.push(route.request().postDataJSON());
     const body =
       acceptStatus === 409
@@ -229,7 +229,7 @@ test.describe("the Terms gate", () => {
   }) => {
     await stubFlask(page);
     const methods: string[] = [];
-    await page.route(`${PETTY_CASH_URL}/logout`, (route) => {
+    await page.route(`${ACCOUNTS_API_URL}/logout`, (route) => {
       methods.push(route.request().method());
       return route.fulfill({
         status: 200,
@@ -240,7 +240,7 @@ test.describe("the Terms gate", () => {
     const { dialog } = await arrive(page);
 
     await dialog.getByRole("button", { name: "Cancel" }).click();
-    await page.waitForURL(`${PETTY_CASH_URL}/logout`);
+    await page.waitForURL(`${ACCOUNTS_API_URL}/logout`);
     expect(methods).toEqual(["POST"]); // Minty's /logout answers a GET with 405
     const jar = await page.context().cookies(BASE_URL);
     expect(jar.find((c) => c.name === "minty_token")?.value ?? "").toBe("");
@@ -283,12 +283,12 @@ test.describe("the two repos agree about the Terms", () => {
   }) => {
     await requireApp();
     test.skip(
-      !(await reachable(`${PETTY_CASH_URL}/health`)),
-      `Minty (Flask) is not answering at ${PETTY_CASH_URL}`,
+      !(await reachable(`${ACCOUNTS_API_URL}/health`)),
+      `Minty (Flask) is not answering at ${ACCOUNTS_API_URL}`,
     );
 
     // Minty names the live version (and nothing else: the wording is ours).
-    const live = await request.get(`${PETTY_CASH_URL}/legal/current`);
+    const live = await request.get(`${ACCOUNTS_API_URL}/legal/current`);
     expect(live.ok()).toBeTruthy();
     const { terms_version: version } = (await live.json()) as { terms_version: string };
     expect(version, "Minty must name a live Terms version").toBeTruthy();
@@ -315,7 +315,7 @@ test.describe("the two repos agree about the Terms", () => {
       creds === null,
       "no E2E_JWT_SECRET: the fingerprint half needs a token Minty will accept",
     );
-    const owed = await request.get(`${PETTY_CASH_URL}/api/me/terms`, {
+    const owed = await request.get(`${ACCOUNTS_API_URL}/api/me/terms`, {
       headers: { Authorization: `Bearer ${mintModuleToken(creds!, { entity_id: null })}` },
     });
     expect(owed.ok()).toBeTruthy();

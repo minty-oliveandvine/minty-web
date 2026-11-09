@@ -11,7 +11,7 @@ import { settingsBackLink, settingsTabs } from "@/lib/settingsTabs";
 
 const COMPANY = { id: "360812e1-9f94-46a3-aa31-347e21afde8e", name: "Olive & Vine" };
 const ALL = { pettyCash: true, billing: true };
-const FLASK = `${env.PETTY_CASH_URL}/entity/${COMPANY.id}`;
+const FLASK = `${env.ACCOUNTS_API_URL}/entity/${COMPANY.id}`;
 
 beforeEach(() => setAuth("h.eyJ1c2VyX2lkIjoidTEifQ.s", COMPANY.id, COMPANY.name));
 
@@ -60,7 +60,7 @@ describe("settingsTabs", () => {
 
   it("escapes the id in Flask's links", () => {
     const tabs = settingsTabs({ id: "a/b", name: "" }, ALL, "modules");
-    expect(tabs[3].href).toBe(`${env.PETTY_CASH_URL}/entity/a%2Fb/settings/payment-request`);
+    expect(tabs[3].href).toBe(`${env.ACCOUNTS_API_URL}/entity/a%2Fb/settings/payment-request`);
   });
 });
 
