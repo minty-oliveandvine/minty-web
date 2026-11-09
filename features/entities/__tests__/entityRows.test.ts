@@ -77,8 +77,8 @@ describe("entityRows", () => {
   it("a card leads into its company through Minty's re-entry; + leads to a new one", () => {
     setAuth("h.eyJ1c2VyX2lkIjoidTEifQ.s", "", "");
     expect(enterHref(LIST.entities[1])).toBe(
-      `${env.ACCOUNTS_API_URL}/entity/e-scenario-5/enter?token=h.eyJ1c2VyX2lkIjoidTEifQ.s` +
-        `&next=${encodeURIComponent("/entity/e-scenario-5/modules")}`,
+      `${env.ACCOUNTS_API_URL}/entity/e-scenario-5/enter` +
+        `?next=${encodeURIComponent("/entity/e-scenario-5/modules")}`,
     );
     expect(createEntityHref()).toBe(`${env.ACCOUNTS_API_URL}/entity/create`);
   });

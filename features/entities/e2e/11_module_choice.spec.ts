@@ -97,7 +97,7 @@ test.describe("module choice", () => {
     await expect(petty).toHaveAttribute(
       "href",
       new RegExp(
-        `/entity/${COMPANY.id}/enter\\?token=.+&next=%2Fhandoff%2Fpetty-cash-web%3Fentity_id%3D${COMPANY.id}(%26|$)`,
+        `/entity/${COMPANY.id}/enter\\?next=%2Fhandoff%2Fpetty-cash-web%3Fentity_id%3D${COMPANY.id}(%26|$)`,
       ),
     );
     await expect(page.getByRole("link", { name: "Payment Request" })).toHaveAttribute(

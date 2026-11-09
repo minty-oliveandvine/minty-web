@@ -368,7 +368,7 @@ test.describe("company settings", () => {
     await expect
       .poll(() => asked.filter((a) => a.path === "/api/me/company/xero/release").map((a) => a.body))
       .toEqual([{ entity_id: "e-vine" }]);
-    // Then on to Xero for this company, through Flask's /enter so the session owns the token.
+    // Then on to Xero for this company, through accounts-api's /enter (on its session).
     // `next` is URL-encoded in there, hence the decode.
     await expect
       .poll(() => decodeURIComponent(wentTo))

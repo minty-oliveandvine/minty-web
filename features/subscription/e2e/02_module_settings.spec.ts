@@ -82,7 +82,7 @@ test.describe("module settings page", () => {
     await expect(page.getByRole("link", { name: "Back" })).toHaveAttribute(
       "href",
       new RegExp(
-        `/entity/${c.entityId}/enter\\?token=.+&next=%2Fhandoff%2Fpetty-cash-web%3Fentity_id%3D${c.entityId}(%26|$)`,
+        `/entity/${c.entityId}/enter\\?next=%2Fhandoff%2Fpetty-cash-web%3Fentity_id%3D${c.entityId}(%26|$)`,
       ),
     );
     // exact: the route announcer also reads the tab title "Modules - <company>"

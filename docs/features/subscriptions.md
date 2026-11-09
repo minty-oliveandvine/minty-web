@@ -1222,8 +1222,8 @@ schema change), which 08-C writes.
 - **08-A "Subscription & Billing"**, at `/subscription` — where Minty's own link lands
   (Flask's `next` defaults to it). "Back to the entity dashboard" in the header bar — which goes to **the
   company this browser is scoped to**, not Minty's entity picker (2026-09-23):
-  `lib/mintyEntry.ts::mintyModulesUrl` builds `/entity/{id}/enter?token=…&next=/entity/{id}/modules`,
-  so the person arrives with their Flask session re-established and Minty's `module_selector`
+  `lib/mintyEntry.ts::mintyModulesUrl` builds `/entity/{id}/enter?next=/entity/{id}/modules` (no
+  token since gap 4: `/enter` works on the accounts-api session, or signs in first), and Minty's `module_selector`
   routes them — one module enabled goes straight in (Petty Cash's dashboard, or the payments
   app), two offer the module selection. Minty decides, from `entity_function_map`; this app
   counts no modules. With no company in the cookie the link goes to the entity list - which,

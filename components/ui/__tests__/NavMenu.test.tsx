@@ -87,7 +87,7 @@ describe("NavMenu", () => {
     const payments = within(menu.getByRole("group", { name: "Payment Request" }));
     expect(payments.getByRole("link", { name: "Bills" })).toHaveAttribute(
       "href",
-      `${env.ACCOUNTS_API_URL}/entity/e1/enter?token=${encodeURIComponent(TOKEN)}&next=${encodeURIComponent("/entity/e1/payment-request")}`,
+      `${env.ACCOUNTS_API_URL}/entity/e1/enter?next=${encodeURIComponent("/entity/e1/payment-request")}`,
     );
     expect(menu.getByRole("link", { name: "Settings" })).toHaveAttribute(
       "href",
@@ -104,7 +104,7 @@ describe("NavMenu", () => {
   it("Bills: Minty's hand-over for this company, but the set's own payments app in a preview set", () => {
     setAuth(TOKEN, "e1", "Olive Shop");
     expect(billsHref("my.dailyminty.com")).toBe(
-      `${env.ACCOUNTS_API_URL}/entity/e1/enter?token=${encodeURIComponent(TOKEN)}&next=${encodeURIComponent("/entity/e1/payment-request")}`,
+      `${env.ACCOUNTS_API_URL}/entity/e1/enter?next=${encodeURIComponent("/entity/e1/payment-request")}`,
     );
     // Host and scheme only: the configured URL here is localhost:3020, whose port siblingUrl keeps.
     const inSet = new URL(billsHref("pr-ui-update-my.dailyminty.com"));

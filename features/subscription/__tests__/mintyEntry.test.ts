@@ -13,12 +13,12 @@ const TOKEN = "h.eyJ1c2VyX2lkIjoidTEifQ.s";
 describe("mintyEntryUrl", () => {
   afterEach(() => clearAuth());
 
-  it("enters the company the token names, with and without a path", () => {
+  it("enters the company the token names, with and without a path - never with the token", () => {
     setAuth(TOKEN, "e1", "Olive & Vine Limited");
-    const base = `${env.ACCOUNTS_API_URL}/entity/e1/enter?token=${encodeURIComponent(TOKEN)}`;
+    const base = `${env.ACCOUNTS_API_URL}/entity/e1/enter`;
     expect(mintyEntryUrl()).toBe(base);
     expect(mintyEntryUrl("/entity/e1/reports")).toBe(
-      `${base}&next=${encodeURIComponent("/entity/e1/reports")}`,
+      `${base}?next=${encodeURIComponent("/entity/e1/reports")}`,
     );
   });
 
@@ -32,13 +32,14 @@ describe("mintyEntryUrl", () => {
   it("enters ANY company from the entity list, whatever the token is scoped to", () => {
     setAuth(TOKEN, "", "");
     expect(mintyEnterCompanyUrl("e7")).toBe(
-      `${env.ACCOUNTS_API_URL}/entity/e7/enter?token=${encodeURIComponent(TOKEN)}` +
-        `&next=${encodeURIComponent("/entity/e7/modules")}`,
+      `${env.ACCOUNTS_API_URL}/entity/e7/enter` +
+        `?next=${encodeURIComponent("/entity/e7/modules")}`,
     );
     setAuth(TOKEN, "e1", "Olive & Vine Limited");
     expect(mintyEnterCompanyUrl("e7")).toContain("/entity/e7/enter?");
     clearAuth();
-    expect(mintyEnterCompanyUrl("e7")).toBe("/entities"); // no token, nothing to enter with
+    // no token needed: the accounts-api session carries the way back (gap 4)
+    expect(mintyEnterCompanyUrl("e7")).toContain("/entity/e7/enter?");
   });
 
   it("mintyModulesUrl asks Minty to route: the module selection, or the only module on", () => {

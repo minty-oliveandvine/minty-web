@@ -1344,10 +1344,10 @@ describe("08-A, the portal's landing", () => {
     const href = screen
       .getByRole("link", { name: "Back to the entity dashboard" })
       .getAttribute("href")!;
-    // through /enter, so the Flask session is re-established on the way
+    // through /enter, on the accounts-api session (no token in the address, gap 4)
     expect(href).toBe(
-      `${env.ACCOUNTS_API_URL}/entity/e1/enter?token=${encodeURIComponent(TOKEN)}` +
-        `&next=${encodeURIComponent("/entity/e1/modules")}`,
+      `${env.ACCOUNTS_API_URL}/entity/e1/enter` +
+        `?next=${encodeURIComponent("/entity/e1/modules")}`,
     );
   });
 });

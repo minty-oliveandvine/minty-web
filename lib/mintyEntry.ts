@@ -1,13 +1,12 @@
 /**
  * The way back into Minty for the company this browser holds a token for.
  *
- * Minty's `/entity/<id>/enter` (`entity.module_reenter`) takes the cookie's token, validates it,
- * re-establishes the Flask session and forwards to `next` - so the person lands where they were
- * going, signed in, instead of on a login screen. minty-payment-request-web goes in the same way.
+ * accounts-api's `/entity/<id>/enter` forwards to `next` on the person's accounts-api session, or
+ * signs them in first and then does (gap 4, 2026-11-09: the address carries no token - it used to
+ * be `?token=`). minty-payment-request-web goes in the same way.
  *
- * With no company or no token there is nothing to enter, so the entity list is the fallback -
- * this app's own (`HUB_PATHS.entities`): a URL that always works rather than one built around
- * an empty id.
+ * With no company there is nothing to enter, so the entity list is the fallback - this app's own
+ * (`HUB_PATHS.entities`): a URL that always works rather than one built around an empty id.
  */
 
 import { getAuth } from "@/lib/auth";
@@ -15,18 +14,17 @@ import { env } from "@/lib/env";
 import { HUB_PATHS } from "@/lib/hubPaths";
 
 export function mintyEntryUrl(path?: string, entityId?: string): string {
-  const auth = getAuth();
-  const company = entityId || auth?.entityId;
-  if (company && auth?.token) {
-    const base = `${env.ACCOUNTS_API_URL}/entity/${encodeURIComponent(company)}/enter?token=${encodeURIComponent(auth.token)}`;
-    return path ? `${base}&next=${encodeURIComponent(path)}` : base;
+  const company = entityId || getAuth()?.entityId;
+  if (company) {
+    const base = `${env.ACCOUNTS_API_URL}/entity/${encodeURIComponent(company)}/enter`;
+    return path ? `${base}?next=${encodeURIComponent(path)}` : base;
   }
   return HUB_PATHS.entities;
 }
 
 /**
- * Into ANY company from the entity list: `/entity/<id>/enter` re-establishes the Flask session
- * from the token (a member's or a superuser's - an unscoped one is fine) and hands on to that
+ * Into ANY company from the entity list: `/entity/<id>/enter`, on the accounts-api session (a
+ * member's or a superuser's), hands on to that
  * company's module router, which records the visit on the list's clock and picks the module:
  * straight into the only one, or this app's module choice (`/entity/<shortid>/<name>`) for two.
  */
@@ -45,7 +43,7 @@ export function mintyModulesUrl(entityId: string): string {
 
 /**
  * Into minty-petty-cash-web for one company (Step 5, 2026-10-19), the way Bills reaches the
- * payments app: `/enter` rebuilds the Flask session, then Flask's login-gated
+ * payments app: `/enter` (on the accounts-api session), then accounts-api's login-gated
  * `/handoff/petty-cash-web` mints that app's token for THIS company and lands it on `next` - a
  * path on the Petty Cash app (`companyPath(id, name, "/petty-cash/reports")`); with none, Flask
  * picks the company's dashboard. `return_origin` names this page's origin, so inside a branch

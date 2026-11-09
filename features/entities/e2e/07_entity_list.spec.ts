@@ -82,7 +82,7 @@ test.describe("the entity list", () => {
     const five = main.getByRole("link", { name: /Scenario 5 - Free trial \+ Active/ });
     await expect(five).toHaveAttribute(
       "href",
-      /\/entity\/e-scenario-5\/enter\?token=.+&next=%2Fentity%2Fe-scenario-5%2Fmodules$/,
+      /\/entity\/e-scenario-5\/enter\?next=%2Fentity%2Fe-scenario-5%2Fmodules$/,
     );
     await expect(five.getByRole("img", { name: "Free trial: Petty Cash" })).toBeVisible();
     await expect(main.getByText("Setup in progress")).toBeVisible();

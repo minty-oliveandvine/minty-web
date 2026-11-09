@@ -1,6 +1,7 @@
-// Into minty-petty-cash-web (Step 5, 2026-10-19): through Minty's /enter, which rebuilds the
-// Flask session from this app's token, on to Flask's /handoff/petty-cash-web, which mints the
-// Petty Cash app's token for THIS company - the same road as Bills' /entity/<id>/payment-request.
+// Into minty-petty-cash-web (Step 5, 2026-10-19): through Minty's /enter, on the accounts-api
+// session (gap 4, 2026-11-09: never this app's token in the address), on to accounts-api's
+// /handoff/petty-cash-web, which hands the Petty Cash app over for THIS company - the same road
+// as Bills' /entity/<id>/payment-request.
 
 import { beforeEach, describe, expect, it } from "vitest";
 
@@ -15,7 +16,7 @@ const ID = "360812e1-9f94-46a3-aa31-347e21afde8e";
 function handoff(href: string): URL {
   const enter = new URL(href);
   expect(`${enter.origin}${enter.pathname}`).toBe(`${env.ACCOUNTS_API_URL}/entity/${ID}/enter`);
-  expect(enter.searchParams.get("token")).toBe(TOKEN);
+  expect(enter.searchParams.has("token")).toBe(false);
   const next = enter.searchParams.get("next");
   expect(next).toMatch(/^\/handoff\/petty-cash-web\?/);
   return new URL(next!, "https://flask.test");
@@ -46,8 +47,8 @@ describe("pettyCashWebUrl", () => {
     );
   });
 
-  it("falls back to the entity list with no token", () => {
+  it("needs no token: the accounts-api session carries the way back", () => {
     clearAuth();
-    expect(pettyCashWebUrl(ID)).toBe("/entities");
+    expect(handoff(pettyCashWebUrl(ID)).searchParams.get("entity_id")).toBe(ID);
   });
 });

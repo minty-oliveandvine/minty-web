@@ -75,8 +75,8 @@ describe("EntityListScreen", () => {
     expect(screen.getByRole("heading", { level: 1, name: "Select Company" })).toBeInTheDocument();
     const five = await screen.findByRole("link", { name: /Scenario 5 - Free trial \+ Active/ });
     expect(five.getAttribute("href")).toBe(
-      `${env.ACCOUNTS_API_URL}/entity/e-scenario-5/enter?token=${encodeURIComponent(TOKEN)}` +
-        `&next=${encodeURIComponent("/entity/e-scenario-5/modules")}`,
+      `${env.ACCOUNTS_API_URL}/entity/e-scenario-5/enter` +
+        `?next=${encodeURIComponent("/entity/e-scenario-5/modules")}`,
     );
     const card = within(five);
     expect(card.getByRole("img", { name: "Free trial: Petty Cash" })).toBeInTheDocument();

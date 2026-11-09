@@ -54,9 +54,9 @@ PM" in the viewer's zone, "By <name>" on hover, grey "Not opened yet" when nobod
 chevron. Search is Flask's: case-insensitive, anywhere in the name. The cat's "Create company"
 and the empty state's _Create Entity_ go to Minty's `/entity/create` (the onboarding wizard).
 
-**A card leads into its company** through Minty's `/entity/<id>/enter?token=…&next=/entity/<id>/modules`
-(`lib/mintyEntry.ts::mintyEnterCompanyUrl`): `/enter` re-establishes the Flask session from the
-token, and the module selector checks the membership, records the visit on the clock and picks
+**A card leads into its company** through Minty's `/entity/<id>/enter?next=/entity/<id>/modules`
+(`lib/mintyEntry.ts::mintyEnterCompanyUrl`): `/enter` goes on with the accounts-api session (or
+signs the person in first - no token in the address since gap 4, 2026-11-09), and the module selector checks the membership, records the visit on the clock and picks
 the module (or resumes the wizard for a company still in onboarding).
 
 ## What Flask flashed on the way
