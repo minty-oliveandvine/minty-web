@@ -33,8 +33,8 @@ is sessionStorage (`features/auth/lib/handover.ts`). Recipe: `features/auth/READ
 (2026-11-09):** accounts-api hands over a one-time code, never the token; the page swaps it at
 accounts-api's `POST /api/handoff/redeem` (once, 2 minutes, from this origin only) and, if the
 code is used or has run out, says so with a Continue that takes the re-handoff - never an
-automatic redirect. The legacy `?token=` is still stored as it is until accounts-api stops sending
-it. Then it stores the three values in cookies (`lib/auth.ts`: `minty_token`, `minty_entity_id`,
+automatic redirect. A `?token=` in the address is never stored (it goes the way of no code).
+Then it stores the three values in cookies (`lib/auth.ts`: `minty_token`, `minty_entity_id`,
 `minty_entity_name`; `SameSite=Lax`, `Secure` on https, **max-age = the token's `exp`**, so an
 expired session is caught by proxy.ts before a page renders) and `router.replace`s to
 `next` — a path on this origin (`lib/safeNext.ts`, through `lib/handoff.ts::safeNext`), else the

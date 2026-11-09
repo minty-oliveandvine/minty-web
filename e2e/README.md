@@ -23,7 +23,9 @@ real credentials, an unanswered check would put the panel over every other spec.
 
 ## Credentials
 
-The specs arrive the way Minty sends people: `/landing?token=<jwt>`. They mint that JWT
+The specs arrive the way Minty sends people: `/landing?code=<one-time code>` (gap 4), the
+code swapped for the JWT at accounts-api's `POST /api/handoff/redeem` - which the helpers answer
+themselves (`codeFor`; a code they did not issue goes on to the real one). They mint that JWT
 themselves with the shared `SECRET_KEY` (see `e2e/helpers.ts` for why nothing is bypassed):
 
 | Variable                                                             | What                                                                                                                                    |
