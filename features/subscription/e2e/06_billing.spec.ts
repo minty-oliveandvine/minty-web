@@ -30,7 +30,7 @@ import {
 } from "../__fixtures__/billing";
 import { subscriptionsPage } from "../__fixtures__/subscriptions";
 import type { BillingAccounts, PayerPaymentMethods } from "../api/payerPortal";
-import { ADDRESS_UNAVAILABLE, TOO_LONG } from "../lib/billingAccounts";
+import { ADDRESS_UNAVAILABLE, TOO_LONG } from "../lib/billingAccountWords";
 
 const STUB_CREDS = {
   secret: "stub-the-api-never-sees-this",
