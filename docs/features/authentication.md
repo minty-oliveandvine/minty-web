@@ -2,7 +2,7 @@
 
 This app **stores and forwards a token; it never mints or refreshes one.** Minty (Flask) signs
 the person in — email OTP or Xero, on THIS app's sign-in page since phase 2 (below) — mints the module JWT (`_generate_module_token`, 30 minutes)
-and hands it over in the launch URL; the system-wide picture is `Minty/docs/features/authentication.md`,
+and hands it over in the launch URL; the system-wide picture is `minty-accounts-api/docs/features/authentication.md`,
 the verifying half `minty-subscription-api/docs/features/authentication.md`.
 
 ## The sign-in page (`/login` + `/signup`, `features/auth`, phase 2 - 2026-10-05)
@@ -65,7 +65,7 @@ Flask's login-gated route (Minty's `/handoff/minty-web`, landed 2026-09-21) that
 (`lib/handoff.ts::handoffUrl`, the request's origin in the proxy), the code sign-in's hand-off and
 Xero sign-in (`features/auth/api/signIn.ts`) - names this app's origin through `withReturnOrigin`.
 Flask uses it only where `PREVIEW_ORIGIN_REGEX` admits it, to hand back into
-`pr-<branch>-my.dailyminty.com` (Minty `docs/features/authentication.md` 6.1); a normal host's
+`pr-<branch>-my.dailyminty.com` (minty-accounts-api `docs/features/authentication.md` 6.1); a normal host's
 origin leaves any set. The sidebar's Bills link stays in the set through `lib/previewSibling.ts`.
 Both helpers are COPIES of `@minty/shared/previewSibling` while this app stays on `v0.1` (owner,
 2026-10-13); delete them when it moves to the Part 13 design and `v0.2`+. The copy already knows

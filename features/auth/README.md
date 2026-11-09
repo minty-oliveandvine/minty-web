@@ -5,7 +5,7 @@ The sign-in page (phase 2, 2026-10-05): `/login` (log in, `?invite=&email=&fn=&l
 there) and `/login/confirm` (the emailed code). Until then Flask's `/` + `/register` and
 minty-onboarding-web's `/auth` + `/auth/confirm`; those forward here now. Flask stays the identity
 behind it - this feature only talks to Flask's `/auth/email/*`, `/legal/*`, `/auth/notices` and
-navigates to `/xero_auth`. The system-wide picture: `Minty/docs/features/authentication.md` §2.
+navigates to `/xero_auth`. The system-wide picture: `minty-accounts-api/docs/features/authentication.md` §2.
 
 ```
 index.ts        THE public surface: LoginPage, SignUpPage, LoginConfirmPage, AUTH_BASE_PATH,
