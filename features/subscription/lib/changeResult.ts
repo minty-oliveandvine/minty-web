@@ -9,7 +9,9 @@
  * - a module removed while another paid one keeps running → the module cancellation page
  *   ("<Module> Cancellation Confirmed", access until its date, "you can reactivate anytime");
  * - a removal and an addition in one change → "Subscription updated" in the row (what ends and
- *   when, what is available now, the price until then and after);
+ *   when, what is available now, the price until then and after); so does any change with a
+ *   confirmed TRIAL unticked in it ("… trial ends on <date> and will not be billed."), which is
+ *   never a cancellation page (owner, 2026-11-10);
  * - anything else that was added, confirmed, restored or started → "Congratulations!" in the
  *   row: one line per module ("… is confirmed. Billing starts the day its trial ends.", "… is
  *   active. Your card has been charged.", "… is restored and billing carries on as before.",
@@ -261,7 +263,12 @@ export function buildChangeResult(
   const removed = diff.filter((d) => d.outcome === "ending" || d.outcome === "stopped");
   const added = diff.filter((d) => d.outcome !== "ending" && d.outcome !== "stopped");
 
-  if (removed.length > 0 && added.length === 0) {
+  // The cancellation pages are for PAID modules ending. A trial unticked (`stopped`) is not a
+  // cancellation - nothing was bought, its free days run on (owner, 2026-11-10) - so any
+  // change with one in it says so on the "Subscription updated" row below instead.
+  const stopped = removed.some((d) => d.outcome === "stopped");
+
+  if (removed.length > 0 && added.length === 0 && !stopped) {
     const gone = new Set(removed.map((d) => d.card.code));
     const others = after.cards.filter((c) => billable(c) && !gone.has(c.code));
     const ends = removed.map((d) => accessEnd(d.card)).filter((d): d is Date => d !== null);

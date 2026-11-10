@@ -24,7 +24,11 @@ import {
 } from "@/features/subscription/__fixtures__/subscriptions";
 import { ACCOUNTS, ACCOUNTS_OPENED } from "@/features/subscription/__fixtures__/billing";
 import type { BillingAccounts, PortalEntity } from "@/features/subscription/api/payerPortal";
+import { applyChange } from "@/features/subscription/api/moduleChanges";
 import { NO_CARD_FOR_TRIAL } from "@/features/subscription/lib/billingAccounts";
+import { tickOf } from "@/features/subscription/lib/subscriptionSummary";
+
+const APPLIED = { needsCard: null, declined: null, refused: null };
 import {
   LIST_NOT_WIRED_YET,
   SEARCH_DEBOUNCE_MS,
@@ -1302,5 +1306,87 @@ describe("useSubscriptionsList", () => {
     await waitFor(() => expect(result.current.status).toBe("ready"));
     expect(fetchMock).not.toHaveBeenCalled();
     expect(result.current.hasEntities).toBe(false);
+  });
+
+  // R1 + R2 (owner, 2026-11-10): during a free trial the tick means "continue on a paid plan when
+  // the trial ends". Unticking only stops that - nothing is cancelled - and ticking again undoes
+  // it, as many times as the admin likes, right up to the trial's end.
+  it("a confirmed trial unticked: asks without cancelling, posts cancel, says the trial runs on", async () => {
+    const posts = serveChange(fetchMock, "RNX21a");
+    const e = ENTITIES[0];
+    const { result } = renderHook(
+      () => useSubscriptionsList({ today: TODAY, focusEntityId: e.entity_id }),
+      { wrapper },
+    );
+    await waitFor(() => expect(result.current.summary.status).toBe("ready"));
+    act(() => result.current.summary.toggleTick("PETTY_CASH"));
+    await act(async () => {
+      result.current.confirmChange(e, result.current.summary.view!.pendingChange!);
+    });
+    expect(result.current.changePrompt?.modal.kind).toBe("trial_stop");
+    await act(() => result.current.applyChangePrompt());
+    // It bills nothing, so no Billing Accounts step.
+    expect(result.current.accountStep).toBeNull();
+    expect(posts.map((p) => [p.action, p.body])).toEqual([["cancel", { code: "PETTY_CASH" }]]);
+    expect(result.current.result?.result.kind).toBe("updated");
+    expect(JSON.stringify(result.current.result?.result)).not.toMatch(/cancel/i);
+    // The row read again: still a trial, unticked, and ticking it would resume it.
+    await waitFor(() =>
+      expect(result.current.summary.view?.modules[0]).toMatchObject({
+        tick: "unticked",
+        seam: "resume",
+      }),
+    );
+    expect(result.current.summary.view?.modules[0].view.status.eyebrow).toBe("Trial");
+  });
+
+  it("the unticked trial ticked again: posts renew - never authorize-billing, which left it to expire", async () => {
+    const posts = serveChange(fetchMock, "RN21a");
+    const e = ENTITIES[0];
+    const { result } = renderHook(
+      () => useSubscriptionsList({ today: TODAY, focusEntityId: e.entity_id }),
+      { wrapper },
+    );
+    await waitFor(() => expect(result.current.summary.status).toBe("ready"));
+    act(() => result.current.summary.toggleTick("PETTY_CASH"));
+    expect(result.current.summary.view?.pendingChange?.seam).toBe("resume");
+    await confirmBilled(result, e);
+    expect(posts.map((p) => p.action)).toEqual([MOVE, "renew"]);
+    expect(posts[1].body).toEqual({ code: "PETTY_CASH" });
+    expect(result.current.result?.result.kind).toBe("celebrate");
+    await waitFor(() =>
+      expect(result.current.summary.view?.modules[0]).toMatchObject({
+        tick: "ticked",
+        seam: "cancel",
+      }),
+    );
+  });
+
+  it("tick -> untick -> tick -> untick: each save sends its own action, with no dead end", async () => {
+    // The API's answers, in turn: unticking leaves NX21a, ticking again N21a.
+    const states = { N21a: SUMMARY_FIXTURES.N21a, NX21a: SUMMARY_FIXTURES.NX21a };
+    let now: keyof typeof states = "N21a";
+    const actions: string[] = [];
+    fetchMock.mockImplementation(async (input, init) => {
+      const url = new URL(String(input));
+      const m = /^\/api\/entities\/[^/]+\/modules(?:\/(.+))?$/.exec(url.pathname);
+      if (m && init?.method === "POST") {
+        actions.push(m[1]!);
+        if (m[1] === "cancel") now = "NX21a";
+        if (m[1] === "renew") now = "N21a";
+        return reply(200, { ok: true });
+      }
+      return reply(200, states[now]);
+    });
+    const e = ENTITIES[0].entity_id;
+    for (let round = 0; round < 2; round++) {
+      const ticked = states[now];
+      expect(tickOf(ticked.cards[0])).toEqual({ tick: "ticked", seam: "cancel" });
+      expect(await applyChange(e, ticked, ["PETTY_CASH"])).toEqual(APPLIED);
+      const unticked = states[now];
+      expect(tickOf(unticked.cards[0])).toEqual({ tick: "unticked", seam: "resume" });
+      expect(await applyChange(e, unticked, ["PETTY_CASH"])).toEqual(APPLIED);
+    }
+    expect(actions).toEqual(["cancel", "renew", "cancel", "renew"]);
   });
 });

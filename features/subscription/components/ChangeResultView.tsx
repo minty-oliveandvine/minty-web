@@ -145,6 +145,7 @@ export function ChangeResultRow({
         entityName={entity.entity_name}
         createdOn={result.footer.createdOn}
         renewalOn={result.footer.renewalOn}
+        trial={result.footer.trial}
       />
     </li>
   );

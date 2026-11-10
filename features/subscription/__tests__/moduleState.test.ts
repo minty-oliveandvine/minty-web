@@ -4,7 +4,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { ModuleCard } from "@/features/subscription/api/moduleSettings";
-import { FIXTURES, TODAY } from "@/features/subscription/__fixtures__/modulePage";
+import { FIXTURES, SUMMARY_FIXTURES, TODAY } from "@/features/subscription/__fixtures__/modulePage";
 import {
   daysLabel,
   daysUntil,
@@ -30,12 +30,21 @@ describe("moduleState", () => {
   it("past due wins over a pending cancellation, which wins over the phase", () => {
     const both: ModuleCard = { ...petty("F"), pending_cancel: true };
     expect(moduleState(both)).toBe("past_due");
-    const cancelledTrial: ModuleCard = {
-      ...petty("A"),
-      trial_cancelled: true,
-      pending_cancel: true,
-    };
-    expect(moduleState(cancelledTrial)).toBe("pending_cancel");
+    expect(moduleState(petty("E"))).toBe("pending_cancel");
+  });
+
+  // R1 (owner, 2026-11-10): unticking a trial only stops it continuing on a paid plan. It is
+  // still a trial - never "Cancellation pending" - even though the API's internal "won't
+  // convert" phase also raises `pending_cancel` / `cancel_at_period_end` on the card.
+  it("a trial that will not continue is still a trial, with its days left", () => {
+    const stopped = SUMMARY_FIXTURES.NX21a.cards[0];
+    expect(stopped).toMatchObject({ trial_cancelled: true, pending_cancel: true });
+    expect(moduleState(stopped)).toBe("trialing");
+    expect(moduleState(stopped, false)).toBe("needs_activation");
+    const view = resolveModuleState(stopped, TODAY);
+    expect(view.status).toEqual({ eyebrow: "Trial", text: "3 days remaining", tone: "accent" });
+    expect(view.cta.kind).toBe("manage");
+    expect(JSON.stringify(view)).not.toMatch(/cancel/i);
   });
 
   it("a closing trial is still a trial - the access gate ends it, not the date", () => {

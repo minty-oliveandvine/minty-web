@@ -2,7 +2,7 @@
 // panel in its simple and its current/future forms, the ⓘ line, the footer - and where a press
 // on a tick, a Start Free Trial, Change or the chevron goes. Located by role and text.
 
-import { render, screen, within } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
@@ -18,7 +18,7 @@ import {
   SubscriptionSummaryRow,
   type SummaryRowHandlers,
 } from "@/features/subscription/components/SubscriptionSummaryRow";
-import { AUTO_RENEW } from "@/features/subscription/components/RowFooter";
+import { AUTO_RENEW, TRIAL_TERMS } from "@/features/subscription/components/RowFooter";
 import {
   CONFIRM_CHANGE,
   TRIAL_NOTICE,
@@ -133,11 +133,28 @@ describe("SubscriptionSummaryRow", () => {
     // status, though, and the sentence names the day the trial ends.
     const { view } = show("M21");
     expect(SUMMARY_FIXTURES.M21.panel?.next_invoice).toBeNull();
-    const terms = screen.getByText(new RegExp(AUTO_RENEW.slice(0, 40)));
-    expect(terms).toHaveTextContent(AUTO_RENEW);
+    const terms = screen.getByText(new RegExp(TRIAL_TERMS.slice(0, 30)));
     expect(terms).toHaveTextContent(
       `Your next subscription renewal date is ${view.footer.renewalOn} and each month after.`,
     );
+  });
+
+  // Owner, 2026-11-10: a company on trials only pays for nothing, so its terms say how a trial
+  // ends and continues - never "cancellation" - whether the trial is confirmed or unticked.
+  it("a company on trials only: the trial terms, with no cancellation in them", () => {
+    for (const frame of ["M21", "N21a", "NX21a"] as const) {
+      show(frame);
+      expect(screen.getByText(new RegExp(TRIAL_TERMS.slice(0, 30)))).toHaveTextContent(TRIAL_TERMS);
+      expect(screen.queryByText(new RegExp(AUTO_RENEW.slice(0, 40)))).toBeNull();
+      expect(document.body.textContent).not.toMatch(/cancel/i);
+      cleanup();
+    }
+  });
+
+  it("a company with a paid module keeps the standing terms, a trial beside it or not", () => {
+    show("M24");
+    expect(screen.getByText(new RegExp(AUTO_RENEW.slice(0, 40)))).toHaveTextContent(AUTO_RENEW);
+    expect(screen.queryByText(new RegExp(TRIAL_TERMS.slice(0, 30)))).toBeNull();
   });
 
   it("with nothing started there is no renewal sentence, but the terms stay", () => {

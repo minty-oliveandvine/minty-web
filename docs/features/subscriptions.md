@@ -368,7 +368,9 @@ docs/features/company-settings.md). What is on it:
   minty-payment-request-web's `getModuleClaims` ported; both default to on), so the pills never vanish
   while the page loads or when the API cannot answer. The initials open My Profile in the
   sidebar over the page (`profile.md`; since 2026-09-29 - they were hover-only that morning).
-- **Two cards, six states** (`lib/moduleState.ts`, first match wins):
+- **Two cards, six states** (`lib/moduleState.ts`, first match wins). A confirmed trial unticked
+  (`trial_cancelled`) is `trialing` (or `needs_activation`), never `pending_cancel`, although the
+  API also sends it `pending_cancel` (owner, 2026-11-10: a trial has no paid period to run out):
 
   | state          | card says                                                                          | CTA                                               |
   | -------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------- |
@@ -719,7 +721,11 @@ design's rules live (`buildSummaryView(page, entity, wallet, today, pending)`, `
   There is a 1 month notice period required for your cancellation." Three parts, guarded
   SEPARATELY (2026-09-23): the created sentence needs `created_at`, the renewal sentence needs a
   date, and the two standing sentences are terms — they carry no date and read under every
-  company. Hanging all three off the date made them vanish for any company whose only module was
+  company. A company on free trials only (a trial running, nothing paid or suspended -
+  `RowFooterFacts.trial`) reads the trial's terms in their place (owner, 2026-11-10): "Free
+  trials cost nothing. When a trial ends, only the modules you've confirmed continue on a
+  monthly plan, and renew each month after that." — no cancellation wording while nothing is
+  paid for; the standing terms return with the first paid module. Hanging all three off the date made them vanish for any company whose only module was
   a trial, which is most of the design's own frames. The date is `panel.next_invoice.date`, or —
   since the API withholds that until a company has a billing cycle ("Absent while the entity has
   only trials") — the end of the soonest running, not-cancelled trial, which is the day billing
@@ -767,7 +773,10 @@ button in 05·B lands". Built 2026-09-22.
   account's card; a trial is then confirmed on it, unless the account picked has no card it can
   charge (`cardChosen`)): one API action per module
   changed, from the card's state — an active module (or a confirmed trial) unticked → `cancel`;
-  a cancellation pending, ticked → `renew`; a running trial, ticked → `authorize-billing` (this
+  a cancellation pending, ticked → `renew`; a confirmed trial unticked (`trial_cancelled`), ticked
+  again → `renew` too (it puts the row back to converting; `authorize-billing` only writes consent
+  the company already has and left the trial to expire - owner, 2026-11-10: the trial tick is
+  reversible without limit until the trial ends); a running trial, ticked → `authorize-billing` (this
   company's consent; consent is per company, so every trial it runs converts); a suspended
   module, ticked → `retry-payment` (the outstanding invoice, now); an expired trial, ticked →
   `restart-billing` (**this charges** the nominated card). The calls that cannot need a card go
@@ -829,13 +838,15 @@ button in 05·B lands". Built 2026-09-22.
 - **Readings and gaps, for the design**: the base frame 05·C-4 ("Subscription Update
   Confirmed", a full page) is not what the generated grid draws for a mixed change (RU24 and
   its kin use the in-row "Subscription updated"), so the grid is followed; the grid has no
-  result for a confirmed trial unticked (the NX-frames) — it lands on the cancellation pages
-  (the trial's end as the date); the 05·C-1 base frame's "module has been activated" reads
+  result for a confirmed trial unticked (the NX-frames) — it lands on the in-row "Subscription
+  updated" ("<Module>'s trial ends on <date> and will not be billed."), never a cancellation page
+  (owner, 2026-11-10; it landed on the cancellation pages before), and ticking it again (RN21a)
+  lands on "Congratulations!" ("… is confirmed. Billing starts the day its trial ends."); the 05·C-1 base frame's "module has been activated" reads
   "is active. Your card has been charged." in every generated frame, so that is the line; the
   design's headline is spelled "Congragulations!" in the base frames and "Congratulations!" in
   the generated ones — the latter is used.
 - **Dev switch**: `?result=RU22` (any of `RU22 RU23 RU24 RV14 RV44 RV45 RW45 RV41 RV51 RV61
-RNX21a`) lands the open row (`?entity=`, `?fixture=A`) on that frame outside production.
+RNX21a RN21a`) lands the open row (`?entity=`, `?fixture=A`) on that frame outside production.
 
 ## 13. The confirmation — what the modal asks
 
@@ -991,7 +1002,12 @@ The dialog family (`components/ui/ModalFrame`, `components/ui/ConfirmDialog`, `L
 - **Readings**: "another 30 days" is the design's fixed figure, and the prorated rule's floor
   (access until the later of the period end and thirty days out) — the result screen names the
   exact day, so the API's `cancel-preview` is not called for the modal; a confirmed trial
-  unticked (the NX frames, which section 06 does not draw) asks with the removal modals; the
+  unticked (the NX frames, which section 06 does not draw) asks "Stop <Module> after the trial?"
+  (`trial_stop`: it stays free until <date>, won't continue on a paid plan, tick it again to keep
+  it; orange Confirm Change, never "Cancel Subscription?"/"Remove" - owner, 2026-11-10), inside
+  "Subscription Changes" it reads "will stay free until <date> and won't continue after that.",
+  and ticking it again asks "Continue <Module>" ("…will continue on a paid plan when its trial
+  ends on <date>."); the
   design's "SuperMinty" is the API's bundle name (`Super Minty`), as everywhere else; 05·D's
   "Reactivate … 30 days trial available … ticks every one of them" cannot tick a module never
   started (a trial is started, not ticked), so those are left to their button; A-05's "We'll

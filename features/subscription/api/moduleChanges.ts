@@ -6,7 +6,8 @@
  *
  * What each tick is, from the card's state (`lib/subscriptionSummary.ts` `tickOf`):
  *   cancel          an ACTIVE module unticked, or a confirmed trial (NX) - `cancel`
- *   resume          a cancellation pending, ticked - `renew`
+ *   resume          a cancellation pending, ticked - `renew`; and a confirmed trial unticked
+ *                   (`trial_cancelled`), ticked again - `renew` puts it back to converting
  *   confirm_trial   a running trial, ticked - `authorize-billing` (consent is per company:
  *                   every trial the company runs converts); with no card at all, or a 402
  *                   "Choose a billing account …" (the company is on none), the billing account

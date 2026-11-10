@@ -321,6 +321,20 @@ describe("the payment method and the footer", () => {
     expect(buildSummaryView(cancelled, ENTITY, WALLET, TODAY).footer.renewalOn).toBeNull();
   });
 
+  it("the footer is a trial's while the company is on trials only (owner, 2026-11-10)", () => {
+    const trial = (frame: SummaryFrame) => view(frame).footer.trial;
+    expect(trial("M21")).toBe(true); // a trial nobody has confirmed
+    expect(trial("N21a")).toBe(true); // a confirmed trial
+    expect(trial("NX21a")).toBe(true); // a trial unticked
+    expect(trial("M22")).toBe(true);
+    expect(trial("M24")).toBe(false); // a paid module beside the trial
+    expect(trial("M44")).toBe(false);
+    expect(trial("M51")).toBe(false); // a paid module winding down
+    expect(trial("M61")).toBe(false); // suspended
+    expect(trial("M11")).toBe(false); // nothing started
+    expect(trial("M31")).toBe(false); // a trial already over
+  });
+
   it("the row says the same date while it loads as it does once loaded", () => {
     // The open row draws its footer from `pageFromList` until the page model lands. That model
     // carries no pre-formatted dates, so a date taken from one would change spelling under the
@@ -436,6 +450,29 @@ describe("a tick pending (05·B)", () => {
     });
     expect(v.panel.future).toBeNull();
     expect(v.pendingChange).toMatchObject({ code: "PETTY_CASH", seam: "cancel" });
+  });
+
+  // R1 + R2 (owner, 2026-11-10): once saved, the unticked trial is still a trial, unticked, and
+  // ticking it again RESUMES it (`renew`) - not authorize-billing, which never touches the row
+  // and left the trial to expire at its end.
+  it("NX21a saved: still a trial, unticked; ticking it again - Adding, confirm = resume", () => {
+    const saved = view("NX21a");
+    expect(ticks("NX21a")[0]).toEqual(["PETTY_CASH", "unticked", "resume"]);
+    expect(saved.modules[0].view.state).toBe("trialing");
+    expect(saved.modules[0].view.status).toMatchObject({ eyebrow: "Trial" });
+    expect(JSON.stringify(saved.modules[0])).not.toMatch(/cancel/i);
+
+    const again = withTicks("NX21a", { PETTY_CASH: true });
+    expect(again.modules[0]).toMatchObject({ tick: "ticked", chip: "Adding", changed: true });
+    expect(again.pendingChange).toMatchObject({ code: "PETTY_CASH", seam: "resume" });
+    if (again.panel.kind !== "changing") throw new Error(again.panel.kind);
+    expect(again.panel.current.lines).toEqual([
+      { name: "Petty Cash", tone: "petty", tag: "(Free Trial)" },
+    ]);
+    expect(again.panel.future).toMatchObject({
+      lines: [{ name: "Petty Cash", tag: "only" }],
+      price: "HKD 280",
+    });
   });
 
   it("a tick that matches today's state is not a change", () => {

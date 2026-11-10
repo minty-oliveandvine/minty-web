@@ -22,7 +22,14 @@ import {
   outcomeOf,
   startedTrialResult,
 } from "@/features/subscription/lib/changeResult";
-import { forecast, shortDate, longDate } from "@/features/subscription/lib/subscriptionSummary";
+import {
+  forecast,
+  shortDate,
+  longDate,
+  utcDay,
+} from "@/features/subscription/lib/subscriptionSummary";
+
+const utcDayOf = (value: string | null) => utcDay(value)!;
 
 const entity = { entity_name: "Kestrel Foods Limited", created_at: ENTITIES[0].created_at };
 
@@ -140,9 +147,48 @@ describe("buildChangeResult (05·C)", () => {
     expect(paragraphs[2]).toBe("You may reactivate the subscription anytime.");
   });
 
-  it("RNX21a: a confirmed trial unticked with nothing else billing - the subscription page", () => {
+  // R1 (owner, 2026-11-10): a trial unticked is not a cancellation - nothing was bought and
+  // nothing ends early - so it never lands on a cancellation page or says "cancel".
+  it("RNX21a: a confirmed trial unticked - Subscription updated, the trial's end, no cancellation", () => {
     const r = build("RNX21a");
-    expect(r.kind).toBe("subscription_cancelled");
+    expect(r.kind).toBe("updated");
+    expect(r.layout).toBe("row");
+    expect(r.headline).toEqual({ module: null, text: SUBSCRIPTION_UPDATED });
+    const end = shortDate(utcDayOf(RESULT_FIXTURES.RNX21a.after.cards[0].period_end));
+    expect(text(r)).toEqual([`Petty Cash's trial ends on ${end} and will not be billed.`]);
+    expect(r.money).toBe(NOTHING_CHARGED);
+    expect(JSON.stringify(r)).not.toMatch(/cancel/i);
+  });
+
+  it("RNX21a beside a paid removal: still no cancellation page for the trial", () => {
+    // Petty Cash's trial unticked AND Payment Request's paid module removed, in one change.
+    const before = {
+      ...SUMMARY_FIXTURES.N21a,
+      cards: [SUMMARY_FIXTURES.N21a.cards[0], SUMMARY_FIXTURES.M44.cards[1]],
+    };
+    const after = {
+      ...SUMMARY_FIXTURES.NX21a,
+      cards: [SUMMARY_FIXTURES.NX21a.cards[0], SUMMARY_FIXTURES.M45.cards[1]],
+    };
+    const r = buildChangeResult(
+      { kind: "ticks", codes: ["PETTY_CASH", "PAYMENT_REQUEST"] },
+      before,
+      after,
+      entity,
+      TODAY,
+    );
+    expect(r.kind).toBe("updated");
+    expect(text(r)).toEqual([
+      expect.stringMatching(/^Petty Cash's trial ends on .+ and will not be billed\.$/),
+      expect.stringMatching(/^Payment Request is scheduled to end on .+\.$/),
+    ]);
+  });
+
+  it("RN21a: the unticked trial ticked again - confirmed, billing starts when it ends", () => {
+    const r = build("RN21a");
+    expect(r.kind).toBe("celebrate");
+    expect(text(r)).toEqual(["Petty Cash is confirmed. Billing starts the day its trial ends."]);
+    expect(JSON.stringify(r)).not.toMatch(/cancel/i);
   });
 
   it("a change the page model does not reflect still lands somewhere honest", () => {

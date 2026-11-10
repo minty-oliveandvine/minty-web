@@ -302,6 +302,83 @@ test.describe("manage subscriptions", () => {
     });
   }
 
+  // R1 + R2 (owner, 2026-11-10), at a phone first: during a free trial the tick means "continue
+  // on a paid plan when the trial ends". Unticking only stops that - nothing says cancel - and
+  // the tick is reversible as often as the admin likes: untick, tick, untick each saves.
+  test("at 360px a trial's tick: untick, tick, untick - each saves, nothing says cancel", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 360, height: 780 });
+    await stubApi(page, subscriptionsPage());
+    // The API's answers, in turn: `cancel` leaves the trial not continuing (NX21a), `renew`
+    // puts it back (N21a). Registered after stubApi's, so these answer first.
+    let state = SUMMARY_FIXTURES.N21a;
+    const actions: string[] = [];
+    await page.route(`${SUBSCRIPTION_API_URL}/api/entities/*/modules`, (route) =>
+      route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(state) }),
+    );
+    await page.route(`${SUBSCRIPTION_API_URL}/api/entities/*/modules/**`, (route) => {
+      const action = new URL(route.request().url()).pathname.split("/").pop()!;
+      actions.push(action);
+      if (action === "cancel") state = SUMMARY_FIXTURES.NX21a;
+      if (action === "renew") state = SUMMARY_FIXTURES.N21a;
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ ok: true }),
+      });
+    });
+    const address = "/subscription/subscriptions?entity=e-kestrel-foods-limited";
+    await handoff(page, creds(), address, { entity_id: "" });
+    const row = body(page).locator("li[data-entity='e-kestrel-foods-limited']");
+    const tick = row.getByRole("checkbox", { name: "Petty Cash subscription" });
+    const confirm = row.getByRole("button", { name: "Confirm Subscription Change" });
+
+    // Untick: the question names the trial's end, never a cancellation; the result row too.
+    await expect(tick).toBeChecked();
+    await tick.click();
+    await confirm.click();
+    const stop = page.getByRole("dialog", { name: "Stop Petty Cash after the trial?" });
+    await expect(stop).toBeVisible();
+    await expect(stop).not.toContainText(/cancel|remov/i);
+    await stop.getByRole("button", { name: "Confirm Change" }).click();
+    await expect.poll(() => actions).toEqual(["cancel"]);
+    const landed = body(page).locator("[data-result]");
+    await expect(landed).toHaveAttribute("data-result", "updated");
+    await expect(landed).toContainText("Petty Cash's trial ends on");
+    await expect(landed).not.toContainText(/cancel/i);
+
+    // Saved: still a trial, unticked, and ticking it again resumes it (`renew`).
+    await page.goto(address);
+    await expect(tick).not.toBeChecked();
+    await expect(row).toContainText("Trial");
+    await expect(row).not.toContainText(/cancel/i);
+    await tick.click();
+    await confirm.click();
+    const resume = page.getByRole("dialog", { name: "Continue Petty Cash" });
+    await expect(resume).not.toContainText(/cancel/i);
+    await resume.getByRole("button", { name: "Confirm" }).click();
+    await page
+      .getByRole("dialog", { name: "Billing Accounts" })
+      .getByRole("button", { name: "Confirm" })
+      .click();
+    await expect.poll(() => actions).toEqual(["cancel", "renew"]);
+
+    // And unticked once more: no dead end.
+    await page.goto(address);
+    await expect(tick).toBeChecked();
+    await tick.click();
+    await confirm.click();
+    await page
+      .getByRole("dialog", { name: "Stop Petty Cash after the trial?" })
+      .getByRole("button", { name: "Confirm Change" })
+      .click();
+    await expect.poll(() => actions).toEqual(["cancel", "renew", "cancel"]);
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1),
+    ).toBe(true);
+  });
+
   test("the module page's Manage Subscription lands on the company's row, opened", async ({
     page,
   }) => {

@@ -13,6 +13,7 @@ import {
   menuCodes,
   ticksFor,
 } from "@/features/subscription/lib/changeModal";
+import { longDate, utcDay } from "@/features/subscription/lib/subscriptionSummary";
 
 const text = (m: NonNullable<ReturnType<typeof buildChangeModal>>) =>
   m.paragraphs.map((p) => p.map((part) => part.text).join(""));
@@ -102,10 +103,63 @@ describe("buildChangeModal (section 06)", () => {
     expect(buildChangeModal(SUMMARY_FIXTURES.M45, ["PETTY_CASH"])?.kind).toBe(
       "cancel_subscription",
     );
-    // A confirmed trial unticked with nothing beside it.
-    expect(buildChangeModal(SUMMARY_FIXTURES.N21a, ["PETTY_CASH"])?.kind).toBe(
-      "cancel_subscription",
-    );
+  });
+
+  // R1 (owner, 2026-11-10): unticking a trial only stops it continuing on a paid plan. The trial
+  // runs on, so the popup never says cancel or remove, and never draws the red button.
+  it("NX21a: a confirmed trial unticked - Stop <Module> after the trial?, no cancellation", () => {
+    const m = buildChangeModal(SUMMARY_FIXTURES.N21a, ["PETTY_CASH"])!;
+    const end = longDate(utcDay(SUMMARY_FIXTURES.N21a.cards[0].period_end)!);
+    expect(m.kind).toBe("trial_stop");
+    expect(m.title).toEqual({
+      lead: "Stop",
+      module: { code: "PETTY_CASH", name: "Petty Cash", tone: "petty" },
+      tail: " after the trial?",
+    });
+    expect(text(m)).toEqual([
+      `Petty Cash stays free until ${end}, and you can keep using it until then.`,
+      `It won't continue on a paid plan after that. Tick it again before ${end} to keep it.`,
+    ]);
+    expect(m.confirmLabel).toBe(CONFIRM_CHANGE);
+    expect(m.confirmTone).toBe("orange");
+    expect(JSON.stringify(m)).not.toMatch(/cancel|remov/i);
+  });
+
+  it("both trials unticked - one question for both, still no cancellation", () => {
+    const m = buildChangeModal(SUMMARY_FIXTURES.N22a, ["PETTY_CASH", "PAYMENT_REQUEST"])!;
+    expect(m.kind).toBe("trial_stop");
+    expect(m.title).toEqual({ lead: "Stop after the trial?", module: null, tail: "" });
+    expect(text(m)).toHaveLength(3);
+    expect(text(m)[0]).toMatch(/^Petty Cash stays free until /);
+    expect(text(m)[1]).toMatch(/^Payment Request stays free until /);
+    expect(JSON.stringify(m)).not.toMatch(/cancel|remov/i);
+  });
+
+  it("a trial unticked beside an addition - Subscription Changes, the trial's own sentence", () => {
+    // Petty Cash's confirmed trial unticked while Payment Request's expired trial is bought.
+    const page = {
+      ...SUMMARY_FIXTURES.N21a,
+      cards: [SUMMARY_FIXTURES.N21a.cards[0], SUMMARY_FIXTURES.M31.cards[0]].map((c, i) =>
+        i === 1 ? { ...c, code: "PAYMENT_REQUEST" as const, name: "Payment Request" } : c,
+      ),
+    };
+    const m = buildChangeModal(page, ["PETTY_CASH", "PAYMENT_REQUEST"])!;
+    const end = longDate(utcDay(page.cards[0].period_end)!);
+    expect(m.kind).toBe("changes");
+    expect(text(m)).toEqual([
+      `Petty Cash will stay free until ${end} and won't continue after that. Payment Request will be added. You'll have access immediately.`,
+    ]);
+  });
+
+  it("the unticked trial ticked again - Continue <Module>, it continues when the trial ends", () => {
+    const m = buildChangeModal(SUMMARY_FIXTURES.NX21a, ["PETTY_CASH"])!;
+    const end = longDate(utcDay(SUMMARY_FIXTURES.NX21a.cards[0].period_end)!);
+    expect(m.kind).toBe("continue");
+    expect(m.title.lead).toBe("Continue");
+    expect(text(m)).toEqual([
+      `Petty Cash will continue on a paid plan when its trial ends on ${end}.`,
+    ]);
+    expect(JSON.stringify(m)).not.toMatch(/cancel/i);
   });
 
   it("PU45: a removal beside an addition - Subscription Changes, what leaves and what arrives", () => {

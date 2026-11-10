@@ -274,12 +274,11 @@ test.describe("over the live API", () => {
       await expect(panel.getByText(/^(HK\$|HKD ?)0$/)).toBeVisible();
       await expect(panel.getByText("Payment method")).toHaveCount(0);
       await expect(open.getByText(/was originally created/)).toBeVisible();
-      // The footer's standing terms are not status, so they read under a company that bills
-      // nothing - and the renewal sentence names a real date (the trial's end), not a blank.
+      // The footer's terms are not status, so they read under a company that bills nothing -
+      // a trial's terms, on trials only (owner, 2026-11-10) - and the renewal sentence names a
+      // real date (the trial's end), not a blank.
       await expect(open.getByText(/Your next subscription renewal date is \d/)).toBeVisible();
-      await expect(
-        open.getByText(/auto-renew monthly until cancellation is initiated/),
-      ).toBeVisible();
+      await expect(open.getByText(/Free trials cost nothing\./)).toBeVisible();
     } else {
       await expect(body(page).getByText("You're not paying for anything yet.")).toBeVisible();
     }

@@ -130,8 +130,16 @@ export type SummaryView = {
   pendingChange: PendingChange | null;
 };
 
-/** The two dates the paragraph under an open row names (`components/RowFooter.tsx`). */
-export type RowFooterFacts = { createdOn: string | null; renewalOn: string | null };
+/**
+ * The paragraph under an open row (`components/RowFooter.tsx`): its two dates, and whether the
+ * company is on free trials only (`trial`) - nothing paid, nothing suspended, a trial running -
+ * which swaps the standing terms for the trial's (owner, 2026-11-10).
+ */
+export type RowFooterFacts = {
+  createdOn: string | null;
+  renewalOn: string | null;
+  trial: boolean;
+};
 
 export const TRIAL_NOTICE =
   "Confirm your subscription at any time during the trial. You'll continue to enjoy all remaining trial days before billing begins.";
@@ -231,6 +239,10 @@ export function tickOf(card: ModuleCard): { tick: TickState; seam: TickSeam | nu
   if (card.subscription_status === "past_due") return { tick: "unticked", seam: "reactivate" };
   if (winding(card)) return { tick: "unticked", seam: "resume" };
   if (billable(card)) return { tick: "ticked", seam: "cancel" };
+  // A confirmed trial unticked: still a trial, and ticking it again RESUMES it (`renew` puts the
+  // row back to converting). Not `confirm_trial`: authorize-billing only records the company's
+  // consent, which it already has, and left the trial to expire at its end (owner, 2026-11-10).
+  if (trialing(card) && card.trial_cancelled) return { tick: "unticked", seam: "resume" };
   if (trialing(card)) {
     return trialConfirmed(card)
       ? { tick: "ticked", seam: "cancel" }
@@ -504,9 +516,15 @@ export function rowFooter(
   page: ModulePage | null,
 ): RowFooterFacts {
   const created = utcDay(entity?.created_at ?? null);
+  const cards = page?.cards ?? [];
   return {
     createdOn: created ? shortDate(created) : null,
     renewalOn: page?.panel?.next_invoice?.date ?? nextTrialEnd(page),
+    // A trial confirmed, unconfirmed or unticked: all trial. A paid module (winding down too) or
+    // a suspended one beside it keeps the standing terms - there is something paid to end.
+    trial:
+      cards.some(trialing) &&
+      !cards.some((c) => billable(c) || c.subscription_status === "past_due"),
   };
 }
 

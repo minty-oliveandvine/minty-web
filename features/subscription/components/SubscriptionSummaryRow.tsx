@@ -533,6 +533,7 @@ export function SubscriptionSummaryRow({
             entityName={entity.entity_name}
             createdOn={view.footer.createdOn}
             renewalOn={view.footer.renewalOn}
+            trial={view.footer.trial}
           />
         </>
       )}

@@ -8,7 +8,8 @@
  * card. Pure: takes `today` so the tests are deterministic.
  *
  * Precedence, first match wins (the order matters where flags overlap - a past-due module can
- * also carry `pending_cancel`; a cancelled trial is still `trialing`):
+ * also carry `pending_cancel`; a trial unticked (`trial_cancelled`) carries it too and is still
+ * a trial - it reads `trialing`/`needs_activation`, never `pending_cancel`, owner 2026-11-10):
  *
  *   past_due        "Subscription Suspended"             Reactivate Subscription (outline)
  *   pending_cancel  "Cancellation pending / Ends in N"   Resume Subscription     (filled)
@@ -118,9 +119,13 @@ export function daysLabel(days: number): string {
  */
 export function moduleState(card: ModuleCard, hasSubscriber = true): ModuleState {
   if (card.subscription_status === "past_due") return "past_due";
-  if (card.pending_cancel || card.cancel_at_period_end || card.trial_cancelled) {
-    return "pending_cancel";
+  // A trial that will not continue on a paid plan is still a trial (owner, 2026-11-10): the
+  // API's "won't convert" phase also raises `pending_cancel` / `cancel_at_period_end`, but a
+  // trial has no paid period to run out, so it is never "Cancellation pending".
+  if (card.subscription_status === "trialing" && card.trial_cancelled) {
+    return hasSubscriber ? "trialing" : "needs_activation";
   }
+  if (card.pending_cancel || card.cancel_at_period_end) return "pending_cancel";
   if (card.subscription_status === "trialing") {
     return hasSubscriber ? "trialing" : "needs_activation";
   }

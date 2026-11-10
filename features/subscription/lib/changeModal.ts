@@ -7,9 +7,13 @@
  * - a removal beside an addition → "Subscription Changes" (C-01): what leaves and what arrives;
  * - a removal leaving nothing ticked → "Cancel Subscription?" (B-06), the red button;
  * - a removal while the other module stays → "Remove <Module>?" (B-05), the orange button;
+ * - a confirmed TRIAL unticked → "Stop <Module> after the trial?" (owner, 2026-11-10): the trial
+ *   runs on and only stops continuing on a paid plan, so it never says cancel or remove, and a
+ *   trial removed beside an addition gets that sentence in "Subscription Changes" too;
  * - additions leaving both ticked → "You have unlocked <bundle>" (B-07);
  * - one addition: a trial confirmed or an expired trial bought back → "Activate <Module>"
- *   (B-01); a cancellation resumed → "Continue <Module>" (B-04); a suspension reactivated →
+ *   (B-01); a cancellation resumed → "Continue <Module>" (B-04), for an unticked trial ticked
+ *   again "…will continue on a paid plan when its trial ends"; a suspension reactivated →
  *   "Reactivating <Module>" (B-03).
  *
  * (B-02, the free trial, is the list's own Start Trial dialog, 04-G.) The copy is the design's;
@@ -34,14 +38,24 @@ import type { ConfirmTone, ModalImage } from "@/components/ui/ConfirmDialog";
 import type { ModuleRef, ResultPart } from "@/features/subscription/lib/changeResult";
 import {
   billable,
+  longDate,
   tickOf,
+  trialing,
+  utcDay,
   winding,
   type PendingTicks,
   type PlanTone,
 } from "@/features/subscription/lib/subscriptionSummary";
 
 export type ModalKind =
-  "activate" | "reactivate" | "continue" | "remove" | "cancel_subscription" | "bundle" | "changes";
+  | "activate"
+  | "reactivate"
+  | "continue"
+  | "remove"
+  | "cancel_subscription"
+  | "trial_stop"
+  | "bundle"
+  | "changes";
 
 export type ChangeModal = {
   kind: ModalKind;
@@ -68,6 +82,50 @@ function ref(card: ModuleCard): ModuleRef {
 const plain = (text: string): ResultPart => ({ text, style: "plain" });
 const strong = (text: string): ResultPart => ({ text, style: "strong" });
 const named = (m: ModuleRef): ResultPart => ({ text: m.name, style: m.tone });
+
+/** The day a trial's free days end ("13 November 2026"), or null when the card names none. */
+function trialEnds(card: ModuleCard): string | null {
+  const day = utcDay(card.period_end);
+  return day ? longDate(day) : null;
+}
+
+/**
+ * Confirmed trials unticked, nothing else changing (owner, 2026-11-10): the trial keeps running
+ * and only stops continuing on a paid plan, so the question names the trial's end and how to
+ * undo it - never cancel, remove or the red button.
+ */
+function trialStop(cards: ModuleCard[]): ChangeModal {
+  const paragraphs = cards.map((card) => {
+    const end = trialEnds(card);
+    return [
+      named(ref(card)),
+      plain(
+        end
+          ? ` stays free until ${end}, and you can keep using it until then.`
+          : " stays free until its trial ends, and you can keep using it until then.",
+      ),
+    ];
+  });
+  const only = cards.length === 1 ? cards[0] : null;
+  const end = only ? trialEnds(only) : null;
+  paragraphs.push([
+    plain(
+      only
+        ? `It won't continue on a paid plan after that. Tick it again before ${end ?? "then"} to keep it.`
+        : "They won't continue on a paid plan after that. Tick one again before its trial ends to keep it.",
+    ),
+  ]);
+  return {
+    kind: "trial_stop",
+    title: only
+      ? { lead: "Stop", module: ref(only), tail: " after the trial?" }
+      : { lead: "Stop after the trial?", module: null, tail: "" },
+    image: "surprised",
+    paragraphs,
+    confirmLabel: CONFIRM_CHANGE,
+    confirmTone: "orange",
+  };
+}
 
 /** The modules a ⋮ item changes (05·D): Cancel subscription unticks every ACTIVE module … */
 export function menuCodes(
@@ -105,6 +163,8 @@ export function buildChangeModal(page: ModulePage, codes: ModuleCode[]): ChangeM
 
   const removed = changed.filter((c) => c.seam === "cancel");
   const added = changed.filter((c) => c.seam !== "cancel");
+  // A trial "removed" is a confirmed trial unticked: it keeps running, it just won't continue.
+  const removedPaid = removed.filter((c) => !trialing(c.card));
   // Ticked once the change is made: every card's own tick, flipped where it changed.
   const changedCodes = new Set(changed.map((c) => c.card.code));
   const tickedAfter = page.cards.filter((card) => {
@@ -115,6 +175,18 @@ export function buildChangeModal(page: ModulePage, codes: ModuleCode[]): ChangeM
   if (removed.length > 0 && added.length > 0) {
     const paragraph: ResultPart[] = [];
     for (const r of removed) {
+      if (trialing(r.card)) {
+        const end = trialEnds(r.card);
+        paragraph.push(
+          named(ref(r.card)),
+          plain(
+            end
+              ? ` will stay free until ${end} and won't continue after that. `
+              : " will stay free until its trial ends and won't continue after that. ",
+          ),
+        );
+        continue;
+      }
       paragraph.push(
         named(ref(r.card)),
         plain(" will be "),
@@ -141,6 +213,7 @@ export function buildChangeModal(page: ModulePage, codes: ModuleCode[]): ChangeM
   }
 
   if (removed.length > 0) {
+    if (removedPaid.length === 0) return trialStop(removed.map((c) => c.card));
     if (tickedAfter.length === 0) {
       return {
         kind: "cancel_subscription",
@@ -154,7 +227,7 @@ export function buildChangeModal(page: ModulePage, codes: ModuleCode[]): ChangeM
         confirmTone: "red",
       };
     }
-    const m = ref(removed[0].card);
+    const m = ref(removedPaid[0].card);
     return {
       kind: "remove",
       title: { lead: "Remove", module: m, tail: "?" },
@@ -194,7 +267,26 @@ export function buildChangeModal(page: ModulePage, codes: ModuleCode[]): ChangeM
   const only = added[0];
   const m = ref(only.card);
   switch (only.seam) {
-    case "resume":
+    case "resume": {
+      if (only.card.trial_cancelled) {
+        const end = trialEnds(only.card);
+        return {
+          kind: "continue",
+          title: { lead: "Continue", module: m, tail: "" },
+          image: "celebrating",
+          paragraphs: [
+            [
+              plain(
+                end
+                  ? `${m.name} will continue on a paid plan when its trial ends on ${end}.`
+                  : `${m.name} will continue on a paid plan when its trial ends.`,
+              ),
+            ],
+          ],
+          confirmLabel: CONFIRM,
+          confirmTone: "teal",
+        };
+      }
       return {
         kind: "continue",
         title: { lead: "Continue", module: m, tail: "" },
@@ -206,6 +298,7 @@ export function buildChangeModal(page: ModulePage, codes: ModuleCode[]): ChangeM
         confirmLabel: CONFIRM,
         confirmTone: "teal",
       };
+    }
     case "reactivate":
       return {
         kind: "reactivate",

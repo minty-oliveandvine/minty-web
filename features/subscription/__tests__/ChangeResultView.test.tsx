@@ -13,6 +13,7 @@ import {
   ChangeResultPage,
   ChangeResultRow,
 } from "@/features/subscription/components/ChangeResultView";
+import { TRIAL_TERMS } from "@/features/subscription/components/RowFooter";
 import { BACK_TO_LIST, buildChangeResult } from "@/features/subscription/lib/changeResult";
 import type { MenuItem } from "@/features/subscription/lib/portalRows";
 
@@ -46,19 +47,25 @@ describe("ChangeResultRow", () => {
     expect(within(confirmed).getByText(/Your next subscription renewal date is/)).toHaveTextContent(
       `Your next subscription renewal date is ${result("RU22").footer.renewalOn} and each month after.`,
     );
-    expect(
-      within(confirmed).getByText(/auto-renew monthly until cancellation is initiated/),
-    ).toBeInTheDocument();
-    expect(
-      within(confirmed).getByText(/1 month notice period required for your cancellation/),
-    ).toBeInTheDocument();
+    // Trials only (owner, 2026-11-10): the trial terms, never "cancellation".
+    expect(within(confirmed).getByText(new RegExp(TRIAL_TERMS.slice(0, 30)))).toBeInTheDocument();
+    expect(confirmed.textContent).not.toMatch(/cancel/i);
 
-    // RNX21a's trial is cancelled: nothing renews, so there is no date - and the terms remain.
+    // RNX21a's trial will not continue: nothing renews, so there is no date - the terms remain.
     screen.getAllByRole("listitem").forEach((li) => li.remove());
     const stopped = row("RNX21a");
     expect(within(stopped).queryByText(/Your next subscription renewal date is/)).toBeNull();
+    expect(within(stopped).getByText(new RegExp(TRIAL_TERMS.slice(0, 30)))).toBeInTheDocument();
+    expect(stopped.textContent).not.toMatch(/cancel/i);
+
+    // A company with a paid module keeps the standing terms.
+    screen.getAllByRole("listitem").forEach((li) => li.remove());
+    const paid = row("RV44");
     expect(
-      within(stopped).getByText(/auto-renew monthly until cancellation is initiated/),
+      within(paid).getByText(/auto-renew monthly until cancellation is initiated/),
+    ).toBeInTheDocument();
+    expect(
+      within(paid).getByText(/1 month notice period required for your cancellation/),
     ).toBeInTheDocument();
   });
 

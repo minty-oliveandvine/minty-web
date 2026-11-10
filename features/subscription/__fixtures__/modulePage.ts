@@ -162,6 +162,24 @@ function confirmedTrial(code: ModuleCard["code"], daysLeft: number): ModuleCard 
   return { ...trialing(code, daysLeft), needs_card: false };
 }
 
+/**
+ * A confirmed trial unticked (NX): it will not continue on a paid plan, and is still a trial.
+ * The flags are the API's own for it (`cards.py`): the row's internal "won't convert" phase also
+ * sets `pending_cancel` / `cancel_at_period_end`, and the trial's end is its access end.
+ */
+function stoppedTrial(code: ModuleCard["code"], daysLeft: number): ModuleCard {
+  const end = daysFromToday(daysLeft);
+  return {
+    ...confirmedTrial(code, daysLeft),
+    trial_cancelled: true,
+    pending_cancel: true,
+    cancel_at_period_end: true,
+    can_cancel: false,
+    access_end_date: end.slice(0, 10),
+    access_end_long: longDate(end),
+  };
+}
+
 /** `get_subscription_summary`'s money, as the API answers it for the HKD catalogue. */
 export const SUMMARY: ModuleSummary = {
   currency: "HKD",
@@ -237,7 +255,7 @@ export const NOT_ADMIN: ModulePage = page(FIXTURES.A.cards, { can_manage_modules
 // ---- 05·A - the open row ("Subscription Summary") ---------------------------------------------
 
 export type SummaryFrame =
-  "M11" | "M21" | "M22" | "M24" | "M31" | "M44" | "M45" | "M51" | "M61" | "N21a";
+  "M11" | "M21" | "M22" | "M24" | "M31" | "M44" | "M45" | "M51" | "M61" | "N21a" | "N22a" | "NX21a";
 
 /**
  * The 05·A states the tests render, keyed by the design's frame (down = Petty Cash, across =
@@ -265,6 +283,10 @@ export const SUMMARY_FIXTURES: Record<SummaryFrame, ModulePage> = {
   M61: page([suspended("PETTY_CASH"), neverStarted("PAYMENT_REQUEST")]),
   /** Petty Cash's trial confirmed: ticked, HKD 0 now, HKD 280 from the day after it ends. */
   N21a: page([confirmedTrial("PETTY_CASH", 3), neverStarted("PAYMENT_REQUEST")]),
+  /** Both trials confirmed: both ticked, the bundle from the day after the first one ends. */
+  N22a: page([confirmedTrial("PETTY_CASH", 3), confirmedTrial("PAYMENT_REQUEST", 15)]),
+  /** N21a unticked: still a trial with 3 days, unticked, and ticking it again restores it. */
+  NX21a: page([stoppedTrial("PETTY_CASH", 3), neverStarted("PAYMENT_REQUEST")]),
 };
 
 /**
@@ -283,7 +305,8 @@ export type ResultFrame =
   | "RV41"
   | "RV51"
   | "RV61"
-  | "RNX21a";
+  | "RNX21a"
+  | "RN21a";
 
 export const RESULT_FIXTURES: Record<
   ResultFrame,
@@ -359,10 +382,13 @@ export const RESULT_FIXTURES: Record<
   RNX21a: {
     before: SUMMARY_FIXTURES.N21a,
     asked: { kind: "ticks", codes: ["PETTY_CASH"] },
-    after: page([
-      { ...confirmedTrial("PETTY_CASH", 3), trial_cancelled: true },
-      neverStarted("PAYMENT_REQUEST"),
-    ]),
+    after: SUMMARY_FIXTURES.NX21a,
+  },
+  /** NX21a ticked again: the trial continues on a paid plan when it ends, as before. */
+  RN21a: {
+    before: SUMMARY_FIXTURES.NX21a,
+    asked: { kind: "ticks", codes: ["PETTY_CASH"] },
+    after: SUMMARY_FIXTURES.N21a,
   },
 };
 
