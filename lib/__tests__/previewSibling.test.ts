@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 
 import { previewSetSlug, siblingUrl } from "@/lib/previewSibling";
 
-const PRW = "https://payment.dailyminty.com";
+const PRW = "https://payment-request.dailyminty.com";
 
 describe("siblingUrl", () => {
   it.each([
