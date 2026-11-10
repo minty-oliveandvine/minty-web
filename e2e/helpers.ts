@@ -20,7 +20,7 @@ export type Credentials = { secret: string; userId: string; entityId: string; en
 
 export const BASE_URL = process.env.E2E_BASE_URL || "http://localhost:3000";
 export const SUBSCRIPTION_API_URL = process.env.E2E_SUBSCRIPTION_API_URL || "http://localhost:8001";
-export const ACCOUNTS_API_URL = process.env.E2E_ACCOUNTS_API_URL || "http://localhost:8002";
+export const ACCOUNTS_API_URL = process.env.E2E_ACCOUNTS_API_URL || "http://localhost:8000";
 
 export function credentials(): Credentials | null {
   const secret = process.env.E2E_JWT_SECRET;

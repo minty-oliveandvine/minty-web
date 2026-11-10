@@ -183,7 +183,7 @@ Playwright (as in the sibling apps); the capture flow is unit-tested with Stripe
 
 ## 6. Configuration
 
-`lib/env.ts` — `SUBSCRIPTION_API_URL` (8001), `ACCOUNTS_API_URL` (8002, minty-accounts-api: the
+`lib/env.ts` — `SUBSCRIPTION_API_URL` (8001), `ACCOUNTS_API_URL` (8000, minty-accounts-api: the
 re-handoff, the entity list's and the profile's reads, Petty Cash) and `PAYMENT_REQUEST_WEB_URL`
 (3020, the payment-request app - the side menu's _Bills_, the profile's way back). All inlined at
 build time (`next.config.ts` `env`). In the docker stack this is the `minty-web` service on 3000.

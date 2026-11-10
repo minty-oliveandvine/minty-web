@@ -7,7 +7,7 @@ npm run test:e2e                  # against a stack that is already running
 ```
 
 Real browser, stack already up (this app :3000 `npm run dev`, minty-subscription-api :8001, minty-accounts-api
-:8002). **Nothing is started here.** Specs skip with a reason when a service or the credentials
+:8000). **Nothing is started here.** Specs skip with a reason when a service or the credentials
 are missing.
 
 Two folders, one runner (`playwright.config.ts`): `e2e/` holds the shell's specs; each

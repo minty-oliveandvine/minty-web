@@ -82,7 +82,7 @@ to `public/pdfjs/` whenever `next dev` or `next build` starts - gitignored, neve
 it cannot (no `npm ci` yet), it says so with a `console.error` and the server starts anyway; the
 preview then cannot draw.
 
-The three variables are `ACCOUNTS_API_URL` (8002, minty-accounts-api), `SUBSCRIPTION_API_URL` (8001) and
+The three variables are `ACCOUNTS_API_URL` (8000, minty-accounts-api), `SUBSCRIPTION_API_URL` (8001) and
 `PAYMENT_REQUEST_WEB_URL` (3020) - plain names, inlined at build time through `next.config.ts`'s
 `env` and read only in `lib/env.ts`. In the docker stack (`Minty/docker/stack`) this is the
 `minty-web` service on host port 3000.
