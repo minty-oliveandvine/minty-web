@@ -197,15 +197,15 @@ test.describe("the entity list", () => {
     expect(restored).toBe(true);
   });
 
-  test("an admin archives a company in the list's manage mode, asked first, phone first", async ({
+  test("a superuser archives a company in the list's manage mode, asked first, phone first", async ({
     page,
   }) => {
     const [first, ...rest] = LIST.entities;
-    const mine: EntityListAnswer = { ...LIST, entities: [{ ...first, role: "admin" }, ...rest] };
+    const mine: EntityListAnswer = { ...LIST, is_superuser: true };
     await stubFlask(page, mine);
     let archived = "";
-    await page.route(`${ACCOUNTS_API_URL}/api/me/company/archive**`, (route) => {
-      archived = new URL(route.request().url()).searchParams.get("entity") ?? "";
+    await page.route(`${ACCOUNTS_API_URL}/api/me/entities/*/archive`, (route) => {
+      archived = new URL(route.request().url()).pathname;
       return route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -235,8 +235,10 @@ test.describe("the entity list", () => {
         true,
       );
     }
-    // only the admin's row offers it
-    await expect(main.getByRole("button", { name: /^Archive company / })).toHaveCount(1);
+    // a superuser's manage mode offers it on every company
+    await expect(main.getByRole("button", { name: /^Archive company / })).toHaveCount(
+      LIST.entities.length,
+    );
 
     await page.setViewportSize({ width: 360, height: 800 });
     await archive.click();
@@ -252,7 +254,7 @@ test.describe("the entity list", () => {
     );
     await dialog.getByRole("button", { name: "Archive company" }).click();
     await expect(page.getByText(`"${first.name}" is archived.`)).toBeVisible();
-    expect(archived).toBe(first.id);
+    expect(archived).toBe(`/api/me/entities/${first.id}/archive`);
     await expect(main.getByText(first.name, { exact: true })).toHaveCount(0);
   });
 

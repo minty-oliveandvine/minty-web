@@ -13,10 +13,9 @@
  * - Order: "Setup in progress" first, then A→Z (`sortRows`), not Flask's most-recently-opened.
  * - Search is Flask's `filterCompanies`: case-insensitive, anywhere in the name, as typed.
  * - `fixture`: dev-only, `?fixture=LIST|EMPTY` (`__fixtures__/entities.ts`).
- * - Archived companies (2026-11-10): an admin turns on the list's manage mode ("Archive
- *   companies", offered only when they are an admin of a company listed) and archives a company
- *   from its row, asked first (refused while a module is still paid for - the API's sentence
- *   stays in the dialog). Only a
+ * - Archived companies (2026-11-10): only a superuser archives. They turn on the list's manage
+ *   mode ("Archive companies") and archive a company from its row, asked first (refused while a
+ *   module is still paid for - the API's sentence stays in the dialog). Only a
  *   superuser is sent archived companies: their list carries an All / Active / Archived filter
  *   (asked of the API, so a long list is never filtered here) and a Restore on each archived row,
  *   asked first. Either way the list is read again afterwards.
@@ -146,7 +145,8 @@ export function useEntityList({ flash = null, fixture = null }: UseEntityListArg
   const retry = useCallback(() => setAttempt((n) => n + 1), []);
   const setArchived = useCallback((next: ArchivedFilter) => setArchivedState(next), []);
   const isSuperuser = Boolean(loaded?.answer?.is_superuser);
-  const canManage = all.some(canArchive);
+  // Only a superuser archives (owner, 2026-11-10), so only they get manage mode.
+  const canManage = isSuperuser && all.some(canArchive);
 
   return {
     status,
@@ -160,7 +160,7 @@ export function useEntityList({ flash = null, fixture = null }: UseEntityListArg
     isSuperuser,
     archived,
     setArchived,
-    /** Manage mode: offered when the person is an admin of a listed company; off once none is. */
+    /** Manage mode: a superuser's, while a listed company is not archived yet. */
     canManage,
     managing: managing && canManage,
     toggleManaging: useCallback(() => setManaging((on) => !on), []),

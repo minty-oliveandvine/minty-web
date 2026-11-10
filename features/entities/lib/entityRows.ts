@@ -95,9 +95,9 @@ export function isSettingUp(row: EntityRow): boolean {
   return row.status === "onboarding" && !isArchived(row);
 }
 
-/** The row offers Archive: an active company the person is an admin of (the API's rule). */
+/** The row offers Archive in a superuser's manage mode: any company not archived yet. */
 export function canArchive(row: EntityRow): boolean {
-  return !isArchived(row) && row.role === "admin";
+  return !isArchived(row);
 }
 
 /** Archived: hidden from everyone but superusers, and never opened until it is restored. */

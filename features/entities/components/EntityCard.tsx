@@ -5,8 +5,8 @@
  * leads into the company.
  *
  * In the list's manage mode (2026-11-10, "Archive companies") a row is not a link: just its name,
- * and an Archive button where the person is an admin of it (`canArchive`) - asked first by the
- * screen. Out of manage mode the row is unchanged, so a phone keeps the whole width for the name.
+ * and Archive on each company not archived yet (`canArchive`) - a superuser's mode only, asked
+ * first by the screen. Out of manage mode the row is unchanged, so a phone keeps the whole width for the name.
  *
  * An archived company (a superuser's list only) is not a link: it never opens until it is
  * restored. It carries a Neutral "Archived" pill where "Setup in progress" would sit, and a

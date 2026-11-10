@@ -13,11 +13,10 @@
  * company is "Create company" in the Minty cat's pop-up at the bottom right (`useContactActions`;
  * a floating "+" there until 2026-11-05) - except on the empty page, whose own button says it.
  *
- * Archived companies (2026-11-10): an admin gets "Archive companies" under the search - the
- * list's manage mode, where each of their companies offers Archive, asked first ("Done" leaves
- * it); a
- * superuser also gets the All / Active / Archived switch above the search, and each archived
- * company's Restore, asked first.
+ * Archived companies (2026-11-10, superusers only): "Archive companies" under the search - the
+ * list's manage mode, where each company offers Archive, asked first ("Done" leaves it) - the
+ * All / Active / Archived switch above the search, and each archived company's Restore, asked
+ * first. Nobody else sees any of it.
  */
 
 import { useContactActions, type ContactAction } from "@minty/shared/contact";

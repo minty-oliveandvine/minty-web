@@ -202,17 +202,15 @@ describe("EntityListScreen", () => {
     expect(menu.queryByRole("link", { name: "Settings" })).toBeNull();
   });
 
-  describe("Archive", () => {
+  describe("Archive (superusers only)", () => {
     const [first, second] = LIST.entities;
     const MINE: EntityListAnswer = {
       ...LIST,
-      entities: [
-        { ...first, role: "admin" },
-        { ...second, role: "cashier" },
-      ],
+      is_superuser: true,
+      entities: [{ ...first, role: "superadmin" }, { ...second, role: "cashier" }, ARCHIVED_ROW],
     };
 
-    it("lives in the list's manage mode, on the companies the person is an admin of", async () => {
+    it("lives in a superuser's manage mode, on every company not archived yet", async () => {
       serve(MINE);
       show();
       await screen.findByRole("list", { name: "Your companies" });
@@ -227,7 +225,13 @@ describe("EntityListScreen", () => {
       expect(
         screen.getByRole("button", { name: `Archive company ${first.name}` }),
       ).toBeInTheDocument();
-      expect(screen.queryByRole("button", { name: `Archive company ${second.name}` })).toBeNull();
+      expect(
+        screen.getByRole("button", { name: `Archive company ${second.name}` }),
+      ).toBeInTheDocument();
+      // an archived company is restored, never archived again
+      expect(
+        screen.queryByRole("button", { name: `Archive company ${ARCHIVED_ROW.name}` }),
+      ).toBeNull();
       // managing, a row is not a way in
       expect(list().queryAllByRole("link")).toHaveLength(0);
 
@@ -236,8 +240,8 @@ describe("EntityListScreen", () => {
       expect(list().getByRole("link", { name: new RegExp(`^${first.name}`) })).toBeInTheDocument();
     });
 
-    it("is not offered to someone who is an admin of none", async () => {
-      serve({ ...LIST, entities: LIST.entities.map((e) => ({ ...e, role: "cashier" })) });
+    it("is not offered to an admin who is not a superuser", async () => {
+      serve({ ...LIST, entities: LIST.entities.map((e) => ({ ...e, role: "admin" })) });
       show();
       await screen.findByRole("list", { name: "Your companies" });
 
@@ -265,8 +269,7 @@ describe("EntityListScreen", () => {
       expect(await screen.findByText(`"${first.name}" is archived.`)).toBeInTheDocument();
       expect(screen.queryByRole("dialog")).toBeNull();
       const archive = new URL(String(fetchMock.mock.calls[1][0]));
-      expect(archive.pathname).toBe("/api/me/company/archive");
-      expect(archive.searchParams.get("entity")).toBe(first.id);
+      expect(archive.pathname).toBe(`/api/me/entities/${first.id}/archive`);
       expect((fetchMock.mock.calls[1][1] as RequestInit).method).toBe("POST");
       await waitFor(() => expect(list().queryByText(first.name)).toBeNull());
     });

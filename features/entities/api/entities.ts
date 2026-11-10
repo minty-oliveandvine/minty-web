@@ -34,7 +34,7 @@ export type EntityRow = {
   archived_at?: string | null;
   /**
    * The caller's own role on the company (`admin`, `accountant`, ...), or `superadmin` where a
-   * superuser holds no membership. Only an admin may archive (the API checks `ENTITY_DELETE`).
+   * superuser holds no membership.
    */
   role?: string;
 };
@@ -75,10 +75,12 @@ export function restoreEntity(entityId: string): Promise<{ message: string }> {
 }
 
 /**
- * Archive the company (its admins): it leaves everyone's list and opens nowhere until Minty
- * support restores it. Refused (409) while it still has a paid subscription, with the API's
- * sentence; the company is then left as it was.
+ * Archive a company (superusers only, owner 2026-11-10): it leaves everyone's list but a
+ * superuser's and opens nowhere until it is restored. Refused (409) while it still has a paid
+ * subscription, with the API's sentence; the company is then left as it was.
  */
 export function archiveEntity(entityId: string): Promise<{ message: string }> {
-  return mintyFetch("/api/me/company/archive", { method: "POST", query: { entity: entityId } });
+  return mintyFetch(`/api/me/entities/${encodeURIComponent(entityId)}/archive`, {
+    method: "POST",
+  });
 }

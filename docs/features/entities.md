@@ -61,16 +61,16 @@ the module (or resumes the wizard for a company still in onboarding).
 
 ## Archived companies (2026-11-10)
 
-**Archive is on this list, in its manage mode** (owner, 2026-11-10 - not in Settings, and not on
-the browsing rows, where a phone needs the whole width for the name). Under the search, a person
-who is an **admin** of at least one listed company (`role` on the row; `canArchive`) gets
-**Archive companies** (`aria-pressed`); it turns the list into manage mode: every row is its name
-only (not a link), and each company they are an admin of offers **Archive**. **Done** leaves it,
-and it also ends once no listed company is theirs to archive. Archive asks first (`ConfirmDialog`,
-red, "Archive <name>?" / "It disappears for everyone. Only Minty support can bring it back."), then
-`POST /api/me/company/archive?entity=<id>`, a toast with the API's sentence and a fresh read. A
-refusal - 409 while the company still has a paid subscription - stays in the dialog. A superuser
-who isn't a member opens companies read-only, so the API refuses them and they get no button.
+**Archive is on this list, in its manage mode, for superusers only** (owner, 2026-11-10 - not in
+Settings, not for a company's admins, and not on the browsing rows, where a phone needs the whole
+width for the name). Under the search, a superuser (`is_superuser` on the answer) gets **Archive
+companies** (`aria-pressed`); it turns the list into manage mode: every row is its name only (not a
+link), and each company not archived yet (`canArchive`) offers **Archive**. **Done** leaves it, and
+it also ends once no listed company is left to archive. Archive asks first (`ConfirmDialog`, red,
+"Archive <name>?" / "It disappears for everyone. Only Minty support can bring it back."), then
+`POST /api/me/entities/<id>/archive`, a toast with the API's sentence and a fresh read. A refusal -
+409 while the company still has a paid subscription - stays in the dialog. Everyone else, admins
+included, never sees the button.
 
 An archived company (`entities.archived_at` set) is left out of everyone's list by
 minty-accounts-api. **A superuser is still sent them**, with `is_superuser: true` on the answer and
