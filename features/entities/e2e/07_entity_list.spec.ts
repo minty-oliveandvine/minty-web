@@ -16,7 +16,7 @@ import {
   requireApp,
   storedScope,
 } from "../../../e2e/helpers";
-import { LIST } from "../__fixtures__/entities";
+import { ARCHIVED_ROW, LIST, SUPERUSER } from "../__fixtures__/entities";
 import type { EntityListAnswer } from "../api/entities";
 
 const STUB_CREDS = {
@@ -136,6 +136,124 @@ test.describe("the entity list", () => {
     await main.getByRole("textbox", { name: "Search company" }).fill("trial");
     await expect(cards).toHaveCount(3);
     expect(await order()).toEqual(["Scenario 2", "Scenario 5", "Scenario 6"]);
+  });
+
+  test("a superuser: All / Active / Archived, an archived row restored on asking, phone first", async ({
+    page,
+  }) => {
+    const asked = await stubFlask(page, SUPERUSER);
+    let restored = false;
+    await page.route(`${ACCOUNTS_API_URL}/api/me/entities/e-archived/restore`, (route) => {
+      restored = true;
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ message: "Gold Moon Company is back." }),
+      });
+    });
+    await page.setViewportSize({ width: 360, height: 800 });
+    await handoff(page, creds(), "/entities");
+    const main = page.getByRole("main");
+    const filter = main.getByRole("group", { name: "Show companies" });
+    const restore = main.getByRole("button", { name: "Restore Gold Moon Company" });
+
+    for (const width of [360, 768, 1440]) {
+      await page.setViewportSize({ width, height: 800 });
+      await expect(filter.getByRole("button", { name: "All" })).toHaveAttribute(
+        "aria-pressed",
+        "true",
+      );
+      await expect(main.getByText("Archived", { exact: true }).first()).toBeVisible();
+      for (const target of [restore, filter.getByRole("button", { name: "Archived" })]) {
+        const box = (await target.boundingBox())!;
+        expect(box.height).toBeGreaterThanOrEqual(44);
+      }
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+        true,
+      );
+    }
+    // never a way into an archived company
+    await expect(main.getByRole("link", { name: /Gold Moon/ })).toHaveCount(0);
+
+    await filter.getByRole("button", { name: "Archived" }).click();
+    await expect.poll(() => asked.at(-1)).toContain("archived=archived");
+
+    await restore.click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog.getByRole("heading", { name: "Restore Gold Moon Company?" })).toBeVisible();
+    await page.unroute(`${ACCOUNTS_API_URL}/api/me/entities**`);
+    await page.route(`${ACCOUNTS_API_URL}/api/me/entities?**`, (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          ...SUPERUSER,
+          entities: [...LIST.entities, { ...ARCHIVED_ROW, archived_at: null }],
+        }),
+      }),
+    );
+    await dialog.getByRole("button", { name: "Restore" }).click();
+    await expect(page.getByText("Gold Moon Company is back.")).toBeVisible();
+    expect(restored).toBe(true);
+  });
+
+  test("an admin archives a company in the list's manage mode, asked first, phone first", async ({
+    page,
+  }) => {
+    const [first, ...rest] = LIST.entities;
+    const mine: EntityListAnswer = { ...LIST, entities: [{ ...first, role: "admin" }, ...rest] };
+    await stubFlask(page, mine);
+    let archived = "";
+    await page.route(`${ACCOUNTS_API_URL}/api/me/company/archive**`, (route) => {
+      archived = new URL(route.request().url()).searchParams.get("entity") ?? "";
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ message: `"${first.name}" is archived.` }),
+      });
+    });
+    await page.setViewportSize({ width: 360, height: 800 });
+    await handoff(page, creds(), "/entities");
+    const main = page.getByRole("main");
+    const archive = main.getByRole("button", { name: `Archive company ${first.name}` });
+    // browsing: no Archive on any row until manage mode is on
+    await expect(main.getByRole("button", { name: /^Archive company / })).toHaveCount(0);
+    await main.getByRole("button", { name: "Archive companies" }).click();
+    const done = main.getByRole("button", { name: "Done" });
+    await expect(done).toBeVisible();
+
+    for (const width of [360, 768, 1440]) {
+      await page.setViewportSize({ width, height: 800 });
+      for (const target of [archive, done]) {
+        const box = (await target.boundingBox())!;
+        expect(box.height).toBeGreaterThanOrEqual(44);
+      }
+      // the name keeps the row: never squeezed out
+      const name = (await main.getByText(first.name, { exact: true }).boundingBox())!;
+      expect(name.width).toBeGreaterThan(40);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+        true,
+      );
+    }
+    // only the admin's row offers it
+    await expect(main.getByRole("button", { name: /^Archive company / })).toHaveCount(1);
+
+    await page.setViewportSize({ width: 360, height: 800 });
+    await archive.click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog.getByRole("heading", { name: `Archive ${first.name}?` })).toBeVisible();
+    await page.unroute(`${ACCOUNTS_API_URL}/api/me/entities**`);
+    await page.route(`${ACCOUNTS_API_URL}/api/me/entities?**`, (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ ...LIST, entities: rest }),
+      }),
+    );
+    await dialog.getByRole("button", { name: "Archive company" }).click();
+    await expect(page.getByText(`"${first.name}" is archived.`)).toBeVisible();
+    expect(archived).toBe(first.id);
+    await expect(main.getByText(first.name, { exact: true })).toHaveCount(0);
   });
 
   test("the whole screen: the bar across the top, the title in its middle, and Flask's column under it", async ({

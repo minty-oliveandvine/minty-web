@@ -22,6 +22,27 @@ export const CREATE_ENTITY = "Create Entity";
 export const CREATE_COMPANY = "Create company";
 export const LOAD_FAILED = "Your companies didn't load. Mind trying again?";
 
+/** Archived companies (superusers only): the pill, the filter and the way back. */
+export const ARCHIVED = "Archived";
+export const RESTORE = "Restore";
+export const RESTORE_TITLE = (name: string) => `Restore ${name}?`;
+export const RESTORE_TEXT = "It comes back for everyone who belongs to it.";
+export const RESTORED = "Company restored.";
+export const ARCHIVE = "Archive";
+export const ARCHIVE_COMPANY = "Archive company";
+export const ARCHIVE_TITLE = (name: string) => `Archive ${name}?`;
+export const ARCHIVE_TEXT = "It disappears for everyone. Only Minty support can bring it back.";
+export const ARCHIVED_DONE = "Company archived.";
+/** The list's manage mode (admins): "Archive companies" turns it on, "Done" off. */
+export const MANAGE_ARCHIVE = "Archive companies";
+export const MANAGE_DONE = "Done";
+export const FILTER_LABEL = "Show companies";
+export const FILTERS = [
+  { value: "all", label: "All" },
+  { value: "active", label: "Active" },
+  { value: "archived", label: "Archived" },
+] as const;
+
 /** Case-insensitive, anywhere in the name - Flask's `filterCompanies`, as a person types. */
 export function filterRows(rows: EntityRow[], query: string): EntityRow[] {
   const q = query.trim().toLowerCase();
@@ -32,10 +53,12 @@ export function filterRows(rows: EntityRow[], query: string): EntityRow[] {
 /**
  * "Setup in progress" first, then A→Z by name - case-insensitive, numbers in numeric order
  * ("Scenario 2" before "Scenario 10"). Flask sends most-recently-opened; this list re-sorts.
+ * Archived companies (a superuser's "All") go last, in the same order among themselves.
  */
 export function sortRows(rows: EntityRow[]): EntityRow[] {
   return [...rows].sort(
     (a, b) =>
+      Number(isArchived(a)) - Number(isArchived(b)) ||
       Number(isSettingUp(b)) - Number(isSettingUp(a)) ||
       a.name.localeCompare(b.name, undefined, { sensitivity: "base", numeric: true }),
   );
@@ -69,7 +92,17 @@ export function trialLabel(row: EntityRow): string | null {
 }
 
 export function isSettingUp(row: EntityRow): boolean {
-  return row.status === "onboarding";
+  return row.status === "onboarding" && !isArchived(row);
+}
+
+/** The row offers Archive: an active company the person is an admin of (the API's rule). */
+export function canArchive(row: EntityRow): boolean {
+  return !isArchived(row) && row.role === "admin";
+}
+
+/** Archived: hidden from everyone but superusers, and never opened until it is restored. */
+export function isArchived(row: EntityRow): boolean {
+  return Boolean(row.archived_at);
 }
 
 /**

@@ -7,11 +7,13 @@ import { clearAuth, setAuth } from "@/lib/auth";
 import { env } from "@/lib/env";
 import { HUB_PATHS } from "@/lib/hubPaths";
 
-import { LIST } from "@/features/entities/__fixtures__/entities";
+import { ARCHIVED_ROW, LIST } from "@/features/entities/__fixtures__/entities";
 import {
   createEntityHref,
   enterHref,
   filterRows,
+  isArchived,
+  isSettingUp,
   lastAccessedLabel,
   lastOpenedLabel,
   sortRows,
@@ -81,5 +83,23 @@ describe("entityRows", () => {
         `?next=${encodeURIComponent("/entity/e-scenario-5/modules")}`,
     );
     expect(createEntityHref()).toBe(`${env.ACCOUNTS_API_URL}/entity/create`);
+  });
+
+  it("an archived company sorts last and is never setting up, whatever its status says", () => {
+    const early = {
+      ...ARCHIVED_ROW,
+      id: "e-x",
+      name: "A first by name",
+      status: "onboarding" as const,
+    };
+    const sorted = sortRows([early, ...LIST.entities, ARCHIVED_ROW]);
+    expect(sorted.slice(-2).map((r) => r.id)).toEqual(["e-x", "e-archived"]);
+    expect(isArchived(early)).toBe(true);
+    expect(isSettingUp(early)).toBe(false);
+    expect(isArchived(LIST.entities[0])).toBe(false);
+    // an older API sends no archived_at at all: active
+    const older = { ...ARCHIVED_ROW };
+    delete older.archived_at;
+    expect(isArchived(older)).toBe(false);
   });
 });

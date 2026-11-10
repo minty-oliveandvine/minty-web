@@ -15,7 +15,7 @@ import { env } from "@/lib/env";
 import { _resetHandoffForTests } from "@/lib/handoff";
 import { _setViewerLoaderForTests } from "@/lib/viewer";
 
-import { EMPTY, LIST } from "@/features/entities/__fixtures__/entities";
+import { ARCHIVED_ROW, EMPTY, LIST, SUPERUSER } from "@/features/entities/__fixtures__/entities";
 import type { EntityListAnswer } from "@/features/entities/api/entities";
 import { EntityListScreen } from "@/features/entities/routes/EntityListScreen";
 
@@ -200,5 +200,184 @@ describe("EntityListScreen", () => {
       "page",
     );
     expect(menu.queryByRole("link", { name: "Settings" })).toBeNull();
+  });
+
+  describe("Archive", () => {
+    const [first, second] = LIST.entities;
+    const MINE: EntityListAnswer = {
+      ...LIST,
+      entities: [
+        { ...first, role: "admin" },
+        { ...second, role: "cashier" },
+      ],
+    };
+
+    it("lives in the list's manage mode, on the companies the person is an admin of", async () => {
+      serve(MINE);
+      show();
+      await screen.findByRole("list", { name: "Your companies" });
+
+      // browsing: every row is its way in, and no row has Archive
+      expect(screen.queryByRole("button", { name: /^Archive company / })).toBeNull();
+      const manage = screen.getByRole("button", { name: "Archive companies" });
+      expect(manage).toHaveAttribute("aria-pressed", "false");
+
+      await userEvent.click(manage);
+      expect(screen.getByRole("button", { name: "Done" })).toHaveAttribute("aria-pressed", "true");
+      expect(
+        screen.getByRole("button", { name: `Archive company ${first.name}` }),
+      ).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: `Archive company ${second.name}` })).toBeNull();
+      // managing, a row is not a way in
+      expect(list().queryAllByRole("link")).toHaveLength(0);
+
+      await userEvent.click(screen.getByRole("button", { name: "Done" }));
+      expect(screen.queryByRole("button", { name: /^Archive company / })).toBeNull();
+      expect(list().getByRole("link", { name: new RegExp(`^${first.name}`) })).toBeInTheDocument();
+    });
+
+    it("is not offered to someone who is an admin of none", async () => {
+      serve({ ...LIST, entities: LIST.entities.map((e) => ({ ...e, role: "cashier" })) });
+      show();
+      await screen.findByRole("list", { name: "Your companies" });
+
+      expect(screen.queryByRole("button", { name: "Archive companies" })).toBeNull();
+    });
+
+    it("asks first, then archives, says so and reads the list again", async () => {
+      serve(MINE);
+      show();
+      await screen.findByRole("list", { name: "Your companies" });
+
+      await userEvent.click(screen.getByRole("button", { name: "Archive companies" }));
+      await userEvent.click(screen.getByRole("button", { name: `Archive company ${first.name}` }));
+      const dialog = within(screen.getByRole("dialog"));
+      expect(dialog.getByRole("heading", { name: `Archive ${first.name}?` })).toBeInTheDocument();
+      expect(
+        dialog.getByText("It disappears for everyone. Only Minty support can bring it back."),
+      ).toBeInTheDocument();
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+
+      serve({ message: `"${first.name}" is archived.` } as unknown as EntityListAnswer);
+      serve({ ...MINE, entities: [MINE.entities[1]] });
+      await userEvent.click(dialog.getByRole("button", { name: "Archive company" }));
+
+      expect(await screen.findByText(`"${first.name}" is archived.`)).toBeInTheDocument();
+      expect(screen.queryByRole("dialog")).toBeNull();
+      const archive = new URL(String(fetchMock.mock.calls[1][0]));
+      expect(archive.pathname).toBe("/api/me/company/archive");
+      expect(archive.searchParams.get("entity")).toBe(first.id);
+      expect((fetchMock.mock.calls[1][1] as RequestInit).method).toBe("POST");
+      await waitFor(() => expect(list().queryByText(first.name)).toBeNull());
+    });
+
+    it("a refusal (a paid subscription left) stays in the dialog and archives nothing", async () => {
+      serve(MINE);
+      show();
+      await screen.findByRole("list", { name: "Your companies" });
+
+      await userEvent.click(screen.getByRole("button", { name: "Archive companies" }));
+      await userEvent.click(screen.getByRole("button", { name: `Archive company ${first.name}` }));
+      const sentence =
+        "This company still has a paid subscription. Cancel its subscription first, then archive it.";
+      serve({ error: sentence }, 409);
+      const dialog = within(screen.getByRole("dialog"));
+      await userEvent.click(dialog.getByRole("button", { name: "Archive company" }));
+
+      expect(await dialog.findByRole("alert")).toHaveTextContent(sentence);
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+      expect(list().getByText(first.name)).toBeInTheDocument();
+    });
+  });
+
+  it("a person who is not a superuser gets no archive filter", async () => {
+    serve(LIST);
+    show();
+    await screen.findByRole("list", { name: "Your companies" });
+
+    expect(screen.queryByRole("group", { name: "Show companies" })).toBeNull();
+  });
+
+  describe("a superuser", () => {
+    it("sees archived companies last, with a pill and Restore instead of a way in", async () => {
+      serve(SUPERUSER);
+      show();
+      await screen.findByRole("list", { name: "Your companies" });
+
+      const filter = within(screen.getByRole("group", { name: "Show companies" }));
+      expect(filter.getByRole("button", { name: "All" })).toHaveAttribute("aria-pressed", "true");
+      // never a link into it, and last in the list
+      expect(list().queryByRole("link", { name: /Gold Moon/ })).toBeNull();
+      const items = list().getAllByRole("listitem");
+      const last = within(items[items.length - 1]);
+      expect(last.getByText("Gold Moon Company")).toBeInTheDocument();
+      expect(last.getByText("Archived")).toBeInTheDocument();
+      expect(last.getByRole("button", { name: "Restore Gold Moon Company" })).toBeInTheDocument();
+    });
+
+    it("filters by asking the API, and Archived with none says nothing matched", async () => {
+      serve(SUPERUSER);
+      show();
+      await screen.findByRole("list", { name: "Your companies" });
+
+      serve({ entities: [], notices: [], is_superuser: true });
+      await userEvent.click(screen.getByRole("button", { name: "Archived" }));
+
+      expect(await screen.findByText("No companies found.")).toBeInTheDocument();
+      expect(screen.queryByRole("heading", { name: "No Entity Found" })).toBeNull();
+      expect(screen.getByRole("button", { name: "Archived" })).toHaveAttribute(
+        "aria-pressed",
+        "true",
+      );
+      const asked = new URL(String(fetchMock.mock.calls[1][0]));
+      expect(asked.pathname).toBe("/api/me/entities");
+      expect(asked.searchParams.get("archived")).toBe("archived");
+      // the first read asked nothing extra: "All" is the API's own default
+      expect(new URL(String(fetchMock.mock.calls[0][0])).searchParams.has("archived")).toBe(false);
+    });
+
+    it("Restore asks first, then reads the list again and says so", async () => {
+      serve(SUPERUSER);
+      show();
+      await screen.findByRole("list", { name: "Your companies" });
+
+      await userEvent.click(screen.getByRole("button", { name: "Restore Gold Moon Company" }));
+      const dialog = within(screen.getByRole("dialog"));
+      expect(
+        dialog.getByRole("heading", { name: "Restore Gold Moon Company?" }),
+      ).toBeInTheDocument();
+      expect(dialog.getByText("It comes back for everyone who belongs to it.")).toBeInTheDocument();
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+
+      serve({ message: "Gold Moon Company is back." } as unknown as EntityListAnswer);
+      serve({
+        ...SUPERUSER,
+        entities: [...LIST.entities, { ...ARCHIVED_ROW, archived_at: null }],
+      });
+      await userEvent.click(dialog.getByRole("button", { name: "Restore" }));
+
+      expect(await screen.findByText("Gold Moon Company is back.")).toBeInTheDocument();
+      expect(screen.queryByRole("dialog")).toBeNull();
+      const restore = fetchMock.mock.calls[1];
+      expect(new URL(String(restore[0])).pathname).toBe("/api/me/entities/e-archived/restore");
+      expect((restore[1] as RequestInit).method).toBe("POST");
+      expect(await list().findByRole("link", { name: /Gold Moon Company/ })).toBeInTheDocument();
+    });
+
+    it("a refused Restore stays in the dialog", async () => {
+      serve(SUPERUSER);
+      show();
+      await screen.findByRole("list", { name: "Your companies" });
+
+      await userEvent.click(screen.getByRole("button", { name: "Restore Gold Moon Company" }));
+      serve({ error: "You don't have access to that company." }, 403);
+      const dialog = within(screen.getByRole("dialog"));
+      await userEvent.click(dialog.getByRole("button", { name: "Restore" }));
+
+      expect(await dialog.findByRole("alert")).toHaveTextContent(
+        "You don't have access to that company.",
+      );
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+    });
   });
 });

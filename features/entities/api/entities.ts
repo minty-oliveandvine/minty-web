@@ -27,19 +27,58 @@ export type EntityRow = {
   /** ISO instant (UTC) of the last time anyone opened it, or null when nobody has. */
   last_accessed_at: string | null;
   last_accessed_by: string | null;
+  /**
+   * ISO instant the company was archived, or null while it is active. Only a superuser is ever
+   * sent an archived company (everyone else's list leaves them out); an older API omits it.
+   */
+  archived_at?: string | null;
+  /**
+   * The caller's own role on the company (`admin`, `accountant`, ...), or `superadmin` where a
+   * superuser holds no membership. Only an admin may archive (the API checks `ENTITY_DELETE`).
+   */
+  role?: string;
 };
 
 /** Flask's flash categories, already read the way its own toasts read them. */
 export type EntityNotice = { category: "success" | "error" | "warning" | "info"; message: string };
 
-export type EntityListAnswer = { entities: EntityRow[]; notices: EntityNotice[] };
+export type EntityListAnswer = {
+  entities: EntityRow[];
+  notices: EntityNotice[];
+  /** A superuser may filter by archived state and restore; an older API omits it (false). */
+  is_superuser?: boolean;
+};
+
+/** Which companies a superuser's list shows; the API ignores it for everyone else. */
+export type ArchivedFilter = "all" | "active" | "archived";
 
 export function fetchEntities({
   flash,
+  archived,
   signal,
-}: { flash?: string | null; signal?: AbortSignal } = {}): Promise<EntityListAnswer> {
+}: {
+  flash?: string | null;
+  archived?: ArchivedFilter;
+  signal?: AbortSignal;
+} = {}): Promise<EntityListAnswer> {
   return mintyFetch<EntityListAnswer>("/api/me/entities", {
-    query: { flash: flash || undefined },
+    query: { flash: flash || undefined, archived },
     signal,
   });
+}
+
+/** Bring an archived company back (superusers only); the API's sentence comes back as `message`. */
+export function restoreEntity(entityId: string): Promise<{ message: string }> {
+  return mintyFetch(`/api/me/entities/${encodeURIComponent(entityId)}/restore`, {
+    method: "POST",
+  });
+}
+
+/**
+ * Archive the company (its admins): it leaves everyone's list and opens nowhere until Minty
+ * support restores it. Refused (409) while it still has a paid subscription, with the API's
+ * sentence; the company is then left as it was.
+ */
+export function archiveEntity(entityId: string): Promise<{ message: string }> {
+  return mintyFetch("/api/me/company/archive", { method: "POST", query: { entity: entityId } });
 }

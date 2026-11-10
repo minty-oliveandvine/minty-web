@@ -9,11 +9,14 @@ import Image from "next/image";
 
 import { AppHeader } from "@/components/ui/AppHeader";
 
+import type { ArchivedFilter } from "@/features/entities/api/entities";
 import {
   CREATE_ENTITY,
   createEntityHref,
   EMPTY_TEXT,
   EMPTY_TITLE,
+  FILTER_LABEL,
+  FILTERS,
   NO_MATCH,
   PAGE_TITLE,
   SEARCH_PLACEHOLDER,
@@ -77,6 +80,44 @@ export function CompanySearch({
           </svg>
         </div>
       </div>
+    </div>
+  );
+}
+
+/**
+ * A superuser's All / Active / Archived switch, above the search (nobody else is sent an archived
+ * company, so nobody else sees it). Three equal segments across the column on every width, each
+ * a 44 px target; the chosen one is pressed (`aria-pressed`) and filled.
+ */
+export function ArchivedFilterSwitch({
+  value,
+  onChange,
+}: {
+  value: ArchivedFilter;
+  onChange: (v: ArchivedFilter) => void;
+}) {
+  return (
+    <div
+      role="group"
+      aria-label={FILTER_LABEL}
+      className="grid grid-cols-3 gap-1 rounded-[12px] border border-gray-300 bg-white p-1"
+    >
+      {FILTERS.map((f) => {
+        const on = f.value === value;
+        return (
+          <button
+            key={f.value}
+            type="button"
+            aria-pressed={on}
+            onClick={() => onChange(f.value)}
+            className={`min-h-11 min-w-0 cursor-pointer rounded-[10px] px-2 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#18c4c7] ${
+              on ? "bg-[#E6F9FA] text-[#1FA9B1]" : "text-gray-600 hover:bg-gray-50"
+            }`}
+          >
+            {f.label}
+          </button>
+        );
+      })}
     </div>
   );
 }

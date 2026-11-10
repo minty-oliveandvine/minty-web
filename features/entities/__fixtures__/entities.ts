@@ -74,9 +74,22 @@ export const LIST: EntityListAnswer = {
 
 export const EMPTY: EntityListAnswer = { entities: [], notices: [] };
 
-export const FIXTURES = { LIST, EMPTY } as const;
+/** A superuser's "All": every company, one of them archived (2026-11-10). */
+export const ARCHIVED_ROW = row({
+  id: "e-archived",
+  name: "Gold Moon Company",
+  status: "disconnected",
+  archived_at: new Date(Date.now() - 24 * HOUR).toISOString(),
+});
+export const SUPERUSER: EntityListAnswer = {
+  entities: [...LIST.entities, ARCHIVED_ROW],
+  notices: [],
+  is_superuser: true,
+};
+
+export const FIXTURES = { LIST, EMPTY, SUPERUSER } as const;
 export type EntityFixture = keyof typeof FIXTURES;
 
 export function isEntityFixture(name: string | null | undefined): name is EntityFixture {
-  return name === "LIST" || name === "EMPTY";
+  return name === "LIST" || name === "EMPTY" || name === "SUPERUSER";
 }

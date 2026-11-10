@@ -59,6 +59,33 @@ and the empty state's _Create Entity_ go to Minty's `/entity/create` (the onboar
 signs the person in first - no token in the address since gap 4, 2026-11-09), and the module selector checks the membership, records the visit on the clock and picks
 the module (or resumes the wizard for a company still in onboarding).
 
+## Archived companies (2026-11-10)
+
+**Archive is on this list, in its manage mode** (owner, 2026-11-10 - not in Settings, and not on
+the browsing rows, where a phone needs the whole width for the name). Under the search, a person
+who is an **admin** of at least one listed company (`role` on the row; `canArchive`) gets
+**Archive companies** (`aria-pressed`); it turns the list into manage mode: every row is its name
+only (not a link), and each company they are an admin of offers **Archive**. **Done** leaves it,
+and it also ends once no listed company is theirs to archive. Archive asks first (`ConfirmDialog`,
+red, "Archive <name>?" / "It disappears for everyone. Only Minty support can bring it back."), then
+`POST /api/me/company/archive?entity=<id>`, a toast with the API's sentence and a fresh read. A
+refusal - 409 while the company still has a paid subscription - stays in the dialog. A superuser
+who isn't a member opens companies read-only, so the API refuses them and they get no button.
+
+An archived company (`entities.archived_at` set) is left out of everyone's list by
+minty-accounts-api. **A superuser is still sent them**, with `is_superuser: true` on the answer and
+`archived_at` on each row:
+
+- an **All / Active / Archived** switch above the search (`ArchivedFilterSwitch`, three equal 44 px
+  segments on every width, `aria-pressed`), asked of the API as `?archived=active|archived`
+  (nothing for All, the API's own default). Archived with none is "No companies found.", never
+  the empty "No Entity Found" page;
+- archived rows sort last, carry a Neutral **Archived** pill and are not links - an archived
+  company never opens until it is restored;
+- **Restore** on each archived row asks first (`ConfirmDialog`, "Restore <name>?" / "It comes back
+  for everyone who belongs to it."), then `POST /api/me/entities/<id>/restore`, a toast with the
+  API's sentence and a fresh read. A refusal stays in the dialog.
+
 ## What Flask flashed on the way
 
 Seventy-odd Flask routes `flash()` a message and redirect to `/entity` ("I looked everywhere but
@@ -126,4 +153,6 @@ Minty's `tests/test_module_selector.py`.
 re-export guard), `components/ui/__tests__/{NavMenu,Sidebar}.test.tsx`,
 `lib/__tests__/{viewer,mintyFetch}`, Playwright `features/entities/e2e/07_entity_list.spec.ts`
 (stubbed Flask; the layout is measured - Flask's widths, the 65 / 24 px, the search box that
-stays). Flask's side: Minty's `tests/test_hub_entity_list.py`.
+stays). Flask's side: Minty's `tests/test_hub_entity_list.py`. Archived companies: the manage-mode, Archive and superuser cases in
+`EntityListScreen.test.tsx` and `entityRows.test.ts`, and 07's manage-mode archive and superuser specs
+(360 / 768 / 1440, 44 px targets, asked first); the API side is minty-accounts-api's.

@@ -3,17 +3,31 @@
  * as it looks: the "Setup in progress" pill over its top edge, the name, then the free-trial
  * badge, one badge per module that is on, the last-opened clock and the chevron. The whole row
  * leads into the company.
+ *
+ * In the list's manage mode (2026-11-10, "Archive companies") a row is not a link: just its name,
+ * and an Archive button where the person is an admin of it (`canArchive`) - asked first by the
+ * screen. Out of manage mode the row is unchanged, so a phone keeps the whole width for the name.
+ *
+ * An archived company (a superuser's list only) is not a link: it never opens until it is
+ * restored. It carries a Neutral "Archived" pill where "Setup in progress" would sit, and a
+ * Restore button in place of the clock and chevron.
  */
 
 import Image from "next/image";
 
 import type { EntityRow } from "@/features/entities/api/entities";
 import {
+  ARCHIVE,
+  ARCHIVE_COMPANY,
+  ARCHIVED,
+  canArchive,
   enterHref,
+  isArchived,
   isSettingUp,
   lastAccessedLabel,
   lastOpenedLabel,
   NOT_OPENED_YET,
+  RESTORE,
   SETUP_IN_PROGRESS,
   trialLabel,
 } from "@/features/entities/lib/entityRows";
@@ -92,7 +106,70 @@ function LastOpened({ row }: { row: EntityRow }) {
   );
 }
 
-export function EntityCard({ row }: { row: EntityRow }) {
+function ManageCard({ row, onArchive }: { row: EntityRow; onArchive?: (row: EntityRow) => void }) {
+  return (
+    <li className="relative">
+      <div className="flex min-h-[56px] w-full flex-wrap items-center justify-between gap-2 rounded-[12px] border border-[#f6f6f8] bg-white px-4 py-3 font-semibold text-[#1f2937] shadow-md">
+        <span className="min-w-0 flex-1 truncate text-[17px]">{row.name}</span>
+        {onArchive && canArchive(row) ? (
+          <button
+            type="button"
+            onClick={() => onArchive(row)}
+            aria-label={`${ARCHIVE_COMPANY} ${row.name}`}
+            className="inline-flex min-h-11 shrink-0 cursor-pointer items-center justify-center rounded-[12px] border border-red-200 px-4 text-sm font-semibold text-red-600 transition-colors hover:bg-red-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#18c4c7]"
+          >
+            {ARCHIVE}
+          </button>
+        ) : null}
+      </div>
+    </li>
+  );
+}
+
+function ArchivedCard({
+  row,
+  onRestore,
+}: {
+  row: EntityRow;
+  onRestore?: (row: EntityRow) => void;
+}) {
+  return (
+    <li className="relative" data-archived="">
+      <span className="absolute -top-2 left-3 z-10 rounded-full bg-gray-100 px-2.5 py-0.5 text-[12px] font-medium text-gray-600 shadow-sm">
+        {ARCHIVED}
+      </span>
+      <div className="flex min-h-[56px] w-full flex-wrap items-center justify-between gap-2 rounded-[12px] border border-[#f6f6f8] bg-white px-4 py-3 font-semibold text-gray-500 shadow-md">
+        <span className="min-w-0 flex-1 truncate text-[17px]">{row.name}</span>
+        {onRestore ? (
+          <button
+            type="button"
+            onClick={() => onRestore(row)}
+            aria-label={`${RESTORE} ${row.name}`}
+            className="inline-flex min-h-11 shrink-0 cursor-pointer items-center justify-center rounded-[12px] border border-gray-300 px-4 text-sm font-semibold text-[#1f2937] transition-colors hover:bg-gray-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#18c4c7]"
+          >
+            {RESTORE}
+          </button>
+        ) : null}
+      </div>
+    </li>
+  );
+}
+
+export function EntityCard({
+  row,
+  onRestore,
+  managing = false,
+  onArchive,
+}: {
+  row: EntityRow;
+  /** A superuser's Restore on an archived row; without it an archived row offers nothing. */
+  onRestore?: (row: EntityRow) => void;
+  /** The list's manage mode: the row is its name and, for an admin, Archive. */
+  managing?: boolean;
+  onArchive?: (row: EntityRow) => void;
+}) {
+  if (isArchived(row)) return <ArchivedCard row={row} onRestore={onRestore} />;
+  if (managing) return <ManageCard row={row} onArchive={onArchive} />;
   const trial = trialLabel(row);
   return (
     // The pill hangs off this wrapper, not the link, so it is hidden with the card it labels.
