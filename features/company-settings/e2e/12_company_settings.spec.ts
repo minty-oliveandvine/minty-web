@@ -153,7 +153,13 @@ async function stubFlask(page: Page) {
     200,
     {
       ...INTEGRATION,
-      xero: { ...INTEGRATION.xero, connected: false, status: "disconnected", organisation: null },
+      // a disconnect keeps the organisation (Xero optional, 2026-11-10)
+      xero: {
+        ...INTEGRATION.xero,
+        connected: false,
+        status: "disconnected",
+        needs_reconnect: true,
+      },
       message: "You're disconnected from Xero.",
     },
   ]);
@@ -246,7 +252,8 @@ test.describe("company settings", () => {
 
     await page.getByRole("button", { name: "Disconnect" }).click();
     await page.getByRole("dialog").getByRole("button", { name: "Disconnect" }).click();
-    await expect(page.getByText("Not connected")).toBeVisible();
+    await expect(page.getByText("Reconnect needed")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Disconnect" })).toHaveCount(0);
   });
 
   // The guard's link rules are lib/__tests__/leaveGuard.test.tsx; what needs a REAL browser is

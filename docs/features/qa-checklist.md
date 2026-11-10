@@ -132,7 +132,8 @@ run" below).
 - [ ] **DB:** `SELECT name, country_code, currency_id, status, xero_org_id,
 connected_by_user_id FROM pettycashv3.entities WHERE id = '<id>';` — a details save
       touches only `name`/`country_code`/`currency_id` (plus `currency_format`, derived);
-      Disconnect sets `status = 'disconnected'` and nulls `xero_org_id`/`connected_by_user_id`
+      Disconnect sets `status = 'disconnected'` and nulls `connected_by_user_id`, KEEPING
+      `xero_org_id` and the synced accounts/contacts (2026-11-10)
       — and clears that user's Xero token columns on `pettycashv3.user` too, but only when no
       other entity still uses the same connector.
 

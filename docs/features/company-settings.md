@@ -47,7 +47,9 @@ organisation and "Last connected:" always - kept through a disconnect, "N/A" onl
 was never connected (Flask sends `last_connected_at` as is, no fallback). A company connected once
 offers Reconnect, never Connect, even after a deliberate disconnect. Connect / Reconnect navigate to Flask's
 `/entity/<id>/enter?…&next=/xero_reconnect?entity_id=<id>`; Disconnect asks first (it was one
-click) and shows the new state.
+click) and shows the new state. Since 2026-11-10 a disconnect keeps the organisation, so the card
+then reads Reconnect needed with the organisation's name, and Disconnect is gone while `status` is
+`disconnected` (nothing is left to drop).
 
 ### The organisation is already in use (2026-10-09)
 

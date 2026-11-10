@@ -399,7 +399,8 @@ describe("IntegrationScreen", () => {
             ...INTEGRATION.xero,
             status: "disconnected",
             connected: false,
-            organisation: null,
+            // a disconnect keeps the organisation (Xero optional, 2026-11-10)
+            needs_reconnect: true,
           },
           message: "You're disconnected from Xero.",
         }),
@@ -415,9 +416,12 @@ describe("IntegrationScreen", () => {
       within(screen.getByRole("dialog")).getByRole("button", { name: "Disconnect" }),
     );
 
-    // Disconnected, but it was connected once: the date stays and the way back is a Reconnect.
+    // Disconnected, but it was connected once: the organisation and the date stay, the way back is
+    // a Reconnect, and there is nothing left to disconnect.
     expect(await screen.findByText("You're disconnected from Xero.")).toBeInTheDocument();
-    expect(screen.getByText("Not connected")).toBeInTheDocument();
+    expect(screen.getByText("Reconnect needed")).toBeInTheDocument();
+    expect(screen.getByText("Olive Shop Ltd")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Disconnect" })).toBeNull();
     expect(screen.getByText(/^Last connected: /)).toHaveTextContent(lastConnected ?? "");
     expect(screen.getByRole("link", { name: "Reconnect to Xero" })).toHaveAttribute(
       "href",
@@ -484,6 +488,7 @@ describe("IntegrationScreen", () => {
 
     expect(await screen.findByText("Reconnect needed")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Reconnect to Xero" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Disconnect" })).toBeInTheDocument(); // still held
   });
 
   // The guard itself is lib/__tests__/leaveGuard.test.tsx; these are this page's exits.

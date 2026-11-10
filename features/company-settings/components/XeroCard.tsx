@@ -72,7 +72,8 @@ export function XeroCard({
                 : "Connect to Xero"}
             </a>
           )}
-          {state === "off" ? null : (
+          {/* a company already disconnected keeps its organisation (Xero optional): nothing to drop */}
+          {state === "off" || xero.status === "disconnected" ? null : (
             <button
               type="button"
               onClick={onDisconnect}
