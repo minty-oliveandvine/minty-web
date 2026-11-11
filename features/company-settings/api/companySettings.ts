@@ -233,8 +233,9 @@ export function pickMatch(
   accountId: string,
   xeroAccountId: string | null,
 ): Promise<MatchingPage> {
+  // PATCH: the accounts API's CORS answer allows no PUT (hub/transport.py METHODS).
   return mintyFetch<MatchingPage>(MATCHING, {
-    method: "PUT",
+    method: "PATCH",
     query: q(entityId),
     json: { account_id: accountId, xero_account_id: xeroAccountId },
   });

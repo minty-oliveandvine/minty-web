@@ -18,7 +18,8 @@ import { useCallback, useEffect, useState } from "react";
 
 import { AppHeader } from "@/components/ui/AppHeader";
 import { SETTINGS_OUTLINE, SETTINGS_PRIMARY } from "@/components/ui/settingsButtons";
-import { SETTINGS_INPUT, SETTINGS_INPUT_OK } from "@/components/ui/settingsFields";
+import { RequiredMark } from "@/components/ui/RequiredMark";
+import { SETTINGS_INPUT_OK } from "@/components/ui/settingsFields";
 import { LoadState, SettingsDialog } from "@/components/ui/SettingsShell";
 import { useToast } from "@/components/ui/Toast";
 import { ApiError } from "@/lib/apiClient";
@@ -47,10 +48,9 @@ export const MATCH_COPY = {
   minty: "Minty account",
   xero: "Xero account",
   choose: "Choose a Xero account",
-  needed: "Needed",
-  neededHint: "Your records use this account",
-  suggested: "Suggested:",
-  use: "Use it",
+  suggested: "Suggested",
+  allAccounts: "All accounts",
+  matchedRow: "Matched",
   conflict: (code: string, name: string) =>
     `Xero's ${code} is ${name}, a different type - choose the account to use.`,
   combined: (names: string[]) => `Combined with ${names.join(", ")}`,
@@ -60,7 +60,7 @@ export const MATCH_COPY = {
   refreshing: "Refreshing…",
   back: "Back",
   finish: "Finish",
-  finishBlocked: "Match the accounts marked Needed to finish.",
+  finishBlocked: "Match the accounts marked * to finish.",
   confirmTitle: "Finish matching?",
   confirmBody:
     "Each matched account takes its Xero code and name, and Minty publishes to Xero from today. This can't be undone.",
@@ -100,55 +100,43 @@ function Row({
   onPick: (xeroAccountId: string | null) => void;
 }) {
   const fitting = options.filter((o) => o.kind === row.kind);
-  const suggestion = row.suggestion ? options.find((o) => o.id === row.suggestion) : undefined;
+  const suggestion =
+    !row.pick && row.suggestion ? fitting.find((o) => o.id === row.suggestion) : undefined;
   const picked = row.pick?.xero_account_id ?? "";
   const needed = row.used && !row.pick;
   const label = `${row.code ? `${row.code} ` : ""}${row.name}`;
+  const note = row.conflict
+    ? MATCH_COPY.conflict(row.conflict.code, row.conflict.name)
+    : row.combined_with.length
+      ? MATCH_COPY.combined(row.combined_with)
+      : null;
   return (
-    <li className="flex min-w-0 flex-col gap-2 border-b border-set-line px-4 py-3 last:border-b-0 md:flex-row md:items-center md:gap-4">
-      <div className="flex min-w-0 flex-1 items-start gap-3">
-        <span className="w-12 shrink-0 pt-px text-[13px] tabular-nums text-set-mute">
-          {row.code}
+    // Frame 3's row: the code, the name (a red * when a record uses it), a tick once matched, and
+    // the Xero account; one line each from a tablet up, the select under the name on a phone.
+    <li className="flex min-w-0 flex-col gap-2 border-b border-set-line px-4 py-2.5 last:border-b-0 md:flex-row md:items-center md:gap-4">
+      <div className="flex min-w-0 flex-1 items-center gap-3">
+        <span className="w-11 shrink-0 text-[12.5px] tabular-nums text-set-mute">{row.code}</span>
+        <span className="min-w-0 flex-1 break-words text-[14px] text-set-ink">
+          {row.name}
+          {row.used ? (
+            <>
+              <RequiredMark />
+              <span className="sr-only"> (required)</span>
+            </>
+          ) : null}
+          {note ? <span className="block text-[12.5px] text-set-ink-2">{note}</span> : null}
         </span>
-        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <span className="break-words text-[14.5px] text-set-ink">{row.name}</span>
-          {needed ? (
-            <span className="text-[12.5px] font-semibold text-danger" title={MATCH_COPY.neededHint}>
-              {MATCH_COPY.needed}
-              <span className="sr-only"> - {MATCH_COPY.neededHint}</span>
-            </span>
-          ) : null}
-          {row.conflict ? (
-            <span className="text-[12.5px] text-set-ink-2">
-              {MATCH_COPY.conflict(row.conflict.code, row.conflict.name)}
-            </span>
-          ) : null}
-          {row.combined_with.length ? (
-            <span className="text-[12.5px] text-set-ink-2">
-              {MATCH_COPY.combined(row.combined_with)}
-            </span>
-          ) : null}
-          {suggestion && !row.pick ? (
-            <span className="flex flex-wrap items-center gap-x-2 text-[12.5px] text-set-ink-2">
-              {MATCH_COPY.suggested} {optionLabel(suggestion)}
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => onPick(suggestion.id)}
-                className="min-h-11 font-semibold text-set-tab-ink underline disabled:opacity-50 md:min-h-9"
-              >
-                {MATCH_COPY.use}
-              </button>
-            </span>
-          ) : null}
-        </div>
         {row.pick ? (
-          <span className="material-symbols-outlined shrink-0 text-set-ok-ink" aria-hidden>
+          <span
+            className="material-symbols-outlined shrink-0 text-set-ok-ink"
+            aria-label={MATCH_COPY.matchedRow}
+            role="img"
+          >
             check
           </span>
         ) : null}
       </div>
-      <label className="min-w-0 md:w-[44%] md:shrink-0">
+      <label className="relative min-w-0 md:w-[42%] md:shrink-0">
         <span className="sr-only">
           {MATCH_COPY.xero} for {label}
         </span>
@@ -158,15 +146,38 @@ function Row({
           aria-required={row.used}
           aria-invalid={needed ? true : undefined}
           onChange={(e) => onPick(e.target.value || null)}
-          className={`${SETTINGS_INPUT} ${needed ? "border-[#e8a13a]" : SETTINGS_INPUT_OK}`}
+          className={`block min-h-11 w-full appearance-none rounded-[12px] border bg-white py-2 pr-10 pl-3 text-[13.5px] text-set-ink transition-[border-color,box-shadow] focus:outline-none disabled:cursor-not-allowed disabled:bg-set-pill md:min-h-9 ${needed ? "border-[#e8a13a] focus:shadow-[0_0_0_3px_rgba(232,161,58,0.2)]" : SETTINGS_INPUT_OK} ${picked ? "" : "text-set-mute"}`}
         >
           <option value="">{MATCH_COPY.choose}</option>
-          {fitting.map((o) => (
-            <option key={o.id} value={o.id}>
-              {optionLabel(o)}
-            </option>
-          ))}
+          {suggestion ? (
+            <optgroup label={MATCH_COPY.suggested}>
+              <option value={suggestion.id}>{optionLabel(suggestion)}</option>
+            </optgroup>
+          ) : null}
+          {suggestion ? (
+            <optgroup label={MATCH_COPY.allAccounts}>
+              {fitting
+                .filter((o) => o.id !== suggestion.id)
+                .map((o) => (
+                  <option key={o.id} value={o.id}>
+                    {optionLabel(o)}
+                  </option>
+                ))}
+            </optgroup>
+          ) : (
+            fitting.map((o) => (
+              <option key={o.id} value={o.id}>
+                {optionLabel(o)}
+              </option>
+            ))
+          )}
         </select>
+        <span
+          className="material-symbols-outlined pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-set-mute"
+          aria-hidden
+        >
+          expand_more
+        </span>
       </label>
     </li>
   );
@@ -285,7 +296,7 @@ export function MatchingScreen({ company }: { company: { id: string; name: strin
         <>
           <section
             aria-live="polite"
-            className={`flex flex-col gap-2 rounded-[14px] border p-4 ${page.blocking ? "border-[#f1d2a6] bg-[#fff8ee]" : "border-[#bfe7df] bg-set-ok-bg"}`}
+            className="flex flex-col gap-2 rounded-[14px] border border-[#bfe7df] bg-set-ok-bg p-4"
           >
             <p className="flex flex-wrap items-baseline gap-x-2">
               <span className="text-lg font-bold text-set-ink">
@@ -296,7 +307,7 @@ export function MatchingScreen({ company }: { company: { id: string; name: strin
               ) : null}
             </p>
             <div
-              className="h-1.5 overflow-hidden rounded-full bg-white/70"
+              className="h-1.5 overflow-hidden rounded-full bg-[#cdeee8]"
               role="progressbar"
               aria-label={MATCH_COPY.matched(page.matched, page.total)}
               aria-valuenow={progress}
@@ -319,7 +330,7 @@ export function MatchingScreen({ company }: { company: { id: string; name: strin
               const done = group.rows.filter((r) => r.pick).length;
               return (
                 <div key={group.key} className="min-w-0">
-                  <h3 className="bg-set-pill px-4 py-2 text-[13px] font-semibold text-set-ink-2">
+                  <h3 className="border-b border-set-line px-4 pt-4 pb-1.5 text-[12.5px] font-medium text-set-mute">
                     {group.title} · {done} of {group.rows.length} matched
                   </h3>
                   <ul className="min-w-0">
@@ -479,9 +490,12 @@ export function MatchingScreen({ company }: { company: { id: string; name: strin
 
 function Frame({ back, children }: { back: string; children: React.ReactNode }) {
   return (
-    <div className="flex h-dvh h-screen min-w-0 max-w-full flex-col overflow-hidden bg-white">
-      <AppHeader title="Connect to Xero" back={{ href: back, label: "Back" }} />
-      <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto overflow-x-hidden pb-[env(safe-area-inset-bottom,0px)]">
+    // One scroll: the document's (the header is sticky). The settings pages' own scroll box, copied
+    // here at first, drew a second scroll bar beside the page's.
+    <div className="flex min-h-dvh min-w-0 max-w-full flex-col bg-white">
+      {/* Back = Integration, always: "where the person came from" was Xero's sign-in landing here. */}
+      <AppHeader title="Connect to Xero" back={{ href: back, label: "Back", direct: true }} />
+      <main className="flex min-w-0 flex-1 flex-col pb-[env(safe-area-inset-bottom,0px)]">
         <div className="mx-auto flex w-full max-w-[928px] min-w-0 flex-col gap-5 px-4 pt-6 pb-14 sm:px-6 sm:pt-10">
           {children}
         </div>

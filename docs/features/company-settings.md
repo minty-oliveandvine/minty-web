@@ -145,8 +145,12 @@ either "K accounts your records use still need a Xero match before you can finis
 blank ones aren't used and will be archived), every own account by group ("Cash & bank · 1 of 2
 matched"), each with its Xero account (a native select of the accounts that fit: a bank only a bank,
 else the same class; "Choose a Xero account"). Rows show **Needed** when a record uses them and they
-have no match, a same-code other-type conflict, "Combined with …", and a suggestion with **Use it**.
-Each pick saves at once (`PUT /api/me/company/xero/matching`), so the page can be finished later;
+have no match (the house red `*` on the name, "(required)" for a screen reader, and frame 3b's
+orange select), a same-code other-type conflict or "Combined with …" under the name, and a tick once
+matched; a suggestion leads the select in its own "Suggested" group. The select is the frames' compact
+one with its own chevron (44px on a phone, 36px for a pointer). The page scrolls as one document (the
+header is sticky). Petty cash and the bank can't share a Xero account (refused with its sentence).
+Each pick saves at once (`PATCH /api/me/company/xero/matching`), so the page can be finished later;
 **Refresh from Xero** pulls an account made there meanwhile. **Finish** stays off, its reason beside
 it, while a used account has no match (the owner's rule; frame 3b's "Finish anyway" is not built),
 and asks first: "Finish matching? / Each matched account takes its Xero code and name, and Minty

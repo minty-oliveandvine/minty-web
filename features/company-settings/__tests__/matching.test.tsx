@@ -175,11 +175,11 @@ describe("Matching a Minty company's accounts to Xero", () => {
     expect(screen.queryByRole("button", { name: "Connect to Xero" })).toBeNull();
   });
 
-  it("frame 3/3b: picks save at once, Finish waits for the used accounts, a suggestion is one tap", async () => {
+  it("frame 3/3b: picks save at once, Finish waits for the used accounts, the suggestion leads the list", async () => {
     const picks: unknown[] = [];
     api({
       "GET /api/me/company/xero/matching": () => json(matchingPage()),
-      "PUT /api/me/company/xero/matching": (_url, init) => {
+      "PATCH /api/me/company/xero/matching": (_url, init) => {
         picks.push(JSON.parse(String(init.body)));
         return json(MATCHED);
       },
@@ -195,12 +195,23 @@ describe("Matching a Minty company's accounts to Xero", () => {
     });
     expect(within(select).queryByRole("option", { name: /Petty Cash/ })).toBeNull();
 
-    await userEvent.click(screen.getByRole("button", { name: MATCH_COPY.use }));
+    // the suggestion leads the dropdown, in its own group
+    expect(within(select).getByRole("group", { name: MATCH_COPY.suggested })).toBeInTheDocument();
+    await userEvent.selectOptions(select, "x-wages");
     await waitFor(() =>
       expect(picks).toEqual([{ account_id: "a-wages", xero_account_id: "x-wages" }]),
     );
     expect(await screen.findByText("2 of 3 matched")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Finish" })).toBeEnabled();
+  });
+
+  it("the header's Back goes to Integration itself, not back through Xero's sign-in", async () => {
+    api({ "GET /api/me/company/xero/matching": () => json(matchingPage()) });
+    wrap(<MatchingScreen company={COMPANY} />);
+    await screen.findByText("1 of 3 matched");
+    const back = screen.getAllByRole("link", { name: /Back/ })[0];
+    expect(back.getAttribute("href")).toMatch(/\/settings\/integration$/);
+    expect(back).not.toHaveAttribute("data-back-link");
   });
 
   it("Finish asks first, then brings the contacts over and goes back connected", async () => {
