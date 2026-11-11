@@ -86,6 +86,29 @@ describe("ChangeDialog", () => {
     expect(within(dialog).getByRole("button", { name: "Confirm Changes" })).toBeInTheDocument();
   });
 
+  it("after a payment (hideBack) it has one button; Escape lands as Confirm does", async () => {
+    // A change that bills is asked in Billing Accounts first and celebrated here once paid
+    // (the owner, 2026-11-11): there is nothing to go back to.
+    const onConfirm = vi.fn();
+    const onBack = vi.fn();
+    render(
+      <ChangeDialog
+        modal={buildChangeModal(SUMMARY_FIXTURES.M22, ["PETTY_CASH", "PAYMENT_REQUEST"])!}
+        entityName="Nexora Health Limited"
+        busy={false}
+        hideBack
+        onConfirm={onConfirm}
+        onBack={onBack}
+      />,
+    );
+    const dialog = screen.getByRole("dialog");
+    expect(within(dialog).queryByRole("button", { name: "Go back" })).toBeNull();
+    await userEvent.click(within(dialog).getByRole("button", { name: "Confirm" }));
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+    await userEvent.keyboard("{Escape}");
+    expect(onBack).toHaveBeenCalledTimes(1);
+  });
+
   it("while the change is being applied nothing closes it", async () => {
     const { dialog, onBack, onConfirm } = show(["PETTY_CASH"], SUMMARY_FIXTURES.M44, true);
     expect(within(dialog).getByRole("button", { name: "Confirm Change" })).toBeDisabled();

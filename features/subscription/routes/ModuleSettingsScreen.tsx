@@ -161,21 +161,9 @@ export function ModuleSettingsScreen(args: ModuleSettingsScreenProps) {
         )}
       </section>
 
-      {/* Activate Subscription asks in the SAME section-06 modal Manage Subscriptions asks a
-          change in (the user, 2026-10-08) - the person is confirming the same modules and
-          should read the same words - and only its Confirm opens the sheet. */}
-      {m.activatePrompt && (
-        <ChangeDialog
-          modal={m.activatePrompt}
-          entityName={entityName}
-          busy={m.activateBusy}
-          onConfirm={() => void m.confirmActivatePrompt()}
-          onBack={m.dismissActivatePrompt}
-        />
-      )}
-
-      {/* Then the same Billing Accounts sheet, over this page, because a company with no
-          subscriber is not in anybody's billing relationship yet and the act is one request. */}
+      {/* Activate Subscription opens the Billing Accounts sheet FIRST (the owner, 2026-11-11),
+          over this page, because a company with no subscriber is not in anybody's billing
+          relationship yet and the act is one request. */}
       {m.accountAsk && (
         <AccountPickerDialog
           key={m.accountAsk.key}
@@ -190,6 +178,20 @@ export function ModuleSettingsScreen(args: ModuleSettingsScreenProps) {
             if (opened.accountId) void m.confirmActivate(opened.accountId);
           }}
           onClose={m.dismissAccountAsk}
+        />
+      )}
+
+      {/* Then, once activated, the SAME section-06 modal Manage Subscriptions celebrates a change
+          in - the person confirmed the same modules and reads the same words. Nothing to go back
+          to: its Confirm, Escape and the backdrop all show the result. */}
+      {m.celebration && (
+        <ChangeDialog
+          modal={m.celebration}
+          entityName={entityName}
+          busy={false}
+          hideBack
+          onConfirm={m.confirmCelebration}
+          onBack={m.confirmCelebration}
         />
       )}
 

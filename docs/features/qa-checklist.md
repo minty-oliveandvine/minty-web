@@ -182,12 +182,12 @@ pettycashv3.entity_module_subscription WHERE entity_id = '<id>';` — a confirme
       button at all** — neither Activate nor Confirm.
 - [ ] Tick a module on that company: the teal button appears and reads **Activate Subscription**
       (not Confirm), in _Confirm Subscription Change_'s place.
-- [ ] Pressing it opens the SAME section-06 modal a change opens ("You have unlocked Super
-      Minty" etc.) naming the company and the modules chosen, and posts nothing. Its Confirm
-      opens Billing Accounts; that Confirm posts **two** requests in order —
-      `activate-subscription` with `{account}` and **no `codes`**, then the ticked change's own
-      action — and the row lands on its 05·C result, whose button still reads _Back to Manage
-      Subscriptions_.
+- [ ] Pressing it opens Billing Accounts FIRST — no modal before it — and posts nothing. Its
+      Confirm posts **two** requests in order — `activate-subscription` with `{account}` and
+      **no `codes`**, then the ticked change's own action. Then the SAME section-06 modal a
+      change shows ("You have unlocked Super Minty" etc.) names the company and the modules
+      chosen, with ONE button (no Go back); its Confirm (or Escape) lands the row on its 05·C
+      result, whose button still reads _Back to Manage Subscriptions_.
 - [ ] **It charges when the tick does.** Tick a LAPSED module and activate: the card is charged
       (`restart-billing`), which is what the modal said. Tick a running trial instead and
       nothing is charged (`authorize-billing`).
@@ -242,8 +242,10 @@ pettycashv3.entity_module_subscription WHERE entity_id = '<id>';` — a confirme
 - [ ] A change that ONLY cancels (no billing involved) applies directly on Confirm — no "Billing
       Accounts" step.
 - [ ] A change that bills anything (a trial confirmed, an expired trial reactivated, a
-      cancellation resumed) opens "Billing Accounts" after the change's own modal, before
-      anything is charged.
+      cancellation resumed) opens "Billing Accounts" FIRST, before anything is charged; once
+      paid, the change's own modal ("You have unlocked Super Minty" etc.) shows with one button,
+      and its Confirm lands the row on its result. A decline shows 06·B and no modal. A change
+      that only cancels still asks in its modal first and opens no sheet.
 - [ ] While the "Billing Accounts" sheet is open for a pending change, Escape and the backdrop do
       nothing, and the rows/New billing account/X controls are all disabled until the result
       comes back.

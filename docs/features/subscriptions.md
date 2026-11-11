@@ -848,7 +848,7 @@ module" (`1410:1588`; two template frames from the admin design and 108 generate
   now shared with `StartTrialDialog` - the design's B-02) and `components/ChangeDialog.tsx` draws
   them; `useSubscriptionsList` holds the prompt (`changePrompt`, `dismissChangePrompt`,
   `applyChangePrompt`) between the button and `applyChange` for a change that cancels, and
-  `accountStep` / `confirmed` for one that bills (below).
+  `accountStep` then `celebration` / `confirmCelebration` for one that bills (below).
 
 The dialog family (`components/ui/ModalFrame`, `components/ui/ConfirmDialog`, `LeaveDialog`) is copied to minty-payment-request-web (under its `features/subscription/components/`) (its Payment Request Settings' "Leave without saving?", 2026-10-01) and ported to Flask (Minty `static/js/minty_dialog.js` + `static/css/minty_dialog.css`) - change all three.
 
@@ -871,6 +871,8 @@ The dialog family (`components/ui/ModalFrame`, `components/ui/ConfirmDialog`, `L
 - **The shell**: the title with the module's name in its colour, "Entity" and the company,
   the sentences, _Go back_ and the confirming button in its tone; Escape and the backdrop go
   back; while the change is being applied nothing closes it. _Go back_ keeps the ticks pending.
+  Once a change that bills is PAID it shows with one button (`hideBack`, 2026-11-11): its
+  Confirm, Escape and the backdrop all land the row on its result.
   The company block lives **inside the title's column** (2026-09-23): same left edge, same
   width, tucked into the last line's leading so it reads right below the title, one grey
   (`#737a87`) for both its lines as the design's single text node draws them, and a long name
@@ -888,22 +890,23 @@ The dialog family (`components/ui/ModalFrame`, `components/ui/ConfirmDialog`, `L
   Confirm is** (the user, same day, on seeing it sit under "No pending changes"): tick nothing
   and the panel offers no act at all. A company with nothing ticked is activated from its module
   settings page instead, where the card's own CTA asks. The closed row carries nothing (an
-  earlier build put a link under the company's name; the user moved it here). It asks in **the
-  same section-06 modal a change asks in** (the user, same day: "activate subscription should
-  have the you've chosen modal too") - the person is choosing the same modules either way and
-  should read the same words - and only its Confirm goes on to the sheet. `buildChangeModal` can
-  answer null where `pendingChange` does not (two different computations), and the button must
-  not go dead with it: no modal, straight to the sheet (it carries its ticks either way). Then
-  it opens the same **Billing Accounts** sheet.
+  earlier build put a link under the company's name; the user moved it here). It opens the same
+  **Billing Accounts** sheet FIRST (the owner, 2026-11-11), and once it is done **the same
+  section-06 modal a change shows** celebrates it (the user, 2026-10-08: "activate subscription
+  should have the you've chosen modal too") - the person chose the same modules either way and
+  reads the same words. `buildChangeModal` can answer null where `pendingChange` does not (two
+  different computations); the sheet opens all the same and the row then lands on its result
+  with no modal. The module settings page's _Activate Subscription_ (`useModulePage`) runs the
+  same order: sheet, then the modal, then the result in the cards' place.
 
   **Its Confirm does TWO things, in order** (the user, same day: "the modal said you've chosen
   X, so do X"). First `activate-subscription` with the account - one request that places the
   company, records consent and stamps every module row with the viewer. Then the **same apply
   pass as any other change**, on that same account, which `cardChosen` makes it. So the two acts
   differ in ORDER, not in outcome, and activating **can charge** - a ticked lapsed module is
-  bought back, which is what the modal said would happen. Either way it lands on the same 05·C
-  result, and its button still reads _Back to Manage Subscriptions_: this journey began in the
-  portal.
+  bought back, which is what the modal then says happened. Either way, after the modal's
+  Confirm, it lands on the same 05·C result, and its button still reads _Back to Manage
+  Subscriptions_: this journey began in the portal.
 
   Two rules hold it together. The activation is sent with **no `codes`** - naming them is its
   own way to buy a lapsed module back, and the apply pass already owns that path, so a lapsed
@@ -915,23 +918,26 @@ The dialog family (`components/ui/ModalFrame`, `components/ui/ConfirmDialog`, `L
   picked even so - a company confirmed onto an account with nothing to charge would look
   activated and its trial would still expire.
 
-- **Every change asks in its modal first; one that bills then asks which account pays**
-  (2026-09-29, the user's calls, in order: "confirm should then ask for a billing account to
-  nominate a payment method"; then for a while the sheet came first and the modal only once
-  paid; then "Have to redo again the activate modal opens after confirm subscription change.
-  then it will open billing account picker", with NO modal after the payment - the row's
-  result is the news). _Confirm Subscription Change_ opens the change's section-06 modal
-  ("You have unlocked Super Minty", "Continue …", "Reactivating …", "Activate …", "Subscription
-  Changes", "Cancel Subscription?", "Remove …?"). For a change that bills anything - a trial
-  confirmed, an expired trial bought back, a cancellation resumed, a suspension reactivated,
-  and the ⋮'s _Reactivate_ (`moduleChanges.billsAnything`) - its Confirm opens **Billing
-  Accounts** in its place (the modal stays up, busy, while the accounts are read; a failed read
-  is a toast and the modal stays), 08-A's picker (`AccountPickerDialog`, onboarding's sheet),
-  over the row: "Choose the account that pays for
-  <company>.", the accounts as radio rows, _New billing account_, _Confirm_. Once paid, the row
-  lands on its result, brought into view (`ChangeResultRow` scrolls itself there - the user: "i
-  have to scroll down to find it"); a decline shows 06·B. A change that only CANCELS bills
-  nothing: its modal's Confirm applies it, and no account is asked for. Preselected: the
+- **A change that bills asks which account pays FIRST; its modal celebrates it once paid**
+  (the owner, 2026-11-11: "user need to add billing account first before the you have unlocked
+  pop up" - the modal "celebrates after payment, when clicking confirm then go to the row
+  congratulations"). The order's history: 2026-09-29 "confirm should then ask for a billing
+  account to nominate a payment method"; then for a while the sheet came first and the modal
+  only once paid; then "Have to redo again the activate modal opens after confirm subscription
+  change. then it will open billing account picker", with no modal after the payment; now the
+  sheet first again, and the modal after the payment. For a change that bills anything - a
+  trial confirmed, an expired trial bought back, a cancellation resumed, a suspension
+  reactivated, and the ⋮'s _Reactivate_ (`moduleChanges.billsAnything`) - _Confirm Subscription
+  Change_ opens **Billing Accounts** with no modal before it (a failed read of the accounts is a
+  toast), 08-A's picker (`AccountPickerDialog`, onboarding's sheet), over the row: "Choose the
+  account that pays for <company>.", the accounts as radio rows, _New billing account_,
+  _Confirm_. Once paid, the change's section-06 modal ("You have unlocked Super Minty",
+  "Continue …", "Reactivating …", "Activate …", "Subscription Changes") shows with one button,
+  and its Confirm lands the row on its result, brought into view (`ChangeResultRow` scrolls
+  itself there - the user: "i have to scroll down to find it"); a decline shows 06·B and no
+  modal, and _Try again now_ that succeeds shows the modal then. A change that only CANCELS
+  bills nothing: it asks in its modal first ("Cancel Subscription?", "Remove …?", "Stop … after
+  the trial?"), whose Confirm applies it, and no account is asked for. Preselected: the
   account the company is on, else the first that can take it. The rows the API would refuse are shown disabled with their reason
   (`lib/billingAccounts.ts` `nominationChoice`): another account whose collection is failing
   ("Payment failed") or with no card ("No card"), and - while the company itself is past due -
@@ -943,8 +949,8 @@ The dialog family (`components/ui/ModalFrame`, `components/ui/ConfirmDialog`, `L
   move and the payment (2026-09-29, the user: "no loading during confirm on billing account it
   just closes"): its Confirm reads "Confirming…" (onboarding's `BillingSheet` word), the rows,
   _New billing account_ and the X are shut, Escape and the backdrop do nothing, and it gives way
-  only to the answer - the result once paid, 06·B on a decline, a toast when the change is
-  refused. _New billing account_ turns the
+  only to the answer - the change's modal once paid, 06·B on a decline, a toast when the change
+  is refused. _New billing account_ turns the
   sheet into onboarding's form (01-D → 01-J); on Done the sheet returns to its list with the new
   account picked and the company goes on it the same way. Closing the sheet applies nothing and
   keeps the ticks pending. 06·B's "Payment could not be processed" then names the card of the
@@ -957,9 +963,9 @@ The dialog family (`components/ui/ModalFrame`, `components/ui/ConfirmDialog`, `L
   started has no tick (its Start Free Trial button is on the row). From a closed row the hook
   reads the page model, opens the row, sets those ticks (`ticksFor`, `useEntitySummary`'s
   `setTicksFor`) and asks exactly as that change's button would, from that page model
-  (`changePrompt.page`, so a quick Confirm never waits for the row's own read): _Cancel
-  subscription_ with its modal, _Reactivate_ with its modal and then (it bills) "Billing
-  Accounts"; from the open row the loaded page model serves. _Go back_ leaves the ticks pending
+  (so a quick Confirm never waits for the row's own read): _Cancel subscription_ with its
+  modal, _Reactivate_ (it bills) with "Billing Accounts" first and its modal once paid
+  (2026-11-11); from the open row the loaded page model serves. _Go back_ leaves the ticks pending
   on the open row, as the design's "returns to 05·A".
   An item with nothing to change says so in a toast and leaves the row open. _Request transfer_
   opens the change-subscriber page (§14).

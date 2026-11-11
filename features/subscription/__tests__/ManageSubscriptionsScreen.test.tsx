@@ -190,14 +190,9 @@ describe("ManageSubscriptionsScreen", { timeout: 30_000 }, () => {
     expect(within(item).queryByRole("button", { name: "Confirm Subscription Change" })).toBeNull();
     await userEvent.click(activate);
 
-    // It asks in the SAME section-06 modal a change asks in (the user, 2026-10-08) - the person
-    // chose the same modules and reads the same words - and only then opens Billing Accounts.
-    const modal = within(await screen.findByRole("dialog"));
-    // The confirm label varies with what was chosen ("Confirm", "Confirm Change", ...).
-    expect(modal.getByRole("button", { name: /^Confirm/ })).toBeVisible();
-    await userEvent.click(modal.getByRole("button", { name: /^Confirm/ }));
-
+    // Billing Accounts asks FIRST (the owner, 2026-11-11) - no modal before it.
     const sheet = within(await screen.findByRole("dialog", { name: "Billing Accounts" }));
+    expect(screen.getAllByRole("dialog")).toHaveLength(1);
     await userEvent.click(sheet.getByRole("button", { name: "Confirm" }));
 
     // TWO requests, in order (the user, 2026-10-08: the modal said "you've chosen X", so X
@@ -210,6 +205,13 @@ describe("ManageSubscriptionsScreen", { timeout: 30_000 }, () => {
     expect(posts[0][1]).toEqual({ account: "acc-company-a" });
     expect(posts[0][1]).not.toHaveProperty("codes");
     expect(posts[1][0]).toBe(`/api/entities/${unactivated.entity_id}/modules/authorize-billing`);
+
+    // Done: the SAME section-06 modal a change celebrates in - the person chose the same
+    // modules and reads the same words. The confirm label varies with what was chosen.
+    const modal = within(await screen.findByRole("dialog", { name: /^Activate/ }));
+    expect(modal.queryByRole("button", { name: "Go back" })).toBeNull();
+    expect(document.querySelector("[data-result]")).toBeNull();
+    await userEvent.click(modal.getByRole("button", { name: /^Confirm/ }));
 
     // And it lands on its result, as every other confirm on this screen does.
     const landed = await waitFor(() => {
@@ -636,7 +638,7 @@ describe("ManageSubscriptionsScreen", { timeout: 30_000 }, () => {
     );
   });
 
-  it("06 → Billing Accounts → payment: a change that bills asks in its modal, then which account pays", async () => {
+  it("Billing Accounts → payment → 06: a change that bills asks which account pays, then its modal celebrates", async () => {
     const posts: [string, unknown][] = [];
     // The payment is held until released: the sheet must say it is working meanwhile.
     let pay!: () => void;
@@ -675,17 +677,11 @@ describe("ManageSubscriptionsScreen", { timeout: 30_000 }, () => {
       await within(item).findByRole("button", { name: "Confirm Subscription Change" }, AFTER_BEAT),
     );
 
-    // The change's modal asks first; nothing is read about accounts or posted yet.
-    const unlocked = await screen.findByRole("dialog", { name: "You have unlocked Super Minty" });
-    expect(within(unlocked).getByText("You’ve activated both modules.")).toBeInTheDocument();
-    expect(fetchMock.mock.calls.some((c) => String(c[0]).includes("/billing/accounts"))).toBe(
-      false,
-    );
-    // It bills: its Confirm opens "Billing Accounts" in its place. Nothing is posted until an
-    // account is chosen.
-    await userEvent.click(within(unlocked).getByRole("button", { name: "Confirm" }));
+    // It bills: "Billing Accounts" asks FIRST - no modal before it (the owner, 2026-11-11).
+    // Nothing is posted until an account is chosen.
     const sheet = await screen.findByRole("dialog", { name: "Billing Accounts" });
     expect(screen.getAllByRole("dialog")).toHaveLength(1);
+    expect(screen.queryByRole("dialog", { name: "You have unlocked Super Minty" })).toBeNull();
     expect(
       within(sheet).getByText(`Choose the account that pays for ${ENTITIES[0].entity_name}.`),
     ).toBeInTheDocument();
@@ -720,10 +716,23 @@ describe("ManageSubscriptionsScreen", { timeout: 30_000 }, () => {
     await userEvent.keyboard("{Escape}");
     expect(screen.getAllByRole("dialog")).toEqual([sheet]);
 
-    // Paid: the sheet goes and the row lands on its result - no second modal - brought into
-    // view, so nobody has to scroll to find it.
-    vi.mocked(Element.prototype.scrollIntoView).mockClear();
+    // Paid: the sheet gives way to "You have unlocked Super Minty" - one button, nothing to go
+    // back to - and only its Confirm lands the row on its result.
     pay();
+    const unlocked = await screen.findByRole(
+      "dialog",
+      { name: "You have unlocked Super Minty" },
+      AFTER_BEAT,
+    );
+    expect(screen.getAllByRole("dialog")).toEqual([unlocked]);
+    expect(within(unlocked).getByText("You’ve activated both modules.")).toBeInTheDocument();
+    expect(within(unlocked).queryByRole("button", { name: "Go back" })).toBeNull();
+    expect(screen.queryByText("Congratulations!")).toBeNull();
+
+    // Its Confirm: the row lands on its result, brought into view, so nobody has to scroll
+    // to find it.
+    vi.mocked(Element.prototype.scrollIntoView).mockClear();
+    await userEvent.click(within(unlocked).getByRole("button", { name: "Confirm" }));
     const landed = await screen.findByText("Congratulations!", {}, AFTER_BEAT);
     expect(screen.queryByRole("dialog")).toBeNull();
     const resultRow = landed.closest("li[data-result]")!;

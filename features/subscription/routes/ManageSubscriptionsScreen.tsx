@@ -153,6 +153,20 @@ export function ManageSubscriptionsScreen(args: UseSubscriptionsListArgs) {
         />
       )}
 
+      {/* Paid: the change's section-06 modal celebrates it (the owner, 2026-11-11 - the billing
+          account first, then "You have unlocked …"). Nothing to go back to: its Confirm, Escape
+          and the backdrop all land the row on its result. */}
+      {m.celebration && (
+        <ChangeDialog
+          modal={m.celebration.modal}
+          entityName={m.celebration.entity.entity_name}
+          busy={false}
+          hideBack
+          onConfirm={m.confirmCelebration}
+          onBack={m.confirmCelebration}
+        />
+      )}
+
       {m.declined && (
         <PaymentFailedDialog
           card={m.declined.prompt.card ?? m.summary.view?.paymentMethod?.label ?? null}

@@ -15,23 +15,25 @@
  * row's chevron opens it in place (Figma 05·A, "Subscription Summary" - one row at a time;
  * `useEntitySummary` fetches the open company's page model and card); the module page's
  * *Manage Subscription* arrives with `?entity=` and finds that row open. A tick is local (05·B):
- * the row shows the change pending until *Confirm Subscription Change*, which asks with the
- * change's section-06 modal (`lib/changeModal.ts` - "Activate …", "You have unlocked …"). Its
- * Confirm, for a change that BILLS anything, opens WHICH BILLING ACCOUNT PAYS for the company
- * (the 08-A "Billing Accounts" sheet, the rows the API would refuse disabled -
- * `nominationChoice`), puts the company on the one picked (`POST /billing/accounts/move`, which
- * also places a card-free trial on its first account) and applies it; for a change that only
- * CANCELS it applies it at once (`api/moduleChanges.ts` - one API action per module). Either lands on its RESULT (05·C,
- * `lib/changeResult.ts`): in the row for what was added, confirmed, restored or started - where
- * Start Trial lands too - or the whole page for a cancellation. Back to Manage Subscriptions
+ * the row shows the change pending until *Confirm Subscription Change*. A change that BILLS
+ * anything asks FIRST which billing account pays for the company (the 08-A "Billing Accounts"
+ * sheet, the rows the API would refuse disabled - `nominationChoice`; the owner, 2026-11-11),
+ * puts the company on the one picked (`POST /billing/accounts/move`, which also places a
+ * card-free trial on its first account) and applies it; once it is paid, the change's
+ * section-06 modal (`lib/changeModal.ts` - "Activate …", "You have unlocked …") celebrates it,
+ * with one button, and its Confirm lands the row on its result. A change that only CANCELS asks
+ * in its modal first and is applied by its Confirm (`api/moduleChanges.ts` - one API action per
+ * module). Either lands on its RESULT (05·C, `lib/changeResult.ts`): in the row for what was
+ * added, confirmed, restored or started - where Start Trial lands too - or the whole page for a
+ * cancellation. Back to Manage Subscriptions
  * leaves for the portal's landing (08-A), as every result frame's hotspot says. When the change
  * finds no card to charge, "Billing Accounts" is asked AGAIN with the API's sentence - a card is
  * only ever added through a billing account ("New billing account", in place), never on a
  * Stripe-hosted page (the user, 2026-10-01).
  *
  * ACTIVATION IS A THIRD WAY IN (the user, 2026-10-08). A company with no SUBSCRIBER shows
- * Activate Subscription in Confirm's slot; it asks in the same modal, opens the same sheet, and
- * then does TWO things in order: `activate-subscription` on the account picked, which gives the
+ * Activate Subscription in Confirm's slot; it opens the same sheet first, celebrates in the same
+ * modal once done, and in between does TWO things in order: `activate-subscription` on the account picked, which gives the
  * company its subscriber, and then the same apply pass as any other change - so it CAN charge,
  * and it lands on the same 05.C result. Two rules hold it together: the activation is sent with
  * NO `codes`, so a lapsed module is bought back exactly once (by `restart-billing` in the apply
@@ -41,8 +43,8 @@
  *
  * The ⋮'s *Cancel subscription* and *Reactivate* (05·D, on a closed row or the open one) are
  * the same ticks - every ACTIVE module unticked, every module that is not ticked - so they open
- * the row, set those ticks and ask exactly as that change's button would: with its modal, and
- * the reactivation (it bills) then with "Billing Accounts".
+ * the row, set those ticks and ask exactly as that change's button would: the cancellation with
+ * its modal, the reactivation (it bills) with "Billing Accounts" and its modal once paid.
  *
  * When it fails or gets interrupted (06·B): a charge the bank declined asks with "Payment could
  * not be processed" - Try again now applies the same change again, Done leaves the ticks
@@ -157,20 +159,22 @@ export type ApplyRequest = {
   page: ModulePage;
   /** The card of the billing account picked to pay for it ("Visa 4242") - what 06·B names. */
   card?: string | null;
+  /**
+   * The change's section-06 modal, shown once it is PAID (the owner, 2026-11-11: the billing
+   * account first, then "You have unlocked …"). Null when `buildChangeModal` has nothing to
+   * say - the row then lands on its result straight away.
+   */
+  celebrate?: ChangeModal | null;
 };
 
-/** A change asked about and not yet confirmed: an `ApplyRequest` plus the modal's own words. */
-export type ChangePrompt = ApplyRequest & {
-  modal: ChangeModal;
-  /**
-   * The company has no SUBSCRIBER, so the act behind this modal is ACTIVATION FIRST. It asks in
-   * the same section-06 modal (the user, 2026-10-08: "activate subscription should have the
-   * you've chosen modal too") and its Confirm goes to the same Billing Accounts sheet; what
-   * lands is `activate-subscription` and THEN the ticked change, applied on the account just
-   * picked (the user, same day: the modal said "you've chosen X", so X happens).
-   */
-  activate?: boolean;
-};
+/** A cancellation asked about and not yet confirmed: an `ApplyRequest` plus the modal's words. */
+export type ChangePrompt = ApplyRequest & { modal: ChangeModal };
+
+/**
+ * A change that billed, paid: its section-06 modal celebrates it, and its Confirm lands the row
+ * on `landing` (05·C).
+ */
+export type Celebration = { entity: PortalEntity; modal: ChangeModal; landing: ListResult };
 
 /**
  * "Billing Accounts": which account pays for the company - asked by Confirm Subscription Change
@@ -268,20 +272,26 @@ export type UseSubscriptionsListResult = {
   summary: UseEntitySummaryResult;
   toggleRow: (entity: PortalEntity) => void;
   closeRow: () => void;
-  /** The open row's "Confirm Subscription Change": section 06's modal asks first. */
+  /**
+   * The open row's "Confirm Subscription Change": a change that bills opens "Billing Accounts";
+   * one that only cancels asks in section 06's modal.
+   */
   confirmChange: (entity: PortalEntity, change: PendingChange) => void;
-  /** The asking modal, while it asks. */
+  /** The cancellation's asking modal, while it asks. */
   changePrompt: ChangePrompt | null;
   dismissChangePrompt: () => void;
-  /** Its Confirm: a change that bills goes on to "Billing Accounts"; one that cancels is applied. */
+  /** Its Confirm: the cancellation is applied. */
   applyChangePrompt: () => Promise<void>;
   changeBusy: boolean;
   /**
-   * "Activate Subscription" on a row nobody pays for: asks in the SAME section-06 modal a
-   * change asks in (the user, 2026-10-08), whose Confirm opens "Billing Accounts" and then
-   * confirms billing - which makes the viewer its subscriber. Nothing is charged.
+   * "Activate Subscription" on a row nobody pays for: opens "Billing Accounts", whose Confirm
+   * confirms billing - which makes the viewer its subscriber - and applies the ticks; then the
+   * section-06 modal celebrates it.
    */
   activateChange: (entity: PortalEntity, change: PendingChange) => void;
+  /** A paid change's section-06 modal, until its Confirm lands the row on its result. */
+  celebration: Celebration | null;
+  confirmCelebration: () => void;
   /** "Billing Accounts", while it asks - and, busy, until its Confirm has an answer. */
   accountStep: AccountStep | null;
   /** Its Confirm: put the company on that account, then apply the change. */
@@ -387,6 +397,7 @@ export function useSubscriptionsList({
   // Accepting a handover lands on 07-M (derived below); this remembers it was dismissed.
   const [landingDismissed, setLandingDismissed] = useState(false);
   const [changePrompt, setChangePrompt] = useState<ChangePrompt | null>(null);
+  const [celebration, setCelebration] = useState<Celebration | null>(null);
   const [changeBusy, setChangeBusy] = useState(false);
   const [accountAsk, setAccountAsk] = useState<AccountAsk | null>(null);
   const [declined, setDeclined] = useState<DeclinedPrompt | null>(null);
@@ -451,13 +462,21 @@ export function useSubscriptionsList({
     if (!trialBusy) setTrialPrompt(null);
   }, [trialBusy]);
 
-  const land = useCallback(
-    (entity: PortalEntity, asked: ChangeAsked, before: ModulePage, after: ModulePage) => {
-      const res = buildChangeResult(asked, before, after, entity, day ?? new Date());
-      setResult({ entity, result: res });
-      setOpenEntityId(res.layout === "row" ? entity.entity_id : null);
-    },
+  const showResult = useCallback((landing: ListResult) => {
+    setResult(landing);
+    setOpenEntityId(landing.result.layout === "row" ? landing.entity.entity_id : null);
+  }, []);
+  const landing = useCallback(
+    (entity: PortalEntity, asked: ChangeAsked, before: ModulePage, after: ModulePage) => ({
+      entity,
+      result: buildChangeResult(asked, before, after, entity, day ?? new Date()),
+    }),
     [day],
+  );
+  const land = useCallback(
+    (entity: PortalEntity, asked: ChangeAsked, before: ModulePage, after: ModulePage) =>
+      showResult(landing(entity, asked, before, after)),
+    [showResult, landing],
   );
 
   const confirmStartTrial = useCallback(async () => {
@@ -598,16 +617,13 @@ export function useSubscriptionsList({
   // account pays first, the company's own preselected) or on its own from the panel's Change
   // (a move: nothing preselected, since staying is nothing to confirm).
   const openAccounts = useCallback(
-    async (entity: PortalEntity, prompt: ChangePrompt | null) => {
+    async (entity: PortalEntity, prompt: ApplyRequest | null) => {
       setChangeBusy(true);
       try {
         const data = await fetchBillingAccounts();
         const { picked } = prompt
           ? nominationChoice(data, entity.entity_id)
           : accountChangeChoice(data, entity.entity_id);
-        // The asking modal gives way to the sheet only now: a failed read leaves it up, to try
-        // its Confirm again.
-        setChangePrompt(null);
         setAccountAsk({ entity, prompt, data, picked, error: null, needCard: false, key: 0 });
       } catch (err) {
         showToast(err instanceof ApiError ? err.message : ACCOUNTS_LOAD_FAILED, "error");
@@ -622,7 +638,8 @@ export function useSubscriptionsList({
    * "Activate Subscription" on a row nobody pays for: the same sheet, asked for a different
    * act. Confirming it places the company on the account, records consent and makes the viewer
    * its subscriber - and THEN applies the ticks that put the button there, on that same
-   * account (see `confirmAccount`). The ticks travel in `prompt`, which is why this takes one.
+   * account (see `confirmAccount`), and celebrates them. The ticks travel in `prompt`, which is
+   * why this takes one.
    */
   const openActivate = useCallback(
     async (entity: PortalEntity, prompt: ApplyRequest | null) => {
@@ -631,9 +648,6 @@ export function useSubscriptionsList({
       try {
         const data = await fetchBillingAccounts();
         const { picked } = nominationChoice(data, entity.entity_id, { needCard: true });
-        // The modal gives way to the sheet only now, as a change's does: a failed read leaves
-        // it up to try its Confirm again.
-        setChangePrompt(null);
         setAccountAsk({
           entity,
           // The ticks travel with it: the sheet's Confirm activates AND THEN applies them.
@@ -654,40 +668,53 @@ export function useSubscriptionsList({
     [changeBusy, showToast],
   );
 
-  const askChange = useCallback(
-    (entity: PortalEntity, change: PendingChange, activate = false) => {
-      const before = summary.page;
-      if (!before || changeBusy) return;
-      const modal = buildChangeModal(before, change.codes);
-      if (modal) setChangePrompt({ entity, change, modal, page: before, activate });
+  /**
+   * How a change is asked, read off the page model it is made against (the owner, 2026-11-11):
+   * ACTIVATION and a change that BILLS open "Billing Accounts" first and carry their section-06
+   * modal along, to celebrate once paid; a change that only CANCELS asks in its modal, and its
+   * Confirm applies it.
+   *
+   * The modal can be null - `buildChangeModal` is a different computation from the
+   * `pendingChange` the buttons are gated on - and activation must not go dead with it: the
+   * sheet opens all the same and the row lands on its result with no celebration.
+   */
+  const ask = useCallback(
+    (entity: PortalEntity, change: PendingChange, page: ModulePage, activate: boolean) => {
+      const modal = buildChangeModal(page, change.codes);
+      const request: ApplyRequest = { entity, change, page, card: null, celebrate: modal };
+      if (activate) {
+        void openActivate(entity, request);
+        return;
+      }
+      if (billsAnything(page, change.codes)) {
+        void openAccounts(entity, request);
+        return;
+      }
+      if (modal) setChangePrompt({ entity, change, modal, page });
     },
-    [summary.page, changeBusy],
+    [openActivate, openAccounts],
   );
   const confirmChange = useCallback(
-    (entity: PortalEntity, change: PendingChange) => askChange(entity, change),
-    [askChange],
+    (entity: PortalEntity, change: PendingChange) => {
+      const before = summary.page;
+      if (!before || changeBusy) return;
+      ask(entity, change, before, false);
+    },
+    [summary.page, changeBusy, ask],
   );
   /**
-   * "Activate Subscription" on a company nobody pays for: the SAME section-06 modal a change
-   * asks in, because the person is choosing the same modules and should read the same words.
-   * Its Confirm goes to Billing Accounts and then activates (see `applyChangePrompt`).
-   *
-   * THE MODAL CAN BE NULL and the button must not go dead with it. `buildChangeModal` answers
-   * null when no ticked code carries a seam, and it is a different computation from the
-   * `pendingChange` this button is gated on - the two can disagree. A change simply shows no
-   * modal in that case; activation still has to happen, so it goes straight to the sheet.
+   * "Activate Subscription" on a company nobody pays for: Billing Accounts first, whatever the
+   * ticks price at - the company has no subscriber, so confirming billing is the act, and
+   * `billsAnything` would send a free-trial-only selection past the sheet with nothing to
+   * nominate. The section-06 modal celebrates it once done (see `confirmAccount`).
    */
   const activateChange = useCallback(
     (entity: PortalEntity, change: PendingChange) => {
       const before = summary.page;
       if (!before || changeBusy) return;
-      if (!buildChangeModal(before, change.codes)) {
-        void openActivate(entity, { entity, change, page: before, card: null });
-        return;
-      }
-      askChange(entity, change, true);
+      ask(entity, change, before, true);
     },
-    [summary.page, changeBusy, askChange, openActivate],
+    [summary.page, changeBusy, ask],
   );
 
   // The ⋮'s Cancel subscription / Reactivate: open the row, tick what the item ticks, and ask.
@@ -710,20 +737,12 @@ export function useSubscriptionsList({
         }
         summary.setTicksFor(entity.entity_id, ticksFor(page, codes));
         const first = page.cards.find((c) => c.code === codes[0])!;
-        const modal = buildChangeModal(page, codes);
-        if (modal) {
-          setChangePrompt({
-            entity,
-            change: { code: codes[0], seam: tickOf(first).seam!, codes },
-            modal,
-            page,
-          });
-        }
+        ask(entity, { code: codes[0], seam: tickOf(first).seam!, codes }, page, false);
       } catch (err) {
         showToast(sentence(err), "error");
       }
     },
-    [changeBusy, openEntityId, summary, showToast],
+    [changeBusy, openEntityId, summary, showToast, ask],
   );
   // Another company's item while this row's ticks are pending: leaving is asked about first.
   const menuChange = useCallback(
@@ -815,7 +834,11 @@ export function useSubscriptionsList({
         const after = await getModulePage(entity.entity_id);
         summary.resetTicks();
         closeAsking();
-        land(entity, { kind: "ticks", codes: change.codes }, before, after);
+        const landed = landing(entity, { kind: "ticks", codes: change.codes }, before, after);
+        // Paid: the change's section-06 modal celebrates it first, and its Confirm lands the
+        // row (the owner, 2026-11-11). A cancellation carries no modal here - it was asked.
+        if (prompt.celebrate) setCelebration({ entity, modal: prompt.celebrate, landing: landed });
+        else showResult(landed);
         // READ BOTH AGAIN. `after` is fetched to say what CHANGED and nothing more - the open
         // row keeps its own page model and the list its own rows, and neither had heard. A
         // reactivated module went on offering "Reactivate Subscription" underneath the result
@@ -831,26 +854,21 @@ export function useSubscriptionsList({
         setChangeBusy(false);
       }
     },
-    [summary, showToast, land, reload, askAgainForCard],
+    [summary, showToast, landing, showResult, reload, askAgainForCard],
   );
-  // The asking modal's Confirm (the user, 2026-09-29, the second time: the modal asks FIRST,
-  // then which account pays). A change that bills goes on to "Billing Accounts" and is applied
-  // from there; one that only cancels bills nothing and is applied at once.
+  // The cancellation modal's Confirm: it bills nothing, so it is applied at once. (A change that
+  // bills never asks here - Billing Accounts asks first, and its modal celebrates once paid.)
   const applyChangePrompt = useCallback(async () => {
     if (!changePrompt || changeBusy) return;
-    // ACTIVATION goes to Billing Accounts whatever the ticks price at: the company has no
-    // subscriber, so confirming billing is the act, and `billsAnything` would send a
-    // free-trial-only selection straight past the sheet with nothing to nominate.
-    if (changePrompt.activate) {
-      await openActivate(changePrompt.entity, changePrompt);
-      return;
-    }
-    if (billsAnything(changePrompt.page, changePrompt.change.codes)) {
-      await openAccounts(changePrompt.entity, changePrompt);
-      return;
-    }
-    await apply(changePrompt);
-  }, [changePrompt, changeBusy, apply, openAccounts, openActivate]);
+    await apply({ ...changePrompt, celebrate: null });
+  }, [changePrompt, changeBusy, apply]);
+  // The celebration's Confirm - and its Escape and backdrop, since the change is already paid:
+  // the row lands on its result.
+  const confirmCelebration = useCallback(() => {
+    if (!celebration) return;
+    showResult(celebration.landing);
+    setCelebration(null);
+  }, [celebration, showResult]);
   // The account picked: the company goes on it (placed, if it was on none - a card-free trial),
   // THEN the change is applied, so every charge and consent below is that account's. The sheet
   // stays open through both, its Confirm "Confirming…", and `apply` closes it with the answer. A
@@ -905,9 +923,9 @@ export function useSubscriptionsList({
         // `accounts` carries a freshly opened account whose card the stale ask has never seen.
         // Naming it is what tells `applyChange` a card was chosen.
         const opened = (accounts ?? accountAsk.data).accounts.find((a) => a.id === accountId);
-        // No toast: `apply` lands the result, and the same news twice over it reads as a flow
-        // that does not believe in its own result screen. The sheet stays up, busy, until
-        // `apply`'s `closeAsking()` replaces it with the answer.
+        // No toast: `apply` celebrates and lands the result, and the same news twice over it
+        // reads as a flow that does not believe in its own result screen. The sheet stays up,
+        // busy, until `apply`'s `closeAsking()` replaces it with the answer.
         await apply({
           ...prompt,
           card: opened?.card ? shortCardName(opened.card.brand_label, opened.card.last4) : null,
@@ -965,7 +983,6 @@ export function useSubscriptionsList({
   const dismissAccountStep = useCallback(() => {
     if (changeBusy) return;
     setAccountAsk(null);
-    setChangePrompt(null);
   }, [changeBusy]);
   const accountStep = useMemo<AccountStep | null>(() => {
     if (!accountAsk) return null;
@@ -1081,6 +1098,8 @@ export function useSubscriptionsList({
     applyChangePrompt,
     changeBusy,
     activateChange,
+    celebration,
+    confirmCelebration,
     accountStep,
     confirmAccount,
     accountOpened,

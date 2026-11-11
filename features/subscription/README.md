@@ -75,18 +75,19 @@ step 3's routers with no stubs (a real card-free trial started from the page and
 against the seed's `E2E Subscription Shop`; and the open row from Figma 05·A and 05·B - `hooks/
 useEntitySummary` (the answer and the ticks pending on it), `lib/subscriptionSummary`,
 `components/SubscriptionSummaryRow` (`docs/features/subscriptions.md` §11); a tick is a change
-pending on the row until _Confirm Subscription Change_, which asks in the change's modal from
-Figma section 06 - `lib/changeModal`, `components/ConfirmDialog` (the shell, shared with the
-Start Trial dialog) and `components/ChangeDialog` (§13). Its Confirm, for a change that bills
-anything, opens "Billing Accounts" (08-A's `AccountPickerDialog`, `lib/billingAccounts`
-`nominationChoice`; since 2026-09-29), puts the company on the account picked and applies it;
-for a change that only cancels, it applies it (`api/moduleChanges`, one API action per module). Either lands on its result from
-Figma 05·C -
+pending on the row until _Confirm Subscription Change_. A change that bills anything opens
+"Billing Accounts" FIRST (08-A's `AccountPickerDialog`, `lib/billingAccounts`
+`nominationChoice`; the owner, 2026-11-11), puts the company on the account picked and applies
+it; once paid, the change's modal from Figma section 06 celebrates it with one button -
+`lib/changeModal`, `components/ConfirmDialog` (the shell, shared with the Start Trial dialog)
+and `components/ChangeDialog` (§13). A change that only cancels asks in its modal first and is
+applied by its Confirm (`api/moduleChanges`, one API action per module). Either lands on its
+result from Figma 05·C -
 `lib/changeResult`, `components/ChangeResultView` (§12): in the row for what was added,
 confirmed, restored or started (Start Trial lands there too), the whole page for a
 cancellation. The ⋮'s Cancel subscription / Reactivate (Figma 05·D) are those same ticks - every
-ACTIVE module unticked, every module that is not ticked - opening the row and asking with the
-modal for that change; "Calculating…" (05·B-C) fills the panel's slot while the row loads and
+ACTIVE module unticked, every module that is not ticked - opening the row and asking as that
+change's button would; "Calculating…" (05·B-C) fills the panel's slot while the row loads and
 for a beat after every tick; the bank declining asks to try again and leaving with ticks
 pending asks first (06·B, `components/InterruptedDialogs`). Both sides of a handover (Figma
 section 07): the payer's `routes/TransferSubscription` - `hooks/useTransferSubscription`,

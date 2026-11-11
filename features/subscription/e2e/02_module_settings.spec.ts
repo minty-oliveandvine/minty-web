@@ -228,15 +228,17 @@ test.describe("module settings page", () => {
     );
     await handoff(page, c, MODULES(c.entityId));
 
+    // Billing Accounts FIRST (the owner, 2026-11-11), then the section-06 modal celebrates it
+    // with one button, and only its Confirm shows the result.
     await body(page).getByRole("button", { name: "Activate Subscription" }).click();
-    await page
-      .getByRole("dialog")
-      .first()
-      .getByRole("button", { name: /^Confirm/ })
-      .click();
     const sheet = page.getByRole("dialog", { name: "Billing Accounts" });
     await expect(sheet).toBeVisible();
+    await expect(page.getByRole("dialog")).toHaveCount(1);
     await sheet.getByRole("button", { name: "Confirm" }).click();
+    const modal = page.getByRole("dialog", { name: /^Activate/ });
+    await expect(modal.getByRole("button", { name: "Go back" })).toHaveCount(0);
+    await expect(body(page).locator("[data-result]")).toHaveCount(0);
+    await modal.getByRole("button", { name: /^Confirm/ }).click();
 
     // In place: the result takes the cards' place and the page never navigated.
     const landed = body(page).locator("[data-result]");

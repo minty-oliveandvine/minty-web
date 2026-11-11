@@ -320,9 +320,10 @@ describe("useSubscriptionsList", () => {
   }
 
   /**
-   * Confirm Subscription Change on a change that bills: its modal asks first, and its Confirm
-   * opens the Billing Accounts sheet, answered on the account it preselects. The list fixture's
-   * first company is on no account, so that is the first one that can take it: Company A (Visa 4121).
+   * Confirm Subscription Change on a change that bills: the Billing Accounts sheet asks FIRST
+   * (the owner, 2026-11-11 - no modal before it), answered on the account it preselects. The list
+   * fixture's first company is on no account, so that is the first one that can take it:
+   * Company A (Visa 4121).
    */
   async function confirmBilled(
     result: { current: UseSubscriptionsListResult },
@@ -331,13 +332,21 @@ describe("useSubscriptionsList", () => {
     await act(async () => {
       result.current.confirmChange(entity, result.current.summary.view!.pendingChange!);
     });
-    expect(result.current.changePrompt).not.toBeNull();
-    expect(result.current.accountStep).toBeNull();
-    await act(() => result.current.applyChangePrompt());
     await waitFor(() => expect(result.current.accountStep).not.toBeNull());
     expect(result.current.changePrompt).toBeNull();
     expect(result.current.accountStep?.picked).toBe("acc-company-a");
     await act(() => result.current.confirmAccount(result.current.accountStep!.picked!));
+  }
+
+  /**
+   * Paid: the change's section-06 modal celebrates it, and only its Confirm lands the row on
+   * its result (the owner, 2026-11-11).
+   */
+  function confirmCelebration(result: { current: UseSubscriptionsListResult }, kind: string) {
+    expect(result.current.celebration?.modal.kind).toBe(kind);
+    expect(result.current.result).toBeNull();
+    act(() => result.current.confirmCelebration());
+    expect(result.current.celebration).toBeNull();
   }
 
   it("after a successful change the row is read again - a stale CTA cannot linger", async () => {
@@ -377,16 +386,9 @@ describe("useSubscriptionsList", () => {
     act(() => result.current.summary.toggleTick("PAYMENT_REQUEST"));
     const change = result.current.summary.view!.pendingChange!;
     expect(change.codes).toEqual(["PETTY_CASH", "PAYMENT_REQUEST"]);
-    // The change's modal asks first ("You have unlocked Super Minty"); nothing is read or posted.
+    // It bills: "Billing Accounts" asks FIRST, the first account that can take the company
+    // preselected - no modal before it (the owner, 2026-11-11).
     await act(async () => result.current.confirmChange(e, change));
-    expect(result.current.changePrompt?.modal.kind).toBe("bundle");
-    expect(result.current.accountStep).toBeNull();
-    expect(fetchMock.mock.calls.some((c) => String(c[0]).includes("/billing/accounts"))).toBe(
-      false,
-    );
-    // It bills: its Confirm opens "Billing Accounts", the first account that can take the
-    // company preselected - and the modal gives way to it.
-    await act(() => result.current.applyChangePrompt());
     await waitFor(() => expect(result.current.accountStep).not.toBeNull());
     expect(result.current.changePrompt).toBeNull();
     expect(result.current.accountStep).toMatchObject({
@@ -403,6 +405,10 @@ describe("useSubscriptionsList", () => {
     await act(() => result.current.confirmAccount("acc-vine"));
     expect(result.current.accountStep).toBeNull();
     expect(result.current.changePrompt).toBeNull();
+
+    // Paid: "You have unlocked Super Minty" celebrates it; its Confirm lands the row.
+    expect(result.current.celebration?.entity.entity_id).toBe(e.entity_id);
+    confirmCelebration(result, "bundle");
 
     // The company goes on the account picked FIRST; then its consent for its trial, then the
     // lapsed trial bought back - each with the company's id.
@@ -461,7 +467,7 @@ describe("useSubscriptionsList", () => {
     _resetHandoffForTests();
   });
 
-  it("Billing Accounts stays up, busy, until the payment has answered - then the modal takes its place", async () => {
+  it("Billing Accounts stays up, busy, until the payment has answered - then the modal celebrates", async () => {
     // The bug: the sheet closed as soon as the company was on the account, and the payment ran
     // with nothing on the screen until "You have unlocked …" appeared.
     const refusal =
@@ -482,7 +488,6 @@ describe("useSubscriptionsList", () => {
     await act(async () =>
       result.current.confirmChange(e, result.current.summary.view!.pendingChange!),
     );
-    await act(() => result.current.applyChangePrompt());
     await waitFor(() => expect(result.current.accountStep).not.toBeNull());
     await act(() => result.current.confirmAccount("acc-vine"));
     expect(result.current.accountStep?.error).toBe(refusal);
@@ -503,12 +508,15 @@ describe("useSubscriptionsList", () => {
     expect(result.current.accountStep).not.toBeNull();
     expect(result.current.result).toBeNull();
 
-    // Paid: the sheet gives way to the result.
+    expect(result.current.celebration).toBeNull();
+
+    // Paid: the sheet gives way to the modal, and its Confirm to the result.
     release();
     await act(() => confirming);
     expect(result.current.accountStep).toBeNull();
     expect(result.current.changeBusy).toBe(false);
     expect(result.current.changePrompt).toBeNull();
+    confirmCelebration(result, "bundle");
     expect(result.current.result?.result.kind).toBe("celebrate");
   });
 
@@ -534,6 +542,7 @@ describe("useSubscriptionsList", () => {
     expect(result.current.result?.result.kind).toBe("module_cancelled");
     expect(result.current.result?.result.layout).toBe("page");
     expect(result.current.openEntityId).toBeNull();
+    expect(result.current.celebration).toBeNull();
   });
 
   it("a trial with no card at all is put on the account picked and confirmed on its card", async () => {
@@ -552,6 +561,7 @@ describe("useSubscriptionsList", () => {
     await confirmBilled(result, e);
     expect(posts.map((p) => p.action)).toEqual([MOVE, "authorize-billing"]);
     expect(left).toEqual([]);
+    confirmCelebration(result, "activate");
     expect(result.current.result?.entity.entity_id).toBe(e.entity_id);
     expect(result.current.result?.result.kind).toBe("celebrate");
     _resetHandoffForTests();
@@ -571,6 +581,7 @@ describe("useSubscriptionsList", () => {
     expect(left).toEqual([]);
     expect(push).not.toHaveBeenCalled();
     expect(result.current.result).toBeNull();
+    expect(result.current.celebration).toBeNull();
     expect(result.current.declined).toBeNull();
     expect(result.current.changePrompt).toBeNull();
     expect(result.current.changeBusy).toBe(false);
@@ -732,6 +743,7 @@ describe("useSubscriptionsList", () => {
     expect(result.current.accountStep).toBeNull();
     expect(result.current.result).toBeNull();
     // Not paid: the reactivation's own modal does not show.
+    expect(result.current.celebration).toBeNull();
     expect(result.current.summary.view?.pendingChange?.codes).toEqual(["PETTY_CASH"]);
     expect(document.body.textContent).not.toContain("That card was declined");
 
@@ -754,6 +766,8 @@ describe("useSubscriptionsList", () => {
     release();
     await act(() => retrying);
     expect(result.current.declined).toBeNull();
+    // Paid this time: now the modal celebrates, and its Confirm lands the row.
+    confirmCelebration(result, "reactivate");
     expect(result.current.result?.result.kind).toBe("celebrate");
   });
 
@@ -928,7 +942,7 @@ describe("useSubscriptionsList", () => {
     });
   }
 
-  it("Activate Subscription asks in the change modal, then Billing Accounts", async () => {
+  it("Activate Subscription opens Billing Accounts first - no modal before it", async () => {
     serveRowAndAccounts(SUMMARY_FIXTURES.M31);
     const e = { ...ENTITIES[0], subscriber: null, has_subscriber: false };
     const { result } = renderHook(
@@ -941,17 +955,10 @@ describe("useSubscriptionsList", () => {
 
     act(() => result.current.activateChange(e, change));
 
-    // The modal first - nothing is read about accounts and nothing is posted yet.
-    await waitFor(() => expect(result.current.changePrompt).toBeTruthy());
-    expect(result.current.changePrompt?.activate).toBe(true);
-    expect(result.current.accountStep).toBeNull();
-
-    // Its Confirm opens Billing Accounts, asked for the ACTIVATION.
-    await act(async () => {
-      await result.current.applyChangePrompt();
-    });
+    // The sheet, asked for the ACTIVATION - no modal first, and nothing posted yet.
     await waitFor(() => expect(result.current.accountStep).toBeTruthy());
     expect(result.current.changePrompt).toBeNull();
+    expect(result.current.celebration).toBeNull();
     expect(fetchMock.mock.calls.every((c) => (c[1]?.method ?? "GET") === "GET")).toBe(true);
   });
 
@@ -973,17 +980,13 @@ describe("useSubscriptionsList", () => {
     return posts;
   }
 
-  /** Press Activate on a ticked row, confirm its modal, and pick the account. */
+  /** Press Activate on a ticked row and pick the account. */
   async function activateThroughSheet(
     result: { current: ReturnType<typeof useSubscriptionsList> },
     e: PortalEntity,
   ) {
     const change = result.current.summary.view!.pendingChange!;
     act(() => result.current.activateChange(e, change));
-    await waitFor(() => expect(result.current.changePrompt).toBeTruthy());
-    await act(async () => {
-      await result.current.applyChangePrompt();
-    });
     await waitFor(() => expect(result.current.accountStep).toBeTruthy());
     await act(async () => {
       await result.current.confirmAccount("acc-company-a");
@@ -1009,7 +1012,10 @@ describe("useSubscriptionsList", () => {
     // and restart-billing below already owns that path. One charging path, charged once.
     expect(posts[0].body).toEqual({ account: "acc-company-a" });
     expect(posts[1].body).toEqual({ codes: ["PETTY_CASH"] });
-    await waitFor(() => expect(result.current.result).toBeTruthy());
+    // Paid: the modal celebrates, then its Confirm lands the row.
+    await waitFor(() => expect(result.current.celebration).toBeTruthy());
+    confirmCelebration(result, "activate");
+    expect(result.current.result).toBeTruthy();
   });
 
   it("a refused activation applies nothing", async () => {
@@ -1052,6 +1058,7 @@ describe("useSubscriptionsList", () => {
 
     await waitFor(() => expect(result.current.declined).toBeTruthy());
     expect(result.current.result).toBeNull();
+    expect(result.current.celebration).toBeNull();
     expect(result.current.summary.view?.pendingChange).toBeTruthy();
 
     // 06.B's Try again re-runs ONLY the charge: activation lives in confirmAccount, not apply,
@@ -1107,7 +1114,7 @@ describe("useSubscriptionsList", () => {
     expect(result.current.summary.view?.modules[1].changed).toBe(false);
   });
 
-  it("05·D: Reactivate on the OPEN row ticks every module that is not active and asks", async () => {
+  it("05·D: Reactivate on the OPEN row ticks every module that is not active and asks which account pays", async () => {
     const posts = serveChange(fetchMock, "RW45");
     const e = ENTITIES[0];
     const { result } = renderHook(
@@ -1119,12 +1126,7 @@ describe("useSubscriptionsList", () => {
     await act(() => {
       result.current.reactivate(e);
     });
-    // The item asks as the button would: the modal for exactly that change, then - it bills -
-    // "Billing Accounts".
-    await waitFor(() => expect(result.current.changePrompt).not.toBeNull());
-    expect(result.current.changePrompt?.modal.kind).toBe("bundle");
-    expect(result.current.changePrompt?.change.codes).toEqual(["PAYMENT_REQUEST"]);
-    await act(() => result.current.applyChangePrompt());
+    // The item asks as the button would: it bills, so "Billing Accounts" first - no modal.
     await waitFor(() => expect(result.current.accountStep).not.toBeNull());
     expect(result.current.changePrompt).toBeNull();
     // The open row's page model served the change: nothing was read again.
@@ -1135,6 +1137,8 @@ describe("useSubscriptionsList", () => {
       [MOVE, { entity: e.entity_id, account: "acc-company-a" }],
       ["renew", { code: "PAYMENT_REQUEST" }],
     ]);
+    // Paid: the modal for exactly that change celebrates it, then the row lands.
+    confirmCelebration(result, "bundle");
     expect(result.current.result?.result.kind).toBe("celebrate");
   });
 
@@ -1186,7 +1190,6 @@ describe("useSubscriptionsList", () => {
     await act(async () =>
       result.current.confirmChange(e, result.current.summary.view!.pendingChange!),
     );
-    await act(() => result.current.applyChangePrompt());
     await waitFor(() => expect(result.current.accountStep).not.toBeNull());
     await act(() => result.current.confirmAccount("acc-vine"));
 
@@ -1199,6 +1202,7 @@ describe("useSubscriptionsList", () => {
     act(() => result.current.dismissAccountStep());
     expect(result.current.accountStep).toBeNull();
     expect(result.current.changePrompt).toBeNull();
+    expect(result.current.celebration).toBeNull();
     expect(result.current.summary.view?.pendingChange?.codes).toEqual([
       "PETTY_CASH",
       "PAYMENT_REQUEST",
@@ -1219,7 +1223,6 @@ describe("useSubscriptionsList", () => {
     await act(async () =>
       result.current.confirmChange(e, result.current.summary.view!.pendingChange!),
     );
-    await act(() => result.current.applyChangePrompt());
     await waitFor(() => expect(result.current.accountStep).not.toBeNull());
 
     // What the sheet reports once the new account is saved and Done is pressed (01-J).
@@ -1234,7 +1237,9 @@ describe("useSubscriptionsList", () => {
       });
     });
 
-    await waitFor(() => expect(result.current.result).not.toBeNull());
+    await waitFor(() => expect(result.current.celebration).not.toBeNull());
+    confirmCelebration(result, "bundle");
+    expect(result.current.result).not.toBeNull();
     expect(posts.map((p) => [p.action, p.body])).toEqual([
       [MOVE, { entity: e.entity_id, account: "acc-acme" }],
       ["authorize-billing", {}],
@@ -1353,6 +1358,7 @@ describe("useSubscriptionsList", () => {
     await confirmBilled(result, e);
     expect(posts.map((p) => p.action)).toEqual([MOVE, "renew"]);
     expect(posts[1].body).toEqual({ code: "PETTY_CASH" });
+    confirmCelebration(result, "continue");
     expect(result.current.result?.result.kind).toBe("celebrate");
     await waitFor(() =>
       expect(result.current.summary.view?.modules[0]).toMatchObject({

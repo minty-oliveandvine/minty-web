@@ -233,16 +233,12 @@ test.describe("manage subscriptions", () => {
     await expect(panel.getByRole("button", { name: "Confirm Subscription Change" })).toHaveCount(0);
     await activate.click();
 
-    // The SAME section-06 modal a change asks in (the user, 2026-10-08), word for word, then
-    // the sheet.
-    const unlock = page.getByRole("dialog", { name: "You have unlocked Super Minty" });
-    await expect(unlock).toContainText(unactivated.entity_name);
-    expect(posts).toEqual([]);
-    await unlock.getByRole("button", { name: "Confirm" }).click();
-
-    // The same Billing Accounts sheet Manage Subscriptions asks a change with.
+    // The same Billing Accounts sheet Manage Subscriptions asks a change with - FIRST, with no
+    // modal before it (the owner, 2026-11-11).
     const sheet = page.getByRole("dialog", { name: "Billing Accounts" });
     await expect(sheet).toBeVisible();
+    await expect(page.getByRole("dialog")).toHaveCount(1);
+    expect(posts).toEqual([]);
     await sheet.getByRole("button", { name: "Confirm" }).click();
 
     // TWO posts, in order: the activation, then the tick it was asked about (the user,
@@ -255,6 +251,12 @@ test.describe("manage subscriptions", () => {
     // and the apply pass already owns that path. One charging path, charged once.
     expect(posts[0].body).toEqual({ account: "acc-company-a" });
     expect(posts[1].url).toContain(`/api/entities/${unactivated.entity_id}/modules/renew`);
+
+    // Done: the SAME section-06 modal a change celebrates in, word for word - one button.
+    const unlock = page.getByRole("dialog", { name: "You have unlocked Super Minty" });
+    await expect(unlock).toContainText(unactivated.entity_name);
+    await expect(unlock.getByRole("button", { name: "Go back" })).toHaveCount(0);
+    await unlock.getByRole("button", { name: "Confirm" }).click();
 
     // And it lands on its result, as every other confirm on this screen does. The stub serves
     // one model for every read, so before === after - assert the frame, not the sentence.
@@ -289,13 +291,8 @@ test.describe("manage subscriptions", () => {
         await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1),
       ).toBe(true);
 
-      // And the sheet it opens, through the change modal, is full-width rather than a desktop
-      // dialog squeezed onto a phone.
+      // And the sheet it opens is full-width rather than a desktop dialog squeezed onto a phone.
       await activate.click();
-      await page
-        .getByRole("dialog", { name: "You have unlocked Super Minty" })
-        .getByRole("button", { name: "Confirm" })
-        .click();
       const sheet = page.getByRole("dialog", { name: "Billing Accounts" });
       await expect(sheet).toBeVisible();
       expect((await sheet.boundingBox())!.width).toBeLessThanOrEqual(width);
@@ -355,14 +352,15 @@ test.describe("manage subscriptions", () => {
     await expect(row).not.toContainText(/cancel/i);
     await tick.click();
     await confirm.click();
-    const resume = page.getByRole("dialog", { name: "Continue Petty Cash" });
-    await expect(resume).not.toContainText(/cancel/i);
-    await resume.getByRole("button", { name: "Confirm" }).click();
+    // It bills: which account pays first, then "Continue Petty Cash" once it is done.
     await page
       .getByRole("dialog", { name: "Billing Accounts" })
       .getByRole("button", { name: "Confirm" })
       .click();
     await expect.poll(() => actions).toEqual(["cancel", "renew"]);
+    const resume = page.getByRole("dialog", { name: "Continue Petty Cash" });
+    await expect(resume).not.toContainText(/cancel/i);
+    await resume.getByRole("button", { name: "Confirm" }).click();
 
     // And unticked once more: no dead end.
     await page.goto(address);
@@ -561,12 +559,7 @@ test.describe("manage subscriptions", () => {
     const opened = body(page).locator("li[data-open]");
     await opened.getByRole("checkbox", { name: "Payment Request subscription" }).click();
     await opened.getByRole("button", { name: "Confirm Subscription Change" }).click();
-    // The change's modal asks first; its Confirm then asks which account pays - Company A,
-    // preselected, charges Visa 4121.
-    await page
-      .getByRole("dialog", { name: "You have unlocked Super Minty" })
-      .getByRole("button", { name: "Confirm" })
-      .click();
+    // It bills, so it asks which account pays first - Company A, preselected, charges Visa 4121.
     await page
       .getByRole("dialog", { name: "Billing Accounts" })
       .getByRole("button", { name: "Confirm" })
@@ -578,13 +571,16 @@ test.describe("manage subscriptions", () => {
     await expect(failed).toContainText("If you've resolved the issue, feel free to try again.");
     // Not paid: no result lands.
     await expect(body(page).locator("li[data-result]")).toHaveCount(0);
+    await expect(page.getByRole("dialog", { name: "You have unlocked Super Minty" })).toHaveCount(
+      0,
+    );
     await failed.getByRole("button", { name: "Done" }).click();
     await expect(page.getByRole("dialog")).toHaveCount(0);
     await expect(opened.locator("[data-chip]")).toHaveText("Restoring");
     expect(posts.filter((p) => p.url.endsWith("/renew"))).toHaveLength(0);
   });
 
-  test("06 + 05·C: a change asks in its modal, then lands on its result - in the row, or on the cancellation page", async ({
+  test("06 + 05·C: a change that bills asks which account pays, celebrates in its modal, then lands on its result - in the row, or on the cancellation page", async ({
     page,
   }) => {
     const moves: unknown[] = [];
@@ -605,14 +601,9 @@ test.describe("manage subscriptions", () => {
     await opened.getByRole("checkbox", { name: "Payment Request subscription" }).click();
     await serveModules(RESULT_FIXTURES.RW45.after);
     await opened.getByRole("button", { name: "Confirm Subscription Change" }).click();
-    // The change's modal asks first ("You have unlocked Super Minty"); nothing is posted.
-    const unlock = page.getByRole("dialog", { name: "You have unlocked Super Minty" });
-    await expect(unlock).toContainText("You’ve activated both modules.");
-    await expect(unlock).toContainText("Kestrel Foods Limited");
-    expect(posts).toEqual([]);
-    // It bills: its Confirm opens "Billing Accounts" in its place. The company is on no account,
-    // so the first that can take it is picked; the one whose collection is failing is shut.
-    await unlock.getByRole("button", { name: "Confirm" }).click();
+    // It bills: "Billing Accounts" asks FIRST, no modal before it (the owner, 2026-11-11). The
+    // company is on no account, so the first that can take it is picked; the one whose
+    // collection is failing is shut.
     const accounts = page.getByRole("dialog", { name: "Billing Accounts" });
     await expect(accounts).toContainText("Choose the account that pays for Kestrel Foods Limited.");
     await expect(page.getByRole("dialog")).toHaveCount(1);
@@ -633,7 +624,14 @@ test.describe("manage subscriptions", () => {
     await expect(accounts.getByRole("button", { name: "Confirming…" })).toBeDisabled();
     await expect(page.getByRole("dialog")).toHaveCount(1);
     pay();
-    // Paid: the sheet goes and the row lands on its result - no second modal - in view.
+    // Paid: the sheet gives way to "You have unlocked Super Minty" - one button - and its
+    // Confirm lands the row on its result, in view.
+    const unlock = page.getByRole("dialog", { name: "You have unlocked Super Minty" });
+    await expect(unlock).toContainText("You’ve activated both modules.");
+    await expect(unlock).toContainText("Kestrel Foods Limited");
+    await expect(page.getByRole("dialog")).toHaveCount(1);
+    await expect(body(page).locator("li[data-result]")).toHaveCount(0);
+    await unlock.getByRole("button", { name: "Confirm" }).click();
     const result = body(page).locator("li[data-result]");
     await expect(result).toBeInViewport();
     await expect(page.getByRole("dialog")).toHaveCount(0);

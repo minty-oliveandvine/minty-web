@@ -6,9 +6,10 @@
  * teal), Minty in the mood the change calls for, the design's sentences, and the confirming
  * button in its tone.
  *
- * Every change is asked here first (the user, 2026-09-29, the second time): Go back, or its
- * Confirm. For a change that bills, Confirm goes on to "Billing Accounts" - which account pays -
- * and the change is applied from there; for one that only cancels, it is applied at once.
+ * A change that only cancels is asked here first: Go back, or its Confirm, which applies it. A
+ * change that bills is asked in "Billing Accounts" first - which account pays - and shows here
+ * only once it is paid (the owner, 2026-11-11), with one button (`hideBack`): its Confirm lands
+ * the row on its result.
  */
 
 import type { ChangeModal } from "@/features/subscription/lib/changeModal";
@@ -29,12 +30,15 @@ export function ChangeDialog({
   modal,
   entityName,
   busy,
+  hideBack = false,
   onConfirm,
   onBack,
 }: {
   modal: ChangeModal;
   entityName: string;
   busy: boolean;
+  /** The change is already paid: one button, nothing to go back to. */
+  hideBack?: boolean;
   onConfirm: () => void;
   onBack: () => void;
 }) {
@@ -62,6 +66,7 @@ export function ChangeDialog({
       busy={busy}
       confirmLabel={modal.confirmLabel}
       confirmTone={modal.confirmTone}
+      hideBack={hideBack}
       onConfirm={onConfirm}
       onBack={onBack}
     >

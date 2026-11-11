@@ -299,7 +299,7 @@ describe("ModuleSettingsScreen", () => {
       ),
     };
 
-    /** Press Activate, confirm the modal, pick the account, confirm - and land. */
+    /** Press Activate, pick the account, confirm, confirm the modal - and land. */
     async function activate(after: ModulePage) {
       fetchMock.mockResolvedValueOnce(
         new Response(JSON.stringify(ACCOUNTS), {
@@ -308,9 +308,6 @@ describe("ModuleSettingsScreen", () => {
         }),
       );
       await userEvent.click(screen.getByRole("button", { name: "Activate Subscription" }));
-      await userEvent.click(
-        within(await screen.findByRole("dialog")).getByRole("button", { name: /^Confirm/ }),
-      );
       const sheet = within(await screen.findByRole("dialog", { name: "Billing Accounts" }));
       fetchMock.mockResolvedValueOnce(
         new Response(JSON.stringify({ ok: true, charged: false }), {
@@ -320,6 +317,8 @@ describe("ModuleSettingsScreen", () => {
       );
       serve(after);
       await userEvent.click(sheet.getByRole("button", { name: "Confirm" }));
+      const modal = await screen.findByRole("dialog", { name: /^Activate/ });
+      await userEvent.click(within(modal).getByRole("button", { name: /^Confirm/ }));
       await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     }
 
@@ -334,13 +333,9 @@ describe("ModuleSettingsScreen", () => {
 
       await userEvent.click(screen.getByRole("button", { name: "Activate Subscription" }));
 
-      // It asks in the section-06 modal FIRST, built from the modules being confirmed, and
-      // reads nothing about accounts until its Confirm.
-      const modal = within(await screen.findByRole("dialog"));
-      expect(fetchMock).toHaveBeenCalledTimes(1);
-      await userEvent.click(modal.getByRole("button", { name: /^Confirm/ }));
-
+      // Billing Accounts asks FIRST - no modal before it (the owner, 2026-11-11).
       const sheet = within(await screen.findByRole("dialog", { name: "Billing Accounts" }));
+      expect(screen.getAllByRole("dialog")).toHaveLength(1);
       expect(sheet.getByText("Choose the account that pays for Olive & Vine Ltd.")).toBeVisible();
       expect(fetchMock).toHaveBeenCalledTimes(2); // read the accounts, posted nothing
 
@@ -352,6 +347,14 @@ describe("ModuleSettingsScreen", () => {
       );
       serve(confirmed); // the AFTER-model the result is diffed against
       await userEvent.click(sheet.getByRole("button", { name: "Confirm" }));
+
+      // Confirmed: the section-06 modal, built from the modules confirmed, celebrates it - one
+      // button, nothing to go back to - and the result waits for its Confirm.
+      const modal = await screen.findByRole("dialog", { name: /^Activate/ });
+      expect(screen.getAllByRole("dialog")).toEqual([modal]);
+      expect(within(modal).queryByRole("button", { name: "Go back" })).toBeNull();
+      expect(document.querySelector("[data-result]")).toBeNull();
+      await userEvent.click(within(modal).getByRole("button", { name: /^Confirm/ }));
 
       await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
       const [url, init] = fetchMock.mock.calls[2];
@@ -404,7 +407,7 @@ describe("ModuleSettingsScreen", () => {
 
       await userEvent.click(screen.getByRole("button", { name: "Activate Subscription" }));
 
-      expect(await screen.findByRole("dialog")).toBeVisible();
+      expect(await screen.findByRole("dialog", { name: "Billing Accounts" })).toBeVisible();
       expect(push).not.toHaveBeenCalled();
     });
 
@@ -418,9 +421,6 @@ describe("ModuleSettingsScreen", () => {
       );
 
       await userEvent.click(screen.getByRole("button", { name: "Activate Subscription" }));
-      await userEvent.click(
-        within(await screen.findByRole("dialog")).getByRole("button", { name: /^Confirm/ }),
-      );
       const sheet = within(await screen.findByRole("dialog", { name: "Billing Accounts" }));
 
       fetchMock.mockResolvedValueOnce(

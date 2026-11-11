@@ -86,10 +86,13 @@ export type ModulePageStatus = "loading" | "ready" | "error";
 
 /**
  * The activation being asked about: the page model it is read against (captured when the act
- * begins), the modules it confirms, and the section-06 modal - null when `buildChangeModal`
- * had nothing to say, which is the straight-to-sheet path.
+ * begins), the modules it confirms, and the section-06 modal that celebrates it once done -
+ * null when `buildChangeModal` had nothing to say, and the result then lands at once.
  */
 type ActivateAsk = { page: ModulePage; codes: ModuleCode[]; modal: ChangeModal | null };
+
+/** Activated: the section-06 modal celebrates it, and its Confirm shows `landing` (05.C). */
+type Celebration = { modal: ChangeModal; landing: ChangeResult };
 
 /** A trial asked about and not yet confirmed: the module, and its name for the dialog. */
 export type ModuleTrialPrompt = { code: ModuleCode; moduleName: string };
@@ -136,10 +139,13 @@ export type UseModulePageResult = {
   /** Confirm is pressed and the activation is in flight; nothing closes the sheet. */
   activateBusy: boolean;
   activateTrial: () => Promise<void>;
-  /** The section-06 modal Activate Subscription asks in, before Billing Accounts. */
-  activatePrompt: ChangeModal | null;
-  confirmActivatePrompt: () => Promise<void>;
-  dismissActivatePrompt: () => void;
+  /**
+   * The section-06 modal that celebrates the activation once Billing Accounts has confirmed it
+   * (the owner, 2026-11-11: the billing account first, then the modal).
+   */
+  celebration: ChangeModal | null;
+  /** Its Confirm (and Escape): the result takes the cards' place. */
+  confirmCelebration: () => void;
   /** Where the activation landed (Figma 05.C), shown in the cards' place until it is dismissed. */
   result: ChangeResult | null;
   /** Its button: back to the COMPANY's own page, not the payer's portal. */
@@ -191,6 +197,7 @@ export function useModulePage({
   const [accountAsk, setAccountAsk] = useState<ModuleAccountAsk | null>(null);
   const [activateBusy, setActivateBusy] = useState(false);
   const [activateAsk, setActivateAsk] = useState<ActivateAsk | null>(null);
+  const [celebration, setCelebration] = useState<Celebration | null>(null);
   const [result, setResult] = useState<ChangeResult | null>(null);
 
   const load = useCallback(async () => {
@@ -322,31 +329,25 @@ export function useModulePage({
   // the company its subscriber and stamps every one of its module rows. Nothing is charged -
   // naming codes is how a LAPSED module is bought back, and a running trial must not.
   //
-  // It ASKS FIRST, in the same section-06 modal Manage Subscriptions asks a change in (the
-  // user, 2026-10-08), built from the modules being confirmed - an unconfirmed trial's seam is
-  // `confirm_trial`, so the words are already the right ones. `buildChangeModal` can answer
-  // null, and the button must not go dead with it: no modal, straight to the sheet.
+  // It opens Billing Accounts FIRST, as Manage Subscriptions does (the owner, 2026-11-11), and
+  // once it is done the same section-06 modal celebrates it, built from the modules confirmed -
+  // an unconfirmed trial's seam is `confirm_trial`, so the words are already the right ones.
+  // `buildChangeModal` can answer null: the result then lands with no modal before it.
   const activateTrial = useCallback(async () => {
     if (activateBusy || !page || !activateCodes.length) return;
     // THE BEFORE IS CAPTURED HERE, at the start of the act, not when the sheet confirms: a 402
     // re-asks the sheet, and a reload in between must not change what the result is diffed
-    // against. The modal may be null (see above); the ask is made either way, so the straight-
-    // to-sheet path carries its `before` too.
-    const modal = buildChangeModal(page, activateCodes);
-    setActivateAsk({ page, codes: activateCodes, modal });
-    if (!modal) await askAccounts(null);
+    // against.
+    setActivateAsk({ page, codes: activateCodes, modal: buildChangeModal(page, activateCodes) });
+    await askAccounts(null);
   }, [activateBusy, page, activateCodes, askAccounts]);
 
-  /** The modal's Confirm: on to Billing Accounts, as the list's does. */
-  const confirmActivatePrompt = useCallback(async () => {
-    if (activateBusy) return;
-    setActivateAsk((ask) => ask && { ...ask, modal: null });
-    await askAccounts(null);
-  }, [activateBusy, askAccounts]);
-
-  const dismissActivatePrompt = useCallback(() => {
-    if (!activateBusy) setActivateAsk(null);
-  }, [activateBusy]);
+  /** The celebration's Confirm: the result takes the cards' place. */
+  const confirmCelebration = useCallback(() => {
+    if (!celebration) return;
+    setResult(celebration.landing);
+    setCelebration(null);
+  }, [celebration]);
 
   const confirmActivate = useCallback(
     async (accountId: string) => {
@@ -363,19 +364,20 @@ export function useModulePage({
         setAccountAsk(null);
         setPage(after);
         setFixtureToday(pinned);
-        // No toast: the result says it, and the same news twice over it reads as a flow that
-        // does not believe in its own result screen. `created_at` is not on the page model, so
-        // the footer loses its "originally created" sentence and keeps the rest.
+        // No toast: the modal and the result say it, and the same news again over them reads
+        // as a flow that does not believe in its own result screen. `created_at` is not on the
+        // page model, so the footer loses its "originally created" sentence and keeps the rest.
         if (ask) {
-          setResult(
-            buildChangeResult(
-              { kind: "ticks", codes: ask.codes },
-              ask.page,
-              after,
-              { entity_name: ask.page.entity_name, created_at: null },
-              pinned ?? day,
-            ),
+          const landing = buildChangeResult(
+            { kind: "ticks", codes: ask.codes },
+            ask.page,
+            after,
+            { entity_name: ask.page.entity_name, created_at: null },
+            pinned ?? day,
           );
+          // Done: the modal celebrates it first, and its Confirm shows the result.
+          if (ask.modal) setCelebration({ modal: ask.modal, landing });
+          else setResult(landing);
         }
         setActivateAsk(null);
       } catch (err) {
@@ -458,9 +460,8 @@ export function useModulePage({
     accountAsk,
     activateBusy,
     activateTrial,
-    activatePrompt: activateAsk?.modal ?? null,
-    confirmActivatePrompt,
-    dismissActivatePrompt,
+    celebration: celebration?.modal ?? null,
+    confirmCelebration,
     result,
     dismissResult,
     confirmActivate,
