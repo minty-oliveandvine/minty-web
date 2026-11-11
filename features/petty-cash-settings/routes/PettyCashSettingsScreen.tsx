@@ -47,8 +47,8 @@ import {
 import { connectXeroPath } from "@/features/petty-cash-settings/lib/paths";
 import {
   KIND,
-  METHOD_TYPES,
   movedIds,
+  shownTypes,
   viewOnly,
   type MethodType,
   type SalesMethod,
@@ -289,10 +289,11 @@ function SettingsBody({
           resetKey={resetKey}
         />
 
-        {METHOD_TYPES.map((type) => (
+        {shownTypes(read).map((type) => (
           <SalesMethodsCard
             key={type}
             type={type}
+            groups={read.sales_groups}
             methods={read.sales_methods[type]}
             available={read.available[type]}
             permissions={perms}

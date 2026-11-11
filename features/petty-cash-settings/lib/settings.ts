@@ -28,8 +28,17 @@ export type SettingsPermissions = {
   reorder_sales_methods: boolean;
 };
 
+/**
+ * How the methods are grouped (owner, 2026-11-11; the API's `sales_groups`, from the business type):
+ * one Non-cash card for a retail shop, a service or a general business - its methods are stored as
+ * electronic - and Electronic and Delivery for Restaurant & Food and a company from before
+ * onboarding asked. An answer without it is the second.
+ */
+export type SalesGroups = "non_cash" | "electronic_delivery";
+
 export type SettingsRead = {
   sales_methods: Record<MethodType, SalesMethod[]>;
+  sales_groups?: SalesGroups;
   available: Record<MethodType, CatalogueMethod[]>;
   xero_connected: boolean;
   permissions: SettingsPermissions;
@@ -66,6 +75,27 @@ export const KIND: Record<
     enter: "Enter delivery method name",
   },
 };
+
+/** A card's wording: a Non-cash company's electronic card is its one Non-cash card. */
+export function kindFor(type: MethodType, groups?: SalesGroups): (typeof KIND)[MethodType] {
+  if (groups === "non_cash" && type === "electronic")
+    return {
+      ...KIND.electronic,
+      title: "Non-cash",
+      sub: "Card, wallet and transfer payments a sales report can record.",
+    };
+  return KIND[type];
+}
+
+/** The cards the page shows: a Non-cash company's Delivery card only while it still holds methods
+ * (from before the business type was asked), so they can be seen and removed. */
+export function shownTypes(
+  read: Pick<SettingsRead, "sales_groups" | "sales_methods">,
+): MethodType[] {
+  if (read.sales_groups !== "non_cash" || read.sales_methods.delivery.length)
+    return [...METHOD_TYPES];
+  return ["electronic"];
+}
 
 /** The catalogue picker's rows: the methods offered (`available`, never on the list), filtered. */
 export function catalogueOptions(available: CatalogueMethod[], query: string): CatalogueMethod[] {

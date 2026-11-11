@@ -214,6 +214,24 @@ describe("PettyCashSettingsScreen", () => {
     expect(sent("GET /settings/xero")).toHaveLength(1);
   });
 
+  it("a Non-cash company sees one Non-cash card and no empty Delivery card", async () => {
+    api({
+      "GET /settings": () =>
+        json(
+          settings({
+            sales_groups: "non_cash",
+            sales_methods: { electronic: [VISA, ALIPAY], delivery: [] },
+          }),
+        ),
+      "GET /settings/xero": () => json(xero({ live: false })),
+    });
+    show();
+
+    expect(await screen.findByRole("list", { name: "Non-cash methods" })).toBeInTheDocument();
+    expect(screen.queryByRole("list", { name: "Delivery methods" })).toBeNull();
+    expect(screen.queryByText("No delivery methods yet.")).toBeNull();
+  });
+
   it("adds from the catalogue, renames, moves and deletes - each the API's answer, its sentence shown", async () => {
     let state = settings();
     const answer = (next: SettingsRead, message: string, status = 200) => {

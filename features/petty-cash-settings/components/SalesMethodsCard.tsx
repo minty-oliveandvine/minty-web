@@ -18,10 +18,12 @@ import {
   NAME_EMPTY,
   RENAME_NAME_MAX,
   catalogueOptions,
+  kindFor,
   methodNameProblem,
   sharedRenameMessage,
   type CatalogueMethod,
   type MethodType,
+  type SalesGroups,
   type SalesMethod,
   type SettingsPermissions,
 } from "@/features/petty-cash-settings/lib/settings";
@@ -54,6 +56,7 @@ export function SalesMethodsCard({
   menuOpen,
   onMenu,
   actions,
+  groups,
 }: {
   type: MethodType;
   methods: SalesMethod[];
@@ -64,8 +67,10 @@ export function SalesMethodsCard({
   menuOpen: string | null;
   onMenu: (id: string | null) => void;
   actions: MethodActions;
+  /** The API's `sales_groups`: a Non-cash company's electronic card is titled Non-cash. */
+  groups?: SalesGroups;
 }) {
-  const kind = KIND[type];
+  const kind = kindFor(type, groups);
   const editable =
     permissions.add_sales_method ||
     permissions.rename_sales_method ||

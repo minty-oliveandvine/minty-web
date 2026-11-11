@@ -14,8 +14,10 @@ import {
   NAME_EMPTY,
   RENAME_NAME_MAX,
   catalogueOptions,
+  kindFor,
   methodNameProblem,
   movedIds,
+  shownTypes,
   sharedRenameMessage,
   viewOnly,
   type SettingsPermissions,
@@ -52,6 +54,42 @@ describe("the page's address and its links", () => {
       `/api/petty-cash/v1/companies/${ENTITY}/settings`,
     );
     expect(companyApiPath("a/b", "/settings")).toBe("/api/petty-cash/v1/companies/a%2Fb/settings");
+  });
+});
+
+describe("the cards follow the business type (owner, 2026-11-11)", () => {
+  const lists = (delivery: number) => ({
+    electronic: [{ id: "v", name: "Visa", value_name: "visa_sales", shared: false }],
+    delivery: Array.from({ length: delivery }, (_, i) => ({
+      id: `d${i}`,
+      name: `D${i}`,
+      value_name: `d${i}_sales`,
+      shared: false,
+    })),
+  });
+
+  it("Restaurant & Food and an older company: Electronic and Delivery", () => {
+    expect(shownTypes({ sales_groups: "electronic_delivery", sales_methods: lists(0) })).toEqual([
+      "electronic",
+      "delivery",
+    ]);
+    expect(shownTypes({ sales_methods: lists(0) })).toEqual(["electronic", "delivery"]);
+    expect(kindFor("electronic", "electronic_delivery").title).toBe("Electronic");
+  });
+
+  it("a retail shop, a service or a general business: one Non-cash card", () => {
+    expect(shownTypes({ sales_groups: "non_cash", sales_methods: lists(0) })).toEqual([
+      "electronic",
+    ]);
+    expect(kindFor("electronic", "non_cash").title).toBe("Non-cash");
+    expect(kindFor("delivery", "non_cash").title).toBe("Delivery");
+  });
+
+  it("keeps a Delivery card that still holds methods, so they can be seen and removed", () => {
+    expect(shownTypes({ sales_groups: "non_cash", sales_methods: lists(1) })).toEqual([
+      "electronic",
+      "delivery",
+    ]);
   });
 });
 
