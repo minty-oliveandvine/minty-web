@@ -8,10 +8,12 @@
 export {
   CompanyGeneralPage,
   CompanyIntegrationPage,
+  CompanyMatchingPage,
   CompanyUsersPage,
 } from "@/features/company-settings/routes/CompanySettingsPages";
 export {
   generalMetadata,
   integrationMetadata,
+  matchingMetadata,
   usersMetadata,
 } from "@/features/company-settings/lib/metadata";

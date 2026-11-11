@@ -76,6 +76,12 @@ export type IntegrationPage = {
   };
   can_edit: boolean;
   can_rename: boolean;
+  /** How Minty keeps the books (step 4): a `minty` company's connect matches its accounts first. */
+  setup_mode?: "minty" | "xero" | null;
+  /** A `minty` company's own accounts - what the matching page will ask about (SET-1b's count). */
+  own_accounts?: number;
+  /** Matching started and not finished: the accounts, or (after Finish) suppliers Xero refused. */
+  matching?: { accounts: boolean; contacts: boolean };
   notices: Notice[];
   /** Only on a read that carried a refused connect; null the rest of the time. */
   xero_conflict: XeroConflict | null;
@@ -177,6 +183,73 @@ export function disconnectXero(entityId: string): Promise<IntegrationPage> {
     method: "POST",
     query: q(entityId),
   });
+}
+
+// ---- Match your accounts to Xero (Settings Phase 2, 2026-11-11; accounts-api hub/xero_matching.py) ----
+
+export type MatchRow = {
+  account_id: string;
+  code: string;
+  name: string;
+  type: string | null;
+  /** Which Xero accounts fit: a bank only a bank; otherwise the same class. */
+  kind: string | null;
+  /** An expense or bill line, a daily-closing account or a sales method uses it: Finish needs it matched. */
+  used: boolean;
+  system: boolean;
+  pick: { xero_account_id: string; auto: boolean } | null;
+  suggestion: string | null;
+  /** Xero has the same code with another type: never picked for the person. */
+  conflict: { code: string; name: string } | null;
+  combined_with: string[];
+};
+
+export type MatchOption = { id: string; code: string; name: string; kind: string | null };
+
+export type MatchingPage = {
+  organisation: string | null;
+  groups: { key: string; title: string; rows: MatchRow[] }[];
+  options: MatchOption[];
+  matched: number;
+  total: number;
+  /** Used accounts with no match - Finish is refused until it is 0. */
+  blocking: number;
+  will_archive: string[];
+  will_combine: { xero: string; accounts: string[] }[];
+  pending: { accounts: boolean; contacts: boolean };
+  failed_contacts: string[];
+  connected?: boolean;
+  error?: string;
+};
+
+const MATCHING = "/api/me/company/xero/matching";
+
+export function fetchMatching(entityId: string, signal?: AbortSignal): Promise<MatchingPage> {
+  return mintyFetch<MatchingPage>(MATCHING, { query: q(entityId), signal });
+}
+
+export function pickMatch(
+  entityId: string,
+  accountId: string,
+  xeroAccountId: string | null,
+): Promise<MatchingPage> {
+  return mintyFetch<MatchingPage>(MATCHING, {
+    method: "PUT",
+    query: q(entityId),
+    json: { account_id: accountId, xero_account_id: xeroAccountId },
+  });
+}
+
+export function refreshMatching(entityId: string): Promise<MatchingPage> {
+  return mintyFetch<MatchingPage>(`${MATCHING}/refresh`, { method: "POST", query: q(entityId) });
+}
+
+export function finishMatching(entityId: string): Promise<MatchingPage> {
+  return mintyFetch<MatchingPage>(`${MATCHING}/finish`, { method: "POST", query: q(entityId) });
+}
+
+export function retryContacts(entityId: string): Promise<MatchingPage> {
+  return mintyFetch<MatchingPage>(`${MATCHING}/contacts`, { method: "POST", query: q(entityId) });
 }
 
 /**

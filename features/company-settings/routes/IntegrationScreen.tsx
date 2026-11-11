@@ -10,7 +10,11 @@
 
 import { useState } from "react";
 
-import { SETTINGS_DANGER_FILL, SETTINGS_OUTLINE } from "@/components/ui/settingsButtons";
+import {
+  SETTINGS_DANGER_FILL,
+  SETTINGS_OUTLINE,
+  SETTINGS_PRIMARY,
+} from "@/components/ui/settingsButtons";
 import {
   LoadState,
   ReadOnlyNotice,
@@ -20,6 +24,7 @@ import {
 import { XeroCard, xeroConnectUrl } from "@/features/company-settings/components/XeroCard";
 import { XeroConflictDialog } from "@/features/company-settings/components/XeroConflictDialog";
 import { useIntegrationTab } from "@/features/company-settings/hooks/useIntegrationTab";
+import { matchingPath } from "@/features/company-settings/lib/paths";
 import { READ_ONLY } from "@/features/company-settings/routes/GeneralScreen";
 
 export const DISCONNECT_COPY = {
@@ -28,6 +33,15 @@ export const DISCONNECT_COPY = {
   cancel: "Cancel",
   confirm: "Disconnect",
   busy: "Disconnecting…",
+} as const;
+
+/** SET-1b (Settings Phase 2, 2026-11-11): before a Minty company's connect, its accounts need matching. */
+export const MATCH_FIRST_COPY = {
+  title: "One step before we connect",
+  body: (n: number) =>
+    `Your accounts live in Minty, so we don't know where each one belongs in Xero yet. After you sign in we'll ask you to match them up - ${n} ${n === 1 ? "row" : "rows"}, a couple of minutes.`,
+  notNow: "Not now",
+  signIn: "Sign in to Xero",
 } as const;
 
 export function IntegrationScreen({
@@ -42,6 +56,7 @@ export function IntegrationScreen({
 }) {
   const tab = useIntegrationTab(company.id, flash, xeroConflict);
   const [confirming, setConfirming] = useState(false);
+  const [matchFirst, setMatchFirst] = useState(false);
   const page = tab.page;
   const shown = page ? { id: page.company.id, name: page.company.name } : company;
   const disconnecting = tab.busy === "disconnect";
@@ -57,7 +72,13 @@ export function IntegrationScreen({
       ) : (
         <>
           {page.can_edit ? null : <ReadOnlyNotice>{READ_ONLY}</ReadOnlyNotice>}
-          <XeroCard page={page} busy={disconnecting} onDisconnect={() => setConfirming(true)} />
+          <XeroCard
+            page={page}
+            busy={disconnecting}
+            onDisconnect={() => setConfirming(true)}
+            onConnect={() => setMatchFirst(true)}
+            matchingHref={matchingPath(shown.id, shown.name)}
+          />
         </>
       )}
 
@@ -77,6 +98,29 @@ export function IntegrationScreen({
           }
           onClose={tab.dismissConflict}
         />
+      ) : null}
+
+      {matchFirst && page ? (
+        <SettingsDialog
+          title={MATCH_FIRST_COPY.title}
+          onClose={() => setMatchFirst(false)}
+          actions={
+            <>
+              <button
+                type="button"
+                className={SETTINGS_OUTLINE}
+                onClick={() => setMatchFirst(false)}
+              >
+                {MATCH_FIRST_COPY.notNow}
+              </button>
+              <a href={xeroConnectUrl(shown.id)} className={SETTINGS_PRIMARY}>
+                {MATCH_FIRST_COPY.signIn}
+              </a>
+            </>
+          }
+        >
+          <p>{MATCH_FIRST_COPY.body(page.own_accounts ?? 0)}</p>
+        </SettingsDialog>
       ) : null}
 
       {confirming && page ? (

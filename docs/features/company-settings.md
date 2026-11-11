@@ -127,9 +127,35 @@ frames, two filling gaps they leave:
   "Xero needs you to sign in again", the same line, Reconnect and Disconnect.
 
 Connect / Reconnect navigate to accounts-api's `/entity/<id>/enter?…&next=/xero_reconnect?entity_id=<id>`.
-**Not built yet:** Figma's SET-1b ("One step before we connect") and the matching screens (frames
-3, 3b, 4, 5) - a Minty-only company connecting needs account matching first, and today's connect
-replaces its own accounts and contacts (Phase 2 of the settings plan).
+
+### Matching a Minty company's accounts to Xero (Settings Phase 2, 2026-11-11; SET-1b, frames 3-5)
+
+A company that keeps its books in Minty (`setup_mode` `minty`, `own_accounts` > 0 in the read) is
+asked first: **Connect to Xero** opens SET-1b, "One step before we connect / Your accounts live in
+Minty, so we don't know where each one belongs in Xero yet. After you sign in we'll ask you to match
+them up - N rows, a couple of minutes." Not now / **Sign in to Xero** (the same `/xero_reconnect`).
+Its connect never mirrors (accounts-api `xero/services/matching.py`): it lands on
+`/settings/integration/match` (`routes/MatchingScreen.tsx`, `CompanyMatchingPage`). While it isn't
+finished (`matching.accounts`, or after Finish `matching.contacts`) the card is a fifth state,
+**Matching isn't finished** / "Your accounts stay in Minty until you finish matching them to Xero.",
+pill Matching, **Continue matching**.
+
+The page (frame 3, under "Connect to Xero"): the progress ("N of M matched", "K to go", a bar, and
+either "K accounts your records use still need a Xero match before you can finish." or that the
+blank ones aren't used and will be archived), every own account by group ("Cash & bank · 1 of 2
+matched"), each with its Xero account (a native select of the accounts that fit: a bank only a bank,
+else the same class; "Choose a Xero account"). Rows show **Needed** when a record uses them and they
+have no match, a same-code other-type conflict, "Combined with …", and a suggestion with **Use it**.
+Each pick saves at once (`PUT /api/me/company/xero/matching`), so the page can be finished later;
+**Refresh from Xero** pulls an account made there meanwhile. **Finish** stays off, its reason beside
+it, while a used account has no match (the owner's rule; frame 3b's "Finish anyway" is not built),
+and asks first: "Finish matching? / Each matched account takes its Xero code and name, and Minty
+publishes to Xero from today. This can't be undone." with what is archived and combined. Then
+"Bringing your contacts over…" (frame 4); connected, it goes back to Integration ("Connected to
+Xero."); contacts Xero refused are named (frame 5: "N contacts didn't make it over / Your account
+matches are saved. Xero would not take these:" … Later / **Try again**), and the company stays
+disconnected until they are through. On a phone each row stacks (name over its select). Tests:
+`__tests__/matching.test.tsx`.
 
 ### The organisation is already in use (2026-10-09)
 

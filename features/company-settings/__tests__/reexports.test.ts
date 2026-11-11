@@ -43,6 +43,7 @@ describe("the three tabs' route files are re-exports only", () => {
   it("has the Users, General and Integration tabs", () => {
     expect(files.map(rel).sort()).toEqual([
       "app/entity/[ref]/[slug]/settings/general/page.tsx",
+      "app/entity/[ref]/[slug]/settings/integration/match/page.tsx", // Settings Phase 2: matching
       "app/entity/[ref]/[slug]/settings/integration/page.tsx",
       "app/entity/[ref]/[slug]/settings/users/page.tsx",
     ]);

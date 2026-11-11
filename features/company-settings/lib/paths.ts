@@ -16,3 +16,8 @@ export function generalPath(entityId: string, entityName: string): string {
 export function integrationPath(entityId: string, entityName: string): string {
   return companySettingsPath(entityId, entityName, "integration");
 }
+
+/** Match your accounts to Xero (Settings Phase 2): under Integration, where a Minty company's connect lands. */
+export function matchingPath(entityId: string, entityName: string): string {
+  return `${integrationPath(entityId, entityName)}/match`;
+}

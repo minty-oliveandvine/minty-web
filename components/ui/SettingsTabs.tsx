@@ -3,7 +3,8 @@
 /**
  * The settings tab row (Figma 353:999, owner 2026-11-10): plain tabs on a hairline, the open one
  * underlined in teal and bold. On a phone the row scrolls sideways inside itself - never the page -
- * and starts scrolled so the open tab is in view (Petty Cash Settings is past the edge at 360px).
+ * and starts scrolled so the open tab is in view (Petty Cash Settings is past the edge at 360px),
+ * with no scroll bar drawn.
  * Every tab is a plain link to this app's own page, so the leave guard sees each click. The tabs
  * and their addresses come from `lib/settingsTabs.ts`.
  */
@@ -13,7 +14,7 @@ import { useEffect, useRef } from "react";
 import type { SettingsTab } from "@/lib/settingsTabs";
 
 const TAB =
-  "-mb-px flex min-h-11 shrink-0 items-center border-b-[3px] px-2.5 py-3 text-sm whitespace-nowrap lg:px-3";
+  "flex min-h-11 shrink-0 items-center border-b-[3px] px-2.5 py-3 text-sm whitespace-nowrap lg:px-3";
 
 export function SettingsTabs({ tabs }: { tabs: SettingsTab[] }) {
   const row = useRef<HTMLDivElement>(null);
@@ -36,7 +37,10 @@ export function SettingsTabs({ tabs }: { tabs: SettingsTab[] }) {
     <nav aria-label="Settings sections" className="w-full min-w-0">
       <div
         ref={row}
-        className="relative flex gap-1 overflow-x-auto border-b border-set-line [scrollbar-width:thin]"
+        // The hairline is an inset shadow, so the open tab's underline covers it inside the row: a
+        // border with the tabs pulled 1px over it overflowed downwards, and the row then showed a
+        // vertical scroll bar. Sideways it still scrolls (a swipe), with no bar drawn.
+        className="relative flex gap-1 overflow-x-auto overflow-y-hidden shadow-[inset_0_-1px_0_var(--set-line)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {tabs.map((tab) =>
           tab.current ? (

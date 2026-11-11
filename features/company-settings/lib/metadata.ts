@@ -11,3 +11,4 @@ import { SETTINGS_TAB_LABELS } from "@/lib/settingsTabs";
 export const usersMetadata = companyPageMetadata(SETTINGS_TAB_LABELS.users);
 export const generalMetadata = companyPageMetadata(SETTINGS_TAB_LABELS.general);
 export const integrationMetadata = companyPageMetadata(SETTINGS_TAB_LABELS.integration);
+export const matchingMetadata = companyPageMetadata("Connect to Xero");

@@ -12,9 +12,15 @@ import { Suspense } from "react";
 
 import { CompanyFromAddress } from "@/components/ui/CompanyFromAddress";
 
-import { generalPath, integrationPath, usersPath } from "@/features/company-settings/lib/paths";
+import {
+  generalPath,
+  integrationPath,
+  matchingPath,
+  usersPath,
+} from "@/features/company-settings/lib/paths";
 import { GeneralScreen } from "@/features/company-settings/routes/GeneralScreen";
 import { IntegrationScreen } from "@/features/company-settings/routes/IntegrationScreen";
+import { MatchingScreen } from "@/features/company-settings/routes/MatchingScreen";
 import { UsersScreen } from "@/features/company-settings/routes/UsersScreen";
 
 function UsersContent() {
@@ -55,6 +61,15 @@ export function CompanyGeneralPage() {
   return (
     <CompanyFromAddress pathOf={generalPath} label="general">
       {(company) => <GeneralScreen company={company} />}
+    </CompanyFromAddress>
+  );
+}
+
+/** Match your accounts to Xero (Settings Phase 2, 2026-11-11). */
+export function CompanyMatchingPage() {
+  return (
+    <CompanyFromAddress pathOf={matchingPath} label="matching">
+      {(company) => <MatchingScreen company={company} />}
     </CompanyFromAddress>
   );
 }

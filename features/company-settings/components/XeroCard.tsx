@@ -12,6 +12,9 @@
  *   nothing left to disconnect.
  * - **Reconnect needed** (filled in): still connected, but Xero no longer accepts Minty's sign-in.
  *   Reconnect, and Disconnect stays possible.
+ * - **Matching not finished** (Settings Phase 2, 2026-11-11): a company that kept its books in Minty
+ *   signed in to Xero, and its accounts (or, after Finish, some suppliers) aren't matched yet.
+ *   Continue matching. Its Connect first asks (SET-1b, `onConnect`): its accounts need matching.
  *
  * Connect and Reconnect are NAVIGATIONS to the accounts API's OAuth start (through `/enter`, so
  * its session is the token's person): Xero comes back to it, and it comes back here with what
@@ -25,13 +28,14 @@ import { mintyEntryUrl } from "@/lib/mintyEntry";
 import type { IntegrationPage } from "@/features/company-settings/api/companySettings";
 import { SETTINGS_DANGER, SETTINGS_PRIMARY } from "@/components/ui/settingsButtons";
 
-type State = "off" | "connected" | "disconnected" | "reconnect";
+type State = "off" | "connected" | "disconnected" | "reconnect" | "matching";
 
 const PILL: Record<State, { text: string; className: string }> = {
   off: { text: "Not connected", className: "bg-set-pill text-set-ink-2" },
   connected: { text: "Connected", className: "bg-set-ok-bg text-set-ok-ink" },
   disconnected: { text: "Disconnected", className: "bg-set-pill text-set-ink-2" },
   reconnect: { text: "Reconnect needed", className: "bg-set-warn-bg text-danger" },
+  matching: { text: "Matching", className: "bg-[#fff8ee] text-[#9a5b00]" },
 };
 
 export const XERO_COPY = {
@@ -49,6 +53,9 @@ export const XERO_COPY = {
   connect: "Connect to Xero",
   reconnect: "Reconnect to Xero",
   disconnect: "Disconnect from Xero",
+  matchingTitle: "Matching isn't finished",
+  matchingLine: "Your accounts stay in Minty until you finish matching them to Xero.",
+  continueMatching: "Continue matching",
   help: "Prefer some help first? Our service team can set up the Xero connection with you.",
 } as const;
 
@@ -56,7 +63,9 @@ export function xeroConnectUrl(entityId: string): string {
   return mintyEntryUrl(`/xero_reconnect?entity_id=${encodeURIComponent(entityId)}`, entityId);
 }
 
-function xeroState(xero: IntegrationPage["xero"]): State {
+function xeroState(page: IntegrationPage): State {
+  const { xero } = page;
+  if (page.matching?.accounts || page.matching?.contacts) return "matching";
   if (xero.connected) return "connected";
   if (xero.needs_reconnect && xero.organisation) {
     return xero.status === "disconnected" ? "disconnected" : "reconnect";
@@ -70,28 +79,42 @@ function day(iso: string | null): string | null {
   return Number.isNaN(d.getTime()) ? null : formatInstantDay(d) || null;
 }
 
+/** A company that keeps its books in Minty, with its own accounts: its connect matches them first. */
+export function connectNeedsMatching(page: IntegrationPage): boolean {
+  return page.setup_mode === "minty" && (page.own_accounts ?? 0) > 0;
+}
+
 export function XeroCard({
   page,
   busy,
   onDisconnect,
+  onConnect,
+  matchingHref,
 }: {
   page: IntegrationPage;
   busy: boolean;
   onDisconnect: () => void;
+  /** SET-1b: asked instead of going straight to Xero, when the accounts need matching. */
+  onConnect?: () => void;
+  /** Where Continue matching goes. */
+  matchingHref?: string;
 }) {
   const { xero } = page;
-  const state = xeroState(xero);
+  const state = xeroState(page);
   const pill = PILL[state];
   const org = xero.organisation ?? "";
   const [title, line] =
-    state === "connected"
-      ? [XERO_COPY.connectedTitle, XERO_COPY.connectedLine(org)]
-      : state === "disconnected"
-        ? [XERO_COPY.disconnectedTitle, XERO_COPY.waitingLine(org)]
-        : state === "reconnect"
-          ? [XERO_COPY.reconnectTitle, XERO_COPY.waitingLine(org)]
-          : [XERO_COPY.offTitle, XERO_COPY.offLine];
-  const canConnect = page.can_edit && state !== "connected";
+    state === "matching"
+      ? [XERO_COPY.matchingTitle, XERO_COPY.matchingLine]
+      : state === "connected"
+        ? [XERO_COPY.connectedTitle, XERO_COPY.connectedLine(org)]
+        : state === "disconnected"
+          ? [XERO_COPY.disconnectedTitle, XERO_COPY.waitingLine(org)]
+          : state === "reconnect"
+            ? [XERO_COPY.reconnectTitle, XERO_COPY.waitingLine(org)]
+            : [XERO_COPY.offTitle, XERO_COPY.offLine];
+  const canConnect = page.can_edit && state !== "connected" && state !== "matching";
+  const asksFirst = onConnect !== undefined && connectNeedsMatching(page);
   const canDisconnect = page.can_edit && (state === "connected" || state === "reconnect");
 
   return (
@@ -125,9 +148,18 @@ export function XeroCard({
           </dd>
         </div>
       </dl>
-      {canConnect || canDisconnect ? (
+      {canConnect || canDisconnect || (state === "matching" && page.can_edit) ? (
         <div className="flex flex-wrap items-center gap-3">
-          {canConnect ? (
+          {state === "matching" && page.can_edit && matchingHref ? (
+            <a href={matchingHref} className={SETTINGS_PRIMARY}>
+              {XERO_COPY.continueMatching}
+            </a>
+          ) : null}
+          {canConnect && asksFirst ? (
+            <button type="button" onClick={onConnect} className={SETTINGS_PRIMARY}>
+              {state === "off" && !xero.last_connected_at ? XERO_COPY.connect : XERO_COPY.reconnect}
+            </button>
+          ) : canConnect ? (
             <a href={xeroConnectUrl(page.company.id)} className={SETTINGS_PRIMARY}>
               {state === "off" && !xero.last_connected_at ? XERO_COPY.connect : XERO_COPY.reconnect}
             </a>
