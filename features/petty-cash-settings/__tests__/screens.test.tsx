@@ -1,19 +1,19 @@
 // Petty Cash Settings as a person sees it in the hub: the read, a sales method added, renamed,
 // moved and deleted, the Xero mapping and account codes saved, a cashier's read-only page, the
-// door's 409 for a company still setting up, and the first mapping save leaving for the Petty
-// Cash dashboard. minty-petty-cash-api is answered per path and method; every call names the
+// door's 409 for a company still setting up, and the first mapping save staying on the page (owner,
+// 2026-11-11). minty-petty-cash-api is answered per path and method; every call names the
 // company in its path and never with X-Entity-Id.
 
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { DISCARD_CHANGES, GO_BACK_UPPER, LEAVE_TITLE } from "@/components/ui/LeaveDialog";
 import { ToastProvider } from "@/components/ui/Toast";
 import { SETTINGS_DANGER_FILL, SETTINGS_PRIMARY } from "@/components/ui/settingsButtons";
 import { setAuth } from "@/lib/auth";
 import { env } from "@/lib/env";
 
-import { leaveFor } from "@/features/petty-cash-settings/lib/paths";
 import type {
   SettingsPermissions,
   SettingsRead,
@@ -28,10 +28,6 @@ const router = { push: vi.fn(), replace: vi.fn(), back: vi.fn() };
 vi.mock("next/navigation", () => ({
   useRouter: () => router,
   usePathname: () => "/entity/e1/olive-shop/settings/petty-cash",
-}));
-vi.mock("@/features/petty-cash-settings/lib/paths", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/features/petty-cash-settings/lib/paths")>()),
-  leaveFor: vi.fn(),
 }));
 
 const ID = "e1";
@@ -409,7 +405,6 @@ describe("PettyCashSettingsScreen", () => {
     await user.click(save);
     expect(await screen.findByText("Xero account mapping saved.")).toBeInTheDocument();
     expect(sent("PUT /settings/xero/mapping")).toEqual([{ ...SAVED, cashsale_account: "a2" }]);
-    expect(leaveFor).not.toHaveBeenCalled();
     await waitFor(() =>
       expect(
         card("Xero account mapping").getByRole("button", { name: "Save Changes" }),
@@ -417,7 +412,7 @@ describe("PettyCashSettingsScreen", () => {
     );
   });
 
-  it("first setup: a refused Save lists what is missing; the first save leaves for the dashboard", async () => {
+  it("first setup: a refused Save lists what is missing; the first save stays here, saying so", async () => {
     const empty = Object.fromEntries(KEYS.map((k) => [k, null])) as Record<MappingKey, null>;
     api({
       "GET /settings": () => json(settings()),
@@ -462,10 +457,13 @@ describe("PettyCashSettingsScreen", () => {
       await user.click(mapping.getByRole("option", { name: /Tess Tester/ }));
     }
     await user.click(mapping.getByRole("button", { name: "Save Changes" }));
-    await waitFor(() => expect(leaveFor).toHaveBeenCalledTimes(1));
-    expect(vi.mocked(leaveFor).mock.calls[0][0]).toContain(`/entity/${ID}/enter`);
+    // Like every save: the sentence shows and the page stays (owner, 2026-11-11 - it used to leave
+    // for the Petty Cash dashboard, and the sentence went with the page).
     expect(await screen.findByText("Xero account mapping saved.")).toBeInTheDocument();
     expect(sent("PUT /settings/xero/mapping")).toEqual([SAVED]);
+    expect(
+      card("Xero account mapping").getByRole("button", { name: "Save Changes" }),
+    ).toBeInTheDocument();
   });
 
   it("saves the account codes: at least one stays ticked, said at once", async () => {
@@ -525,7 +523,7 @@ describe("PettyCashSettingsScreen", () => {
     );
   });
 
-  it("a company still setting up: the door's 409 sentence, with Try again", async () => {
+  it("a company still setting up: the door's 409 sentence, and no Try again (it can't help)", async () => {
     const SETTING_UP = "This company is still setting up. Finish setting it up to use Petty Cash.";
     let reads = 0;
     api({
@@ -537,8 +535,8 @@ describe("PettyCashSettingsScreen", () => {
     show();
 
     expect(await screen.findByText(SETTING_UP)).toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: "Try again" }));
-    await waitFor(() => expect(reads).toBe(2));
+    expect(screen.queryByRole("button", { name: "Try again" })).toBeNull();
+    expect(reads).toBe(1);
     expect(screen.queryByRole("region", { name: "Electronic" })).toBeNull();
   });
 
@@ -575,5 +573,72 @@ describe("PettyCashSettingsScreen", () => {
       }),
     ).toHaveValue("Petty Cash - 090");
     expect(sent("GET /settings/xero")).toHaveLength(2);
+  });
+});
+
+// "Leave without saving?" over the two Xero cards (2026-11-11; the port had no guard): the sales
+// methods save at once, so only the cards can hold unsaved choices.
+describe("PettyCashSettingsScreen - leaving with unsaved Xero choices", () => {
+  let went: string[];
+  const onClick = (event: MouseEvent) => {
+    const anchor = event.target instanceof Element ? event.target.closest("a[href]") : null;
+    if (anchor instanceof HTMLAnchorElement) {
+      event.preventDefault();
+      went.push(anchor.getAttribute("href") ?? "");
+    }
+  };
+  beforeEach(() => {
+    vi.stubGlobal("fetch", fetchMock);
+    setAuth("h.eyJ1c2VyX2lkIjoidTEifQ.s", ID, "Olive Shop");
+    fetchMock.mockReset();
+    went = [];
+    window.addEventListener("click", onClick);
+  });
+  afterEach(() => {
+    window.removeEventListener("click", onClick);
+    vi.unstubAllGlobals();
+  });
+
+  it("asks first: Go Back keeps the tick, Discard changes puts the saved ticks back and goes", async () => {
+    api({
+      "GET /settings": () => json(settings()),
+      "GET /settings/xero": () => json(xero()),
+    });
+    show();
+    await drawn();
+    const user = userEvent.setup();
+    const codes = card("Petty Cash Account Code");
+    await user.click(await codes.findByRole("checkbox", { name: "404 - Bank Fees" }));
+
+    await user.click(screen.getByRole("link", { name: "Users" }));
+    const dialog = screen.getByRole("dialog");
+    expect(dialog).toHaveAccessibleName(LEAVE_TITLE);
+    expect(went).toEqual([]);
+
+    await user.click(within(dialog).getByRole("button", { name: GO_BACK_UPPER }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(codes.getByRole("checkbox", { name: "404 - Bank Fees" })).toBeChecked();
+
+    await user.click(screen.getByRole("link", { name: "Users" }));
+    await user.click(
+      within(screen.getByRole("dialog")).getByRole("button", { name: DISCARD_CHANGES }),
+    );
+    expect(
+      card("Petty Cash Account Code").getByRole("checkbox", { name: "404 - Bank Fees" }),
+    ).not.toBeChecked();
+    expect(went).toEqual([expect.stringContaining("/settings/users")]);
+  });
+
+  it("asks nothing when nothing changed", async () => {
+    api({
+      "GET /settings": () => json(settings()),
+      "GET /settings/xero": () => json(xero()),
+    });
+    show();
+    await drawn();
+    await card("Petty Cash Account Code").findByRole("checkbox", { name: "404 - Bank Fees" });
+    await userEvent.click(screen.getByRole("link", { name: "Users" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(went).toEqual([expect.stringContaining("/settings/users")]);
   });
 });

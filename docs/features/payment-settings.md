@@ -26,9 +26,9 @@ development's `CORS_ALLOWED_ORIGINS` override in minty-infra lists `dev-my`). Ca
 `GET /api/v1/entity-bill-accounts/?include_inactive=true`, `PUT /api/v1/entity-bill-accounts/{id}`
 with `{is_active}`.
 
-**Saving writes `entity_bill_account_xero.is_active` only.** Onboarding's step 8 also writes
-`account_module` PAYMENT_REQUEST (2026-11-10); unless minty-payment-request-api writes both, the
-two tables drift after a save here - an open item for that API, not this page.
+**Saving writes `entity_bill_account_xero.is_active`, and minty-payment-request-api keeps the
+account's `account_module` PAYMENT_REQUEST row in step** (since 2026-11-11), as onboarding's step 8
+does - so the two tables no longer drift after a save here.
 
 ## The card (`components/AccountCodeSettings.tsx`)
 
@@ -63,10 +63,10 @@ the hub's tab row replaces them.
 
 ## Known rough edges (from the old page, kept)
 
-The empty-list sentence ("No account codes yet - I'll show them here once Xero's connected.")
-also shows to connected or Minty-only companies; folding hides unsaved ticks (the guard still
-holds them); the card's sentence is ungrammatical. Unchanged on purpose: "copy unchanged" was the
-port's rule.
+Folding hides unsaved ticks (the guard still holds them). The card's sentence ("Only the ticked
+account codes appear when you add a payment request.") and the empty list's ("No account codes yet.
+Your company's expense accounts show here once they're added." - it used to promise Xero, to
+connected and Minty-only companies alike) were rewritten on 2026-11-11.
 
 ## Tests
 

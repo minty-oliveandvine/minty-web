@@ -18,6 +18,8 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { useLeaveGuard } from "@minty/shared/leaveGuard";
 
 import {
   SettingsDialog,
@@ -26,6 +28,7 @@ import {
   SettingsShell,
 } from "@/components/ui/SettingsShell";
 import { SETTINGS_DANGER_FILL, SETTINGS_OUTLINE } from "@/components/ui/settingsButtons";
+import { LeaveDialog } from "@/components/ui/LeaveDialog";
 import { useToast } from "@/components/ui/Toast";
 import { ApiError, type ApiRequest } from "@/lib/apiClient";
 
@@ -41,11 +44,7 @@ import {
   type Call,
   type XeroLoad,
 } from "@/features/petty-cash-settings/components/XeroCards";
-import {
-  connectXeroPath,
-  leaveFor,
-  pettyCashDashboardUrl,
-} from "@/features/petty-cash-settings/lib/paths";
+import { connectXeroPath } from "@/features/petty-cash-settings/lib/paths";
 import {
   KIND,
   METHOD_TYPES,
@@ -89,8 +88,9 @@ export function PettyCashSettingsScreen({ company }: { company: { id: string; na
       (err: unknown) => {
         const message = refusal(err);
         if (!live || message === null) return;
+        // 403 (not for this person) and 409 (still onboarding) are answers: Try again can't help.
         setLoad(
-          err instanceof ApiError && err.status === 403
+          err instanceof ApiError && (err.status === 403 || err.status === 409)
             ? { kind: "refused", message }
             : { kind: "failed", message },
         );
@@ -144,6 +144,17 @@ function SettingsBody({
   // a ref, not state: a second click in the same frame must see the first one
   const acting = useRef(false);
   const perms = read.permissions;
+
+  // "Leave without saving?" over the two Xero cards (each saves on its own; the sales methods save
+  // at once, so they never hold anything). Discard remounts both forms from what the API holds.
+  const [dirty, setDirty] = useState({ mapping: false, codes: false });
+  const [resetKey, setResetKey] = useState(0);
+  const mappingDirty = useCallback((on: boolean) => setDirty((d) => ({ ...d, mapping: on })), []);
+  const codesDirty = useCallback((on: boolean) => setDirty((d) => ({ ...d, codes: on })), []);
+  const leave = useLeaveGuard(dirty.mapping || dirty.codes, () => {
+    setDirty({ mapping: false, codes: false });
+    setResetKey((k) => k + 1);
+  });
 
   useEffect(() => {
     if (menu === null) return;
@@ -224,7 +235,7 @@ function SettingsBody({
         setXero({
           kind: "failed",
           message,
-          retry: !(err instanceof ApiError && err.status === 403),
+          retry: !(err instanceof ApiError && (err.status === 403 || err.status === 409)),
         });
       },
     );
@@ -271,17 +282,11 @@ function SettingsBody({
           connectHref={connectHref}
           onRetry={retryXero}
           onAdded={(message) => showToast(message, "success")}
-          onSaved={({ first_save, ...answer }) => {
-            if (!first_save) {
-              xeroSaved(answer);
-              return;
-            }
-            // The first mapping save goes on to the company's Petty Cash dashboard, as Flask's
-            // did. That is another app, so its flash cannot travel: the sentence is said here as
-            // the page leaves.
-            showToast(answer.message, "success");
-            leaveFor(pettyCashDashboardUrl(entityId));
-          }}
+          // Every save stays here and says so - the first included (owner, 2026-11-11: it used to
+          // leave for the Petty Cash dashboard, as Flask's did, and its sentence went with the page).
+          onSaved={({ first_save: _first, ...answer }) => xeroSaved(answer)}
+          onDirty={mappingDirty}
+          resetKey={resetKey}
         />
 
         {METHOD_TYPES.map((type) => (
@@ -305,8 +310,21 @@ function SettingsBody({
           connectHref={connectHref}
           onRetry={retryXero}
           onSaved={xeroSaved}
+          onDirty={codesDirty}
+          resetKey={resetKey}
         />
       </div>
+
+      {/* Over the sidebar drawer and any other modal, as General's: data-leave-dialog keeps a link
+          inside the dialog out of the guard. */}
+      {leave.open
+        ? createPortal(
+            <div data-leave-dialog="" className="relative z-[250]">
+              <LeaveDialog onDiscard={leave.discard} onStay={leave.stay} />
+            </div>,
+            document.body,
+          )
+        : null}
 
       {busy ? <BusyOverlay text={busy} /> : null}
       {confirmDelete ? (

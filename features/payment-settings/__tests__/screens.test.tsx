@@ -169,7 +169,7 @@ describe("the settings chrome", () => {
       await screen.findByRole("heading", { level: 3, name: "Payment Account Code" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByText("Only selected account code will appear when adding a payment in Payment."),
+      screen.getByText("Only the ticked account codes appear when you add a payment request."),
     ).toBeInTheDocument();
   });
 });
@@ -266,7 +266,9 @@ describe("with Xero connected", () => {
     show();
 
     expect(
-      await screen.findByText("No account codes yet - I'll show them here once Xero's connected."),
+      await screen.findByText(
+        "No account codes yet. Your company's expense accounts show here once they're added.",
+      ),
     ).toBeInTheDocument();
   });
 

@@ -133,6 +133,14 @@ function NotReady({
 
 // --- the mapping ---------------------------------------------------------------------------------
 
+/** Tell the page whether this form holds unsaved changes - and that it holds none once it goes. */
+function useDirtyReport(dirty: boolean, onDirty: ((dirty: boolean) => void) | undefined) {
+  useEffect(() => {
+    onDirty?.(dirty);
+  }, [dirty, onDirty]);
+  useEffect(() => () => onDirty?.(false), [onDirty]);
+}
+
 export function XeroMappingCard({
   load,
   busy,
@@ -141,6 +149,8 @@ export function XeroMappingCard({
   onRetry,
   onSaved,
   onAdded,
+  onDirty,
+  resetKey = 0,
 }: {
   load: XeroLoad;
   busy: boolean;
@@ -151,6 +161,10 @@ export function XeroMappingCard({
   onSaved: (answer: MappingAnswer) => void;
   /** A contact was created: the success toast. */
   onAdded: (message: string) => void;
+  /** Unsaved changes on the form, or none (the page's leave guard). */
+  onDirty?: (dirty: boolean) => void;
+  /** Bumped by the page to put the saved choices back ("Discard changes"). */
+  resetKey?: number;
 }) {
   const editable = load.kind === "ready" && load.read.permissions.edit_mapping;
   const minty = load.kind === "ready" && !!load.read.minty;
@@ -172,7 +186,7 @@ export function XeroMappingCard({
       ) : (
         // a new read (a save) starts the form again from what the API holds
         <MappingForm
-          key={JSON.stringify(load.read.mapping)}
+          key={`${resetKey}:${JSON.stringify(load.read.mapping)}`}
           fields={load.read.mapping}
           minty={minty}
           editable={editable}
@@ -180,6 +194,7 @@ export function XeroMappingCard({
           call={call}
           onSaved={onSaved}
           onAdded={onAdded}
+          onDirty={onDirty}
         />
       )}
     </PettyCashCard>
@@ -194,6 +209,7 @@ function MappingForm({
   call,
   onSaved,
   onAdded,
+  onDirty,
 }: {
   fields: MappingField[];
   /** Minty's own accounts: the field lines don't say "from Xero". */
@@ -203,6 +219,7 @@ function MappingForm({
   call: Call;
   onSaved: (answer: MappingAnswer) => void;
   onAdded: (message: string) => void;
+  onDirty?: (dirty: boolean) => void;
 }) {
   const ids = useId();
   const idOf = (key: MappingKey) => `${ids}-${key}`;
@@ -235,6 +252,7 @@ function MappingForm({
   const problems = mappingProblems(fields, picked, refused);
   const changed = mappingChanged(initial, picked);
   const byKey = new Map(fields.map((f) => [f.key, f]));
+  useDirtyReport(editable && changed, onDirty);
 
   useEffect(() => {
     if (summary && summary.length > 1) summaryRef.current?.focus();
@@ -503,6 +521,8 @@ export function AccountCodesCard({
   connectHref,
   onRetry,
   onSaved,
+  onDirty,
+  resetKey = 0,
 }: {
   load: XeroLoad;
   busy: boolean;
@@ -510,12 +530,16 @@ export function AccountCodesCard({
   connectHref: string;
   onRetry: () => void;
   onSaved: (answer: CodesAnswer) => void;
+  /** Unsaved ticks, or none (the page's leave guard). */
+  onDirty?: (dirty: boolean) => void;
+  /** Bumped by the page to put the saved ticks back ("Discard changes"). */
+  resetKey?: number;
 }) {
   const editable = load.kind === "ready" && load.read.permissions.edit_account_codes;
   return (
     <PettyCashCard
       title="Petty Cash Account Code"
-      lead="Only selected account code will appear when adding an expense in Petty Cash."
+      lead="Only the ticked account codes appear when you add an expense in Petty Cash."
       readOnly={load.kind === "ready" && !editable}
       testId="account-codes"
     >
@@ -525,12 +549,13 @@ export function AccountCodesCard({
         <NotConnected connectHref={connectHref} />
       ) : (
         <CodesForm
-          key={JSON.stringify(load.read.account_codes)}
+          key={`${resetKey}:${JSON.stringify(load.read.account_codes)}`}
           codes={load.read.account_codes}
           editable={editable}
           busy={busy}
           call={call}
           onSaved={onSaved}
+          onDirty={onDirty}
         />
       )}
     </PettyCashCard>
@@ -543,12 +568,14 @@ function CodesForm({
   busy,
   call,
   onSaved,
+  onDirty,
 }: {
   codes: AccountCode[];
   editable: boolean;
   busy: boolean;
   call: Call;
   onSaved: (answer: CodesAnswer) => void;
+  onDirty?: (dirty: boolean) => void;
 }) {
   const searchId = useId();
   const hintId = useId();
@@ -561,6 +588,7 @@ function CodesForm({
   const problem = editable ? codesProblem(codes, ticked) : null;
   const changed = codesChanged(codes, ticked);
   const hasCodes = shownCodes(codes, "").length > 0;
+  useDirtyReport(editable && changed, onDirty);
 
   function set(changes: string[], on: boolean) {
     setTicked((t) => {

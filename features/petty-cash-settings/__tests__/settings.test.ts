@@ -8,11 +8,7 @@ import { clearAuth, setAuth } from "@/lib/auth";
 import { env } from "@/lib/env";
 
 import { companyApiPath } from "@/features/petty-cash-settings/api/pettyCashSettings";
-import {
-  connectXeroPath,
-  pettyCashDashboardUrl,
-  pettyCashSettingsPath,
-} from "@/features/petty-cash-settings/lib/paths";
+import { connectXeroPath, pettyCashSettingsPath } from "@/features/petty-cash-settings/lib/paths";
 import {
   ADD_NAME_MAX,
   NAME_EMPTY,
@@ -49,15 +45,6 @@ describe("the page's address and its links", () => {
     expect(connectXeroPath(ENTITY, "Olive & Vine")).toBe(
       "/entity/360812e1/olive-and-vine/settings/integration",
     );
-  });
-
-  it("goes to the company's Petty Cash dashboard through accounts-api's hand-off", () => {
-    setAuth("h.eyJ1c2VyX2lkIjoidTEifQ.s", ENTITY, "Olive & Vine");
-    const url = new URL(pettyCashDashboardUrl(ENTITY));
-    expect(`${url.origin}${url.pathname}`).toBe(`${env.ACCOUNTS_API_URL}/entity/${ENTITY}/enter`);
-    const next = new URL(url.searchParams.get("next") ?? "", "http://x");
-    expect(next.pathname).toBe("/handoff/petty-cash-web");
-    expect(next.searchParams.get("entity_id")).toBe(ENTITY);
   });
 
   it("calls minty-petty-cash-api with the company in the path and nowhere else", () => {

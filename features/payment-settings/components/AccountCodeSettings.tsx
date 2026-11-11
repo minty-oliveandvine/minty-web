@@ -37,7 +37,7 @@ import { readSettingsRole } from "@/features/payment-settings/lib/role";
 
 export const PAYMENT_SETTINGS_COPY = {
   title: "Payment Account Code",
-  lead: "Only selected account code will appear when adding a payment in Payment.",
+  lead: "Only the ticked account codes appear when you add a payment request.",
   viewOnly: "Read-only access — you are not a member of this entity.",
   readOnly:
     "You have view-only access to these settings. Ask an Accountant or Admin to make changes.",
@@ -45,7 +45,7 @@ export const PAYMENT_SETTINGS_COPY = {
   selectAll: "Select all",
   selectAllLabel: "Select all visible account codes",
   loadFailed: "I couldn't load your account codes. Mind refreshing the page?",
-  empty: "No account codes yet - I'll show them here once Xero's connected.",
+  empty: "No account codes yet. Your company's expense accounts show here once they're added.",
   noMatch: "No codes match your search.",
   save: "Save Changes",
   saving: "Saving…",
