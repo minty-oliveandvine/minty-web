@@ -33,10 +33,11 @@ Flask drew the list as a phone-shaped card fixed in the middle of the screen. He
   Flask's box (at least 160 px tall, 120 from 640 — taller than the picture, which is what leaves
   65 px above the search box, 76 on a phone), the search box, then the rows 24 px under it.
 - **The screen scrolls as one** under the header, so the scrollbar is the screen's own right
-  edge; **the search box stays** at the top while the rows scroll under it. A new company is
-  **"Create company" in the Minty cat's pop-up** at the screen's bottom-right corner (owner,
-  2026-11-05; `useContactActions` from `@minty/shared/contact`). It replaced the floating "+"
-  that sat there, and is left out on the empty page, whose own _Create Entity_ says it.
+  edge; **the search box stays** at the top while the rows scroll under it; the "+" is held to
+  the screen's bottom-right corner, left out on the empty page, whose own _Create Entity_ says it.
+  From 2026-11-05 to 2026-11-11 the "+" was "Create company" in the Minty cat's pop-up; the owner
+  brought the button back (the cat, tucked to a tab by default since `@minty/shared` v0.18, no
+  longer offers it).
 
 Tried and dropped the same day: a grid of cards, then the rows in a 70% column — the user asked
 for Flask's widths and spacing instead.
@@ -51,8 +52,8 @@ name (case-insensitive, "Scenario 2" before "Scenario 10"). Flask's own Jinja li
 the "Setup in progress" pill, the name, the free-trial badge (the design's own tag, named
 "Free trial: <modules>"), one badge per module that is on, the last-opened clock ("9 Jun 5:42
 PM" in the viewer's zone, "By <name>" on hover, grey "Not opened yet" when nobody has) and the
-chevron. Search is Flask's: case-insensitive, anywhere in the name. The cat's "Create company"
-and the empty state's _Create Entity_ go to Minty's `/entity/create` (the onboarding wizard).
+chevron. Search is Flask's: case-insensitive, anywhere in the name. The "+" and the empty
+state's _Create Entity_ go to Minty's `/entity/create` (the onboarding wizard).
 
 **A card leads into its company** through Minty's `/entity/<id>/enter?next=/entity/<id>/modules`
 (`lib/mintyEntry.ts::mintyEnterCompanyUrl`): `/enter` goes on with the accounts-api session (or

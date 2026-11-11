@@ -1,6 +1,6 @@
 // "Select Company" as a person sees it: the grid of cards (Flask's cards, across the whole
-// screen since 2026-09-29), search, "Create company" in the Minty cat's pop-up (it was a floating
-// "+" until 2026-11-05), the empty and failed states, what Flask flashed on
+// screen since 2026-09-29), search, the "+" (in the Minty cat's pop-up 2026-11-05 to 2026-11-11),
+// the empty and failed states, what Flask flashed on
 // the way here, and the header bar - the initials (My Profile) and the side menu.
 
 import { render, screen, waitFor, within } from "@testing-library/react";
@@ -93,10 +93,9 @@ describe("EntityListScreen", () => {
     expect(within(scenario).getByRole("img", { name: "Not opened yet" })).toBeInTheDocument();
     expect(list().getAllByRole("link")).toHaveLength(LIST.entities.length);
 
-    // no floating "+" any more: a new company is the cat's pop-up's first line
-    expect(screen.queryByRole("link", { name: "Add a new entity" })).toBeNull();
-    await userEvent.click(await screen.findByRole("button", { name: "Talk to Minty" }));
-    expect(screen.getByRole("menuitem", { name: "Create company" })).toHaveAttribute(
+    // the floating "+" is back (owner, 2026-11-11); the cat no longer offers "Create company"
+    expect(screen.queryByRole("menuitem", { name: "Create company" })).toBeNull();
+    expect(screen.getByRole("link", { name: "Create company" })).toHaveAttribute(
       "href",
       `${env.ACCOUNTS_API_URL}/entity/create`,
     );
@@ -118,7 +117,7 @@ describe("EntityListScreen", () => {
     expect(screen.getByText("No companies found.")).toBeInTheDocument();
   });
 
-  it("with no company at all, the empty page and a way to create one - and none in the cat", async () => {
+  it("with no company at all, the empty page and a way to create one - and no +", async () => {
     serve(EMPTY);
     show();
 
@@ -127,8 +126,7 @@ describe("EntityListScreen", () => {
       "href",
       `${env.ACCOUNTS_API_URL}/entity/create`,
     );
-    await userEvent.click(await screen.findByRole("button", { name: "Talk to Minty" }));
-    expect(screen.queryByRole("menuitem", { name: "Create company" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Create company" })).toBeNull();
     expect(screen.queryByRole("textbox", { name: "Search company" })).toBeNull();
   });
 

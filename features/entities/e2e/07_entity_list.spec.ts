@@ -86,20 +86,14 @@ test.describe("the entity list", () => {
     );
     await expect(five.getByRole("img", { name: "Free trial: Petty Cash" })).toBeVisible();
     await expect(main.getByText("Setup in progress")).toBeVisible();
-    // the Minty cat is held to the screen's corner, outside `main`; a new company is its
-    // pop-up's first line (the floating "+" until 2026-11-05)
-    const cat = page.getByRole("button", { name: "Talk to Minty" });
+    // the "+" is held to the screen's corner, outside `main` (back from the Minty cat's
+    // pop-up, owner 2026-11-11)
+    const add = page.getByRole("link", { name: "Create company" });
+    await expect(add).toHaveAttribute("href", `${ACCOUNTS_API_URL}/entity/create`);
     const viewport = page.viewportSize()!;
-    const catBox = (await cat.boundingBox())!;
-    expect(viewport.width - (catBox.x + catBox.width)).toBeLessThan(64);
-    expect(viewport.height - (catBox.y + catBox.height)).toBeLessThan(64);
-    await expect(page.getByRole("link", { name: "Add a new entity" })).toHaveCount(0);
-    await cat.click();
-    await expect(page.getByRole("menuitem", { name: "Create company" })).toHaveAttribute(
-      "href",
-      `${ACCOUNTS_API_URL}/entity/create`,
-    );
-    await page.keyboard.press("Escape");
+    const addBox = (await add.boundingBox())!;
+    expect(viewport.width - (addBox.x + addBox.width)).toBeLessThan(64);
+    expect(viewport.height - (addBox.y + addBox.height)).toBeLessThan(64);
 
     await main.getByRole("textbox", { name: "Search company" }).fill("both active");
     await expect(cards).toHaveCount(1);

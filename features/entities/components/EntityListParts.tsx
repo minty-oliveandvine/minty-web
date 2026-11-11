@@ -1,7 +1,7 @@
 /**
  * The select-company page's other pieces: the header (the payments app's header bar - the Minty
  * mark at the left, the title in the middle, the person's initials, which open My Profile, and
- * the ≡ on the right), the doors, the search box, and the states the
+ * the ≡ on the right), the doors, the search box, the "+" for a new company, and the states the
  * list can be in (loading, failed, no companies at all, nothing matching the search).
  */
 
@@ -11,6 +11,7 @@ import { AppHeader } from "@/components/ui/AppHeader";
 
 import type { ArchivedFilter } from "@/features/entities/api/entities";
 import {
+  CREATE_COMPANY,
   CREATE_ENTITY,
   createEntityHref,
   EMPTY_TEXT,
@@ -119,6 +120,29 @@ export function ArchivedFilterSwitch({
         );
       })}
     </div>
+  );
+}
+
+/**
+ * The floating "+": a new company, through Minty's /entity/create and the onboarding wizard.
+ * Held to the SCREEN's bottom-right corner, clear of a phone's home bar, over the scrolling list.
+ * (In the Minty cat's pop-up as "Create company" 2026-11-05 to 2026-11-11; the owner brought it back.)
+ */
+export function AddEntityButton() {
+  return (
+    <a
+      href={createEntityHref()}
+      aria-label={CREATE_COMPANY}
+      title={CREATE_COMPANY}
+      className="fixed bottom-[max(1.5rem,env(safe-area-inset-bottom,0px))] right-6 z-10 flex h-14 w-14 items-center justify-center rounded-full bg-[#54D3DA] shadow-xl transition-[background-color,transform] hover:-translate-y-0.5 hover:bg-[#54D3DA]/80 sm:right-8 lg:right-10"
+    >
+      <svg width="34" height="34" viewBox="0 0 34 34" fill="none" aria-hidden>
+        <path
+          d="M16.0714 16.0714V10.5H17.9286V16.0714H23.5V17.9286H17.9286V23.5H16.0714V17.9286H10.5V16.0714H16.0714Z"
+          fill="white"
+        />
+      </svg>
+    </a>
   );
 }
 

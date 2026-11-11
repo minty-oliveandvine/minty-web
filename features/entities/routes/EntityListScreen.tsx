@@ -9,9 +9,9 @@
  * width on a phone) and its spacing: the doors, the search box and the companies' rows.
  *
  * Under the header the screen scrolls as one, so the scrollbar is the screen's own right edge;
- * the header stays, the search box stays at the top while the rows scroll under it. A new
- * company is "Create company" in the Minty cat's pop-up at the bottom right (`useContactActions`;
- * a floating "+" there until 2026-11-05) - except on the empty page, whose own button says it.
+ * the header stays, the search box stays at the top while the rows scroll under it, and the
+ * "+" is held to the bottom-right corner - except on the empty page, whose own button says it.
+ * (The "+" was "Create company" in the Minty cat's pop-up 2026-11-05 to 2026-11-11; owner.)
  *
  * Archived companies (2026-11-10, superusers only): "Archive companies" under the search - the
  * list's manage mode, where each company offers Archive, asked first ("Done" leaves it) - the
@@ -19,13 +19,11 @@
  * first. Nobody else sees any of it.
  */
 
-import { useContactActions, type ContactAction } from "@minty/shared/contact";
-import { useMemo } from "react";
-
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 import { EntityCard } from "@/features/entities/components/EntityCard";
 import {
+  AddEntityButton,
   ArchivedFilterSwitch,
   CompanySearch,
   DoorsHero,
@@ -40,8 +38,6 @@ import {
   ARCHIVE_COMPANY,
   ARCHIVE_TEXT,
   ARCHIVE_TITLE,
-  CREATE_COMPANY,
-  createEntityHref,
   MANAGE_ARCHIVE,
   MANAGE_DONE,
   RESTORE,
@@ -49,16 +45,9 @@ import {
   RESTORE_TITLE,
 } from "@/features/entities/lib/entityRows";
 
-const NONE: ContactAction[] = [];
-
 export function EntityListScreen(args: UseEntityListArgs) {
   const list = useEntityList(args);
   const empty = list.status === "ready" && !list.hasEntities;
-  const create = useMemo<ContactAction[]>(
-    () => [{ id: "create-company", label: CREATE_COMPANY, icon: "add", href: createEntityHref() }],
-    [],
-  );
-  useContactActions(empty ? NONE : create);
 
   return (
     <div className="flex h-dvh flex-col bg-gray-50">
@@ -108,6 +97,7 @@ export function EntityListScreen(args: UseEntityListArgs) {
           )}
         </main>
       </div>
+      {empty ? null : <AddEntityButton />}
       {list.pending ? (
         <ConfirmDialog
           title={

@@ -1,6 +1,6 @@
-// The Minty cat at a phone's width, over a STUBBED Flask: the cat in the corner, its pop-up with
-// "Create company" (the entity list's, since 2026-11-05) and "Talk to Minty", and the scripted
-// chat ending in Flask's `POST /api/me/contact`. Flask's side is Minty's tests/test_hub_contact.py.
+// The Minty cat at a phone's width, over a STUBBED Flask: tucked to a tab on the edge at first
+// (owner, 2026-11-11), the tab bringing it back with its pop-up open, "Talk to Minty", and the
+// scripted chat ending in Flask's `POST /api/me/contact`. Flask's side is Minty's tests/test_hub_contact.py.
 import { expect, test, type Page } from "@playwright/test";
 
 import { LIST } from "../features/entities/__fixtures__/entities";
@@ -46,24 +46,25 @@ test.describe("the Minty cat", () => {
     await requireApp();
   });
 
-  test("at 360px: the pop-up, Create company, and a message sent through the chat", async ({
-    page,
-  }) => {
+  test("at 360px: the tab, the pop-up, and a message sent through the chat", async ({ page }) => {
     const sent = await stubFlask(page);
     await page.setViewportSize({ width: 360, height: 760 });
     await handoff(page, creds(), "/entities");
 
+    // tucked by default: only the tab on the right edge
+    const tab = page.getByRole("button", { name: "Bring Minty back" });
+    await expect(tab).toBeVisible();
+    await expect(page.getByRole("button", { name: "Talk to Minty" })).toHaveCount(0);
+    const box = (await tab.boundingBox())!;
+    expect(box.width).toBeGreaterThanOrEqual(44);
+    expect(360 - (box.x + box.width)).toBeLessThan(1);
+
+    // the tab brings the cat back with its pop-up open; the entity list adds no line to it
+    await tab.click();
     const cat = page.getByRole("button", { name: "Talk to Minty" });
     await expect(cat).toBeVisible();
-    const box = (await cat.boundingBox())!;
-    expect(box.width).toBeGreaterThanOrEqual(44);
-    expect(360 - (box.x + box.width)).toBeLessThan(40);
-
-    await cat.click();
-    await expect(page.getByRole("menuitem", { name: "Create company" })).toHaveAttribute(
-      "href",
-      `${ACCOUNTS_API_URL}/entity/create`,
-    );
+    await expect(page.getByRole("menu", { name: "Minty" })).toBeVisible();
+    await expect(page.getByRole("menuitem", { name: "Create company" })).toHaveCount(0);
     await page.getByRole("menuitem", { name: "Talk to Minty" }).click();
 
     const chat = page.getByRole("dialog", { name: "Talk to Minty" });
