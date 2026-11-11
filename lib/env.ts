@@ -1,5 +1,5 @@
 /**
- * The three sibling URLs this app reads - and the only place it reads them.
+ * The sibling URLs this app reads - and the only place it reads them.
  *
  * Each is spelled out as a literal `process.env.X` access of a key next.config.ts lists under
  * `env`, so Next inlines it into the client bundle AND proxy.ts at build time; a dynamic
@@ -8,8 +8,8 @@
  * here, once.
  *
  * Defaults are the owner's local ports (2026-10-16, Documents\dev.ps1): Subscription API 8001,
- * Petty Cash (Flask, accounts-api) 8000, Payment Request web 3020. The deployed app sets all three
- * explicitly. No environment-name switch (minty-payment-request-web's `mintyEnv.ts` grew one
+ * Petty Cash (Flask, accounts-api) 8000, Payment Request web 3020; the Petty Cash API 8010 and the
+ * Payment Request API 8020 (CLAUDE.md's port table). The deployed app sets every one explicitly. No environment-name switch (minty-payment-request-web's `mintyEnv.ts` grew one
  * and its apex default became a landmine) - one variable, one URL.
  */
 
@@ -28,4 +28,8 @@ export const env = {
    * (moved onto the set's host); everywhere else Bills goes through Minty's hand-over (2026-10-15).
    */
   PAYMENT_REQUEST_WEB_URL: url(process.env.PAYMENT_REQUEST_WEB_URL, "http://localhost:3020"),
+  /** minty-petty-cash-api - the Petty Cash Settings tab (in the hub since 2026-11-10, owner). */
+  PETTY_CASH_API_URL: url(process.env.PETTY_CASH_API_URL, "http://localhost:8010"),
+  /** minty-payment-request-api - the Payment Settings tab (in the hub since 2026-11-10, owner). */
+  PAYMENT_REQUEST_API_URL: url(process.env.PAYMENT_REQUEST_API_URL, "http://localhost:8020"),
 } as const;

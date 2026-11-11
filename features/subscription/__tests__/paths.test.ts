@@ -83,6 +83,12 @@ describe("the shell's spelling of this feature's paths", () => {
   // which may not import the feature - so the two spellings are pinned together here.
   it("agrees with the feature's own", () => {
     expect(HUB_PATHS.subscription).toBe(SUBSCRIPTION_BASE_PATH);
-    expect(companySettingsPath("e 1", "Olive Shop")).toBe(modulesPath("e 1", "Olive Shop"));
+    expect(companySettingsPath("e 1", "Olive Shop", "modules")).toBe(
+      modulesPath("e 1", "Olive Shop"),
+    );
+    // with no tab: General, where the side menu's Settings lands (Figma SET-G, 2026-11-10)
+    expect(companySettingsPath("e 1", "Olive Shop")).toBe(
+      "/entity/e%201/olive-shop/settings/general",
+    );
   });
 });

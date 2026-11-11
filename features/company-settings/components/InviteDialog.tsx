@@ -23,10 +23,7 @@ import {
 import { EMAIL_ASCII_HINT, isEmail, useEmailInput } from "@minty/shared/emailInput";
 
 import type { RoleOption } from "@/features/company-settings/api/companySettings";
-import {
-  SETTINGS_OUTLINE,
-  SETTINGS_PRIMARY,
-} from "@/features/company-settings/components/buttonClasses";
+import { SETTINGS_OUTLINE, SETTINGS_PRIMARY } from "@/components/ui/settingsButtons";
 
 export function InviteDialog({
   roles,

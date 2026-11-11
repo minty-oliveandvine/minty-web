@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * The feature's two routes, as `app/entity/[ref]/[slug]/settings/{users,integration}` mount
+ * The feature's three routes, as `app/entity/[ref]/[slug]/settings/{users,general,integration}` mount
  * them: the company from the address (`components/ui/CompanyFromAddress`), and `?flash=` - what
  * Flask flashed on the way here (a Xero reconnect's outcome, a refusal) - read once.
  * `useSearchParams` needs a Suspense boundary or `next build` refuses the page.
@@ -12,7 +12,8 @@ import { Suspense } from "react";
 
 import { CompanyFromAddress } from "@/components/ui/CompanyFromAddress";
 
-import { integrationPath, usersPath } from "@/features/company-settings/lib/paths";
+import { generalPath, integrationPath, usersPath } from "@/features/company-settings/lib/paths";
+import { GeneralScreen } from "@/features/company-settings/routes/GeneralScreen";
 import { IntegrationScreen } from "@/features/company-settings/routes/IntegrationScreen";
 import { UsersScreen } from "@/features/company-settings/routes/UsersScreen";
 
@@ -32,7 +33,7 @@ function IntegrationContent() {
   // company holds the organisation, so the tab can offer to move it.
   const xeroConflict = params.get("xero_conflict");
   return (
-    <CompanyFromAddress pathOf={integrationPath} label="entity & integration">
+    <CompanyFromAddress pathOf={integrationPath} label="integration">
       {(company) => (
         <IntegrationScreen company={company} flash={flash} xeroConflict={xeroConflict} />
       )}
@@ -45,6 +46,16 @@ export function CompanyUsersPage() {
     <Suspense>
       <UsersContent />
     </Suspense>
+  );
+}
+
+// No `?flash=` here: everything the accounts API flashes on the way back (a Xero connect's outcome)
+// lands on Integration.
+export function CompanyGeneralPage() {
+  return (
+    <CompanyFromAddress pathOf={generalPath} label="general">
+      {(company) => <GeneralScreen company={company} />}
+    </CompanyFromAddress>
   );
 }
 

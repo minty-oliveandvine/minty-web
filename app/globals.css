@@ -38,6 +38,24 @@
   --alert-bg: #fff5f5;
   --alert-border: #f3b6ad;
   --alert-icon: #d92d20;
+  /* Settings (Figma 353:999, owner 2026-11-10): the page head, the underlined tab row, the white
+     cards and their buttons. Every settings tab reads these. */
+  --set-ink: #1b1d1c;
+  --set-ink-2: #4a4d4b;
+  --set-mute: #8a8d8b;
+  --set-line: #ececea;
+  --set-edge: #d9d9d6;
+  --set-tab: #36c3b4;
+  --set-tab-ink: #0f7a6e;
+  --set-pill: #f5f5f3;
+  --set-ok-bg: #e3f5ef;
+  --set-ok-ink: #0c6b4e;
+  --set-warn-bg: #fff5f5;
+  --set-danger-line: #d9534f;
+  /* The Primary CTA (CLAUDE.md, Minty Action): rest, hover, pressed. */
+  --action: #3cbcc3;
+  --action-hover: #35b2b9;
+  --action-pressed: #2fa4ab;
   /* AppHeader's height (its row is h-16 / sm:h-18, plus the 1px border and the notch): what a
      bar that sticks UNDER the sticky header uses as its top. Change the two together. */
   --app-header-h: calc(4rem + 1px + env(safe-area-inset-top, 0px));
@@ -64,6 +82,21 @@
   --color-ink: var(--ink);
   --color-ink-soft: var(--ink-soft);
   --color-quiet: var(--quiet);
+  --color-set-ink: var(--set-ink);
+  --color-set-ink-2: var(--set-ink-2);
+  --color-set-mute: var(--set-mute);
+  --color-set-line: var(--set-line);
+  --color-set-edge: var(--set-edge);
+  --color-set-tab: var(--set-tab);
+  --color-set-tab-ink: var(--set-tab-ink);
+  --color-set-pill: var(--set-pill);
+  --color-set-ok-bg: var(--set-ok-bg);
+  --color-set-ok-ink: var(--set-ok-ink);
+  --color-set-warn-bg: var(--set-warn-bg);
+  --color-set-danger-line: var(--set-danger-line);
+  --color-action: var(--action);
+  --color-action-hover: var(--action-hover);
+  --color-action-pressed: var(--action-pressed);
 }
 
 @media (prefers-color-scheme: dark) {

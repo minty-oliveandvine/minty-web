@@ -1,7 +1,7 @@
-// Boundary rule 3 for a company's Users and Entity & Integration tabs (eslint.config.mjs cannot
+// Boundary rule 3 for a company's Users, General and Integration tabs (eslint.config.mjs cannot
 // express "only"): their route files are one-line re-exports from "@/features/company-settings".
 // And rule 2 from the other side: nothing outside the feature reaches past its index. Plus the
-// shell's spelling of the two tabs' addresses.
+// shell's spelling of the three tabs' addresses.
 
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
@@ -11,7 +11,7 @@ import { describe, expect, it } from "vitest";
 
 import { companySettingsPath } from "@/lib/hubPaths";
 
-import { integrationPath, usersPath } from "@/features/company-settings/lib/paths";
+import { generalPath, integrationPath, usersPath } from "@/features/company-settings/lib/paths";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
@@ -33,15 +33,16 @@ const rel = (f: string) => relative(ROOT, f).replace(/\\/g, "/");
 // statement, however Prettier wraps it
 const REEXPORT =
   /^export \{\s*\w+ as default(,\s*\w+ as generateMetadata)?,?\s*\} from "@\/features\/company-settings";\n?$/;
-const TABS = ["users", "integration"].map((tab) =>
+const TABS = ["users", "general", "integration"].map((tab) =>
   join(ROOT, "app", "entity", "[ref]", "[slug]", "settings", tab),
 );
 
-describe("the two tabs' route files are re-exports only", () => {
+describe("the three tabs' route files are re-exports only", () => {
   const files = TABS.flatMap((dir) => walk(dir));
 
-  it("has the Users tab and the Entity & Integration tab", () => {
+  it("has the Users, General and Integration tabs", () => {
     expect(files.map(rel).sort()).toEqual([
+      "app/entity/[ref]/[slug]/settings/general/page.tsx",
       "app/entity/[ref]/[slug]/settings/integration/page.tsx",
       "app/entity/[ref]/[slug]/settings/users/page.tsx",
     ]);
@@ -63,6 +64,9 @@ describe("the two tabs' route files are re-exports only", () => {
 describe("the shell's spelling of the tabs", () => {
   it("agrees with the feature's own", () => {
     expect(usersPath("e 1", "Olive Shop")).toBe(companySettingsPath("e 1", "Olive Shop", "users"));
+    expect(generalPath("e 1", "Olive Shop")).toBe(
+      companySettingsPath("e 1", "Olive Shop", "general"),
+    );
     expect(integrationPath("e 1", "Olive Shop")).toBe(
       companySettingsPath("e 1", "Olive Shop", "integration"),
     );

@@ -26,8 +26,8 @@ paths, with everything app-specific in its `components/ui/sidebarHost.ts` - they
 `@minty/shared` at Part 3 step 4. Flask's pages carry a Jinja port (Minty
 `docs/features/sidebar.md`), retired with them in Part 3. Until then a change here is a change
 in all three. One difference by design: in those two apps the menu's **Settings** opens that
-app's own settings (Flask's Petty Cash Settings, or the payments app's Payment Request Settings - the
-user's call, 2026-09-30); here it stays the module settings page.
+app's own settings tab - the hub's Petty Cash Settings or Payment Settings since 2026-11-10 (the
+user's call, 2026-09-30); here it opens General.
 
 ## How a person gets here
 

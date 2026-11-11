@@ -1,27 +1,59 @@
+"use client";
+
 /**
- * The settings pill row - minty-payment-request-web's `SettingsPills` look (`components/settings/
- * SettingsPills.tsx` there), so a company's settings read as one place across the apps. The tabs
+ * The settings tab row (Figma 353:999, owner 2026-11-10): plain tabs on a hairline, the open one
+ * underlined in teal and bold. On a phone the row scrolls sideways inside itself - never the page -
+ * and starts scrolled so the open tab is in view (Petty Cash Settings is past the edge at 360px).
+ * Every tab is a plain link to this app's own page, so the leave guard sees each click. The tabs
  * and their addresses come from `lib/settingsTabs.ts`.
  */
 
+import { useEffect, useRef } from "react";
+
 import type { SettingsTab } from "@/lib/settingsTabs";
 
-const pill = (active: boolean) =>
-  `cursor-pointer shrink-0 rounded-full px-4 py-2 text-center text-sm font-medium transition-colors flex items-center justify-center ${
-    active ? "bg-secondary font-semibold text-white" : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-  }`;
+const TAB =
+  "-mb-px flex min-h-11 shrink-0 items-center border-b-[3px] px-2.5 py-3 text-sm whitespace-nowrap lg:px-3";
 
 export function SettingsTabs({ tabs }: { tabs: SettingsTab[] }) {
+  const row = useRef<HTMLDivElement>(null);
+  const open = useRef<HTMLSpanElement>(null);
+  const current = tabs.find((t) => t.current)?.label;
+
+  useEffect(() => {
+    const r = row.current;
+    const t = open.current;
+    if (!r || !t) return;
+    // Only the row moves (never scrollIntoView, which could move the page too): centre the open tab
+    // when it is not wholly visible.
+    const left = t.offsetLeft - r.offsetLeft;
+    if (left < r.scrollLeft || left + t.offsetWidth > r.scrollLeft + r.clientWidth) {
+      r.scrollLeft = Math.max(0, left - (r.clientWidth - t.offsetWidth) / 2);
+    }
+  }, [current]);
+
   return (
-    <nav aria-label="Settings sections" className="w-full">
-      <div className="flex flex-wrap gap-2 pb-1">
+    <nav aria-label="Settings sections" className="w-full min-w-0">
+      <div
+        ref={row}
+        className="relative flex gap-1 overflow-x-auto border-b border-set-line [scrollbar-width:thin]"
+      >
         {tabs.map((tab) =>
           tab.current ? (
-            <span key={tab.label} aria-current="page" className={pill(true)}>
+            <span
+              key={tab.label}
+              ref={open}
+              aria-current="page"
+              className={`${TAB} border-set-tab font-semibold text-set-tab-ink`}
+            >
               {tab.label}
             </span>
           ) : (
-            <a key={tab.label} href={tab.href} className={pill(false)}>
+            <a
+              key={tab.label}
+              href={tab.href}
+              className={`${TAB} border-transparent font-medium text-set-ink-2 hover:text-set-ink`}
+            >
               {tab.label}
             </a>
           ),

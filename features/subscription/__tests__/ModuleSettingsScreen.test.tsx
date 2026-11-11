@@ -79,7 +79,8 @@ describe("ModuleSettingsScreen", () => {
       "href",
       pettyCashWebUrl("e1"),
     );
-    expect(screen.getByText("Olive & Vine Limited")).toBeInTheDocument();
+    // the page head names the company (Figma 353:999): the page model's name once it is here
+    expect(screen.getByText(/^Olive & Vine/)).toBeInTheDocument();
     // the initials: a link to the entity list here, named for it - no sidebar around a lone
     // screen, and there is no /profile page (@minty/shared v0.12)
     expect(screen.getByRole("link", { name: "Select Entity" })).toHaveTextContent("OV");
@@ -106,14 +107,14 @@ describe("ModuleSettingsScreen", () => {
       "href",
       expect.stringMatching(/^\/entity\/e1\/[^/]+\/settings\/users$/),
     );
-    expect(tabs.getByText("Modules")).toHaveAttribute("aria-current", "page");
+    expect(tabs.getByText("Module & Subscription")).toHaveAttribute("aria-current", "page");
   });
 
-  it("Payment Request Settings hides when billing is off", async () => {
+  it("Payment Settings hides when billing is off", async () => {
     await show(FIXTURES.A);
     const tabs = within(screen.getByRole("navigation", { name: "Settings sections" }));
     expect(tabs.getByRole("link", { name: "Petty Cash Settings" })).toBeInTheDocument();
-    expect(tabs.queryByRole("link", { name: "Payment Request Settings" })).toBeNull();
+    expect(tabs.queryByRole("link", { name: "Payment Settings" })).toBeNull();
   });
 
   it("before the page model answers, the pills and the drawer follow the token's claims", async () => {
@@ -134,9 +135,10 @@ describe("ModuleSettingsScreen", () => {
     await waitFor(() => expect(screen.getByRole("alert")).toBeInTheDocument());
 
     const tabs = within(screen.getByRole("navigation", { name: "Settings sections" }));
-    expect(tabs.getByRole("link", { name: "Payment Request Settings" })).toHaveAttribute(
+    // the hub's own tab since 2026-11-10 (owner)
+    expect(tabs.getByRole("link", { name: "Payment Settings" })).toHaveAttribute(
       "href",
-      `${env.ACCOUNTS_API_URL}/entity/e1/settings/payment-request`,
+      expect.stringMatching(/^\/entity\/e1\/[^/]+\/settings\/payment$/),
     );
     expect(tabs.queryByRole("link", { name: "Petty Cash Settings" })).toBeNull();
     await userEvent.click(screen.getByRole("button", { name: "Open navigation menu" }));
@@ -148,7 +150,7 @@ describe("ModuleSettingsScreen", () => {
   it("03-A: one in trial, one never started", async () => {
     await show(FIXTURES.A);
 
-    expect(screen.getByRole("heading", { level: 2, name: "Modules" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 3, name: "Modules" })).toBeInTheDocument();
     expect(card("Petty Cash").getByText("3 days remaining")).toBeInTheDocument();
     expect(card("Payment Request").getByText("30 days trial available")).toBeInTheDocument();
     // the onboarding card holds no control: each CTA is under its own card, in its list item
@@ -370,7 +372,7 @@ describe("ModuleSettingsScreen", () => {
       expect(within(landed).getByText("Congratulations!")).toBeVisible();
       expect(within(landed).getByText(/is confirmed\./)).toBeVisible();
       expect(landed.querySelector("[data-money]")).not.toBeNull();
-      expect(screen.queryByRole("heading", { level: 2, name: "Modules" })).toBeNull();
+      expect(screen.queryByRole("heading", { level: 3, name: "Modules" })).toBeNull();
       expect(screen.queryByRole("article", { name: "Petty Cash" })).toBeNull();
       expect(screen.queryByRole("status")).toBeNull(); // no toast beside it
     });
@@ -382,7 +384,7 @@ describe("ModuleSettingsScreen", () => {
       // The settings chrome is still there - the person is inside Settings, and the tabs are
       // their way out.
       expect(screen.getByRole("heading", { level: 1, name: "Settings" })).toBeVisible();
-      expect(screen.getByText("Modules")).toHaveAttribute("aria-current", "page");
+      expect(screen.getByText("Module & Subscription")).toHaveAttribute("aria-current", "page");
 
       await userEvent.click(screen.getByRole("button", { name: "Back to Company" }));
       // The COMPANY's own page, not the payer's portal: that is where this journey began.

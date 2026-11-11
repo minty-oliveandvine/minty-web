@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * The Entity & Integration form's draft: the company's name, country and currency as typed, what
+ * The General tab's draft: the company's name, country and currency as typed, what
  * of it CHANGED (only that is sent - Flask's rule), and whether anything did.
  *
  * It lives here rather than inside `DetailsForm` because the leave guard

@@ -91,7 +91,7 @@ describe("NavMenu", () => {
     );
     expect(menu.getByRole("link", { name: "Settings" })).toHaveAttribute(
       "href",
-      "/entity/e1/olive-shop/settings/modules",
+      "/entity/e1/olive-shop/settings/general",
     );
     expect(menu.getByRole("link", { name: "Manage subscriptions" })).toHaveAttribute(
       "aria-current",

@@ -109,17 +109,25 @@ run" below).
 '<entity_id>';` — a role change updates this row in place; Remove deletes it outright
       (composite key `user_id, entity_id` — confirm the row is actually gone, not just hidden).
 
-## Settings — Entity & Integration tab (`company-settings.md`)
+## Settings — the page, General and Integration (`company-settings.md`)
+
+- [ ] Six tabs in Figma 353:999's order (Users · General · Integration · Petty Cash Settings ·
+      Payment Settings · Module & Subscription); a module's tab shows only when it is on; the
+      open tab is underlined teal and bold. At 360 the row scrolls inside itself, starting with the
+      open tab in view, and the page never scrolls sideways.
+- [ ] The menu's Settings opens General.
 
 - [ ] The company name field is editable only as an admin; country/currency only as an
       accountant or above — confirm a lower role sees them read-only with the reason stated.
-- [ ] Saving edits only the fields that changed; Flask's refusal (if any) stays under the form,
-      not a toast.
-- [ ] Xero card shows one of Connected / Reconnect needed / Not connected, with the
-      organisation name and connect date when connected.
-- [ ] Connect / Reconnect navigate out to Flask's OAuth flow and land back on this tab.
-- [ ] Disconnect asks for confirmation before it fires (it used to be a single click).
-- [ ] Change the country, then click another pill, the header's Back, or Connect to Xero - the
+- [ ] General: Save changes is grey with "No changes to save yet" until something changes; a save
+      sends only the fields that changed; a refusal stays under the form, not a toast.
+- [ ] Integration: the card shows one of Not connected (SET-1, with the service-team line) /
+      Connected (SET-2) / Disconnected / Reconnect needed, with Last connected ("Never" when it
+      never was) and the organisation ("None yet").
+- [ ] Connect / Reconnect navigate out to accounts-api's OAuth flow and land back on Integration.
+- [ ] Disconnect from Xero asks first (SET-2b: Cancel / Disconnect) and then reads Disconnected,
+      the organisation and date kept.
+- [ ] On General, change the country, then click another tab or the header's Back - the
       in-app "Leave without saving?" (A-11) appears every time; _Go Back_ stays on the tab with
       the change intact, _Discard changes_ puts the saved value back and then goes.
 - [ ] Change the country, then press the browser's Back - it asks too (nothing was clicked, so
@@ -394,9 +402,9 @@ before the walk — never the production payer's account.
   Playwright per the docs; their behaviour is covered by unit tests with Stripe stubbed, not by
   a manual click-through here.
 - **The email OTP sign-in's inbox step** — ends at a real inbox; not testable in this app alone.
-- **Each other app's own settings tab** (minty-petty-cash-web's Petty Cash Settings, the payments app's
-  Payment Request Settings) — those belong to their own repo's checklist, not this one; this
-  app only owns Users and Entity & Integration.
+- **Petty Cash Settings and Payment Settings** are this app's tabs since 2026-11-10; their cards'
+  items are in [petty-cash-settings.md](petty-cash-settings.md) and
+  [payment-settings.md](payment-settings.md) (and their e2e specs).
 
 ## See also
 
@@ -405,7 +413,7 @@ before the walk — never the production payer's account.
   the first section.
 - [entities.md](entities.md) — the entity list and the module choice screen.
 - [profile.md](profile.md) — My Profile, the sidebar's sheet.
-- [company-settings.md](company-settings.md) — the Users and Entity & Integration tabs.
+- [company-settings.md](company-settings.md) — the settings page, Users, General and Integration.
 - [subscriptions.md](subscriptions.md) — the module settings page, Manage Subscriptions,
   transfers and billing accounts; §7 names every automated test these items are derived from.
 - `minty-subscription-api/docs/features/subscriptions-api.md` — the API contract behind the

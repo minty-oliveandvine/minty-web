@@ -49,19 +49,23 @@ export function companyPath(entityId: string, entityName: string, sub = ""): str
   return `${HUB_PATHS.company}/${companyRef(entityId, entityName)}${sub}`;
 }
 
-/** The settings tabs this app draws; the apps keep their own module settings. */
-export type CompanySettingsTab = "modules" | "users" | "integration";
+/**
+ * The settings tabs - all six are this app's (Figma 353:999; Petty Cash Settings and Payment
+ * Settings moved in from their apps, owner 2026-11-10).
+ */
+export type CompanySettingsTab =
+  "users" | "general" | "integration" | "petty-cash" | "payment" | "modules";
 
 /**
- * A company's settings page in this app. With no tab, the Module tab (Figma 03-A) - where the
- * side menu's Settings goes from inside a company. Each tab's page belongs to a feature (the
+ * A company's settings page in this app. With no tab, General (Figma SET-G) - where the side
+ * menu's Settings goes from inside a company. Each tab's page belongs to a feature (the
  * Module tab to subscription's `modulesPath`); spelled here too because the menu is shared chrome
  * and may not reach into a feature, and pinned equal by those features' paths tests.
  */
 export function companySettingsPath(
   entityId: string,
   entityName: string,
-  tab: CompanySettingsTab = "modules",
+  tab: CompanySettingsTab = "general",
 ): string {
   return companyPath(entityId, entityName, `/settings/${tab}`);
 }

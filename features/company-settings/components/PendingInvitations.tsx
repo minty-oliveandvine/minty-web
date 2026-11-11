@@ -5,10 +5,7 @@
  */
 
 import type { Invitation } from "@/features/company-settings/api/companySettings";
-import {
-  SETTINGS_DANGER,
-  SETTINGS_OUTLINE,
-} from "@/features/company-settings/components/buttonClasses";
+import { SETTINGS_DANGER, SETTINGS_OUTLINE } from "@/components/ui/settingsButtons";
 
 export function PendingInvitations({
   invitations,

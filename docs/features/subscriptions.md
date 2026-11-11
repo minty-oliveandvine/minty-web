@@ -340,34 +340,23 @@ form - onboarding's two errors, Cancel back to the list, 01-J and Done landing o
 `/entity/{shortid}/{name}/settings/modules` (until phase 2, 2026-10-05,
 `/subscription/entities/{shortid}/{name}/modules` - proxy.ts 307s that and the older full-id form here) —
 Flask's `/entity/<shortid>/<name>/settings/modules`, re-homed and
-redrawn to the Figma design (section "03 · Settings › Module", six frames). Its browser tab reads
-"Modules - <company>" (2026-10-05; `lib/companyTitle.ts`, as for the other settings tabs -
+redrawn to the Figma design (section "03 · Settings › Module", six frames). It is the sixth tab,
+**Module & Subscription**, of the one settings page (Figma 353:999, 2026-11-10); its browser tab
+reads "Module & Subscription - <company>" (`lib/companyTitle.ts`, as for the other settings tabs -
 docs/features/company-settings.md). What is on it:
 
-- **The settings chrome is minty-payment-request-web's** (decision 2026-09-21: "the settings design
-  should be similar to the current billing frontend - the only difference is the module
-  contents"). `components/ui/AppHeader` and `components/ui/NavMenu` are ports of its
-  `components/layout/{Header,NavMenu}` (Inter through `next/font`, the `material-symbols`
-  glyphs, the same classes - but for one fix of 2026-10-01: the company name's cap is a plain
-  `max-w-[6.5rem]`, since `min(100%,6.5rem)` counts as no cap while the `shrink-0` block is sized
-  and a long name covered the way back on a phone): "‹ Back" (to the page the person came from - `components/ui/BackLink.tsx`; for a new tab,
-  Minty's `/entity/{id}`; the `?from=bills` "‹ Payments" went 2026-10-05), "Settings", `corporate_fare` + the company, the viewer's initials
-  (`viewer` on the page model) and the side menu - since 2026-09-29 the Figma 02 design on every
-  page (`entities.md`): the person (the way to My Profile), _Select Entity_, _Manage
-  subscriptions_, a Petty Cash section (Dashboard, Reports - into minty-petty-cash-web through
-  `/entity/{id}/enter` with the cookie token and Flask's `/handoff/petty-cash-web`,
-  `lib/mintyEntry.ts::pettyCashWebUrl`) and a Payment Request section (Bills), each only
-  when that module is on, the cat, _Settings_ (this page) and _Logout_ (Minty's `/logout`). Below it, in the same
-  1024px column, a sticky pill row with minty-payment-request-web's `SettingsPills` classes — Users ·
-  Entity & Integration · Petty Cash Settings · Payment Request Settings · **Modules** (the pills' labels since 2026-10-05; "Payment Settings" and "Module" before) —
-  spelled by `lib/settingsTabs.ts` (shared with the other settings tabs); Payment Request Settings goes through Flask's
-  `GET /entity/<id>/settings/payment-request` (Flask shows it by short id and name), which mints the payments app's token and sends the
-  browser on. A module's settings tab (and its drawer section) shows only when that module is on, as
-  in minty-payment-request-web and Flask - from the page model's `has_access` once it is here, from the
-  token's `petty_cash_enabled` / `billing_enabled` claims until then (`lib/moduleClaims.ts`,
-  minty-payment-request-web's `getModuleClaims` ported; both default to on), so the pills never vanish
-  while the page loads or when the API cannot answer. The initials open My Profile in the
-  sidebar over the page (`profile.md`; since 2026-09-29 - they were hover-only that morning).
+- **The settings chrome is the shared settings page** (`components/ui/SettingsPage.tsx`, since
+  2026-11-10; minty-payment-request-web's header and pill row before): the app's bar (`AppHeader`:
+  "‹ Back" to the page the person came from - `components/ui/BackLink.tsx`, for a new tab the Petty
+  Cash dashboard; "Settings"; the viewer's initials - `viewer` on the page model - and the side
+  menu, Figma 02 on every page, `entities.md`), then the 880px column: the company's name (the page
+  model's), "Settings", and the tab row (`components/ui/SettingsTabs.tsx`, spelled by
+  `lib/settingsTabs.ts`). A module's settings tab (and its drawer section) shows only when that
+  module is on - from the page model's `has_access` once it is here, from the token's
+  `petty_cash_enabled` / `billing_enabled` claims until then (`lib/moduleClaims.ts`; both default
+  to on), so the tabs never vanish while the page loads or when the API cannot answer. The cards
+  sit under a "Modules" heading (h3). The initials open My Profile in the sidebar over the page
+  (`profile.md`).
 - **Two cards, six states** (`lib/moduleState.ts`, first match wins). A confirmed trial unticked
   (`trial_cancelled`) is `trialing` (or `needs_activation`), never `pending_cancel`, although the
   API also sends it `pending_cancel` (owner, 2026-11-10: a trial has no paid period to run out):

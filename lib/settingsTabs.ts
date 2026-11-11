@@ -1,16 +1,13 @@
 /**
- * A company's settings chrome - the pill row and the way back - spelled once for every settings
- * page this app draws (the Module tab, Users and Entity & Integration). Petty Cash
- * Settings and Payment Settings stay in their own apps (each app holds only its own settings),
- * so those pills go through Flask, which mints each app's token on the way (Petty Cash's through
- * `/handoff/petty-cash-web`, lib/mintyEntry.ts).
+ * A company's settings chrome - the tab row and the way back - spelled once for every settings
+ * page (Figma 353:999, owner 2026-11-10). All six tabs are this app's own pages: Petty Cash
+ * Settings and Payment Settings moved into the hub from their apps that day, so no tab leaves the
+ * app and the leave guard covers every one.
  *
- * A module's settings pill hides when that module is off - the same rule as Flask's pill rows and
- * minty-payment-request-web's `SettingsPills`.
+ * A module's settings tab hides when that module is off (`billing` is Payment Request's claim).
  */
 
-import { env } from "@/lib/env";
-import { companyPath, companySettingsPath, type CompanySettingsTab } from "@/lib/hubPaths";
+import { companySettingsPath, type CompanySettingsTab } from "@/lib/hubPaths";
 import { pettyCashWebUrl } from "@/lib/mintyEntry";
 import type { ModuleClaims } from "@/lib/moduleClaims";
 
@@ -23,17 +20,30 @@ export type SettingsTab = {
 
 export type SettingsCompany = { id: string; name: string };
 
-/** The pills this app draws - and their pages' tab titles ("Users - <company>"). */
+/** The tabs - and their pages' tab titles ("Users - <company>"). */
 export const SETTINGS_TAB_LABELS: Record<CompanySettingsTab, string> = {
   users: "Users",
-  integration: "Entity & Integration",
-  modules: "Modules",
+  general: "General",
+  integration: "Integration",
+  "petty-cash": "Petty Cash Settings",
+  payment: "Payment Settings",
+  modules: "Module & Subscription",
 };
+
+/** The design's order. */
+const ORDER: CompanySettingsTab[] = [
+  "users",
+  "general",
+  "integration",
+  "petty-cash",
+  "payment",
+  "modules",
+];
 
 /**
  * The way back: a plain click returns to the page the person came from, whichever app
  * (components/ui/BackLink.tsx, lib/backLink.ts). The href is the fallback for a new tab: Petty
- * Cash's dashboard, on the Petty Cash app (Flask's hand-off picks it when given no page).
+ * Cash's dashboard, on the Petty Cash app (the hand-off picks it when given no page).
  */
 export function settingsBackLink(entityId: string): { href: string; label: string } {
   return { href: pettyCashWebUrl(entityId), label: "Back" };
@@ -44,25 +54,14 @@ export function settingsTabs(
   access: ModuleClaims,
   current: CompanySettingsTab,
 ): SettingsTab[] {
-  const id = encodeURIComponent(company.id);
-  const flask = env.ACCOUNTS_API_URL;
-  const hub = (tab: CompanySettingsTab) => companySettingsPath(company.id, company.name, tab);
-  const tab = (label: string, page: CompanySettingsTab | null, href: string): SettingsTab =>
-    page === current ? { label, current: true } : { label, href };
-
-  const tabs: SettingsTab[] = [
-    tab(SETTINGS_TAB_LABELS.users, "users", hub("users")),
-    tab(SETTINGS_TAB_LABELS.integration, "integration", hub("integration")),
-  ];
-  if (access.pettyCash) {
-    const page = companyPath(company.id, company.name, "/settings/petty-cash");
-    tabs.push(tab("Petty Cash Settings", null, pettyCashWebUrl(company.id, page)));
-  }
-  if (access.billing) {
-    tabs.push(
-      tab("Payment Request Settings", null, `${flask}/entity/${id}/settings/payment-request`),
-    );
-  }
-  tabs.push(tab(SETTINGS_TAB_LABELS.modules, "modules", hub("modules")));
-  return tabs;
+  const shown = (page: CompanySettingsTab) =>
+    (page !== "petty-cash" || access.pettyCash) && (page !== "payment" || access.billing);
+  return ORDER.filter(shown).map((page) =>
+    page === current
+      ? { label: SETTINGS_TAB_LABELS[page], current: true }
+      : {
+          label: SETTINGS_TAB_LABELS[page],
+          href: companySettingsPath(company.id, company.name, page),
+        },
+  );
 }

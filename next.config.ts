@@ -77,6 +77,8 @@ const nextConfig: NextConfig = {
     ACCOUNTS_API_URL: process.env.ACCOUNTS_API_URL ?? "",
     SUBSCRIPTION_API_URL: process.env.SUBSCRIPTION_API_URL ?? "",
     PAYMENT_REQUEST_WEB_URL: process.env.PAYMENT_REQUEST_WEB_URL ?? "",
+    PETTY_CASH_API_URL: process.env.PETTY_CASH_API_URL ?? "",
+    PAYMENT_REQUEST_API_URL: process.env.PAYMENT_REQUEST_API_URL ?? "",
   },
   /**
    * Next 16 refuses dev-only requests (HMR, the hydration payload) from an origin other than the

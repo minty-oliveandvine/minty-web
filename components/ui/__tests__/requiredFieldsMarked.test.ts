@@ -20,7 +20,12 @@ const MARKED: Record<string, string[]> = {
     "First name",
     "Last name",
   ],
-  "features/company-settings/components/DetailsForm.tsx": ["Company name", "Country", "Currency"],
+  // the name's label is its card's title, "Entity name" (Figma SET-G)
+  "features/company-settings/components/DetailsForm.tsx": [
+    "{GENERAL_COPY.title}",
+    "Country",
+    "Currency",
+  ],
   "features/auth/routes/LoginScreen.tsx": ["First name", "Last name", "Email"],
   // one shared renderer, so its {label} covers both Billing Email and Billing company
   "features/subscription/components/AccountSheet.tsx": ["{label}"],

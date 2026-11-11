@@ -58,15 +58,27 @@ const eslintConfig = defineConfig([
         // listed before app-entities, because the first element a file matches is its type)
         {
           type: "app-subscription",
-          pattern: ["app/subscription/**/*", "app/entities/*/*/settings/modules/**/*"],
+          pattern: ["app/subscription/**/*", "app/entity/*/*/settings/modules/**/*"],
           mode: "full",
         },
         {
           type: "app-company-settings",
           pattern: [
-            "app/entities/*/*/settings/users/**/*",
-            "app/entities/*/*/settings/integration/**/*",
+            "app/entity/*/*/settings/users/**/*",
+            "app/entity/*/*/settings/general/**/*",
+            "app/entity/*/*/settings/integration/**/*",
           ],
+          mode: "full",
+        },
+        // Petty Cash Settings and Payment Settings, in the hub since 2026-11-10 (owner)
+        {
+          type: "app-petty-cash-settings",
+          pattern: "app/entity/*/*/settings/petty-cash/**/*",
+          mode: "full",
+        },
+        {
+          type: "app-payment-settings",
+          pattern: "app/entity/*/*/settings/payment/**/*",
           mode: "full",
         },
         { type: "app-entities", pattern: "app/entities/**/*", mode: "full" },
@@ -105,6 +117,18 @@ const eslintConfig = defineConfig([
               allow: ["shared", "app-company-settings", ["feature", { name: "company-settings" }]],
             },
             {
+              from: "app-petty-cash-settings",
+              allow: [
+                "shared",
+                "app-petty-cash-settings",
+                ["feature", { name: "petty-cash-settings" }],
+              ],
+            },
+            {
+              from: "app-payment-settings",
+              allow: ["shared", "app-payment-settings", ["feature", { name: "payment-settings" }]],
+            },
+            {
               from: "app-auth",
               allow: ["shared", "app-auth", ["feature", { name: "auth" }]],
             },
@@ -140,6 +164,8 @@ const eslintConfig = defineConfig([
                 "app-entities",
                 "app-auth",
                 "app-company-settings",
+                "app-petty-cash-settings",
+                "app-payment-settings",
                 "proxy",
               ],
               allow: "**",

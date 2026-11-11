@@ -74,9 +74,9 @@ test.describe("module settings page", () => {
     await stubApi(page, frame("A"));
     await handoff(page, c, MODULES(c.entityId));
 
-    await expect(page.getByRole("heading", { level: 2, name: "Modules" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 3, name: "Modules" })).toBeVisible();
     // the browser tab names the company (lib/companyTitle.ts)
-    await expect(page).toHaveTitle(`Modules - ${c.entityName}`);
+    await expect(page).toHaveTitle(`Module & Subscription - ${c.entityName}`);
     // "Back" goes where the person came from; its href is the new-tab fallback, Petty Cash's
     // dashboard on the Petty Cash app, through Flask's hand-off (Step 5, 2026-10-19)
     await expect(page.getByRole("link", { name: "Back" })).toHaveAttribute(
@@ -85,11 +85,12 @@ test.describe("module settings page", () => {
         `/entity/${c.entityId}/enter\\?next=%2Fhandoff%2Fpetty-cash-web%3Fentity_id%3D${c.entityId}(%26|$)`,
       ),
     );
-    // exact: the route announcer also reads the tab title "Modules - <company>"
-    await expect(page.getByText(c.entityName, { exact: true })).toBeVisible();
+    // the page head names the company as the page model does (the stub's frame A); exact: the
+    // route announcer also reads the tab title "Module & Subscription - <company>"
+    await expect(page.getByText("Olive & Vine Ltd", { exact: true })).toBeVisible();
     const tabs = page.getByRole("navigation", { name: "Settings sections" });
     await expect(tabs.getByRole("link", { name: "Users" })).toBeVisible();
-    await expect(tabs.getByText("Modules")).toHaveAttribute("aria-current", "page");
+    await expect(tabs.getByText("Module & Subscription")).toHaveAttribute("aria-current", "page");
 
     const petty = body(page).getByRole("article", { name: "Petty Cash" });
     const request = body(page).getByRole("article", { name: "Payment Request" });
@@ -135,7 +136,7 @@ test.describe("module settings page", () => {
     await expect(page.getByRole("dialog")).toHaveCount(0);
     expect(new URL(page.url()).pathname).toMatch(/\/settings\/modules$/);
     // The cards are gone while it shows; the Settings chrome is not.
-    await expect(body(page).getByRole("heading", { level: 2, name: "Modules" })).toHaveCount(0);
+    await expect(body(page).getByRole("heading", { level: 3, name: "Modules" })).toHaveCount(0);
     await expect(page.getByRole("heading", { level: 1, name: "Settings" })).toBeVisible();
 
     // And its button leaves for the COMPANY's page - no token trade, because the entity page
@@ -241,7 +242,7 @@ test.describe("module settings page", () => {
     const landed = body(page).locator("[data-result]");
     await expect(landed).toBeVisible();
     await expect(landed).toHaveAttribute("data-result", "celebrate");
-    await expect(body(page).getByRole("heading", { level: 2, name: "Modules" })).toHaveCount(0);
+    await expect(body(page).getByRole("heading", { level: 3, name: "Modules" })).toHaveCount(0);
     // Still on the settings page - it never navigated. (The address carries the company's
     // own name by now; the page rewrites the placeholder slug on load.)
     expect(new URL(page.url()).pathname).toMatch(/\/settings\/modules$/);

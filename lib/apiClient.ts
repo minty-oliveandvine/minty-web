@@ -1,9 +1,10 @@
 /**
- * The one way this app talks to its two backends: minty-subscription-api (`apiFetch`; `apiFetchBlob`
- * for its one route that answers a file, an invoice's PDF) and Flask's bearer surface for the
- * hub pages - the entity list and My Profile (`mintyFetch`, Minty's
- * `blueprints/shared/hub_api.py`). Both share everything below except where they go and
- * `X-Entity-Id`, which only the billing API takes.
+ * The one way this app talks to its backends: minty-subscription-api (`apiFetch`; `apiFetchBlob`
+ * for its one route that answers a file, an invoice's PDF), the accounts API's bearer surface for
+ * the hub pages - the entity list and My Profile (`mintyFetch`), and the two module APIs behind
+ * the Petty Cash Settings and Payment Settings tabs (`pettyCashFetch`, `paymentRequestFetch`;
+ * in the hub since 2026-11-10, owner). All share everything below except where they go and
+ * `X-Entity-Id`, which only the billing and Payment Request APIs take.
  *
  * - The bearer is the cookie token (lib/auth.ts); `X-Entity-Id` is OPT-IN, per call: the payer
  *   portal is person-scoped and sends none, the module settings page names its company (the
@@ -65,10 +66,16 @@ async function readBody(res: Response): Promise<unknown> {
   }
 }
 
+/**
+ * The refusal's sentence: `error`, or - from the module APIs' main line, which keeps the old
+ * shapes until the redesign's envelope is promoted - a string `detail` (as `@minty/shared`'s
+ * client reads it). A list `detail` (a schema refusal) is no sentence: the house one stands in.
+ */
 function errorSentence(body: unknown): string | null {
-  if (body && typeof body === "object" && typeof (body as { error?: unknown }).error === "string") {
-    return (body as { error: string }).error;
-  }
+  if (!body || typeof body !== "object") return null;
+  const { error, detail } = body as { error?: unknown; detail?: unknown };
+  if (typeof error === "string") return error;
+  if (typeof detail === "string") return detail;
   return null;
 }
 
@@ -176,4 +183,28 @@ export async function mintyFetch<T = unknown>(path: string, init: MintyRequest =
     handoffEntityId: getAuth()?.entityId || undefined,
   };
   return requestJson<T>(flask, path, rest);
+}
+
+/** A module API: a 401 goes back through the re-handoff, for the company the cookie names. */
+function moduleApi(base: string): Backend {
+  return { base, onUnauthorized: "handoff", handoffEntityId: getAuth()?.entityId || undefined };
+}
+
+/**
+ * Call minty-petty-cash-api (the Petty Cash Settings tab) and return the parsed JSON. The company
+ * is in the path (`/api/petty-cash/v1/companies/<id>/…`); its door never reads `X-Entity-Id`, so pass none.
+ */
+export async function pettyCashFetch<T = unknown>(path: string, init: ApiRequest = {}): Promise<T> {
+  return requestJson<T>(moduleApi(env.PETTY_CASH_API_URL), path, init);
+}
+
+/**
+ * Call minty-payment-request-api (the Payment Settings tab) and return the parsed JSON. Its door
+ * takes the company from `X-Entity-Id`: pass `entityId` on every company call.
+ */
+export async function paymentRequestFetch<T = unknown>(
+  path: string,
+  init: ApiRequest = {},
+): Promise<T> {
+  return requestJson<T>(moduleApi(env.PAYMENT_REQUEST_API_URL), path, init);
 }

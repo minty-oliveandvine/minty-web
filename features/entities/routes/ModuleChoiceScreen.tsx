@@ -111,7 +111,7 @@ export function ModuleChoiceScreen({
             {MODULE_CHOICE_COPY.none}{" "}
             <a
               className="font-semibold text-teal-strong underline"
-              href={companySettingsPath(entityId, entityName)}
+              href={companySettingsPath(entityId, entityName, "modules")}
             >
               {MODULE_CHOICE_COPY.settings}
             </a>

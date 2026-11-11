@@ -1,23 +1,60 @@
-# A company's Users and Entity & Integration tabs (`features/company-settings`)
+# A company's settings (`features/company-settings` and the shared chrome)
 
-Phase 2 (2026-10-05) moved these two of a company's settings tabs from Flask's Jinja pages to this
-app, beside the Module tab: `/entity/<shortid>/<name>/settings/users` and `…/integration`. The
-other two tabs stay in their apps (Petty Cash Settings in minty-petty-cash-web through Flask's
-`/handoff/petty-cash-web` since Step 5, Payment Request Settings in the payments app) - each app keeps its own settings. Flask is the backend (`/api/me/company/*`, Minty
-`blueprints/entity/routes/hub_settings.py`; Minty `docs/features/entities-and-members.md` has the
-rules) until `minty-accounts-api` exists.
+Every company setting lives in this app since 2026-11-10 (owner), on one page with six tabs
+(Figma `LGkVZqcyxSIh6pp5ihDjXw`, section 353:999 - the frames are the visual design; behaviour
+follows the rules below):
+
+| Tab                                   | Address (`/entity/<shortid>/<name>/settings/…`) | Feature                                                                           |
+| ------------------------------------- | ----------------------------------------------- | --------------------------------------------------------------------------------- |
+| Users                                 | `users`                                         | `features/company-settings`                                                       |
+| General                               | `general`                                       | `features/company-settings`                                                       |
+| Integration                           | `integration`                                   | `features/company-settings`                                                       |
+| Petty Cash Settings (Petty Cash on)   | `petty-cash`                                    | `features/petty-cash-settings` ([petty-cash-settings.md](petty-cash-settings.md)) |
+| Payment Settings (Payment Request on) | `payment`                                       | `features/payment-settings` ([payment-settings.md](payment-settings.md))          |
+| Module & Subscription                 | `modules`                                       | `features/subscription` ([subscriptions.md](subscriptions.md) §9)                 |
+
+Users and the old Entity & Integration came from Flask's Jinja pages in phase 2 (2026-10-05); on
+2026-11-10 Entity & Integration split into General and Integration, and Petty Cash Settings and
+Payment Settings moved in from minty-petty-cash-web and minty-payment-request-web, whose old
+addresses now only redirect. accounts-api is the backend for this feature (`/api/me/company/*`,
+`hub/company.py`).
 
 ## Getting here
 
-- From this app: the pill row on any of the three tabs (`lib/settingsTabs.ts`).
-- From Flask and the payments app: their old addresses, `/entity/<co>/settings/users|integration`,
-  hand over here with a token scoped to the company (Flask `routes/settings.py::_to_hub_tab`).
-  Whatever Flask flashed on the way travels signed in `?flash=` and is shown once as a toast - how
-  a Xero reconnect's outcome arrives (Connect / Reconnect leave for Flask's OAuth and come back
-  through that address). `?xero_conflict=` rides along the same way when that connect was refused
-  because another company holds the organisation.
-- The company comes from the address (`components/ui/CompanyFromAddress`); every call names it
-  with `?entity=`, and Flask checks it is one of the person's.
+- The tab row, from any tab (`lib/settingsTabs.ts`; a module's tab hides when the module is off -
+  the page's own module list once loaded, the token's claims until then).
+- The side menu's Settings opens General (`companySettingsPath`'s default, `lib/hubPaths.ts`); the
+  module choice's "no module" link opens Module & Subscription.
+- From the other apps and old links: accounts-api's `/entity/<co>/settings/users|general|
+integration|petty-cash|payment-request|modules` hand over here with a token scoped to the company
+  (`hub/redirects.py` `_to_hub_tab`; `payment-request` lands on the `payment` tab). Whatever it
+  flashed on the way travels signed in `?flash=` and is shown once as a toast - how a Xero
+  connect's outcome arrives on Integration. `?xero_conflict=` rides along the same way when that
+  connect was refused because another company holds the organisation.
+- The company comes from the address (`components/ui/CompanyFromAddress`); every accounts-api call
+  names it with `?entity=`, and accounts-api checks it is one of the person's.
+
+## The page (`components/ui/SettingsPage.tsx`, `SettingsShell.tsx`, `SettingsTabs.tsx`)
+
+The app's bar (Back, "Settings", the initials, the menu), then an 880px column: the company's name
+(13px, muted), "Settings" (28px bold, an h2 under the bar's h1), the tab row - plain tabs on a
+hairline, the open one underlined in teal and bold (`aria-current="page"`) - and the tab's cards.
+On a phone the tab row scrolls sideways inside itself (never the page) and starts scrolled so the
+open tab is in view. Every tab is a plain link to this app's page, so the leave guard sees it.
+
+The pieces every tab is built from (`components/ui/SettingsShell.tsx`): `SettingsCard` (white,
+radius 14, the frames' edge; a region named by its title), `ReadOnlyNotice`, `LoadState` and
+`SettingsDialog` (the frames' dialog: the #111313 scrim at 48%, radius 16, 460px, Escape and the
+scrim close it unless busy, focus starts on its first button and returns to the opener).
+Buttons: `components/ui/settingsButtons.ts` - `SETTINGS_PRIMARY` (the Minty Action fill
+`#3CBCC3` with its teal shadow; hover `#35B2B9`, pressed `#2FA4AB`; disabled grey),
+`SETTINGS_OUTLINE`, `SETTINGS_DANGER` (outlined red) and `SETTINGS_DANGER_FILL`; radius 12, 14px
+SemiBold, at least 44px. Fields: `components/ui/settingsFields.ts`. Colours are tokens
+(`--set-*`, `--action*` in `app/globals.css`), never a hex in a component. Inter stays the body
+face (the frames' Plus Jakarta Sans is the wordmark's only, CLAUDE.md).
+
+The browser tab names the tab and the company ("General - <company>", `SETTINGS_TAB_LABELS`,
+`lib/companyTitle.ts`, re-exported as each route's `generateMetadata`).
 
 ## Users
 
@@ -32,24 +69,67 @@ modal family's frame; Enter sends. Invitations waiting: Resend counts Flask's
 cooldown down (`retry_after`), Cancel asks first. An address is drawn as text - the Jinja tab built
 these cards with `innerHTML`, which let an invited address run script.
 
-## Entity & Integration
+## General (Figma SET-G)
 
-The company's name (admins), country and currency (accountants and up), saved with only what
-changed. **This is the one place the country and currency change after the company is created**
-(owner, 2026-11-03; Petty Cash Settings no longer has a card for them, and its Setup Required
-gate's "Choose your company's currency" links here): a country sent alone brings its own
-currency, and the currency rebuilds the company's notes and coins (`entity_cash_setting`, Flask's
-`sync_cash_settings`); Flask's refusal stays under the form. An emptied name is never sent (Flask refuses it):
-"The company name is still empty. Add the company name to continue." shows under the field once
-Save is tried or the field is left, and goes as soon as the user types. Read-only below that, with the reason said. The
-Xero card: Connected / Reconnect needed (a grant revoked at Xero, or no token) / Not connected, the
-organisation and "Last connected:" always - kept through a disconnect, "N/A" only when the company
-was never connected (Flask sends `last_connected_at` as is, no fallback). A company connected once
-offers Reconnect, never Connect, even after a deliberate disconnect. Connect / Reconnect navigate to Flask's
-`/entity/<id>/enter?…&next=/xero_reconnect?entity_id=<id>`; Disconnect asks first (it was one
-click) and shows the new state. Since 2026-11-10 a disconnect keeps the organisation, so the card
-then reads Reconnect needed with the organisation's name, and Disconnect is gone while `status` is
-`disconnected` (nothing is left to drop).
+The **Entity name** card - "The name people see for this company" - with the country and currency
+under it (the frame draws only the name; General = name + country + currency, owner 2026-11-10).
+The name is an admin's to change; the country and currency an accountant's and up; saved with
+only what changed (`PATCH /api/me/company/integration`; the page model is Integration's,
+`hooks/useIntegrationTab.ts`). **This is the one place the country and currency change after the
+company is created** (owner, 2026-11-03; Petty Cash's Setup Required gate and the bill form's
+no-currency line link here): a country sent alone brings its own currency, and the currency
+rebuilds the company's notes and coins (`hub/cash_settings.py`). **Save changes** waits for a
+change and says "No changes to save yet" beside it; a refusal stays under the form. An emptied
+name is never sent: "The company name is still empty. Add the company name to continue." shows
+under the field once Save is tried or the field is left, and goes as soon as the user types.
+Read-only with the reason said above the card.
+
+### Leaving with changes not saved (General)
+
+An unsaved name, country or currency (and only where the viewer may change them) arms the leave
+guard, `@minty/shared/leaveGuard`: every way out asks "Leave without saving?" first
+(`components/ui/LeaveDialog.tsx`, Figma A-11) - _Discard changes_ puts the saved values back and
+goes on, _Go Back_, Escape and the backdrop stay.
+
+What it holds: the tab row, the header's Back and the sidebar's
+links - all anchors, caught on `window` in the capture phase, so before their own handlers run -
+and Back / Forward, which are soft navigations no `beforeunload` could catch (the guard keeps a
+history sentinel for them). A reload, a typed address and a closed tab get the browser's own
+prompt. Logout is a button rather than a link, so `components/ui/SideMenu.tsx` asks through
+`guardLeave` instead; it has to, because `logOut` clears the token before it navigates.
+
+A SUCCESSFUL save leaves the page clean, so nothing is asked after it. A refused one
+does not: the typed values are still there, and still guarded. The draft and the dirty test live in
+`hooks/useDetailsDraft.ts` - the form used to hold them and be remounted by a `key`, which the
+guard could not see.
+
+## Integration (Figma SET-1, SET-2, SET-2b)
+
+The Xero card (`components/XeroCard.tsx`): the Xero mark, what the connection means and its pill;
+under a hairline, Last connected ("01 Sep 2026", Hong Kong's day - `formatInstantDay`; "Never")
+and the Xero organisation ("None yet"); then the one thing to do. Four states - two drawn in the
+frames, two filling gaps they leave:
+
+- **Not connected** (SET-1): "Not connected to Xero / Reports stay in Minty until you connect.",
+  **Connect to Xero** (Reconnect when it was connected once), and "Prefer some help first? Our
+  service team can set up the Xero connection with you." (plain text, as drawn - the Minty cat
+  on every page is the way to ask; `@minty/shared` has no call to open its chat from a page).
+- **Connected** (SET-2): "Connected to Xero / Reports and petty cash publish to <org> in Xero.",
+  **Disconnect from Xero** (outlined red), which asks first (SET-2b): "Disconnect from Xero? /
+  Minty carries on as normal — reports, petty cash, all of it. They just stop publishing to Xero.
+  Your account matches are kept, so reconnecting later is quicker." Cancel / Disconnect. True since
+  2026-11-10: a disconnect keeps the organisation, its chart, contacts and mappings
+  (accounts-api `xero/services/disconnect.py`). The old dialog said they were cleared.
+- **Disconnected** (filled in): `status` `disconnected` with the organisation kept -
+  "Disconnected from Xero / Nothing is published to <org> until you reconnect.", **Reconnect to
+  Xero**, nothing left to disconnect.
+- **Reconnect needed** (filled in): still connected but Xero no longer accepts Minty's sign-in -
+  "Xero needs you to sign in again", the same line, Reconnect and Disconnect.
+
+Connect / Reconnect navigate to accounts-api's `/entity/<id>/enter?…&next=/xero_reconnect?entity_id=<id>`.
+**Not built yet:** Figma's SET-1b ("One step before we connect") and the matching screens (frames
+3, 3b, 4, 5) - a Minty-only company connecting needs account matching first, and today's connect
+replaces its own accounts and contacts (Phase 2 of the settings plan).
 
 ### The organisation is already in use (2026-10-09)
 
@@ -76,56 +156,15 @@ on is a real disconnect of another company and that is asked for:
 A refused release stays **in** the dialog (`role="alert"`) and it stays open to retry — the
 success case leaves the page, so a toast would not outlive it.
 
-### Leaving with changes not saved
-
-An unsaved name, country or currency (and only where the viewer may change them) arms the leave
-guard, `lib/leaveGuard.ts`: every way out asks "Leave without saving?" first
-(`components/ui/LeaveDialog.tsx`, Figma A-11) - _Discard changes_ puts the saved values back and
-goes on, _Go Back_, Escape and the backdrop stay.
-
-What it holds: the pill row, the header's Back, Connect / Reconnect to Xero and the sidebar's
-links - all anchors, caught on `window` in the capture phase, so before their own handlers run -
-and Back / Forward, which are soft navigations no `beforeunload` could catch (the guard keeps a
-history sentinel for them). A reload, a typed address and a closed tab get the browser's own
-prompt. Logout is a button rather than a link, so `components/ui/SideMenu.tsx` asks through
-`guardLeave` instead; it has to, because `logOut` clears the token before it navigates.
-
-A SUCCESSFUL save or disconnect leaves the page clean, so nothing is asked after it. A refused one
-does not: the typed values are still there, and still guarded. The draft and the dirty test live in
-`hooks/useDetailsDraft.ts` - the form used to hold them and be remounted by a `key`, which the
-guard could not see.
-
-## Layout and look
-
-The Module tab's chrome (`components/SettingsShell.tsx`): `AppHeader` (Back, "Settings", the
-company, the initials, the menu), the sticky pill row in a 1024px column, then Payment Request Settings'
-cards. Members stack on a phone (name over role and actions), one line from 640px; every control is
-at least 44px; nothing is wider than the screen at 360 / 768 / 1440 (`e2e/12_company_settings.spec.ts`).
-
-Every button on the two tabs, the Invite dialog's included, comes from
-`components/buttonClasses.ts` (2026-11-05): `SETTINGS_PRIMARY` (the flat teal: Save Changes,
-Invite, Send invitation, Connect / Reconnect to Xero), `SETTINGS_OUTLINE` (Resend, the dialog's
-Cancel) and `SETTINGS_DANGER` (Disconnect, cancelling an invitation). Disabled is the same
-everywhere: half opacity, the not-allowed cursor, no hover. The billing sheets' gradient
-`SHEET_PRIMARY` is not used here; the shared `ConfirmDialog` keeps its own buttons.
-
-The browser tab names the company (2026-10-05), as Flask's and Payment Request's do: "Users -
-<company>", "Entity & Integration - <company>" (and the Module tab's "Modules - <company>"). The
-words are the pills' (`SETTINGS_TAB_LABELS`, `lib/settingsTabs.ts`); the title is the server's
-(`lib/companyTitle.ts`, re-exported as each page's `generateMetadata` on the route file's one
-line): the company is the `minty_entity_name` cookie's when the address names that company, and
-the tab says only the page while the address names another (the hand-off is on its way).
-
 ## Tests
 
-`features/company-settings/__tests__/screens.test.tsx` (each row's offers, the address as text, a
-role change, a refused removal keeping its dialog, the invite, the cooldown, the flashed notice; a
-save of only what changed, read-only, the Xero card's states and Disconnect; the leave guard's
-three cases - a pill and the Xero link asking, Go Back keeping what was typed, Discard changes
-putting the saved value back, nothing asked after a save or of a viewer),
-`__tests__/reexports.test.ts`, `e2e/12_company_settings.spec.ts` (and there what only a real
-browser shows: the browser's own Back held by the sentinel, the header's Back link, and the dialog
-at 360 / 768 / 1440). The guard itself: `lib/__tests__/leaveGuard.test.tsx` (which links are held,
-which go straight through). Flask's side: Minty
-`tests/test_hub_company_settings.py` (the company from one source, the four roles, addresses,
-rank, the guards, the hand-overs).
+`features/company-settings/__tests__/screens.test.tsx` (the chrome's six tabs; Users: each row's
+offers, the address as text, a role change, a refused removal keeping its dialog, the invite, the
+cooldown, the flashed notice; General: SET-G's card and "No changes to save yet", a save of only
+what changed, the empty name, read-only, the leave guard's cases; Integration: SET-1, SET-2 and
+SET-2b, the disconnected and reconnect-needed states, read-only, the refused connect and its
+move), `__tests__/reexports.test.ts`, `lib/__tests__/settingsTabs.test.ts`,
+`e2e/12_company_settings.spec.ts` (what only a real browser shows: the browser's own Back held by
+the sentinel, the header's Back link, Disconnect from Xero, the tab row, and nothing wider than the
+screen at 360 / 768 / 1440). The guard itself: `@minty/shared`'s `leaveGuard` tests. accounts-api's
+side: `hub/tests/test_redirects.py` (the hand-overs), `hub/tests/` for `/api/me/company/*`.

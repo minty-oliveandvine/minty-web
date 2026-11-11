@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * The Entity & Integration tab's state: the page from Flask, Save (only what changed is sent),
+ * The General and Integration tabs' state (one page model): the page from Flask, Save (only what changed is sent),
  * and Disconnect. Each answers with the fresh page, so what is shown is what Flask holds; Flask's
  * sentence is what a person reads (toasts), and a save refused under a field stays on the form.
  */

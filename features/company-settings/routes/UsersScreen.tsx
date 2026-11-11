@@ -14,7 +14,7 @@ import { useState } from "react";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 import type { Invitation, Member } from "@/features/company-settings/api/companySettings";
-import { SETTINGS_PRIMARY } from "@/features/company-settings/components/buttonClasses";
+import { SETTINGS_PRIMARY } from "@/components/ui/settingsButtons";
 import { InviteDialog } from "@/features/company-settings/components/InviteDialog";
 import { MemberRow } from "@/features/company-settings/components/MemberRow";
 import { PendingInvitations } from "@/features/company-settings/components/PendingInvitations";
@@ -23,12 +23,10 @@ import {
   ReadOnlyNotice,
   SettingsCard,
   SettingsShell,
-} from "@/features/company-settings/components/SettingsShell";
+} from "@/components/ui/SettingsShell";
 import { useUsersTab } from "@/features/company-settings/hooks/useUsersTab";
 
 export const USERS_COPY = {
-  title: "Users",
-  lead: "Who is in this company, what each person may do, and the invitations waiting.",
   members: "Members",
   membersLead: "Each person's role decides what they can do here.",
   invitations: "Invitations",
@@ -52,13 +50,7 @@ export function UsersScreen({
   const shown = page?.company ?? company;
 
   return (
-    <SettingsShell
-      company={shown}
-      modules={page?.modules ?? null}
-      tab="users"
-      title={USERS_COPY.title}
-      lead={USERS_COPY.lead}
-    >
+    <SettingsShell company={shown} modules={page?.modules ?? null} tab="users">
       {tab.status !== "ready" || !page ? (
         <LoadState
           status={tab.status === "error" ? "error" : "loading"}
