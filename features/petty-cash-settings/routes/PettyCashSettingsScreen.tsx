@@ -48,6 +48,7 @@ import { connectXeroPath } from "@/features/petty-cash-settings/lib/paths";
 import {
   KIND,
   movedIds,
+  placedIds,
   shownTypes,
   viewOnly,
   type MethodType,
@@ -136,7 +137,6 @@ function SettingsBody({
   const entityId = company.id;
   const [read, setRead] = useState(initial);
   const [busy, setBusy] = useState<string | null>(null);
-  const [menu, setMenu] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<{
     type: MethodType;
     method: SalesMethod;
@@ -155,22 +155,6 @@ function SettingsBody({
     setDirty({ mapping: false, codes: false });
     setResetKey((k) => k + 1);
   });
-
-  useEffect(() => {
-    if (menu === null) return;
-    const onDown = (e: MouseEvent) => {
-      if (!(e.target as Element).closest?.("[data-row-menu]")) setMenu(null);
-    };
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setMenu(null);
-    };
-    document.addEventListener("mousedown", onDown);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("mousedown", onDown);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [menu]);
 
   /** One call: the busy overlay, and a refusal's sentence as the error toast; null when it did not go through. */
   const call: Call = useCallback(
@@ -266,6 +250,15 @@ function SettingsBody({
       if (ids)
         void write("/sales-methods/order", { method: "PUT", json: { type, method_ids: ids } });
     },
+    place: (type, from, to) => {
+      const ids = placedIds(
+        read.sales_methods[type].map((m) => m.id),
+        from,
+        to,
+      );
+      if (ids)
+        void write("/sales-methods/order", { method: "PUT", json: { type, method_ids: ids } });
+    },
     remove: (type, method) => setConfirmDelete({ type, method }),
     say: (message) => showToast(message, "error"),
   };
@@ -298,8 +291,6 @@ function SettingsBody({
             available={read.available[type]}
             permissions={perms}
             busy={busy !== null}
-            menuOpen={menu}
-            onMenu={setMenu}
             actions={actions}
           />
         ))}

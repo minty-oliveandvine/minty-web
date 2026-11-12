@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { type DragEvent, useEffect, useId, useRef, useState } from "react";
 
 import { SETTINGS_OUTLINE, SETTINGS_PRIMARY } from "@/components/ui/settingsButtons";
 import { SETTINGS_FIELD_ERROR, SETTINGS_LABEL } from "@/components/ui/settingsFields";
@@ -36,6 +36,8 @@ export type MethodActions = {
   add: (type: MethodType, body: { sale_info_id: string } | { name: string }) => Promise<boolean>;
   rename: (method: SalesMethod, name: string) => Promise<boolean>;
   move: (type: MethodType, index: number, step: -1 | 1) => void;
+  /** A dragged method dropped on the row at `to`. */
+  place: (type: MethodType, from: number, to: number) => void;
   remove: (type: MethodType, method: SalesMethod) => void;
   /** The error toast. */
   say: (message: string) => void;
@@ -53,8 +55,6 @@ export function SalesMethodsCard({
   available,
   permissions,
   busy,
-  menuOpen,
-  onMenu,
   actions,
   groups,
 }: {
@@ -63,9 +63,6 @@ export function SalesMethodsCard({
   available: CatalogueMethod[];
   permissions: SettingsPermissions;
   busy: boolean;
-  /** The method whose ⋮ is open (one on the page at a time), or null. */
-  menuOpen: string | null;
-  onMenu: (id: string | null) => void;
   actions: MethodActions;
   /** The API's `sales_groups`: a Non-cash company's electronic card is titled Non-cash. */
   groups?: SalesGroups;
@@ -76,8 +73,11 @@ export function SalesMethodsCard({
     permissions.rename_sales_method ||
     permissions.remove_sales_method ||
     permissions.reorder_sales_methods;
-  const hasMenu = permissions.reorder_sales_methods || permissions.remove_sales_method;
+  const canMove = permissions.reorder_sales_methods && methods.length > 1;
   const [renaming, setRenaming] = useState<string | null>(null);
+  // the row being dragged and the row it is over
+  const [dragFrom, setDragFrom] = useState<number | null>(null);
+  const [dragOver, setDragOver] = useState<number | null>(null);
   // a shared method's name was clicked: why it can't be renamed, under its row
   const [sharedNote, setSharedNote] = useState<string | null>(null);
   const noteId = useId();
@@ -100,7 +100,27 @@ export function SalesMethodsCard({
         aria-label={`${kind.title} methods`}
       >
         {methods.map((method, index) => (
-          <li key={method.id} data-method={method.name} className="border-b border-set-line">
+          <li
+            key={method.id}
+            data-method={method.name}
+            onDragOver={(e) => {
+              if (dragFrom === null) return;
+              e.preventDefault();
+              if (dragOver !== index) setDragOver(index);
+            }}
+            onDragLeave={() => {
+              if (dragOver === index) setDragOver(null);
+            }}
+            onDrop={(e) => {
+              e.preventDefault();
+              if (dragFrom !== null && dragFrom !== index) actions.place(type, dragFrom, index);
+              setDragFrom(null);
+              setDragOver(null);
+            }}
+            className={`border-b transition-[border-color,opacity] ${
+              dragOver === index && dragFrom !== index ? "border-set-tab-ink" : "border-set-line"
+            } ${dragFrom === index ? "opacity-45" : ""}`}
+          >
             <div className="flex min-h-12 min-w-0 items-center justify-between gap-3 py-0.5">
               {renaming === method.id ? (
                 <RenameBox
@@ -130,38 +150,37 @@ export function SalesMethodsCard({
               ) : (
                 <span className="min-w-0 truncate text-[14.5px] text-set-ink">{method.name}</span>
               )}
-              {hasMenu && renaming !== method.id ? (
-                <RowMenu
-                  method={method}
-                  open={menuOpen === method.id}
-                  onToggle={() => onMenu(menuOpen === method.id ? null : method.id)}
-                  items={[
-                    ...(permissions.reorder_sales_methods
-                      ? [
-                          {
-                            label: "Move up",
-                            disabled: busy || index === 0,
-                            run: () => actions.move(type, index, -1),
-                          },
-                          {
-                            label: "Move down",
-                            disabled: busy || index === methods.length - 1,
-                            run: () => actions.move(type, index, 1),
-                          },
-                        ]
-                      : []),
-                    ...(permissions.remove_sales_method
-                      ? [
-                          {
-                            label: "Delete",
-                            disabled: busy,
-                            run: () => actions.remove(type, method),
-                          },
-                        ]
-                      : []),
-                  ]}
-                  close={() => onMenu(null)}
-                />
+              {renaming !== method.id && (permissions.remove_sales_method || canMove) ? (
+                <div className="flex shrink-0 items-center gap-1">
+                  {permissions.remove_sales_method ? (
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => actions.remove(type, method)}
+                      aria-label={`Delete ${method.name}`}
+                      title="Delete"
+                      className="inline-flex h-11 w-11 items-center justify-center rounded-[12px] text-set-mute transition-colors enabled:hover:bg-[#fdecec] enabled:hover:text-[#d9534f] disabled:cursor-not-allowed"
+                    >
+                      <Icon name="delete" className="text-[22px]" />
+                    </button>
+                  ) : null}
+                  {canMove ? (
+                    <DragHandle
+                      label={`Move ${method.name}`}
+                      disabled={busy}
+                      onDragStart={(e) => {
+                        setDragFrom(index);
+                        e.dataTransfer?.setData("text/plain", method.id);
+                        if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
+                      }}
+                      onDragEnd={() => {
+                        setDragFrom(null);
+                        setDragOver(null);
+                      }}
+                      onStep={(step) => actions.move(type, index, step)}
+                    />
+                  ) : null}
+                </div>
               ) : null}
             </div>
             {sharedNote === method.id ? (
@@ -270,68 +289,39 @@ function RenameBox({
 }
 
 /** The row's ⋮, then a card of its actions. */
-function RowMenu({
-  method,
-  open,
-  onToggle,
-  items,
-  close,
+/** The handle (owner, 2026-11-12: no Move up / Move down): drag it to reorder; with the keyboard,
+ * the up and down arrows move the method one place. */
+function DragHandle({
+  label,
+  disabled,
+  onDragStart,
+  onDragEnd,
+  onStep,
 }: {
-  method: SalesMethod;
-  open: boolean;
-  onToggle: () => void;
-  items: { label: string; disabled: boolean; run: () => void }[];
-  close: () => void;
+  label: string;
+  disabled: boolean;
+  onDragStart: (e: DragEvent) => void;
+  onDragEnd: () => void;
+  onStep: (step: -1 | 1) => void;
 }) {
-  const menuId = useId();
-  const button = useRef<HTMLButtonElement>(null);
   return (
-    <div className="relative flex shrink-0 items-center" data-row-menu>
-      <button
-        ref={button}
-        type="button"
-        onClick={onToggle}
-        aria-haspopup="menu"
-        aria-expanded={open}
-        aria-controls={open ? menuId : undefined}
-        aria-label={`Actions for ${method.name}`}
-        className="inline-flex h-11 w-11 items-center justify-center rounded-[12px] text-set-ink-2 transition-colors hover:bg-set-pill"
-      >
-        <Icon name="more_vert" className="text-[22px]" />
-      </button>
-      {open ? (
-        <ul
-          id={menuId}
-          role="menu"
-          aria-label={`Actions for ${method.name}`}
-          onKeyDown={(e) => {
-            if (e.key === "Escape") {
-              e.preventDefault();
-              close();
-              button.current?.focus();
-            }
-          }}
-          className="absolute top-[calc(100%+0.25rem)] right-0 z-30 m-0 w-[200px] list-none rounded-[12px] border border-set-edge bg-white py-1.5 shadow-[0_8px_24px_rgba(0,0,0,0.12)]"
-        >
-          {items.map((item) => (
-            <li key={item.label} role="none">
-              <button
-                type="button"
-                role="menuitem"
-                disabled={item.disabled}
-                onClick={() => {
-                  close();
-                  item.run();
-                }}
-                className="block min-h-11 w-full px-4 text-left text-sm text-set-ink transition-colors enabled:hover:bg-set-pill disabled:cursor-not-allowed disabled:text-set-mute"
-              >
-                {item.label}
-              </button>
-            </li>
-          ))}
-        </ul>
-      ) : null}
-    </div>
+    <button
+      type="button"
+      aria-label={label}
+      aria-description="Drag to reorder, or use the up and down arrow keys."
+      title="Drag to reorder"
+      draggable={!disabled}
+      onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
+      onKeyDown={(e) => {
+        if (disabled || (e.key !== "ArrowUp" && e.key !== "ArrowDown")) return;
+        e.preventDefault();
+        onStep(e.key === "ArrowUp" ? -1 : 1);
+      }}
+      className="inline-flex h-11 w-11 cursor-grab items-center justify-center rounded-[12px] text-set-mute transition-colors hover:bg-set-pill hover:text-set-ink active:cursor-grabbing"
+    >
+      <Icon name="drag_handle" className="text-[22px]" />
+    </button>
   );
 }
 

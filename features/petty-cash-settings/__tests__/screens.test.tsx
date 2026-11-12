@@ -4,7 +4,7 @@
 // 2026-11-11). minty-petty-cash-api is answered per path and method; every call names the
 // company in its path and never with X-Entity-Id.
 
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -232,6 +232,50 @@ describe("PettyCashSettingsScreen", () => {
     expect(screen.queryByText("No delivery methods yet.")).toBeNull();
   });
 
+  it("each method has the bin and the drag handle, no menu, and a drop reorders", async () => {
+    // owner, 2026-11-12: the list keeps its rows; the bin and the handle replace the menu
+    let state = settings({
+      sales_methods: { electronic: [VISA, ALIPAY, m("o1", "Octopus")], delivery: [FOODPANDA] },
+    });
+    api({
+      "GET /settings": () => json(state),
+      "GET /settings/xero": () => json(xero({ live: false })),
+      "PUT /sales-methods/order": (body) => {
+        const ids = (body as { method_ids: string[] }).method_ids;
+        state = {
+          ...state,
+          sales_methods: {
+            ...state.sales_methods,
+            electronic: ids.map((id) => state.sales_methods.electronic.find((x) => x.id === id)!),
+          },
+        };
+        return json({ ...state, message: "Order saved." });
+      },
+    });
+    show();
+    const list = await drawn();
+
+    const rows = within(list).getAllByRole("listitem");
+    expect(rows.map((li) => li.querySelector("img"))).toEqual([null, null, null]);
+    const visa = within(rows[0]);
+    expect(visa.getByRole("button", { name: "Delete Visa" })).toBeInTheDocument();
+    const handle = visa.getByRole("button", { name: "Move Visa" });
+    expect(handle).toHaveAttribute("draggable", "true");
+
+    // Visa dropped on Octopus: the whole list in its new order
+    fireEvent.dragStart(handle);
+    fireEvent.dragOver(rows[2]);
+    fireEvent.drop(rows[2]);
+    expect(await screen.findByText("Order saved.")).toBeInTheDocument();
+    expect(sent("PUT /sales-methods/order")).toEqual([
+      { type: "electronic", method_ids: ["v2", "o1", "v1"] },
+    ]);
+    // dropped on itself: nothing is sent
+    fireEvent.dragStart(within(rows[0]).getByRole("button", { name: /^Move / }));
+    fireEvent.drop(rows[0]);
+    expect(sent("PUT /sales-methods/order")).toHaveLength(1);
+  });
+
   it("adds from the catalogue, renames, moves and deletes - each the API's answer, its sentence shown", async () => {
     let state = settings();
     const answer = (next: SettingsRead, message: string, status = 200) => {
@@ -319,9 +363,10 @@ describe("PettyCashSettingsScreen", () => {
     expect(sent("PUT /sales-methods/v2")).toEqual([{ name: "Alipay HK" }]);
 
     // move: the type's whole list in its new order
-    await user.click(card("Electronic").getByRole("button", { name: "Actions for Visa" }));
-    expect(card("Electronic").getByRole("menuitem", { name: "Move up" })).toBeDisabled();
-    await user.click(card("Electronic").getByRole("menuitem", { name: "Move down" }));
+    // no Move up / Move down (owner, 2026-11-12): the handle, dragged or with the arrow keys
+    expect(card("Electronic").queryByRole("menuitem")).toBeNull();
+    card("Electronic").getByRole("button", { name: "Move Visa" }).focus();
+    await user.keyboard("{ArrowDown}");
     expect(await screen.findByText("Order saved.")).toBeInTheDocument();
     expect(sent("PUT /sales-methods/order")).toEqual([
       { type: "electronic", method_ids: ["v2", "v1", "o1"] },
@@ -337,8 +382,7 @@ describe("PettyCashSettingsScreen", () => {
     expect(card("Delivery").queryByRole("textbox")).toBeNull();
 
     // delete asks first: Go back sends nothing, Delete removes it
-    await user.click(card("Delivery").getByRole("button", { name: "Actions for Foodpanda" }));
-    await user.click(card("Delivery").getByRole("menuitem", { name: "Delete" }));
+    await user.click(card("Delivery").getByRole("button", { name: "Delete Foodpanda" }));
     expect(screen.getByRole("dialog", { name: "Delete Delivery Method" })).toHaveTextContent(
       'Are you sure you want to delete "Foodpanda"? This action cannot be undone.',
     );
@@ -347,8 +391,7 @@ describe("PettyCashSettingsScreen", () => {
     await user.click(dialog.getByRole("button", { name: "Go back" }));
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(sent("DELETE /sales-methods/d1")).toHaveLength(0);
-    await user.click(card("Delivery").getByRole("button", { name: "Actions for Foodpanda" }));
-    await user.click(card("Delivery").getByRole("menuitem", { name: "Delete" }));
+    await user.click(card("Delivery").getByRole("button", { name: "Delete Foodpanda" }));
     dialog = within(screen.getByRole("dialog", { name: "Delete Delivery Method" }));
     expect(dialog.getByRole("button", { name: "Delete" }).className).toBe(SETTINGS_DANGER_FILL);
     await user.click(dialog.getByRole("button", { name: "Delete" }));
@@ -529,7 +572,7 @@ describe("PettyCashSettingsScreen", () => {
     await screen.findByRole("combobox", { name: /Select Petty Cash bank account/ });
     expect(screen.queryByRole("button", { name: "Save Changes" })).toBeNull();
     expect(screen.queryByRole("button", { name: /Add New Method/ })).toBeNull();
-    expect(screen.queryByRole("button", { name: /^Actions for/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: /^(Move|Delete) / })).toBeNull();
     expect(card("Electronic").queryByRole("button", { name: "Visa" })).toBeNull();
     expect(card("Electronic").getByText("Visa")).toBeInTheDocument();
     for (const box of screen.getAllByRole("combobox")) expect(box).toBeDisabled();

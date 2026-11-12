@@ -17,6 +17,7 @@ import {
   kindFor,
   methodNameProblem,
   movedIds,
+  placedIds,
   shownTypes,
   sharedRenameMessage,
   viewOnly,
@@ -149,6 +150,19 @@ describe("a shared method's rename", () => {
     expect(sharedRenameMessage("Visa")).toBe(
       "Other companies use Visa too, so it can't be renamed here. Delete it and add a new method instead.",
     );
+  });
+});
+
+describe("a dragged method dropped on another row", () => {
+  it("takes that row's place and gives the type's full list in its new order", () => {
+    expect(placedIds(["a", "b", "c"], 0, 2)).toEqual(["b", "c", "a"]);
+    expect(placedIds(["a", "b", "c"], 2, 0)).toEqual(["c", "a", "b"]);
+  });
+
+  it("is nothing for a drop on itself or outside the list", () => {
+    expect(placedIds(["a", "b"], 1, 1)).toBeNull();
+    expect(placedIds(["a", "b"], 0, 2)).toBeNull();
+    expect(placedIds(["a", "b"], -1, 0)).toBeNull();
   });
 });
 

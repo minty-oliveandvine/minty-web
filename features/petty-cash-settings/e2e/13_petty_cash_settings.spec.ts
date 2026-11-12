@@ -291,12 +291,11 @@ const rows = (page: Page, title: string) =>
   card(page, title).getByRole("list").getByRole("listitem");
 const toast = (page: Page, text: string | RegExp) =>
   page.locator("[data-toast-type]").filter({ hasText: text });
-const rowMenu = async (page: Page, title: string, name: string) => {
-  await card(page, title)
-    .getByRole("button", { name: `Actions for ${name}` })
-    .click();
-  return card(page, title).getByRole("menu");
-};
+// each row's bin and drag handle (owner, 2026-11-12: they replace the ⋮ menu)
+const bin = (page: Page, title: string, name: string) =>
+  card(page, title).getByRole("button", { name: `Delete ${name}` });
+const handle = (page: Page, title: string, name: string) =>
+  card(page, title).getByRole("button", { name: `Move ${name}` });
 
 test.describe("petty cash settings", () => {
   test.beforeEach(async () => {
@@ -519,11 +518,7 @@ test.describe("petty cash settings", () => {
 
   test("removing: the confirm, Go back sends nothing, Delete switches it off", async ({ page }) => {
     const sent = await open(page);
-    await (
-      await rowMenu(page, "Delivery", "Foodpanda")
-    )
-      .getByRole("menuitem", { name: "Delete" })
-      .click();
+    await bin(page, "Delivery", "Foodpanda").click();
     const dialog = page.getByRole("dialog", { name: "Delete Delivery Method" });
     await expect(dialog).toContainText(
       'Are you sure you want to delete "Foodpanda"? This action cannot be undone.',
@@ -533,11 +528,7 @@ test.describe("petty cash settings", () => {
     await expect(dialog).toHaveCount(0);
     expect(sent).toEqual([]);
 
-    await (
-      await rowMenu(page, "Delivery", "Foodpanda")
-    )
-      .getByRole("menuitem", { name: "Delete" })
-      .click();
+    await bin(page, "Delivery", "Foodpanda").click();
     await page
       .getByRole("dialog", { name: "Delete Delivery Method" })
       .getByRole("button", { name: "Delete" })
@@ -550,19 +541,13 @@ test.describe("petty cash settings", () => {
     await expect(card(page, "Delivery").getByText("No delivery methods yet.")).toBeVisible();
   });
 
-  test("reordering: Move up sends the type's whole list in its new order", async ({ page }) => {
+  test("reordering: a dragged method dropped on another row sends the type's whole list in its new order", async ({
+    page,
+  }) => {
     const sent = await open(page);
-    const first = await rowMenu(page, "Electronic", "Visa");
-    await expect(first.getByRole("menuitem", { name: "Move up" })).toBeDisabled();
-    await expect(first.getByRole("menuitem", { name: "Move down" })).toBeEnabled();
-    await page.keyboard.press("Escape");
     await expect(card(page, "Electronic").getByRole("menu")).toHaveCount(0);
 
-    await (
-      await rowMenu(page, "Electronic", "AlipayHK")
-    )
-      .getByRole("menuitem", { name: "Move up" })
-      .click();
+    await handle(page, "Electronic", "AlipayHK").dragTo(rows(page, "Electronic").first());
     await expect(toast(page, "Order saved.")).toBeVisible();
     expect(sent).toEqual([
       {
@@ -585,11 +570,9 @@ test.describe("petty cash settings", () => {
           }
         : null,
     );
-    await (
-      await rowMenu(page, "Electronic", "Visa")
-    )
-      .getByRole("menuitem", { name: "Move down" })
-      .click();
+    // the handle's arrow keys move one place, as a drag does
+    await handle(page, "Electronic", "Visa").focus();
+    await page.keyboard.press("ArrowDown");
     await expect(
       toast(page, "The list changed since it was loaded. Reload the page and order it again."),
     ).toBeVisible();
@@ -605,7 +588,7 @@ test.describe("petty cash settings", () => {
     ).toBeVisible();
     await expect(page.getByRole("button", { name: "Save Changes" })).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Add New Method" })).toHaveCount(0);
-    await expect(page.getByRole("button", { name: /^Actions for/ })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /^(Move|Delete) / })).toHaveCount(0);
     // the names are text, not buttons
     await expect(
       card(page, "Electronic").getByRole("button", { name: "Visa", exact: true }),

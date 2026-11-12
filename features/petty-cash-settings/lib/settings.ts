@@ -129,14 +129,19 @@ export function sharedRenameMessage(name: string): string {
   return `Other companies use ${name} too, so it can't be renamed here. Delete it and add a new method instead.`;
 }
 
-/** The type's ids after moving `index` one place (`step` -1 up, +1 down); null past either end. */
-export function movedIds(ids: string[], index: number, step: -1 | 1): string[] | null {
-  const to = index + step;
-  if (index < 0 || index >= ids.length || to < 0 || to >= ids.length) return null;
+/** The type's ids after the method at `from` takes the place of the one at `to` (a drag dropped on
+ * that row); null for a drop on itself or outside the list. */
+export function placedIds(ids: string[], from: number, to: number): string[] | null {
+  if (from === to || from < 0 || from >= ids.length || to < 0 || to >= ids.length) return null;
   const next = ids.slice();
-  const [moved] = next.splice(index, 1);
+  const [moved] = next.splice(from, 1);
   next.splice(to, 0, moved);
   return next;
+}
+
+/** The type's ids after moving `index` one place (`step` -1 up, +1 down); null past either end. */
+export function movedIds(ids: string[], index: number, step: -1 | 1): string[] | null {
+  return placedIds(ids, index, index + step);
 }
 
 /** Nothing on the page is this person's to change (a cashier): Flask's view-only notice. */
