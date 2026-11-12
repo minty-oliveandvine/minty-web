@@ -30,13 +30,15 @@ function at(path: string) {
   window.history.replaceState({}, "", path);
 }
 
+const ADMIN = { name: "Olive Vine", initials: "OV", can_view_subscriptions: true };
+
 describe("NavMenu", () => {
   afterEach(() => _setViewerLoaderForTests(null));
 
   it("on the entity list: the person, Select Entity (here), Manage subscriptions - and no Settings", async () => {
     setAuth(TOKEN, "", "");
     at("/entities");
-    _setViewerLoaderForTests(() => Promise.resolve({ name: "Olive Vine", initials: "OV" }));
+    _setViewerLoaderForTests(() => Promise.resolve(ADMIN));
     render(<NavMenu />);
 
     const menu = await openMenu();
@@ -57,6 +59,21 @@ describe("NavMenu", () => {
     expect(menu.getByRole("button", { name: "Logout" })).toBeInTheDocument();
   });
 
+  // Owner, 2026-11-12: Manage subscriptions is for admins, accountants and subscribers -
+  // accounts-api's `user.can_view_subscriptions`, which the host passes on.
+  it("a cashier who pays for nothing is not offered Manage subscriptions", async () => {
+    setAuth(TOKEN, "", "");
+    at("/entities");
+    _setViewerLoaderForTests(() =>
+      Promise.resolve({ name: "Cass Cashier", initials: "CC", can_view_subscriptions: false }),
+    );
+    render(<NavMenu />);
+    const menu = await openMenu();
+    await waitFor(() => expect(menu.getByText("CC")).toBeInTheDocument());
+    expect(menu.getByRole("link", { name: "Select Entity" })).toBeInTheDocument();
+    expect(menu.queryByRole("link", { name: "Manage subscriptions" })).toBeNull();
+  });
+
   it("the list never offers a company's items, even with one left in the cookie", async () => {
     setAuth(TOKEN, "e1", "Olive Shop");
     at("/entities");
@@ -69,9 +86,11 @@ describe("NavMenu", () => {
   it("inside a company: its sections, and Settings to its own settings page", async () => {
     setAuth(TOKEN, "e1", "Olive Shop");
     at("/subscription");
+    _setViewerLoaderForTests(() => Promise.resolve(ADMIN));
     render(<NavMenu modules={{ pettyCash: true, billing: true }} />);
 
     const menu = await openMenu();
+    await waitFor(() => expect(menu.getByText("OV")).toBeInTheDocument());
     const petty = within(menu.getByRole("group", { name: "Petty Cash" }));
     // Petty Cash is its own app since Step 5: Flask's hand-off mints its token for this company
     expect(petty.getByRole("link", { name: "Dashboard" })).toHaveAttribute(
@@ -154,7 +173,7 @@ describe("the header's avatar, without a sidebar around it", () => {
   it("links to the entity list, named for it (no sheet, no /profile page), with the name on hover", async () => {
     setAuth(TOKEN, "", "");
     at("/subscription");
-    _setViewerLoaderForTests(() => Promise.resolve({ name: "Olive Vine", initials: "OV" }));
+    _setViewerLoaderForTests(() => Promise.resolve(ADMIN));
     render(
       <AppHeader
         title="Subscriptions"

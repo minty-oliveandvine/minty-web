@@ -1,6 +1,11 @@
 "use client";
 
 /**
+ * A row the viewer may not change (`can_manage` false - an admin or accountant of a company
+ * someone else pays for, or an accountant of one nobody pays for yet; owner, 2026-11-12) shows
+ * the same cards, plan and price with no tick, button, Change or menu, and names the subscriber
+ * (`ManagedByNotice`).
+ *
  * A list row opened in place (Figma 05·A, "Subscription Summary"): the company's name and ⋮,
  * the blue ⓘ line while a trial runs, its two module cards with a checkbox or a Start Free
  * Trial button under each, the summary panel, and the two footer sentences. Everything shown is
@@ -22,7 +27,7 @@ import { Icon } from "@/components/ui/Icon";
 
 import type { ModuleCode } from "@/features/subscription/api/moduleSettings";
 import type { PortalEntity } from "@/features/subscription/api/payerPortal";
-import type { MenuItem } from "@/features/subscription/lib/portalRows";
+import { canManage, type MenuItem } from "@/features/subscription/lib/portalRows";
 import type { ModuleStatusLine } from "@/features/subscription/lib/moduleState";
 import { modulesPath } from "@/features/subscription/lib/paths";
 import {
@@ -38,6 +43,7 @@ import {
 } from "@/features/subscription/lib/subscriptionSummary";
 
 import { CardBrand, SUMMARY_MARK } from "@/features/subscription/components/CardBrand";
+import { ManagedByNotice } from "@/features/subscription/components/ManagedByNotice";
 import { ModuleCardShell, ModuleStatus } from "@/features/subscription/components/ModuleCard";
 import { RowFooter } from "@/features/subscription/components/RowFooter";
 import { RowMenu } from "@/features/subscription/components/RowMenu";
@@ -110,8 +116,8 @@ export function fromControl(e: { target: EventTarget | null }): boolean {
 
 /**
  * A row's company name, closed or open: a link to that company's module settings (the owner,
- * 2026-10-30). Every listed company is one the person pays for or administers, so every name
- * links. An `<a>`, so `fromControl` keeps the row from toggling under it. It truncates itself (its
+ * 2026-10-30). Every listed company is one the person pays for or is an admin or accountant of,
+ * and each of them reads its module settings page, so every name links. An `<a>`, so `fromControl` keeps the row from toggling under it. It truncates itself (its
  * parent must not clip), and its padding, cancelled by the margin, makes a 44px tap target
  * without moving the row.
  */
@@ -299,11 +305,14 @@ function CalculatingPanel() {
 function SummaryPanel({
   view,
   needsActivation,
+  readOnly,
   onChangePaymentMethod,
   onConfirmChange,
   onActivate,
 }: {
   view: SummaryView;
+  /** The viewer may not change it: no payment method (the subscriber's), no Change. */
+  readOnly: boolean;
   /** The company has no subscriber: the button below activates instead of confirming. */
   needsActivation: boolean;
   onChangePaymentMethod: () => void;
@@ -328,7 +337,7 @@ function SummaryPanel({
               <p className="text-[15px] text-[#737a87]">Selected plan</p>
               <PlanLines lines={view.panel.lines} />
             </div>
-            {view.paymentMethod && (
+            {view.paymentMethod && !readOnly && (
               <div className="flex flex-col items-end text-right">
                 <p className="text-[15px] text-[#737a87]">Payment method</p>
                 {/* The network's mark above the card it names, bare and at the design's size
@@ -378,6 +387,7 @@ function SummaryPanel({
           modal named (the user, same day: "the modal said you've chosen X, so do X). So it CAN
           charge, and either way the row lands on its 05.C result. */}
       {view.pendingChange &&
+        !readOnly &&
         (needsActivation ? (
           <button
             type="button"
@@ -418,6 +428,7 @@ export function SubscriptionSummaryRow({
   on: SummaryRowHandlers;
 }) {
   const loading = status === "loading";
+  const readOnly = !canManage(entity);
   // However it opened - a click on its row or its chevron, or `?entity=` - the open row is what
   // the person is looking at now: bring it to the top of the view (the user, 2026-10-02: "should
   // focus on the open row"), and put keyboard focus on its chevron. The closed row's "Open"
@@ -463,7 +474,11 @@ export function SubscriptionSummaryRow({
           >
             <Icon name="chevron-up" size={24} />
           </button>
-          <RowMenu entityName={entity.entity_name} items={menu} onSelect={on.onMenu} />
+          <RowMenu
+            entityName={entity.entity_name}
+            items={readOnly ? [] : menu}
+            onSelect={on.onMenu}
+          />
         </div>
       </div>
 
@@ -480,6 +495,8 @@ export function SubscriptionSummaryRow({
           </button>
         </div>
       )}
+
+      {readOnly && <ManagedByNotice payer={entity.subscriber} />}
 
       {(status === "ready" || loading) && view && (
         <>
@@ -508,12 +525,12 @@ export function SubscriptionSummaryRow({
                   // The card toggles what the box below it toggles - the same handler, so the
                   // two can never disagree. Nothing to tick, or the row still loading: inert.
                   onToggle={
-                    module.tick === "start_trial" || loading
+                    module.tick === "start_trial" || loading || readOnly
                       ? undefined
                       : () => on.onTick(module.code)
                   }
                 />
-                <UnderCard module={module} disabled={loading} on={on} />
+                {!readOnly && <UnderCard module={module} disabled={loading} on={on} />}
               </div>
             ))}
             {calculating || loading ? (
@@ -522,6 +539,7 @@ export function SubscriptionSummaryRow({
               <SummaryPanel
                 view={view}
                 needsActivation={entity.has_subscriber === false}
+                readOnly={readOnly}
                 onChangePaymentMethod={on.onChangePaymentMethod}
                 onConfirmChange={on.onConfirmChange}
                 onActivate={on.onActivate}

@@ -429,7 +429,10 @@ function trialing(entity: PortalEntity): PortalModule[] {
  * attention right now". The first `UPDATES_SHOWN` are shown; *Show more* opens the rest.
  */
 export function overview(list: PayerAccount | null, today: Date): Overview {
-  const entities = list?.entities ?? [];
+  // Only the viewer's own: a company they only view (an admin or accountant of it; someone else
+  // pays - `can_manage` false, 2026-11-12) is not their subscription. @minty/shared's
+  // `overviewFigures` counts the same way.
+  const entities = (list?.entities ?? []).filter((e) => e.can_manage !== false);
   let active = 0;
   let trialEnding = 0;
   const failed: OverviewUpdate[] = [];

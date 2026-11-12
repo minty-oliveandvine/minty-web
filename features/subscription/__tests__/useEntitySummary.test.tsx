@@ -58,6 +58,20 @@ describe("useEntitySummary", () => {
     expect(result.current.view?.panel).toMatchObject({ kind: "simple", price: "HKD\u00a0400" });
   });
 
+  it("a company the viewer only views reads its page model but never the subscriber's card", async () => {
+    fetchMock.mockImplementation(async (input) => {
+      const url = new URL(String(input));
+      if (url.pathname.endsWith("/modules")) return reply(200, SUMMARY_FIXTURES.M44);
+      return reply(200, WALLET);
+    });
+    const viewed = { ...entity, can_manage: false };
+    const { result } = renderHook(() => useEntitySummary(viewed, { today: TODAY }));
+    await waitFor(() => expect(result.current.status).toBe("ready"));
+    const paths = fetchMock.mock.calls.map(([input]) => new URL(String(input)).pathname);
+    expect(paths).toEqual([`/api/entities/${entity.entity_id}/modules`]);
+    expect(result.current.view?.paymentMethod).toBeNull();
+  });
+
   it("keeps the row when only the card call fails", async () => {
     fetchMock.mockImplementation(async (input) => {
       const url = new URL(String(input));

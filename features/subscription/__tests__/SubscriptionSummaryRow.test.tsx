@@ -399,3 +399,64 @@ describe("SubscriptionSummaryRow", () => {
     expect(on.onRetry).toHaveBeenCalledTimes(1);
   });
 });
+
+// Owner, 2026-11-12: every admin and accountant SEES a company's subscription; only its
+// subscriber changes it. A row the viewer may not change (`can_manage` false) shows the cards,
+// the plan and the price, names the subscriber, and offers nothing.
+describe("a read-only row (can_manage false)", () => {
+  const subscriber = { id: "u-payer", name: "Olive Owner", email: "olive@acme.test" };
+
+  function showReadOnly(frame: SummaryFrame, who: PortalEntity["subscriber"] = subscriber) {
+    const viewed: PortalEntity = {
+      ...entity,
+      subscriber: who,
+      has_subscriber: who !== null,
+      can_manage: false,
+    };
+    const on = handlers();
+    render(
+      <ul>
+        <SubscriptionSummaryRow
+          entity={viewed}
+          status="ready"
+          view={buildSummaryView(SUMMARY_FIXTURES[frame], viewed, null, TODAY, {})}
+          error={null}
+          menu={[]}
+          on={on}
+        />
+      </ul>,
+    );
+    return on;
+  }
+
+  it("names the subscriber and offers no tick, no Change and no ⋮", async () => {
+    const on = showReadOnly("M44");
+    expect(
+      screen.getByText(/Billing for this company is managed by Olive Owner/),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "olive@acme.test" })).toHaveAttribute(
+      "href",
+      "mailto:olive@acme.test",
+    );
+    expect(screen.queryByRole("checkbox")).toBeNull();
+    expect(within(panel()).queryByRole("button", { name: "Change" })).toBeNull();
+    expect(screen.queryByRole("button", { name: /^Actions for / })).toBeNull();
+    // still shows what the company runs and what it costs
+    expect(within(panel()).getByText("Super Minty")).toBeInTheDocument();
+    expect(within(panel()).getByText("HKD 400")).toBeInTheDocument();
+
+    await userEvent.click(cardBody("Petty Cash"));
+    expect(on.onTick).not.toHaveBeenCalled();
+  });
+
+  it("offers no Start Free Trial on a module never started", () => {
+    showReadOnly("M11");
+    expect(screen.queryByRole("button", { name: /Start Free Trial/ })).toBeNull();
+  });
+
+  it("with nobody paying yet, says only an admin can change it", () => {
+    showReadOnly("M21", null);
+    expect(screen.getByText("Only admins can change modules.")).toBeInTheDocument();
+    expect(screen.queryByRole("checkbox")).toBeNull();
+  });
+});

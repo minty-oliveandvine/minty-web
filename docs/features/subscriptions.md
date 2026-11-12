@@ -425,6 +425,21 @@ started=<code>` and let the list rebuild the row from the company's page model a
   change modules. "No payer yet" is the ordinary state of a company on a free trial since
   2026-10-08, not a moment during onboarding, so until billing is confirmed EVERY admin sees the
   buttons - and the trial's button is _Activate Subscription_.
+- **Who sees what on Manage Subscriptions (owner, 2026-11-12).**
+  - **Who sees a company:** every admin and accountant of it sees it on the list, whoever pays. The
+    API marks each row `can_manage`.
+  - **A read-only row** (`can_manage` false: someone else pays, or nobody pays and the viewer is
+    an accountant):
+    - Its closed row has no Start Trial, Subscribe or ⋮ (`portalRows.readOnlyCell`: "Not
+      subscribed" / "Not active").
+    - Its open row shows the cards, plan and price with no tick, button, payment method or Change.
+    - `ManagedByNotice` names the subscriber, or says "Only admins can change modules." when
+      nobody pays yet.
+    - The subscriber's card is never fetched for it (`useEntitySummary`).
+  - **The figures** (08-A's `overview` and My Profile's overview) count only the viewer's own rows.
+  - **The sidebar item** is drawn only when accounts-api's `user.can_view_subscriptions` is true
+    (`sidebarHost.loadViewer` passes it to `@minty/shared` v0.19). That covers admins, accountants
+    and subscribers.
 - **No re-entry from Stripe** (2026-10-01). The page used to settle `?session_id=` (back from
   Stripe Checkout, posting `checkout-complete`) and `?checkout_error=`; nothing hands the browser
   to a Stripe-hosted page any more, so neither is read and the action is gone from the API.
@@ -565,7 +580,8 @@ re-homed and redrawn to Figma section "04 · Manage Subscriptions — the payer 
 - **The company's name opens its module settings** (owner, 2026-10-30), on the closed row and in
   the open row's header alike: a link to `/entity/<shortid>/<name>/settings/modules`
   (`modulesPath`; `EntityNameLink` in `SubscriptionSummaryRow.tsx`), never a toggle. Every listed
-  company is one the person pays for or administers, so every name links. The API's
+  company is one the person pays for or is an admin or accountant of (2026-11-12), and each reads
+  its module settings page, so every name links. The API's
   `settings_path` (Flask's old `/entity/settings/module/<id>`) is not used.
 - **A row's chevron opens it in place** — the Subscription Summary of §11 (Figma 05·A), one
   company at a time; the chevron on the open row closes it.

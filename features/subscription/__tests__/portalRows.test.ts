@@ -165,3 +165,26 @@ describe("toRow", () => {
     expect(row.menu).toHaveLength(3);
   });
 });
+
+// Owner, 2026-11-12: a company the viewer only views (an admin or accountant of it; someone else
+// pays) is listed with no button and no ⋮ - the subscriber alone changes it.
+describe("a read-only row (can_manage false)", () => {
+  it("has no ⋮ and no Start Trial or Subscribe, only words", () => {
+    const kestrel = { ...byName("Kestrel Foods Limited"), can_manage: false };
+    const row = toRow(kestrel, TODAY);
+    expect(row.menu).toEqual([]);
+    expect(row.cells.map((c) => c.kind)).toEqual(["inactive", "trial"]);
+    expect(row.cells[0]).toMatchObject({ text: "Not subscribed" });
+
+    const mino = toRow({ ...byName("Mino Market Limited"), can_manage: false }, TODAY);
+    expect(mino.cells[1]).toMatchObject({
+      kind: "inactive",
+      eyebrow: "Trial Expired",
+      text: "Not active",
+    });
+  });
+
+  it("an older answer without the flag is the viewer's own, as before", () => {
+    expect(toRow(byName("Kestrel Foods Limited"), TODAY).menu.length).toBeGreaterThan(0);
+  });
+});

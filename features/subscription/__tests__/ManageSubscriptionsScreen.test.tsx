@@ -225,6 +225,41 @@ describe("ManageSubscriptionsScreen", { timeout: 30_000 }, () => {
     ).toBeVisible();
   });
 
+  // Owner, 2026-11-12: every admin and accountant SEES a company's subscription; only its
+  // subscriber changes it. The API lists those companies with `can_manage: false`.
+  it("a company someone else pays for is listed read-only: no button, no ⋮, the subscriber named", async () => {
+    const [first, ...rest] = ENTITIES;
+    const payer = { id: "u-payer", name: "Olive Owner", email: "olive@acme.test" };
+    const viewed = { ...first, subscriber: payer, has_subscriber: true, can_manage: false };
+    serve(subscriptionsPage([viewed, ...rest]));
+    render(
+      <ToastProvider>
+        <ManageSubscriptionsScreen today={TODAY} />
+      </ToastProvider>,
+    );
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("status", { name: "Loading your subscriptions" }),
+      ).not.toBeInTheDocument(),
+    );
+
+    const closed = rowOf(viewed.entity_name);
+    expect(closed.queryByRole("button", { name: /^(Start Trial|Subscribe) ·/ })).toBeNull();
+    expect(closed.queryByRole("button", { name: `Actions for ${viewed.entity_name}` })).toBeNull();
+
+    await userEvent.click(screen.getByRole("button", { name: `Open ${viewed.entity_name}` }));
+    const panel = await screen.findByRole("region", { name: "Subscription Summary" }, AFTER_BEAT);
+    const item = within(panel.closest("li")!);
+    expect(
+      item.getByText(/Billing for this company is managed by Olive Owner/),
+    ).toBeInTheDocument();
+    expect(item.queryByRole("checkbox")).toBeNull();
+    expect(within(panel).queryByRole("button", { name: "Change" })).toBeNull();
+    // the subscriber's card is never asked for
+    const asked = fetchMock.mock.calls.map(([input]) => new URL(String(input)).pathname);
+    expect(asked).not.toContain("/api/me/billing/entity-payment-method");
+  });
+
   it("04-A: the banner, the transfer card, the sections and their counts", async () => {
     await show(subscriptionsPage(), INCOMING_TRANSFERS);
 

@@ -18,9 +18,12 @@ import type {
 } from "@/features/subscription/api/payerPortal";
 import { daysUntil, daysLabel } from "@/features/subscription/lib/moduleState";
 
-/** The cell a module gets. `start_trial` and `subscribe` are buttons; the rest are words. */
+/**
+ * The cell a module gets. `start_trial` and `subscribe` are buttons; the rest are words.
+ * `inactive` is what a button becomes on a row the viewer may not change (`can_manage` false).
+ */
 export type ModuleCellKind =
-  "start_trial" | "subscribe" | "trial" | "active" | "cancels" | "suspended" | "ended";
+  "start_trial" | "subscribe" | "trial" | "active" | "cancels" | "suspended" | "ended" | "inactive";
 
 export type ModuleCell = {
   code: ModuleCode;
@@ -126,12 +129,35 @@ export function menuFor(modules: PortalModule[]): MenuItem[] {
   return items;
 }
 
+/** Whether the viewer may change this company: false only when the API says so. */
+export function canManage(entity: PortalEntity): boolean {
+  return entity.can_manage !== false;
+}
+
+/**
+ * A button cell, as words, for a row the viewer may not change (owner, 2026-11-12: only the
+ * subscriber manages): Start Trial reads "Not subscribed"; Subscribe keeps its eyebrow ("Trial
+ * Expired", "Ended") over "Not active".
+ */
+export function readOnlyCell(cell: ModuleCell): ModuleCell {
+  if (cell.kind === "start_trial") {
+    return { ...cell, kind: "inactive", text: "Not subscribed", tone: "quiet" };
+  }
+  if (cell.kind === "subscribe") {
+    return { ...cell, kind: "inactive", text: "Not active", tone: "muted" };
+  }
+  return cell;
+}
+
 export function toRow(entity: PortalEntity, today: Date): SubscriptionRow {
+  const manage = canManage(entity);
+  const cells = entity.modules.map((m) => moduleCell(m, today));
   return {
     entity,
-    cells: entity.modules.map((m) => moduleCell(m, today)),
+    cells: manage ? cells : cells.map(readOnlyCell),
     section: rowSection(entity.modules),
-    menu: menuFor(entity.modules),
+    // A read-only row has no menu: transfer, cancel and reactivate are the subscriber's.
+    menu: manage ? menuFor(entity.modules) : [],
   };
 }
 

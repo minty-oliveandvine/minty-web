@@ -209,6 +209,19 @@ describe("the overview (08-A)", () => {
     expect(entityCount(1)).toBe("1 entity");
   });
 
+  it("counts and lists only the viewer's own companies, never one they only view", () => {
+    // Owner, 2026-11-12: admins and accountants see companies someone else pays for; those are
+    // not the viewer's subscriptions, so they add no figure and no update line.
+    const page = subscriptionsPage();
+    const own = overview(page, TODAY);
+    const viewed = overview(
+      { ...page, entities: page.entities.map((e) => ({ ...e, can_manage: false })) },
+      TODAY,
+    );
+    expect(own.active).toBeGreaterThan(0);
+    expect(viewed).toEqual({ active: 0, trialEnding: 0, updates: [] });
+  });
+
   it("writes a line per trial ending and per payment failed, failures first", () => {
     const o = overview(subscriptionsPage(), TODAY);
     expect(o.updates[0].tone).toBe("failed");

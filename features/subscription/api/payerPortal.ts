@@ -51,6 +51,13 @@ export type PortalEntity = {
   subscriber: { id: string; name: string; email: string } | null;
   /** False on exactly those rows. Absent on an older answer, which means "it has one". */
   has_subscriber?: boolean;
+  /**
+   * Whether the viewer may change this company's subscription (owner, 2026-11-12): only its
+   * subscriber, or an admin while nobody pays. Every admin and accountant of a company is shown
+   * it; on a false row nothing is offered and `subscriber` names who to ask. Absent on an older
+   * answer, which listed only rows the viewer could change.
+   */
+  can_manage?: boolean;
   modules: PortalModule[];
   /** A Minty PATH. Hand the token back through Flask's /entity/<id>/enter to land on it signed in. */
   settings_path: string;

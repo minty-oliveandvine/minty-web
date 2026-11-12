@@ -94,7 +94,10 @@ async function loadSummary(
   }
   const [page, wallet] = await Promise.all([
     getModulePage(entity.entity_id),
-    fetchEntityPaymentMethod(entity.entity_id, signal).catch(() => null),
+    // The card is the subscriber's: a row the viewer only views does not ask for it (2026-11-12).
+    entity.can_manage === false
+      ? Promise.resolve(null)
+      : fetchEntityPaymentMethod(entity.entity_id, signal).catch(() => null),
   ]);
   return { page, wallet, today: null };
 }
