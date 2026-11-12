@@ -6,7 +6,7 @@
  * the frame (the shared settings page, `SettingsShell`) and the look (the Settings frames, Figma
  * 353:999) are new. Reads `GET /settings` and `GET /settings/xero` from minty-petty-cash-api.
  *
- * - Xero account mapping and Petty Cash Account Code (`XeroCards.tsx`), read once per page load
+ * - Account mapping and Petty Cash Account Code (`XeroCards.tsx`), read once per page load
  *   from `GET /settings/xero` (it asks Xero), each with its own Save; "Xero isn't connected" in
  *   both when the connection is not live.
  * - Electronic and Delivery: add (the catalogue or a new name), rename, Move up / down, Delete -

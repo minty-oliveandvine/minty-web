@@ -143,9 +143,16 @@ const SAVED: Record<MappingKey, string | null> = {
 };
 
 function xero(
-  over: { live?: boolean; edit?: boolean; mapping?: Record<MappingKey, string | null> } = {},
+  over: {
+    live?: boolean;
+    edit?: boolean;
+    mapping?: Record<MappingKey, string | null>;
+    /** The stored codes; the API lists them with or without Xero (owner, 2026-11-12). */
+    codes?: boolean;
+  } = {},
 ): XeroRead {
   const live = over.live ?? true;
+  const codes = over.codes ?? live;
   const edit = over.edit ?? true;
   const mapping = over.mapping ?? SAVED;
   return {
@@ -161,12 +168,12 @@ function xero(
         }))
       : null,
     mapping_saved: mapping.main_bank !== null,
-    account_codes: live
+    account_codes: codes
       ? [
           { code: "400", name: "Advertising", selected: true },
           { code: "404", name: "Bank Fees", selected: false },
         ]
-      : null,
+      : [],
     permissions: { edit_mapping: edit, edit_account_codes: edit },
   };
 }
@@ -221,6 +228,22 @@ describe("PettyCashSettingsScreen", () => {
       expect(link).toHaveAttribute("href", "/entity/e1/olive-shop/settings/integration");
     expect(screen.queryByText(READ_ONLY)).toBeNull();
     expect(sent("GET /settings/xero")).toHaveLength(1);
+  });
+
+  it("without Xero the codes are still there to tick; only the mapping waits for Xero", async () => {
+    // owner, 2026-11-12: the account codes are available even without Xero
+    api({
+      "GET /settings": () => json(settings()),
+      "GET /settings/xero": () => json(xero({ live: false, codes: true })),
+    });
+    show();
+
+    const codes = within(await screen.findByRole("region", { name: "Petty Cash Account Code" }));
+    expect(await codes.findByRole("checkbox", { name: /400 - Advertising/ })).toBeChecked();
+    expect(codes.getByRole("checkbox", { name: /404 - Bank Fees/ })).not.toBeChecked();
+    expect(codes.queryByText(/Xero isn.t connected/)).toBeNull();
+    const mapping = within(screen.getByRole("region", { name: "Account mapping" }));
+    expect(mapping.getByText(/Xero isn.t connected/)).toBeInTheDocument();
   });
 
   it("a Non-cash company sees one Non-cash card and no empty Delivery card", async () => {
@@ -448,14 +471,14 @@ describe("PettyCashSettingsScreen", () => {
       "GET /settings/xero": () => json(read),
       "PUT /settings/xero/mapping": (body) => {
         read = xero({ mapping: body as Record<MappingKey, string> });
-        return json({ ...read, message: "Xero account mapping saved.", first_save: false });
+        return json({ ...read, message: "Account mapping saved.", first_save: false });
       },
     });
     show();
     await drawn();
     const user = userEvent.setup();
 
-    const mapping = card("Xero account mapping");
+    const mapping = card("Account mapping");
     const sales = await mapping.findByRole("combobox", {
       name: /Select account code for cash sales/,
     });
@@ -473,12 +496,10 @@ describe("PettyCashSettingsScreen", () => {
     await user.click(mapping.getByRole("option", { name: /Owner Drawings/ }));
     expect(sales).toHaveValue("Owner Drawings - 880");
     await user.click(save);
-    expect(await screen.findByText("Xero account mapping saved.")).toBeInTheDocument();
+    expect(await screen.findByText("Account mapping saved.")).toBeInTheDocument();
     expect(sent("PUT /settings/xero/mapping")).toEqual([{ ...SAVED, cashsale_account: "a2" }]);
     await waitFor(() =>
-      expect(
-        card("Xero account mapping").getByRole("button", { name: "Save Changes" }),
-      ).toBeDisabled(),
+      expect(card("Account mapping").getByRole("button", { name: "Save Changes" })).toBeDisabled(),
     );
   });
 
@@ -490,14 +511,14 @@ describe("PettyCashSettingsScreen", () => {
       "PUT /settings/xero/mapping": (body) =>
         json({
           ...xero({ mapping: body as Record<MappingKey, string> }),
-          message: "Xero account mapping saved.",
+          message: "Account mapping saved.",
           first_save: true,
         }),
     });
     show();
     await drawn();
     const user = userEvent.setup();
-    const mapping = card("Xero account mapping");
+    const mapping = card("Account mapping");
     const first = await mapping.findByRole("combobox", { name: /Select Petty Cash bank account/ });
     expect(
       mapping.getAllByRole("combobox").filter((b) => b.getAttribute("aria-invalid") === "true"),
@@ -513,7 +534,7 @@ describe("PettyCashSettingsScreen", () => {
 
     const picks: [RegExp, RegExp][] = [
       [/deposit excess cash/, /HSBC Current/],
-      [/for cash sales/, /Sales/],
+      [/account code for cash sales/, /Sales/],
       [/Customer contact/, /Walk-in Customer/],
       [/Advance Payment from director/, /Owner Drawings/],
       [/Cash Discrepancy/, /Owner Drawings/],
@@ -529,10 +550,10 @@ describe("PettyCashSettingsScreen", () => {
     await user.click(mapping.getByRole("button", { name: "Save Changes" }));
     // Like every save: the sentence shows and the page stays (owner, 2026-11-11 - it used to leave
     // for the Petty Cash dashboard, and the sentence went with the page).
-    expect(await screen.findByText("Xero account mapping saved.")).toBeInTheDocument();
+    expect(await screen.findByText("Account mapping saved.")).toBeInTheDocument();
     expect(sent("PUT /settings/xero/mapping")).toEqual([SAVED]);
     expect(
-      card("Xero account mapping").getByRole("button", { name: "Save Changes" }),
+      card("Account mapping").getByRole("button", { name: "Save Changes" }),
     ).toBeInTheDocument();
   });
 
@@ -636,9 +657,9 @@ describe("PettyCashSettingsScreen", () => {
     ).toHaveLength(2);
     expect(card("Electronic").getByRole("button", { name: "Visa" })).toBeInTheDocument();
     fail = false;
-    await userEvent.click(card("Xero account mapping").getByRole("button", { name: "Try again" }));
+    await userEvent.click(card("Account mapping").getByRole("button", { name: "Try again" }));
     expect(
-      await card("Xero account mapping").findByRole("combobox", {
+      await card("Account mapping").findByRole("combobox", {
         name: /Select Petty Cash bank account/,
       }),
     ).toHaveValue("Petty Cash - 090");

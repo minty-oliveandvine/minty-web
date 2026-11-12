@@ -36,12 +36,16 @@ export async function fetchConnection(
 
 /**
  * Every code of the chart, ticked or not (`include_inactive=true`), so an unticked one can be
- * ticked. That read also starts the API's (debounced) chart re-sync.
+ * ticked. On a live connection that read also starts the API's (debounced) chart re-sync; without
+ * one (`sync: false`) it reads the stored codes alone (owner, 2026-11-12: codes without Xero).
  */
-export function fetchEntityBillAccounts(entityId: string): Promise<EntityBillAccount[]> {
+export function fetchEntityBillAccounts(
+  entityId: string,
+  { sync }: { sync: boolean },
+): Promise<EntityBillAccount[]> {
   return paymentRequestFetch<EntityBillAccount[]>("/api/v1/entity-bill-accounts/", {
     entityId,
-    query: { include_inactive: true },
+    query: sync ? { include_inactive: true } : { include_inactive: true, sync_chart: false },
   });
 }
 

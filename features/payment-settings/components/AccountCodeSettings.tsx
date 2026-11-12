@@ -90,10 +90,10 @@ export function AccountCodeSettings({ company }: { company: { id: string; name: 
       .then(({ connected: live, mintyOnly }) => {
         if (cancelled) return;
         // a company keeping its books in Minty (Xero optional, 2026-11-10): its codes are its own
-        const connected = live || mintyOnly;
-        setXeroConnected(connected);
-        if (!connected) return;
-        return fetchEntityBillAccounts(entityId).then((accounts) => {
+        setXeroConnected(live || mintyOnly);
+        // the codes are the stored ones, read with or without Xero (owner, 2026-11-12); only a
+        // live connection re-syncs the chart
+        return fetchEntityBillAccounts(entityId, { sync: live }).then((accounts) => {
           if (cancelled) return;
           setRows(
             accounts.map((a) => ({ id: a.id, label: `${a.account_code} - ${a.account_name}` })),
@@ -241,7 +241,9 @@ export function AccountCodeSettings({ company }: { company: { id: string; name: 
     </label>
   );
 
-  const showSave = expanded && xeroConnected !== false;
+  // without Xero and with no stored code there is nothing to tick: the notice alone
+  const nothingWithoutXero = xeroConnected === false && rows.length === 0;
+  const showSave = expanded && !nothingWithoutXero;
   const saveTitle = loading
     ? undefined
     : isViewOnly
@@ -284,7 +286,7 @@ export function AccountCodeSettings({ company }: { company: { id: string; name: 
       >
         {expanded ? (
           <div id="payment-account-codes" className="flex min-w-0 flex-col gap-3">
-            {xeroConnected === false ? (
+            {nothingWithoutXero ? (
               <XeroNotConnected href={integrationPath(company.id, company.name)} />
             ) : (
               <>

@@ -44,10 +44,12 @@ Payment." - the old copy, kept), in a `SettingsCard`, folding under a 44px chevr
   passes through nothing ticked; the API refuses unticking the last one (409 "Keep at least one
   account code ticked.") and that sentence shows. Other refusals say "Some of those changes didn't
   save." A partly saved batch moves the saved set by each row that went through.
-- **Without a live Xero connection** the card keeps its heading and shows only "Xero isn't
-  connected. Connect it in Integration to set these up." - the link the hub's Integration tab.
-  The codes are not read then. A failed status read is a failed read ("I couldn't load your
-  account codes…"), never "not connected".
+- **Without a live Xero connection** the codes are still the card's (owner, 2026-11-12: codes
+  without Xero): the stored ones are read with `sync_chart=false` (no chart re-sync for a chart
+  that can't sync) and ticked and saved as usual. Only a company with no stored code at all sees
+  "Xero isn't connected. Connect it in Integration to set these up." (the shared
+  `components/ui/XeroNotConnected`), with no search box and no Save. A failed status read is a
+  failed read ("I couldn't load your account codes…"), never "not connected".
 - **A company keeping its books in Minty** (`minty_only` from xero-status, Xero optional
   2026-11-10): its own expense accounts, read and saved as if live.
 - **Read-only** (the token's `role` / `is_view_only`; a token without `is_view_only` and with a

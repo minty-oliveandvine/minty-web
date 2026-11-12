@@ -3,7 +3,7 @@
 // not the "Xero isn't connected" notice - with lines that don't say "from Xero". Ported from
 // minty-petty-cash-web's components/settings/__tests__/XeroCards.test.tsx.
 
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import {
@@ -72,6 +72,8 @@ describe("Minty on its own", () => {
     expect(screen.queryByText(/Xero isn.t connected/)).not.toBeInTheDocument();
     expect(screen.getByText("Select Petty Cash bank account")).toBeInTheDocument();
     expect(screen.queryByText(/Select the Customer contact/)).not.toBeInTheDocument();
+    // the Xero-only group is not drawn at all (owner, 2026-11-12)
+    expect(screen.queryByRole("heading", { name: "Xero contacts" })).not.toBeInTheDocument();
   });
 
   it("the account codes card draws its own codes", () => {
@@ -80,7 +82,7 @@ describe("Minty on its own", () => {
     expect(screen.queryByText(/Xero isn.t connected/)).not.toBeInTheDocument();
   });
 
-  it("a Xero company with no connection still says so, linking to the Integration tab", () => {
+  it("a Xero company whose read has no mapping says Xero isn't connected, linking to the Integration tab", () => {
     render(
       <XeroMappingCard
         {...props}
@@ -88,7 +90,10 @@ describe("Minty on its own", () => {
         load={{ kind: "ready", read: read({ minty: false, mapping: null, account_codes: null }) }}
       />,
     );
-    expect(screen.getByText("Xero account mapping")).toBeInTheDocument();
+    expect(screen.getByText("Account mapping")).toBeInTheDocument();
+    expect(
+      screen.getByText("The accounts daily closing uses, and the Xero contacts a report posts to."),
+    ).toBeInTheDocument();
     expect(screen.getByText(/Xero isn.t connected/)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Integration" })).toHaveAttribute("href", "/x");
   });
@@ -122,5 +127,96 @@ describe("a company that banks all its sales (2026-11-10)", () => {
     expect(mappingProblems(base.mapping!, picked, true)).toEqual({
       cashsale_account: "Choose the Cash Sales account code.",
     });
+  });
+});
+
+describe("a Xero company: the accounts first, then the Xero-only contacts grouped (owner, 2026-11-12)", () => {
+  const contact = (
+    key: "cashsale_contact" | "owners_contact" | "discrepancy_contact",
+    label: string,
+  ) => ({
+    key,
+    label,
+    kind: "contact" as const,
+    options: [{ id: `c-${key}`, name: "Olive" }],
+    selected: null,
+  });
+  const xeroRead = () =>
+    read({
+      live: true,
+      minty: false,
+      organisation: "Olive Ltd",
+      mapping: [
+        ...(read().mapping ?? []),
+        contact("cashsale_contact", "Cash Sales contact"),
+        contact("owners_contact", "Director / Responsible person"),
+        contact("discrepancy_contact", "Discrepancy contact"),
+      ],
+    });
+
+  it("draws the five accounts' groups, then one Xero contacts group holding the three contacts", () => {
+    render(
+      <XeroMappingCard {...props} onAdded={vi.fn()} load={{ kind: "ready", read: xeroRead() }} />,
+    );
+
+    expect(screen.getAllByRole("heading", { level: 4 }).map((h) => h.textContent)).toEqual([
+      "Petty Cash Account",
+      "Deposit Bank Account",
+      "Cash Sales",
+      "Director Personal Account",
+      "Discrepancy - Other Expense",
+      "Xero contacts",
+    ]);
+    const group = within(
+      screen
+        .getByRole("heading", { name: "Xero contacts" })
+        .closest("[data-mapping-group]") as HTMLElement,
+    );
+    expect(group.getByText("Select the Customer contact for cash sales")).toBeInTheDocument();
+    expect(
+      group.getByText("Select the Director or Responsible person who pays personally"),
+    ).toBeInTheDocument();
+    expect(
+      group.getByText("Select the Director or Responsible person for the cash difference"),
+    ).toBeInTheDocument();
+    expect(group.getAllByRole("combobox")).toHaveLength(3);
+  });
+});
+
+describe("a Xero company without a live connection (owner, 2026-11-12)", () => {
+  it("still shows the five accounts to choose; only the Xero contacts group says Xero isn't connected", () => {
+    render(
+      <XeroMappingCard
+        {...props}
+        onAdded={vi.fn()}
+        load={{ kind: "ready", read: read({ minty: false, live: false }) }}
+      />,
+    );
+
+    expect(screen.getByText("Account mapping")).toBeInTheDocument();
+    expect(
+      screen.getByText("The accounts daily closing uses, and the Xero contacts a report posts to."),
+    ).toBeInTheDocument();
+    expect(screen.getAllByRole("heading", { level: 4 }).map((h) => h.textContent)).toEqual([
+      "Petty Cash Account",
+      "Deposit Bank Account",
+      "Cash Sales",
+      "Director Personal Account",
+      "Discrepancy - Other Expense",
+      "Xero contacts",
+    ]);
+    expect(
+      screen.getByRole("combobox", { name: /Select Petty Cash bank account/ }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/from Xero/)).not.toBeInTheDocument();
+    const contacts = within(
+      screen
+        .getByRole("heading", { name: "Xero contacts" })
+        .closest("[data-mapping-group]") as HTMLElement,
+    );
+    expect(contacts.getByText(/Xero isn.t connected/)).toBeInTheDocument();
+    expect(contacts.queryByRole("combobox")).not.toBeInTheDocument();
+    expect(screen.getAllByText(/Xero isn.t connected/)).toHaveLength(1);
+    expect(screen.getByRole("button", { name: "Save Changes" })).toBeInTheDocument();
   });
 });

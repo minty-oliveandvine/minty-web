@@ -93,11 +93,6 @@ export const MAPPING_GROUPS: readonly {
         sub: "Select account code for cash sales",
         placeholder: "Select an account code",
       },
-      {
-        key: "cashsale_contact",
-        sub: "Select the Customer contact",
-        placeholder: "Select a contact",
-      },
     ],
   },
   {
@@ -107,11 +102,6 @@ export const MAPPING_GROUPS: readonly {
         key: "owners_account",
         sub: "Select account code for the Advance Payment from director",
         placeholder: "Select an account code",
-      },
-      {
-        key: "owners_contact",
-        sub: "Select Director or Responsible person",
-        placeholder: "Select a contact",
       },
     ],
   },
@@ -123,9 +113,26 @@ export const MAPPING_GROUPS: readonly {
         sub: "Select account code to record Cash Discrepancy",
         placeholder: "Select an account code",
       },
+    ],
+  },
+  // Xero's own: the contacts a report posts to, grouped after the accounts every company needs
+  // (owner, 2026-11-12). A company keeping its books in Minty gets none, so the group is not drawn.
+  {
+    title: "Xero contacts",
+    fields: [
+      {
+        key: "cashsale_contact",
+        sub: "Select the Customer contact for cash sales",
+        placeholder: "Select a contact",
+      },
+      {
+        key: "owners_contact",
+        sub: "Select the Director or Responsible person who pays personally",
+        placeholder: "Select a contact",
+      },
       {
         key: "discrepancy_contact",
-        sub: "Select Director or Responsible person",
+        sub: "Select the Director or Responsible person for the cash difference",
         placeholder: "Select a contact",
       },
     ],

@@ -175,18 +175,30 @@ describe("the settings chrome", () => {
 });
 
 describe("without a live Xero connection", () => {
-  it("offers only a way to connect, and does not read the codes AT ALL", async () => {
-    // Reading them would also start the chart re-sync, for a chart that cannot be synced.
+  it("still shows the stored codes to tick, read without a chart re-sync", async () => {
+    // owner, 2026-11-12: the codes are available even without Xero; sync_chart=false starts no
+    // re-sync of a chart that cannot be synced
     serve({ connected: false });
     show();
 
-    expect(await screen.findByText(/Xero isn't connected/)).toBeInTheDocument();
-    expect(asked().some((u) => u.includes("/auth/xero-status"))).toBe(true);
-    expect(asked().some((u) => u.includes("/entity-bill-accounts/"))).toBe(false);
+    expect(await screen.findByRole("searchbox")).toBeInTheDocument();
+    expect(screen.queryByText(/Xero isn't connected/)).toBeNull();
+    expect(screen.getByRole("button", { name: /Save Changes/ })).toBeInTheDocument();
+    const read = asked().find((u) => u.includes("/entity-bill-accounts/"));
+    expect(read).toContain("sync_chart=false");
+    expect(read).toContain("include_inactive=true");
   });
 
-  it("points at the hub's Integration tab, where Xero is connected", async () => {
-    serve({ connected: false });
+  it("a connected company's read still starts the re-sync", async () => {
+    serve();
+    show();
+
+    await screen.findByRole("searchbox");
+    expect(asked().find((u) => u.includes("/entity-bill-accounts/"))).not.toContain("sync_chart");
+  });
+
+  it("with no codes at all, points at the hub's Integration tab, where Xero is connected", async () => {
+    serve({ connected: false, accounts: () => json([]) });
     show();
 
     // the notice's own link (the tab row has an "Integration" link too)
@@ -201,8 +213,8 @@ describe("without a live Xero connection", () => {
     );
   });
 
-  it("shows no search box and no Save at all", async () => {
-    serve({ connected: false });
+  it("with no codes at all, shows no search box and no Save", async () => {
+    serve({ connected: false, accounts: () => json([]) });
     show();
 
     await screen.findByText(/Xero isn't connected/);

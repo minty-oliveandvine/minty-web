@@ -195,7 +195,14 @@ export function Combo({
         placeholder={placeholder}
         value={value}
         disabled={disabled}
-        onFocus={() => openList("")}
+        onFocus={(e) => {
+          // a focus given back after a change (a contact just created) leaves the list shut
+          if (e.currentTarget.dataset.quietFocus) {
+            delete e.currentTarget.dataset.quietFocus;
+            return;
+          }
+          openList("");
+        }}
         onClick={() => {
           if (!open) openList("");
         }}

@@ -45,7 +45,8 @@ import {
 
 /**
  * The two Xero cards of Petty Cash Settings (Flask's, Minty `1c25b35^1`, by way of
- * minty-petty-cash-web): "Xero account mapping" and "Petty Cash Account Code". Each saves on its
+ * minty-petty-cash-web): "Account mapping" (titled "Xero account mapping" until 2026-11-12) and
+ * "Petty Cash Account Code". Each saves on its
  * own: `PUT /settings/xero/mapping` and `PUT /settings/xero/account-codes`. Without a live
  * connection each keeps its heading and says "Xero isn't connected", linking to the Integration
  * tab. A company keeping its books in Minty (`minty`) draws both anyway, with its own accounts.
@@ -149,18 +150,19 @@ export function XeroMappingCard({
   const minty = load.kind === "ready" && !!load.read.minty;
   return (
     <PettyCashCard
-      title={minty ? "Account mapping" : "Xero account mapping"}
+      // one title: the card is no longer Xero's alone (owner, 2026-11-12)
+      title="Account mapping"
       lead={
         minty
           ? "The accounts daily closing uses."
-          : "The Xero accounts and contacts a petty cash report posts to."
+          : "The accounts daily closing uses, and the Xero contacts a report posts to."
       }
       readOnly={load.kind === "ready" && !editable}
       testId="xero-mapping"
     >
       {load.kind !== "ready" ? (
         <NotReady load={load} onRetry={onRetry} />
-      ) : !(load.read.live || minty) || !load.read.mapping ? (
+      ) : !load.read.mapping ? (
         <XeroNotConnected href={connectHref} />
       ) : (
         // a new read (a save) starts the form again from what the API holds
@@ -168,6 +170,9 @@ export function XeroMappingCard({
           key={`${resetKey}:${JSON.stringify(load.read.mapping)}`}
           fields={load.read.mapping}
           minty={minty}
+          // a Xero company without a live connection: its five accounts from the stored chart,
+          // and the Xero contacts group says so (owner, 2026-11-12)
+          offlineHref={!minty && !load.read.live ? connectHref : null}
           editable={editable}
           busy={busy}
           call={call}
@@ -183,6 +188,7 @@ export function XeroMappingCard({
 function MappingForm({
   fields: initial,
   minty = false,
+  offlineHref = null,
   editable,
   busy,
   call,
@@ -193,6 +199,8 @@ function MappingForm({
   fields: MappingField[];
   /** Minty's own accounts: the field lines don't say "from Xero". */
   minty?: boolean;
+  /** A Xero company without a live connection: the Integration tab's address, else null. */
+  offlineHref?: string | null;
   editable: boolean;
   busy: boolean;
   call: Call;
@@ -299,7 +307,13 @@ function MappingForm({
     pick(adding.key, contact);
     const key = adding.key;
     setAdding(null);
-    window.setTimeout(() => document.getElementById(idOf(key))?.focus(), 0);
+    // back to the box, quietly: its list would open and cover the next box (Combo's QUIET_FOCUS)
+    window.setTimeout(() => {
+      const box = document.getElementById(idOf(key));
+      if (!box) return;
+      box.dataset.quietFocus = "1";
+      box.focus();
+    }, 0);
     onAdded("That contact's added!");
   }
 
@@ -361,124 +375,141 @@ function MappingForm({
         </div>
       ) : null}
 
-      {MAPPING_GROUPS.map((group, gi) => (
-        <div
-          key={group.title}
-          className={`flex min-w-0 flex-col gap-3 ${gi ? "border-t border-set-line pt-4" : ""}`}
-        >
-          <h4 className="text-[14.5px] font-semibold text-set-ink">{group.title}</h4>
-          {group.fields.map(({ key, sub: line, placeholder }) => {
-            const field = byKey.get(key);
-            if (!field) return null;
-            const sub = minty ? line.replace(" from Xero", "") : line;
-            const id = idOf(key);
-            const problem = problems[key];
-            const problemId = `${id}-problem`;
-            if (adding?.key === key) {
-              const emptyNote = adding.refusedEmpty && !adding.name.trim() ? CONTACT_EMPTY : null;
-              return (
-                <div key={key} className="flex min-w-0 flex-col gap-2">
-                  <p className="text-[13px] text-set-ink-2">{sub}</p>
-                  <div className="flex min-w-0 flex-col gap-3 rounded-[12px] border border-set-edge bg-white p-4">
-                    <div className="flex min-w-0 flex-col">
-                      <label className={SETTINGS_LABEL} htmlFor={`${id}-new`}>
-                        New Contact
-                        <RequiredMark />
-                        <span className="sr-only"> (required)</span>
-                      </label>
-                      <input
-                        id={`${id}-new`}
-                        type="text"
-                        autoComplete="off"
-                        autoFocus
-                        aria-required
-                        placeholder="Enter a New Contact"
-                        value={adding.name}
-                        aria-invalid={emptyNote ? true : undefined}
-                        aria-describedby={emptyNote ? `${id}-new-problem` : undefined}
-                        onChange={(e) => setAdding({ ...adding, name: e.target.value })}
-                        onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
-                          if (e.key === "Enter") {
-                            e.preventDefault();
-                            void createContact();
-                          } else if (e.key === "Escape") {
-                            e.preventDefault();
-                            setAdding(null);
-                          }
-                        }}
-                        className={`${inputClass(Boolean(emptyNote))} placeholder:text-set-mute`}
-                      />
-                      {emptyNote ? (
-                        <p id={`${id}-new-problem`} className={SETTINGS_FIELD_ERROR}>
-                          {emptyNote}
-                        </p>
-                      ) : null}
-                    </div>
-                    <div className="flex flex-wrap gap-3">
-                      <button
-                        type="button"
-                        onClick={() => setAdding(null)}
-                        className={`${SETTINGS_OUTLINE} flex-1`}
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        type="button"
-                        disabled={busy}
-                        onClick={() => void createContact()}
-                        className={`${SETTINGS_PRIMARY} flex-1`}
-                      >
-                        Create
-                      </button>
+      {MAPPING_GROUPS.filter((group) => group.fields.some(({ key }) => byKey.has(key))).map(
+        (group, gi) => (
+          <div
+            key={group.title}
+            data-mapping-group={group.title}
+            className={`flex min-w-0 flex-col gap-3 ${gi ? "border-t border-set-line pt-4" : ""}`}
+          >
+            <h4 className="text-[14.5px] font-semibold text-set-ink">{group.title}</h4>
+            {group.fields.map(({ key, sub: line, placeholder }) => {
+              const field = byKey.get(key);
+              if (!field) return null;
+              const sub = minty || offlineHref ? line.replace(" from Xero", "") : line;
+              const id = idOf(key);
+              const problem = problems[key];
+              const problemId = `${id}-problem`;
+              if (adding?.key === key) {
+                const emptyNote = adding.refusedEmpty && !adding.name.trim() ? CONTACT_EMPTY : null;
+                return (
+                  <div key={key} className="flex min-w-0 flex-col gap-2">
+                    <p className="text-[13px] text-set-ink-2">{sub}</p>
+                    <div className="flex min-w-0 flex-col gap-3 rounded-[12px] border border-set-edge bg-white p-4">
+                      <div className="flex min-w-0 flex-col">
+                        <label className={SETTINGS_LABEL} htmlFor={`${id}-new`}>
+                          New Contact
+                          <RequiredMark />
+                          <span className="sr-only"> (required)</span>
+                        </label>
+                        <input
+                          id={`${id}-new`}
+                          type="text"
+                          autoComplete="off"
+                          autoFocus
+                          aria-required
+                          placeholder="Enter a New Contact"
+                          value={adding.name}
+                          aria-invalid={emptyNote ? true : undefined}
+                          aria-describedby={emptyNote ? `${id}-new-problem` : undefined}
+                          onChange={(e) => setAdding({ ...adding, name: e.target.value })}
+                          onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              void createContact();
+                            } else if (e.key === "Escape") {
+                              e.preventDefault();
+                              setAdding(null);
+                            }
+                          }}
+                          className={`${inputClass(Boolean(emptyNote))} placeholder:text-set-mute`}
+                        />
+                        {emptyNote ? (
+                          <p id={`${id}-new-problem`} className={SETTINGS_FIELD_ERROR}>
+                            {emptyNote}
+                          </p>
+                        ) : null}
+                      </div>
+                      <div className="flex flex-wrap gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setAdding(null)}
+                          className={`${SETTINGS_OUTLINE} flex-1`}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => void createContact()}
+                          className={`${SETTINGS_PRIMARY} flex-1`}
+                        >
+                          Create
+                        </button>
+                      </div>
                     </div>
                   </div>
+                );
+              }
+              return (
+                <div key={key} className="flex min-w-0 flex-col">
+                  <label className={SETTINGS_LABEL} htmlFor={id}>
+                    {sub}
+                    {field.optional ? (
+                      <span className="font-normal text-set-mute"> (optional)</span>
+                    ) : (
+                      <span className="sr-only"> (required)</span>
+                    )}
+                  </label>
+                  <Combo
+                    id={id}
+                    value={texts[key]}
+                    placeholder={placeholder}
+                    disabled={!editable}
+                    required={!field.optional}
+                    rotateChevron
+                    invalid={Boolean(problem) || marked.has(key)}
+                    describedBy={problem ? problemId : undefined}
+                    rows={rows(field)}
+                    onText={(t) => setTexts((all) => ({ ...all, [key]: t }))}
+                    onPick={(optionId) => {
+                      if (optionId === ADD) {
+                        const typed = texts[key].trim();
+                        const current = labelOf(key, picked[key]);
+                        setAdding({
+                          key,
+                          name: typed === current ? "" : typed,
+                          refusedEmpty: false,
+                        });
+                        setTexts((all) => ({ ...all, [key]: current }));
+                        return;
+                      }
+                      const option = field.options.find((o) => o.id === optionId);
+                      if (option) pick(key, option);
+                    }}
+                    onBlur={() => setTexts((all) => ({ ...all, [key]: labelOf(key, picked[key]) }))}
+                  />
+                  {problem ? (
+                    <p id={problemId} className={SETTINGS_FIELD_ERROR}>
+                      {problem}
+                    </p>
+                  ) : null}
                 </div>
               );
-            }
-            return (
-              <div key={key} className="flex min-w-0 flex-col">
-                <label className={SETTINGS_LABEL} htmlFor={id}>
-                  {sub}
-                  {field.optional ? (
-                    <span className="font-normal text-set-mute"> (optional)</span>
-                  ) : (
-                    <span className="sr-only"> (required)</span>
-                  )}
-                </label>
-                <Combo
-                  id={id}
-                  value={texts[key]}
-                  placeholder={placeholder}
-                  disabled={!editable}
-                  required={!field.optional}
-                  rotateChevron
-                  invalid={Boolean(problem) || marked.has(key)}
-                  describedBy={problem ? problemId : undefined}
-                  rows={rows(field)}
-                  onText={(t) => setTexts((all) => ({ ...all, [key]: t }))}
-                  onPick={(optionId) => {
-                    if (optionId === ADD) {
-                      const typed = texts[key].trim();
-                      const current = labelOf(key, picked[key]);
-                      setAdding({ key, name: typed === current ? "" : typed, refusedEmpty: false });
-                      setTexts((all) => ({ ...all, [key]: current }));
-                      return;
-                    }
-                    const option = field.options.find((o) => o.id === optionId);
-                    if (option) pick(key, option);
-                  }}
-                  onBlur={() => setTexts((all) => ({ ...all, [key]: labelOf(key, picked[key]) }))}
-                />
-                {problem ? (
-                  <p id={problemId} className={SETTINGS_FIELD_ERROR}>
-                    {problem}
-                  </p>
-                ) : null}
-              </div>
-            );
-          })}
+            })}
+          </div>
+        ),
+      )}
+
+      {offlineHref ? (
+        <div
+          data-mapping-group="Xero contacts"
+          className="flex min-w-0 flex-col gap-3 border-t border-set-line pt-4"
+        >
+          <h4 className="text-[14.5px] font-semibold text-set-ink">Xero contacts</h4>
+          <XeroNotConnected href={offlineHref} />
         </div>
-      ))}
+      ) : null}
 
       {editable ? (
         <div className="flex flex-wrap items-center gap-3 border-t border-set-line pt-4">
@@ -524,7 +555,10 @@ export function AccountCodesCard({
     >
       {load.kind !== "ready" ? (
         <NotReady load={load} onRetry={onRetry} />
-      ) : !(load.read.live || load.read.minty) || !load.read.account_codes ? (
+      ) : // the codes are the stored accounts: shown with or without Xero (owner, 2026-11-12);
+      // the notice only when there is nothing to tick
+      !load.read.account_codes ||
+        (!(load.read.live || load.read.minty) && load.read.account_codes.length === 0) ? (
         <XeroNotConnected href={connectHref} />
       ) : (
         <CodesForm

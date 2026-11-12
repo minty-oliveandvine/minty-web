@@ -219,7 +219,7 @@ async function stub(page: Page, state: State, refuse: Refuse = () => null) {
       for (const key of MAPPING_KEYS) state.xero.mapping[key] = String(body?.[key]);
       state.xero.saved = true;
       return route.fulfill({
-        json: { ...xeroRead(state), message: "Xero account mapping saved.", first_save: first },
+        json: { ...xeroRead(state), message: "Account mapping saved.", first_save: first },
       });
     }
     if (path === "/settings/xero/account-codes") {
@@ -644,7 +644,7 @@ test.describe("petty cash settings", () => {
 
   // ---- the Xero cards ----
 
-  const MAPPING = "Xero account mapping";
+  const MAPPING = "Account mapping";
   const CODES = "Petty Cash Account Code";
   const picker = (page: Page, sub: string, nth = 0) =>
     card(page, MAPPING).getByRole("combobox", { name: sub }).nth(nth);
@@ -654,9 +654,9 @@ test.describe("petty cash settings", () => {
     ["Select account code for cash sales", 0, "Sales - 200"],
     ["Select the Customer contact", 0, "Walk-in Customer"],
     ["Select account code for the Advance Payment from director", 0, "Owner Drawings - 880"],
-    ["Select Director or Responsible person", 0, "Tess Tester"],
+    ["Select the Director or Responsible person who pays personally", 0, "Tess Tester"],
     ["Select account code to record Cash Discrepancy", 0, "Suspense - 990"],
-    ["Select Director or Responsible person", 1, "Tess Tester"],
+    ["Select the Director or Responsible person for the cash difference", 0, "Tess Tester"],
   ];
   const saveIn = (page: Page, title: string) =>
     card(page, title).getByRole("button", { name: "Save Changes" });
@@ -746,7 +746,7 @@ test.describe("petty cash settings", () => {
     await mapping.getByRole("option", { name: /Owner Drawings/ }).click();
     await expect(sales).toHaveValue("Owner Drawings - 880");
     await saveIn(page, MAPPING).click();
-    await expect(toast(page, "Xero account mapping saved.")).toBeVisible();
+    await expect(toast(page, "Account mapping saved.")).toBeVisible();
     expect(sent).toEqual([
       {
         method: "PUT",
@@ -799,7 +799,7 @@ test.describe("petty cash settings", () => {
     await expect(toast(page, why)).toBeVisible();
   });
 
-  test("first setup: nothing red on open; a refused Save lists what is missing; the first save goes to the Petty Cash dashboard", async ({
+  test("first setup: nothing red on open; a refused Save lists what is missing; the first save stays here, saying so", async ({
     page,
   }) => {
     const sent = await open(page, initialState({ xero: xeroState({ mapping: EMPTY_MAPPING }) }));
@@ -832,20 +832,16 @@ test.describe("petty cash settings", () => {
     // one left: focus goes to it with its sentence, no summary
     await saveIn(page, MAPPING).click();
     await expect(mapping.getByRole("alert")).toHaveCount(0);
-    await expect(picker(page, PICKERS[7][0], 1)).toBeFocused();
+    await expect(picker(page, PICKERS[7][0])).toBeFocused();
     await expect(mapping.getByText("Choose the Discrepancy contact.")).toBeVisible();
     await mapping.getByRole("option", { name: /Tess Tester/ }).click();
     await expect(mapping.getByText("Choose the Discrepancy contact.")).toHaveCount(0);
 
     await saveIn(page, MAPPING).click();
-    // the Petty Cash app's dashboard, through accounts-api's /enter and its hand-off
-    await expect(page).toHaveURL((url) => {
-      if (url.pathname !== `/entity/${ENTITY}/enter`) return false;
-      const next = new URL(url.searchParams.get("next") ?? "", "http://x");
-      return (
-        next.pathname === "/handoff/petty-cash-web" && next.searchParams.get("entity_id") === ENTITY
-      );
-    });
+    // like every save, the first stays here and says so (owner, 2026-11-11: it used to leave for
+    // the Petty Cash dashboard, and its sentence went with the page)
+    await expect(toast(page, "Account mapping saved.")).toBeVisible();
+    await expect(page).toHaveURL(new RegExp(`${SETTINGS}$`));
     expect(sent).toEqual([{ method: "PUT", path: "/settings/xero/mapping", body: SAVED_MAPPING }]);
   });
 
@@ -881,13 +877,16 @@ test.describe("petty cash settings", () => {
     await expect(toast(page, "That contact's added!")).toBeVisible();
     expect(sent).toEqual([{ method: "POST", path: "/suppliers", body: { name: "Nina Ng" } }]);
     await expect(contact).toHaveValue("Nina Ng");
+    // focus comes back to the box without opening its list, which would cover the next box
+    await expect(contact).toBeFocused();
+    await expect(mapping.getByRole("listbox")).toHaveCount(0);
     // the other contact pickers offer it too
-    await picker(page, "Select Director or Responsible person").click();
+    await picker(page, "Select the Director or Responsible person who pays personally").click();
     await expect(mapping.getByRole("option", { name: "Nina Ng" })).toBeVisible();
     await page.keyboard.press("Escape");
 
     await saveIn(page, MAPPING).click();
-    await expect(toast(page, "Xero account mapping saved.")).toBeVisible();
+    await expect(toast(page, "Account mapping saved.")).toBeVisible();
     expect(sent[1]).toEqual({
       method: "PUT",
       path: "/settings/xero/mapping",
