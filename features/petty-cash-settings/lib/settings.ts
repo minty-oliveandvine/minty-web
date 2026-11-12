@@ -14,8 +14,9 @@
 export type MethodType = "electronic" | "delivery";
 export const METHOD_TYPES: readonly MethodType[] = ["electronic", "delivery"];
 
-/** `shared`: another company has it too, so the API refuses a rename (409). */
-export type SalesMethod = { id: string; name: string; value_name: string; shared: boolean };
+/** `own`: the company typed it, so it may rename and delete it; Minty's methods (`own: false`)
+ * only come off its list (owner, 2026-11-12). */
+export type SalesMethod = { id: string; name: string; value_name: string; own: boolean };
 export type CatalogueMethod = { id: string; name: string };
 
 export type SettingsPermissions = {
@@ -122,11 +123,6 @@ export function methodNameProblem(
   if (listed.some((m) => m.id !== except && m.name.trim().toLowerCase() === folded))
     return `${wanted} is already on the list.`;
   return null;
-}
-
-/** Said at once when a shared method's name is clicked, instead of a rename box the API would refuse. */
-export function sharedRenameMessage(name: string): string {
-  return `Other companies use ${name} too, so it can't be renamed here. Delete it and add a new method instead.`;
 }
 
 /** The type's ids after the method at `from` takes the place of the one at `to` (a drag dropped on

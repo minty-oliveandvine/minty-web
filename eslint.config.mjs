@@ -129,6 +129,10 @@ const eslintConfig = defineConfig([
               allow: ["shared", "app-payment-settings", ["feature", { name: "payment-settings" }]],
             },
             {
+              from: "app-accounts-contacts",
+              allow: ["shared", ["feature", { name: "accounts-contacts" }]],
+            },
+            {
               from: "app-auth",
               allow: ["shared", "app-auth", ["feature", { name: "auth" }]],
             },

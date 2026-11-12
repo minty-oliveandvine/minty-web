@@ -15,7 +15,7 @@ const HUB_SETTINGS = "/entity/3d65f186/e2e-petty-cash-shop/settings";
 const SETTINGS = `${HUB_SETTINGS}/petty-cash`;
 const PETTY_CASH_API_URL = process.env.E2E_PETTY_CASH_API_URL || "http://localhost:8010";
 const API =
-  /\/api\/petty-cash\/v1\/companies\/[^/]+\/(settings(?:\/xero(?:\/mapping|\/account-codes)?)?|sales-methods(?:\/[^/?]+)?|suppliers)$/;
+  /\/api\/petty-cash\/v1\/companies\/[^/]+\/(settings(?:\/xero(?:\/mapping|\/account-codes)?)?|sales-methods(?:\/[^/?]+)?)$/;
 const CREDS = { secret: "stub-never-verified", userId: "u", entityId: ENTITY, entityName: NAME };
 
 const VISA = "0a000000-0000-4000-8000-000000000001";
@@ -25,7 +25,7 @@ const OCTOPUS = "0b000000-0000-4000-8000-000000000001";
 const KEETA = "0b000000-0000-4000-8000-000000000002";
 
 type Json = Record<string, unknown>;
-type Method = { id: string; name: string; value_name: string; shared: boolean };
+type Method = { id: string; name: string; value_name: string; own: boolean };
 type Perms = Record<string, boolean>;
 
 const ALL: Perms = {
@@ -45,11 +45,12 @@ const CASHIER: Perms = {
   reorder_sales_methods: false,
 };
 
-const m = (id: string, name: string, shared = false): Method => ({
+// `own`: typed by the company (pencil and Delete); Minty's only come off its list (owner, 2026-11-12)
+const m = (id: string, name: string, own = false): Method => ({
   id,
   name,
   value_name: `${name.toLowerCase()}_sales`,
-  shared,
+  own,
 });
 
 // the Xero cards (GET /settings/xero and its two PUTs)
@@ -130,8 +131,8 @@ function xeroState(
 /** What the stubbed API holds; each write changes it and answers the read again. */
 function initialState(over: { perms?: Perms; xero?: ReturnType<typeof xeroState> } = {}) {
   return {
-    electronic: [m(VISA, "Visa"), m(ALIPAY, "AlipayHK")],
-    delivery: [m(FOODPANDA, "Foodpanda", true)],
+    electronic: [m(VISA, "Visa", true), m(ALIPAY, "AlipayHK", true)],
+    delivery: [m(FOODPANDA, "Foodpanda")],
     available: {
       electronic: [{ id: OCTOPUS, name: "Octopus" }],
       delivery: [{ id: KEETA, name: "Keeta" }],
@@ -199,6 +200,25 @@ async function stubHub(page: Page) {
 /** Every call the page makes, stubbed; returns what was sent. `refuse` answers a write with a refusal. */
 async function stub(page: Page, state: State, refuse: Refuse = () => null) {
   const sent: Sent[] = [];
+  // a new contact is accounts-api's (owner, 2026-11-12: Settings' contacts, accountant and up),
+  // the company as ?entity=
+  await page.route(`${ACCOUNTS_API_URL}/api/me/company/contacts**`, async (route: Route) => {
+    const req = route.request();
+    if (req.method() === "OPTIONS") return route.fulfill({ status: 204 });
+    const url = new URL(req.url());
+    expect(url.searchParams.get("entity")).toBe(ENTITY);
+    const body = JSON.parse(req.postData() ?? "null") as Json | null;
+    const call = { method: req.method(), path: url.pathname, body };
+    sent.push(call);
+    const no = refuse(call);
+    if (no) return route.fulfill({ status: no.status, json: { error: no.error } });
+    const made = { id: NEW_CONTACT, name: String(body?.name) };
+    state.xero.contacts = [...state.xero.contacts, made];
+    return route.fulfill({
+      status: 201,
+      json: { contact: { id: "row-new", name: made.name, xero_id: NEW_CONTACT }, message: "added" },
+    });
+  });
   await page.route(API, async (route: Route) => {
     const req = route.request();
     if (req.method() === "OPTIONS") return route.fulfill({ status: 204 });
@@ -227,11 +247,6 @@ async function stub(page: Page, state: State, refuse: Refuse = () => null) {
       state.xero.codes = state.xero.codes.map((c) => ({ ...c, selected: codes.includes(c.code) }));
       return route.fulfill({ json: { ...xeroRead(state), message: "Account codes saved." } });
     }
-    if (path === "/suppliers") {
-      const made = { id: NEW_CONTACT, name: String(body?.name) };
-      state.xero.contacts = [...state.xero.contacts, made];
-      return route.fulfill({ status: 201, json: made });
-    }
     let message = "";
     let status = 200;
     if (path === "/sales-methods" && call.method === "POST") {
@@ -239,7 +254,7 @@ async function stub(page: Page, state: State, refuse: Refuse = () => null) {
       const fromCatalogue = state.available[type].find((a) => a.id === body?.sale_info_id);
       const added = fromCatalogue
         ? m(fromCatalogue.id, fromCatalogue.name)
-        : m("0c000000-0000-4000-8000-000000000001", String(body?.name));
+        : m("0c000000-0000-4000-8000-000000000001", String(body?.name), true);
       state[type] = [...state[type], added];
       state.available[type] = state.available[type].filter((a) => a.id !== added.id);
       message = `${added.name} added.`;
@@ -251,6 +266,7 @@ async function stub(page: Page, state: State, refuse: Refuse = () => null) {
       message = "Order saved.";
     } else {
       const id = path.split("/").pop();
+      const was = [...state.electronic, ...state.delivery].find((x) => x.id === id);
       for (const type of ["electronic", "delivery"] as const) {
         if (call.method === "PUT")
           state[type] = state[type].map((x) =>
@@ -261,7 +277,9 @@ async function stub(page: Page, state: State, refuse: Refuse = () => null) {
       message =
         call.method === "PUT"
           ? "Name saved."
-          : "Method removed. Reports that used it keep their amounts.";
+          : was?.own
+            ? `${was.name} deleted.`
+            : `${was?.name} is off your list. Add it back any time from Add New Method.`;
     }
     return route.fulfill({ status, json: { ...read(state), message } });
   });
@@ -294,6 +312,8 @@ const toast = (page: Page, text: string | RegExp) =>
 // each row's bin and drag handle (owner, 2026-11-12: they replace the ⋮ menu)
 const bin = (page: Page, title: string, name: string) =>
   card(page, title).getByRole("button", { name: `Delete ${name}` });
+const off = (page: Page, title: string, name: string) =>
+  card(page, title).getByRole("button", { name: `Remove ${name} from my list` });
 const handle = (page: Page, title: string, name: string) =>
   card(page, title).getByRole("button", { name: `Move ${name}` });
 
@@ -359,10 +379,9 @@ test.describe("petty cash settings", () => {
     await electronic.getByRole("button", { name: "Add New Method" }).click();
     const picker = electronic.getByRole("combobox", { name: "Method" });
     await expect(picker).toBeFocused();
-    await expect(electronic.getByRole("option")).toHaveText([
-      "Octopus",
-      "+ Other (type a new name)",
-    ]);
+    await expect(electronic.getByRole("option")).toHaveText(["Octopus"]);
+    // the note on top as the list opens (owner, 2026-11-12), as every contact picker has it
+    await expect(electronic.getByText("Type a method name to add a new method")).toBeVisible();
     await picker.fill("zz");
     await expect(electronic.getByText("No matching payment method found")).toBeVisible();
     await picker.fill("oct");
@@ -387,10 +406,12 @@ test.describe("petty cash settings", () => {
     const sent = await open(page);
     const delivery = card(page, "Delivery");
     await delivery.getByRole("button", { name: "Add New Method" }).click();
-    await delivery.getByRole("combobox", { name: "Method" }).click();
-    await delivery.getByRole("option", { name: "+ Other (type a new name)" }).click();
+    await delivery.getByRole("combobox", { name: "Method" }).fill("Lalamove");
+    await delivery.getByRole("option", { name: "+ Add 'Lalamove' as a new method" }).click();
     const name = delivery.getByRole("textbox", { name: "Name" });
     await expect(name).toBeFocused();
+    await expect(name).toHaveValue("Lalamove");
+    await name.fill("");
     // empty: nothing said until Add is refused for it
     await expect(delivery.getByText(/still empty/)).toHaveCount(0);
     await delivery.getByRole("button", { name: "Add", exact: true }).click();
@@ -432,9 +453,9 @@ test.describe("petty cash settings", () => {
     );
     const electronic = card(page, "Electronic");
     await electronic.getByRole("button", { name: "Add New Method" }).click();
-    await electronic.getByRole("combobox", { name: "Method" }).click();
-    await electronic.getByRole("option", { name: "+ Other (type a new name)" }).click();
-    await electronic.getByRole("textbox", { name: "Name" }).fill("Tap & Go");
+    await electronic.getByRole("combobox", { name: "Method" }).fill("Tap & Go");
+    await electronic.getByRole("option", { name: "+ Add 'Tap & Go' as a new method" }).click();
+    await expect(electronic.getByRole("textbox", { name: "Name" })).toHaveValue("Tap & Go");
     await electronic.getByRole("button", { name: "Add", exact: true }).click();
     await expect(toast(page, "Tap & Go is already on the list.")).toBeVisible();
     await expect(electronic.getByRole("textbox", { name: "Name" })).toHaveValue("Tap & Go");
@@ -444,10 +465,12 @@ test.describe("petty cash settings", () => {
     await expect(electronic.getByRole("button", { name: "Add New Method" })).toBeVisible();
   });
 
-  test("renaming: click the name, Enter saves; Escape puts it back", async ({ page }) => {
+  test("renaming: the pencil opens the name box, Enter saves; Escape puts it back", async ({
+    page,
+  }) => {
     const sent = await open(page);
     const electronic = card(page, "Electronic");
-    await electronic.getByRole("button", { name: "AlipayHK", exact: true }).click();
+    await electronic.getByRole("button", { name: "Edit AlipayHK" }).click();
     const box = electronic.getByRole("textbox", { name: "Rename AlipayHK" });
     await expect(box).toBeFocused();
     await box.fill("visa");
@@ -462,10 +485,10 @@ test.describe("petty cash settings", () => {
     await box.press("Enter");
     expect(sent).toEqual([]);
     await box.press("Escape");
-    await expect(electronic.getByRole("button", { name: "AlipayHK", exact: true })).toBeVisible();
+    await expect(electronic.getByRole("button", { name: "Edit AlipayHK" })).toBeVisible();
     expect(sent).toEqual([]);
 
-    await electronic.getByRole("button", { name: "AlipayHK", exact: true }).click();
+    await electronic.getByRole("button", { name: "Edit AlipayHK" }).click();
     await electronic.getByRole("textbox", { name: "Rename AlipayHK" }).fill("Alipay HK");
     await electronic.getByRole("textbox", { name: "Rename AlipayHK" }).press("Enter");
     await expect(toast(page, "Name saved.")).toBeVisible();
@@ -475,70 +498,80 @@ test.describe("petty cash settings", () => {
     await expect(rows(page, "Electronic")).toHaveText([/Visa/, /Alipay HK/]);
   });
 
-  test("a rename of a method another company shares (409) says why and keeps the old name", async ({
+  test("a refused rename (409) says the API's sentence and keeps the old name", async ({
     page,
   }) => {
     await open(page, initialState(), (s) =>
       s.method === "PUT" && s.path.startsWith("/sales-methods/")
-        ? { status: 409, error: "Visa is used by other companies too. Add a new method instead." }
+        ? { status: 409, error: "A method with that name already exists." }
         : null,
     );
     const electronic = card(page, "Electronic");
-    await electronic.getByRole("button", { name: "Visa", exact: true }).click();
+    await electronic.getByRole("button", { name: "Edit Visa" }).click();
     await electronic.getByRole("textbox", { name: "Rename Visa" }).fill("Visa Card");
     await electronic.getByRole("textbox", { name: "Rename Visa" }).press("Enter");
-    await expect(
-      toast(page, "Visa is used by other companies too. Add a new method instead."),
-    ).toBeVisible();
+    await expect(toast(page, "A method with that name already exists.")).toBeVisible();
     await expect(rows(page, "Electronic")).toHaveText([/Visa/, /AlipayHK/]);
     await expect(toast(page, "Name saved.")).toHaveCount(0);
   });
 
-  test("a shared method says at once that it can't be renamed, and opens no box", async ({
-    page,
-  }) => {
+  test("Minty's method has no pencil; the company's own does", async ({ page }) => {
     const sent = await open(page);
     const delivery = card(page, "Delivery");
-    const name = delivery.getByRole("button", { name: "Foodpanda", exact: true });
-    await name.click();
-    const note = delivery.getByText(
-      "Other companies use Foodpanda too, so it can't be renamed here. Delete it and add a new method instead.",
-    );
-    await expect(note).toBeVisible();
-    await expect(name).toHaveAccessibleDescription(/Other companies use Foodpanda too/);
-    await expect(delivery.getByRole("textbox", { name: "Rename Foodpanda" })).toHaveCount(0);
+    await expect(delivery.getByRole("button", { name: "Edit Foodpanda" })).toHaveCount(0);
+    await expect(delivery.getByRole("button", { name: "Delete Foodpanda" })).toHaveCount(0);
+    await expect(
+      delivery.getByRole("button", { name: "Remove Foodpanda from my list" }),
+    ).toBeVisible();
     expect(sent).toEqual([]);
-    // a method no one else has still renames
-    await card(page, "Electronic").getByRole("button", { name: "Visa", exact: true }).click();
+    // the company's own method renames
+    await card(page, "Electronic").getByRole("button", { name: "Edit Visa" }).click();
     await expect(
       card(page, "Electronic").getByRole("textbox", { name: "Rename Visa" }),
     ).toBeFocused();
     await expectNoHorizontalScroll(page);
   });
 
-  test("removing: the confirm, Go back sends nothing, Delete switches it off", async ({ page }) => {
+  test("removing Minty's method: the confirm, Go back sends nothing, Remove takes it off the list", async ({
+    page,
+  }) => {
     const sent = await open(page);
-    await bin(page, "Delivery", "Foodpanda").click();
-    const dialog = page.getByRole("dialog", { name: "Delete Delivery Method" });
+    await off(page, "Delivery", "Foodpanda").click();
+    const dialog = page.getByRole("dialog", { name: "Remove Delivery Method" });
     await expect(dialog).toContainText(
-      'Are you sure you want to delete "Foodpanda"? This action cannot be undone.',
+      'Remove "Foodpanda" from your list? You can add it back any time from Add New Method.',
     );
     await expect(dialog.getByRole("button", { name: "Go back" })).toBeFocused();
     await dialog.getByRole("button", { name: "Go back" }).click();
     await expect(dialog).toHaveCount(0);
     expect(sent).toEqual([]);
 
-    await bin(page, "Delivery", "Foodpanda").click();
+    await off(page, "Delivery", "Foodpanda").click();
     await page
-      .getByRole("dialog", { name: "Delete Delivery Method" })
-      .getByRole("button", { name: "Delete" })
+      .getByRole("dialog", { name: "Remove Delivery Method" })
+      .getByRole("button", { name: "Remove" })
       .click();
     await expect(
-      toast(page, "Method removed. Reports that used it keep their amounts."),
+      toast(page, "Foodpanda is off your list. Add it back any time from Add New Method."),
     ).toBeVisible();
     expect(sent).toEqual([{ method: "DELETE", path: `/sales-methods/${FOODPANDA}`, body: null }]);
     await expect(rows(page, "Delivery")).toHaveCount(0);
     await expect(card(page, "Delivery").getByText("No delivery methods yet.")).toBeVisible();
+  });
+
+  test("deleting the company's own method: confirmed, then gone from the list", async ({
+    page,
+  }) => {
+    const sent = await open(page);
+    await bin(page, "Electronic", "AlipayHK").click();
+    const dialog = page.getByRole("dialog", { name: "Delete Electronic Method" });
+    await expect(dialog).toContainText(
+      'Are you sure you want to delete "AlipayHK"? This action cannot be undone.',
+    );
+    await dialog.getByRole("button", { name: "Delete" }).click();
+    await expect(toast(page, "AlipayHK deleted.")).toBeVisible();
+    expect(sent).toEqual([{ method: "DELETE", path: `/sales-methods/${ALIPAY}`, body: null }]);
+    await expect(rows(page, "Electronic")).toHaveText([/Visa/]);
   });
 
   test("reordering: a dragged method dropped on another row sends the type's whole list in its new order", async ({
@@ -588,12 +621,13 @@ test.describe("petty cash settings", () => {
     ).toBeVisible();
     await expect(page.getByRole("button", { name: "Save Changes" })).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Add New Method" })).toHaveCount(0);
-    await expect(page.getByRole("button", { name: /^(Move|Delete) / })).toHaveCount(0);
-    // the names are text, not buttons
+    await expect(page.getByRole("button", { name: /^(Move|Delete|Remove|Edit) / })).toHaveCount(0);
+    // the names are text, and no pencil
     await expect(
       card(page, "Electronic").getByRole("button", { name: "Visa", exact: true }),
     ).toHaveCount(0);
     await expect(card(page, "Electronic").getByText("Visa")).toBeVisible();
+    await expect(page.getByRole("button", { name: /^Edit / })).toHaveCount(0);
     expect(sent).toEqual([]);
     await expectNoHorizontalScroll(page);
   });
@@ -845,7 +879,7 @@ test.describe("petty cash settings", () => {
     expect(sent).toEqual([{ method: "PUT", path: "/settings/xero/mapping", body: SAVED_MAPPING }]);
   });
 
-  test("adding a new contact: the offer, the New Contact box, POST /suppliers, then chosen and saved", async ({
+  test("adding a new contact: the offer, the New Contact box, accounts-api's POST, then chosen and saved", async ({
     page,
   }) => {
     const sent = await open(page, initialState({ xero: xeroState() }));
@@ -853,7 +887,7 @@ test.describe("petty cash settings", () => {
     const contact = picker(page, "Select the Customer contact");
     await contact.click();
     await contact.fill("zz");
-    await expect(mapping.getByText("No Xero contact found")).toBeVisible();
+    await expect(mapping.getByText("No contact found")).toBeVisible();
     await contact.fill("Tess");
     await expect(mapping.getByRole("option")).toHaveText([
       "Tess Tester",
@@ -875,7 +909,9 @@ test.describe("petty cash settings", () => {
     await name.fill("Nina Ng");
     await name.press("Enter");
     await expect(toast(page, "That contact's added!")).toBeVisible();
-    expect(sent).toEqual([{ method: "POST", path: "/suppliers", body: { name: "Nina Ng" } }]);
+    expect(sent).toEqual([
+      { method: "POST", path: "/api/me/company/contacts", body: { name: "Nina Ng" } },
+    ]);
     await expect(contact).toHaveValue("Nina Ng");
     // focus comes back to the box without opening its list, which would cover the next box
     await expect(contact).toBeFocused();
@@ -898,7 +934,7 @@ test.describe("petty cash settings", () => {
     page,
   }) => {
     await open(page, initialState({ xero: xeroState() }), (s) =>
-      s.path === "/suppliers"
+      s.path === "/api/me/company/contacts"
         ? { status: 403, error: "You don't have permission to add contacts." }
         : null,
     );

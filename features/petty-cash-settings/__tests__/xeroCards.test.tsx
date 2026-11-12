@@ -3,7 +3,7 @@
 // not the "Xero isn't connected" notice - with lines that don't say "from Xero". Ported from
 // minty-petty-cash-web's components/settings/__tests__/XeroCards.test.tsx.
 
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import {
@@ -72,8 +72,8 @@ describe("Minty on its own", () => {
     expect(screen.queryByText(/Xero isn.t connected/)).not.toBeInTheDocument();
     expect(screen.getByText("Select Petty Cash bank account")).toBeInTheDocument();
     expect(screen.queryByText(/Select the Customer contact/)).not.toBeInTheDocument();
-    // the Xero-only group is not drawn at all (owner, 2026-11-12)
-    expect(screen.queryByRole("heading", { name: "Xero contacts" })).not.toBeInTheDocument();
+    // no contact field in this read, so no Contacts group
+    expect(screen.queryByRole("heading", { name: "Contacts" })).not.toBeInTheDocument();
   });
 
   it("the account codes card draws its own codes", () => {
@@ -91,9 +91,7 @@ describe("Minty on its own", () => {
       />,
     );
     expect(screen.getByText("Account mapping")).toBeInTheDocument();
-    expect(
-      screen.getByText("The accounts daily closing uses, and the Xero contacts a report posts to."),
-    ).toBeInTheDocument();
+    expect(screen.getByText("The accounts and contacts daily closing uses.")).toBeInTheDocument();
     expect(screen.getByText(/Xero isn.t connected/)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Integration" })).toHaveAttribute("href", "/x");
   });
@@ -130,31 +128,31 @@ describe("a company that banks all its sales (2026-11-10)", () => {
   });
 });
 
-describe("a Xero company: the accounts first, then the Xero-only contacts grouped (owner, 2026-11-12)", () => {
-  const contact = (
-    key: "cashsale_contact" | "owners_contact" | "discrepancy_contact",
-    label: string,
-  ) => ({
-    key,
-    label,
-    kind: "contact" as const,
-    options: [{ id: `c-${key}`, name: "Olive" }],
-    selected: null,
+const contact = (
+  key: "cashsale_contact" | "owners_contact" | "discrepancy_contact",
+  label: string,
+) => ({
+  key,
+  label,
+  kind: "contact" as const,
+  options: [{ id: `c-${key}`, name: "Olive" }],
+  selected: null,
+});
+const xeroRead = () =>
+  read({
+    live: true,
+    minty: false,
+    organisation: "Olive Ltd",
+    mapping: [
+      ...(read().mapping ?? []),
+      contact("cashsale_contact", "Cash Sales contact"),
+      contact("owners_contact", "Director / Responsible person"),
+      contact("discrepancy_contact", "Discrepancy contact"),
+    ],
   });
-  const xeroRead = () =>
-    read({
-      live: true,
-      minty: false,
-      organisation: "Olive Ltd",
-      mapping: [
-        ...(read().mapping ?? []),
-        contact("cashsale_contact", "Cash Sales contact"),
-        contact("owners_contact", "Director / Responsible person"),
-        contact("discrepancy_contact", "Discrepancy contact"),
-      ],
-    });
 
-  it("draws the five accounts' groups, then one Xero contacts group holding the three contacts", () => {
+describe("a Xero company: the accounts first, then the contacts grouped (owner, 2026-11-12)", () => {
+  it("draws the five accounts' groups, then one Contacts group holding the three contacts", () => {
     render(
       <XeroMappingCard {...props} onAdded={vi.fn()} load={{ kind: "ready", read: xeroRead() }} />,
     );
@@ -165,11 +163,11 @@ describe("a Xero company: the accounts first, then the Xero-only contacts groupe
       "Cash Sales",
       "Director Personal Account",
       "Discrepancy - Other Expense",
-      "Xero contacts",
+      "Contacts",
     ]);
     const group = within(
       screen
-        .getByRole("heading", { name: "Xero contacts" })
+        .getByRole("heading", { name: "Contacts" })
         .closest("[data-mapping-group]") as HTMLElement,
     );
     expect(group.getByText("Select the Customer contact for cash sales")).toBeInTheDocument();
@@ -184,26 +182,25 @@ describe("a Xero company: the accounts first, then the Xero-only contacts groupe
 });
 
 describe("a Xero company without a live connection (owner, 2026-11-12)", () => {
-  it("still shows the five accounts to choose; only the Xero contacts group says Xero isn't connected", () => {
+  it("still shows the five accounts and the contacts to choose, with no notice", () => {
+    // contacts are never blocked behind Xero (owner, 2026-11-12, later that day)
     render(
       <XeroMappingCard
         {...props}
         onAdded={vi.fn()}
-        load={{ kind: "ready", read: read({ minty: false, live: false }) }}
+        load={{ kind: "ready", read: { ...xeroRead(), minty: false, live: false } }}
       />,
     );
 
     expect(screen.getByText("Account mapping")).toBeInTheDocument();
-    expect(
-      screen.getByText("The accounts daily closing uses, and the Xero contacts a report posts to."),
-    ).toBeInTheDocument();
+    expect(screen.getByText("The accounts and contacts daily closing uses.")).toBeInTheDocument();
     expect(screen.getAllByRole("heading", { level: 4 }).map((h) => h.textContent)).toEqual([
       "Petty Cash Account",
       "Deposit Bank Account",
       "Cash Sales",
       "Director Personal Account",
       "Discrepancy - Other Expense",
-      "Xero contacts",
+      "Contacts",
     ]);
     expect(
       screen.getByRole("combobox", { name: /Select Petty Cash bank account/ }),
@@ -211,12 +208,60 @@ describe("a Xero company without a live connection (owner, 2026-11-12)", () => {
     expect(screen.queryByText(/from Xero/)).not.toBeInTheDocument();
     const contacts = within(
       screen
-        .getByRole("heading", { name: "Xero contacts" })
+        .getByRole("heading", { name: "Contacts" })
         .closest("[data-mapping-group]") as HTMLElement,
     );
-    expect(contacts.getByText(/Xero isn.t connected/)).toBeInTheDocument();
-    expect(contacts.queryByRole("combobox")).not.toBeInTheDocument();
-    expect(screen.getAllByText(/Xero isn.t connected/)).toHaveLength(1);
+    expect(contacts.getAllByRole("combobox")).toHaveLength(3);
+    expect(screen.queryByText(/Xero isn.t connected/)).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Save Changes" })).toBeInTheDocument();
+  });
+});
+
+describe("a contact picker tells the person they can type to add (owner, 2026-11-12)", () => {
+  const xeroWithContacts = () =>
+    read({
+      live: true,
+      minty: false,
+      organisation: "Olive Ltd",
+      mapping: [
+        ...(read().mapping ?? []),
+        {
+          key: "cashsale_contact",
+          label: "Cash Sales contact",
+          kind: "contact",
+          options: [{ id: "c-1", name: "Walk-in Customer" }],
+          selected: null,
+        },
+      ],
+    });
+
+  it("shows the note as soon as the list opens, and the add row once a new name is typed", () => {
+    render(
+      <XeroMappingCard
+        {...props}
+        onAdded={vi.fn()}
+        load={{ kind: "ready", read: xeroWithContacts() }}
+      />,
+    );
+    const box = screen.getByRole("combobox", { name: /Customer contact/ });
+    fireEvent.focus(box);
+    expect(screen.getByText("Type a contact name to add a new contact")).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Walk-in Customer" })).toBeInTheDocument();
+
+    fireEvent.change(box, { target: { value: "Nina Ng" } });
+    expect(screen.queryByText("Type a contact name to add a new contact")).not.toBeInTheDocument();
+    expect(screen.getByText("+ Add 'Nina Ng' as a new contact")).toBeInTheDocument();
+    expect(screen.getByText("No contact found")).toBeInTheDocument();
+  });
+
+  it("someone who may not add sees no note", () => {
+    const viewOnly = xeroWithContacts();
+    viewOnly.permissions = { ...viewOnly.permissions, edit_mapping: false };
+    render(
+      <XeroMappingCard {...props} onAdded={vi.fn()} load={{ kind: "ready", read: viewOnly }} />,
+    );
+    const box = screen.getByRole("combobox", { name: /Customer contact/ });
+    fireEvent.focus(box);
+    expect(screen.queryByText("Type a contact name to add a new contact")).not.toBeInTheDocument();
   });
 });

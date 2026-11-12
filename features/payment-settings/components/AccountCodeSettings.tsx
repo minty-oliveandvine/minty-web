@@ -30,11 +30,11 @@ import { useLeaveGuard } from "@minty/shared/leaveGuard";
 
 import {
   fetchConnection,
+  fetchRights,
   fetchEntityBillAccounts,
   updateEntityBillAccount,
 } from "@/features/payment-settings/api/paymentSettings";
 import { integrationPath } from "@/features/payment-settings/lib/paths";
-import { readSettingsRole } from "@/features/payment-settings/lib/role";
 
 export const PAYMENT_SETTINGS_COPY = {
   title: "Payment Account Code",
@@ -66,10 +66,13 @@ const ROW = "flex min-h-11 items-center justify-between gap-3 px-3 py-2.5 sm:px-
 type AccountCodeRow = { id: string; label: string };
 
 export function AccountCodeSettings({ company }: { company: { id: string; name: string } }) {
-  // Allowlist, not denylist: {accountant, admin, super_admin} minus view-only - the same set
-  // minty-payment-request-api enforces on these writes (check_edit_bill_settings).
-  const [{ isViewOnly, isElevated }] = useState(readSettingsRole);
-  const readOnly = !isElevated;
+  // What the API says this person may do (owner, 2026-11-12) - never a role read from the token.
+  // Read-only until it answers.
+  const [{ canEdit, viewOnly: isViewOnly }, setRights] = useState({
+    canEdit: false,
+    viewOnly: false,
+  });
+  const readOnly = !canEdit;
   const [rows, setRows] = useState<AccountCodeRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -86,9 +89,10 @@ export function AccountCodeSettings({ company }: { company: { id: string; name: 
 
   useEffect(() => {
     let cancelled = false;
-    fetchConnection(entityId)
-      .then(({ connected: live, mintyOnly }) => {
+    Promise.all([fetchConnection(entityId), fetchRights(entityId)])
+      .then(([{ connected: live, mintyOnly }, rights]) => {
         if (cancelled) return;
+        setRights(rights);
         // a company keeping its books in Minty (Xero optional, 2026-11-10): its codes are its own
         setXeroConnected(live || mintyOnly);
         // the codes are the stored ones, read with or without Xero (owner, 2026-11-12); only a
@@ -342,7 +346,8 @@ export function AccountCodeSettings({ company }: { company: { id: string; name: 
                     </p>
                   </div>
                 ) : (
-                  // Scrolls inside its own box, never the page.
+                  // A long chart scrolls in its own box, Select all pinned on top (owner,
+                  // 2026-11-12); the page around it scrolls with the document.
                   <ul
                     className="max-h-[min(24rem,50vh)] min-w-0 overflow-y-auto overscroll-contain rounded-[12px] border border-set-line [scrollbar-gutter:stable]"
                     aria-label="Account codes"

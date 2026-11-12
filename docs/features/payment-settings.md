@@ -52,10 +52,12 @@ Payment." - the old copy, kept), in a `SettingsCard`, folding under a 44px chevr
   failed read ("I couldn't load your account codes…"), never "not connected".
 - **A company keeping its books in Minty** (`minty_only` from xero-status, Xero optional
   2026-11-10): its own expense accounts, read and saved as if live.
-- **Read-only** (the token's `role` / `is_view_only`; a token without `is_view_only` and with a
-  superadmin `system_role` counts as view-only): the shell's view-only notice, the ticks and Save
-  off. The old page's `/api/v1/profile/me` fallback is gone - accounts-api's module token always
-  carries `is_view_only`.
+- **Read-only** - from what the API says, never the token (owner, 2026-11-12):
+  `GET /api/v1/entity-bill-accounts/rights` answers `{can_edit, view_only}` with the checks the
+  writes run (accountant and up; never Minty staff visiting). Read alongside xero-status; until it
+  answers the page is read-only. `view_only` gives the "not a member" notice, otherwise the "ask an
+  Accountant or Admin" one; the ticks and Save are off. (`lib/role.ts`, which read the token's
+  `role` / `is_view_only`, is gone.)
 - **Leaving with ticks not saved asks first** (`@minty/shared/leaveGuard`,
   `components/ui/LeaveDialog.tsx`): the tab row, the header's Back, the sidebar, Logout and the
   browser's Back (its history sentinel); Discard changes puts the saved ticks back and goes.

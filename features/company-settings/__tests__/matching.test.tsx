@@ -261,3 +261,115 @@ describe("Matching a Minty company's accounts to Xero", () => {
     await waitFor(() => expect(router.push).toHaveBeenCalled());
   });
 });
+
+describe("Phase 3: a new organisation, new accounts, changing the matches (owner, 2026-11-12)", () => {
+  beforeEach(() => {
+    vi.stubGlobal("fetch", fetchMock);
+    setAuth("h.eyJ1c2VyX2lkIjoidTEifQ.s", ID, "Olive Shop");
+    fetchMock.mockReset();
+    router.push.mockReset();
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  const CONNECTED: IntegrationPage = {
+    ...MINTY,
+    setup_mode: "xero",
+    own_accounts: 0,
+    xero: {
+      status: "connected",
+      connected: true,
+      needs_reconnect: false,
+      organisation: "Olive Ltd",
+      last_connected_at: "2026-11-10T02:00:00Z",
+    },
+    matching: { accounts: false, contacts: false, reason: null },
+  };
+
+  it.each([
+    ["new_org", "Your new Xero organisation needs your accounts matched."],
+    [
+      "new_accounts",
+      "Some accounts were added while Xero was disconnected. Match them to finish reconnecting.",
+    ],
+  ] as const)("the card names why a %s matching is open", async (reason, line) => {
+    api({
+      "GET /api/me/company/integration": () =>
+        json({ ...CONNECTED, matching: { accounts: true, contacts: false, reason } }),
+    });
+    wrap(<IntegrationScreen company={COMPANY} flash={null} xeroConflict={null} />);
+    expect(
+      await screen.findByRole("heading", { name: "Matching isn't finished" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(line)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Continue matching" })).toBeInTheDocument();
+  });
+
+  it("a connected company can change its matches: it starts the change, then opens the page", async () => {
+    const posted: string[] = [];
+    api({
+      "GET /api/me/company/integration": () => json(CONNECTED),
+      "POST /api/me/company/xero/matching/change": (url) => {
+        posted.push(url.pathname);
+        return json(matchingPage({ reason: "change" }));
+      },
+    });
+    wrap(<IntegrationScreen company={COMPANY} flash={null} xeroConflict={null} />);
+    await userEvent.click(await screen.findByRole("button", { name: "Change matches" }));
+    await waitFor(() =>
+      expect(router.push).toHaveBeenCalledWith(
+        expect.stringContaining("/settings/integration/match"),
+      ),
+    );
+    expect(posted).toEqual(["/api/me/company/xero/matching/change"]);
+  });
+
+  it("a change in progress says so on the card, publishing going on meanwhile", async () => {
+    api({
+      "GET /api/me/company/integration": () =>
+        json({ ...CONNECTED, matching: { accounts: true, contacts: false, reason: "change" } }),
+    });
+    wrap(<IntegrationScreen company={COMPANY} flash={null} xeroConflict={null} />);
+    expect(
+      await screen.findByRole("heading", { name: "Changing your matches" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Continue changing" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Change matches" })).toBeNull();
+  });
+
+  it("the page in change mode: its own heading, Cancel, and Finish says only what is published from now on", async () => {
+    const posted: string[] = [];
+    api({
+      "GET /api/me/company/xero/matching": () => json({ ...MATCHED, reason: "change" }),
+      "POST /api/me/company/xero/matching/cancel": (url) => {
+        posted.push(url.pathname);
+        return json({ ...MATCHED, reason: null, pending: { accounts: false, contacts: false } });
+      },
+    });
+    wrap(<MatchingScreen company={COMPANY} />);
+    expect(
+      await screen.findByRole("heading", { name: MATCH_COPY.changeTitle }),
+    ).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Finish" }));
+    const confirm = screen.getByRole("dialog", { name: MATCH_COPY.confirmTitle });
+    expect(within(confirm).getByText(MATCH_COPY.confirmChange)).toBeInTheDocument();
+    await userEvent.click(within(confirm).getByRole("button", { name: "Go back" }));
+
+    await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    await waitFor(() => expect(posted).toEqual(["/api/me/company/xero/matching/cancel"]));
+    await waitFor(() =>
+      expect(router.push).toHaveBeenCalledWith(expect.stringContaining("/settings/integration")),
+    );
+  });
+
+  it("the page for a new organisation says older records stay with the old one", async () => {
+    api({ "GET /api/me/company/xero/matching": () => json({ ...MATCHED, reason: "new_org" }) });
+    wrap(<MatchingScreen company={COMPANY} />);
+    expect(
+      await screen.findByRole("heading", { name: MATCH_COPY.newOrgTitle }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Cancel" })).toBeNull();
+    await userEvent.click(screen.getByRole("button", { name: "Finish" }));
+    const confirm = screen.getByRole("dialog", { name: MATCH_COPY.confirmTitle });
+    expect(within(confirm).getByText(MATCH_COPY.confirmNewOrg("Olive Ltd"))).toBeInTheDocument();
+  });
+});

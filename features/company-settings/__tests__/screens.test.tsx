@@ -35,12 +35,28 @@ const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 
 type Route = (url: URL, init: RequestInit) => Response;
+/** General also reads the chart of accounts and contacts (merged in 2026-11-12): empty lists here;
+ * their own tests are chart.test.tsx. */
+const NONE = { add: false, edit: false, delete: false };
+const CHART: Record<string, Route> = {
+  "GET /api/me/company/accounts": () =>
+    json({
+      accounts: [],
+      types: [],
+      next_codes: {},
+      xero_live: false,
+      permissions: NONE,
+      minty_accounts: [],
+    }),
+  "GET /api/me/company/contacts": () => json({ contacts: [], xero_live: false, permissions: NONE }),
+};
+
 function flask(routes: Record<string, Route>) {
   fetchMock.mockImplementation(async (input, init = {}) => {
     const url = new URL(String(input));
     expect(url.searchParams.get("entity")).toBe(ID);
     const key = `${(init.method ?? "GET").toUpperCase()} ${url.pathname}`;
-    const route = routes[key];
+    const route = { ...CHART, ...routes }[key];
     if (!route) throw new Error(`unexpected ${key}`);
     return route(url, init);
   });

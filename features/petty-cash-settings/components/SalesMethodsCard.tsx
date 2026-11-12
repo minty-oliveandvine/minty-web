@@ -20,7 +20,6 @@ import {
   catalogueOptions,
   kindFor,
   methodNameProblem,
-  sharedRenameMessage,
   type CatalogueMethod,
   type MethodType,
   type SalesGroups,
@@ -29,7 +28,8 @@ import {
 } from "@/features/petty-cash-settings/lib/settings";
 
 const OTHER = "__other__";
-const OTHER_LABEL = "Other";
+/** The picker's note, shown on top as the list opens (owner, 2026-11-12; the contact pickers' way). */
+export const METHOD_HINT = "Type a method name to add a new method";
 
 /** What the card asks the page to send; each resolves true once the API said yes. */
 export type MethodActions = {
@@ -45,9 +45,10 @@ export type MethodActions = {
 
 /**
  * One of the Electronic / Delivery cards (Flask's `partials/electronic_delivery_section.html`):
- * the methods in order, a name to click for a rename, the ⋮ with Move up, Move down and Delete,
- * and "Add New Method" - the catalogue picker, or "+ Other" for a new name. Each change is the
- * API's at once; the page shows what the API answers.
+ * the methods in order and "Add New Method" - the catalogue picker, or a new name typed into it.
+ * A row reads name, then its actions (owner, 2026-11-12): the company's own method has a pencil
+ * (an inline rename) and a bin (delete); Minty's has only a bin that takes it off the company's
+ * list; both keep the drag handle. Each change is the API's at once; the page shows its answer.
  */
 export function SalesMethodsCard({
   type,
@@ -78,9 +79,6 @@ export function SalesMethodsCard({
   // the row being dragged and the row it is over
   const [dragFrom, setDragFrom] = useState<number | null>(null);
   const [dragOver, setDragOver] = useState<number | null>(null);
-  // a shared method's name was clicked: why it can't be renamed, under its row
-  const [sharedNote, setSharedNote] = useState<string | null>(null);
-  const noteId = useId();
   const [adding, setAdding] = useState(false);
 
   let note: string | null = null;
@@ -89,7 +87,37 @@ export function SalesMethodsCard({
   else if (!methods.length) note = `No ${kind.title.toLowerCase()} methods yet.`;
 
   return (
-    <PettyCashCard title={kind.title} lead={kind.sub} readOnly={!editable} testId={type}>
+    <PettyCashCard
+      title={kind.title}
+      lead={kind.sub}
+      readOnly={!editable}
+      testId={type}
+      // the add button at the card's top right (owner, 2026-11-12)
+      headerAction={
+        permissions.add_sales_method && !adding ? (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => setAdding(true)}
+            className={`${SETTINGS_OUTLINE} -mt-2.5 shrink-0`}
+          >
+            <Icon name="add" className="text-[20px]" />
+            Add New Method
+          </button>
+        ) : null
+      }
+    >
+      {/* the add form opens inline above the list - no dialog (owner, 2026-11-12) */}
+      {permissions.add_sales_method && adding ? (
+        <AddForm
+          type={type}
+          methods={methods}
+          available={available}
+          busy={busy}
+          actions={actions}
+          onClose={() => setAdding(false)}
+        />
+      ) : null}
       {note ? (
         <p className="text-sm text-set-mute" role="status">
           {note}
@@ -129,39 +157,41 @@ export function SalesMethodsCard({
                   onDone={() => setRenaming(null)}
                   onCommit={(name) => actions.rename(method, name)}
                 />
-              ) : permissions.rename_sales_method ? (
-                <button
-                  type="button"
-                  title="Rename"
-                  disabled={busy}
-                  aria-describedby={sharedNote === method.id ? noteId : undefined}
-                  onClick={() => {
-                    if (method.shared) {
-                      setSharedNote(method.id);
-                      return;
-                    }
-                    setSharedNote(null);
-                    setRenaming(method.id);
-                  }}
-                  className="min-h-11 min-w-0 cursor-text truncate text-left text-[14.5px] text-set-ink transition-colors hover:text-set-tab-ink disabled:cursor-not-allowed"
-                >
-                  {method.name}
-                </button>
               ) : (
                 <span className="min-w-0 truncate text-[14.5px] text-set-ink">{method.name}</span>
               )}
-              {renaming !== method.id && (permissions.remove_sales_method || canMove) ? (
+              {renaming !== method.id &&
+              ((method.own && permissions.rename_sales_method) ||
+                permissions.remove_sales_method ||
+                canMove) ? (
                 <div className="flex shrink-0 items-center gap-1">
+                  {method.own && permissions.rename_sales_method ? (
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => setRenaming(method.id)}
+                      aria-label={`Edit ${method.name}`}
+                      title="Edit"
+                      className="inline-flex h-11 w-11 items-center justify-center rounded-[12px] text-set-mute transition-colors enabled:hover:bg-set-pill enabled:hover:text-set-ink disabled:cursor-not-allowed"
+                    >
+                      <Icon name="edit" className="text-[22px]" />
+                    </button>
+                  ) : null}
                   {permissions.remove_sales_method ? (
                     <button
                       type="button"
                       disabled={busy}
                       onClick={() => actions.remove(type, method)}
-                      aria-label={`Delete ${method.name}`}
-                      title="Delete"
+                      aria-label={
+                        method.own ? `Delete ${method.name}` : `Remove ${method.name} from my list`
+                      }
+                      title={method.own ? "Delete" : "Remove from my list"}
                       className="inline-flex h-11 w-11 items-center justify-center rounded-[12px] text-set-mute transition-colors enabled:hover:bg-[#fdecec] enabled:hover:text-[#d9534f] disabled:cursor-not-allowed"
                     >
-                      <Icon name="delete" className="text-[22px]" />
+                      <Icon
+                        name={method.own ? "delete" : "playlist_remove"}
+                        className="text-[22px]"
+                      />
                     </button>
                   ) : null}
                   {canMove ? (
@@ -183,37 +213,9 @@ export function SalesMethodsCard({
                 </div>
               ) : null}
             </div>
-            {sharedNote === method.id ? (
-              <p id={noteId} role="status" className={`${SETTINGS_FIELD_ERROR} pb-2`}>
-                {sharedRenameMessage(method.name)}
-              </p>
-            ) : null}
           </li>
         ))}
       </ul>
-
-      {permissions.add_sales_method ? (
-        adding ? (
-          <AddForm
-            type={type}
-            methods={methods}
-            available={available}
-            busy={busy}
-            actions={actions}
-            onClose={() => setAdding(false)}
-          />
-        ) : (
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => setAdding(true)}
-            className={`${SETTINGS_OUTLINE} w-full`}
-          >
-            <Icon name="add" className="text-[20px]" />
-            Add New Method
-          </button>
-        )
-      ) : null}
     </PettyCashCard>
   );
 }
@@ -327,7 +329,8 @@ function DragHandle({
 
 type Choice = { id: string; name: string } | "other" | null;
 
-/** "Add New Method": the catalogue picker, "+ Other" for a new name, Cancel / Add. */
+/** "Add New Method": the catalogue picker - or a name typed into it, "+ Add '<name>' as a new
+ * method" opening the Name box with it (owner, 2026-11-12: as the contact pickers) - Cancel / Add. */
 function AddForm({
   type,
   methods,
@@ -367,12 +370,17 @@ function AddForm({
   }, [choice]);
 
   function rows(query: string): ComboRow[] {
+    const typed = query.trim();
     const offered = catalogueOptions(available, query);
-    const out: ComboRow[] = offered.map((m) => ({ key: m.id, label: m.name }));
-    if (!offered.length)
+    const out: ComboRow[] = [];
+    // the note on top as soon as the list opens, as every contact picker has it
+    if (!typed) out.push({ key: "hint", label: METHOD_HINT, info: true });
+    out.push(...offered.map((m) => ({ key: m.id, label: m.name })));
+    const known = (n: string) => n.trim().toLowerCase() === typed.toLowerCase();
+    if (typed && !available.some((m) => known(m.name)) && !methods.some((m) => known(m.name)))
+      out.push({ key: OTHER, label: `+ Add '${typed}' as a new method` });
+    if (typed && !offered.length)
       out.push({ key: "none", label: `No matching ${kind.noun} found`, info: true });
-    // "Other" always stays reachable: it opens the Name box for a brand new method
-    out.push({ key: OTHER, label: "+ Other (type a new name)", muted: true });
     return out;
   }
 
@@ -396,7 +404,7 @@ function AddForm({
       if (await actions.add(type, { sale_info_id: choice.id })) onClose();
       return;
     }
-    actions.say("Pick a method from the list, or Other.");
+    actions.say("Pick a method from the list, or type a new name to add it.");
     catalog.current?.focus();
   }
 
@@ -426,9 +434,9 @@ function AddForm({
           }}
           onPick={(key) => {
             if (key === OTHER) {
+              // the typed name goes into the Name box, to check or change before Add
               setChoice("other");
-              setText(OTHER_LABEL);
-              setName("");
+              setName(text.trim());
               setRefusedEmpty(false);
               return;
             }
@@ -437,9 +445,7 @@ function AddForm({
             setChoice({ id: picked.id, name: picked.name });
             setText(picked.name);
           }}
-          onBlur={() =>
-            setText((t) => (choice === "other" ? OTHER_LABEL : choice ? choice.name : t))
-          }
+          onBlur={() => setText((t) => (choice && choice !== "other" ? choice.name : t))}
         />
       </div>
       {choice === "other" ? (

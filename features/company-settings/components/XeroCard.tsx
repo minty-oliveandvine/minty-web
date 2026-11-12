@@ -15,6 +15,9 @@
  * - **Matching not finished** (Settings Phase 2, 2026-11-11): a company that kept its books in Minty
  *   signed in to Xero, and its accounts (or, after Finish, some suppliers) aren't matched yet.
  *   Continue matching. Its Connect first asks (SET-1b, `onConnect`): its accounts need matching.
+ *   Phase 3 (2026-11-12): the line names why - a new organisation, accounts added while
+ *   disconnected - and a change of the matches is "Changing your matches" (publishing goes on).
+ *   A connected company's card offers **Change matches** (`onChangeMatches`).
  *
  * Connect and Reconnect are NAVIGATIONS to the accounts API's OAuth start (through `/enter`, so
  * its session is the token's person): Xero comes back to it, and it comes back here with what
@@ -55,7 +58,14 @@ export const XERO_COPY = {
   disconnect: "Disconnect from Xero",
   matchingTitle: "Matching isn't finished",
   matchingLine: "Your accounts stay in Minty until you finish matching them to Xero.",
+  newOrgLine: "Your new Xero organisation needs your accounts matched.",
+  newAccountsLine:
+    "Some accounts were added while Xero was disconnected. Match them to finish reconnecting.",
+  changeTitle: "Changing your matches",
+  changeLine: "Publishing goes on meanwhile; the new matches apply once you finish.",
   continueMatching: "Continue matching",
+  continueChanging: "Continue changing",
+  changeMatches: "Change matches",
   help: "Prefer some help first? Our service team can set up the Xero connection with you.",
 } as const;
 
@@ -90,6 +100,7 @@ export function XeroCard({
   onDisconnect,
   onConnect,
   matchingHref,
+  onChangeMatches,
 }: {
   page: IntegrationPage;
   busy: boolean;
@@ -98,14 +109,26 @@ export function XeroCard({
   onConnect?: () => void;
   /** Where Continue matching goes. */
   matchingHref?: string;
+  /** Phase 3: start changing the matches (a connected company). */
+  onChangeMatches?: () => void;
 }) {
   const { xero } = page;
   const state = xeroState(page);
   const pill = PILL[state];
   const org = xero.organisation ?? "";
+  const reason = page.matching?.reason ?? null;
   const [title, line] =
     state === "matching"
-      ? [XERO_COPY.matchingTitle, XERO_COPY.matchingLine]
+      ? reason === "change"
+        ? [XERO_COPY.changeTitle, XERO_COPY.changeLine]
+        : [
+            XERO_COPY.matchingTitle,
+            reason === "new_org"
+              ? XERO_COPY.newOrgLine
+              : reason === "new_accounts"
+                ? XERO_COPY.newAccountsLine
+                : XERO_COPY.matchingLine,
+          ]
       : state === "connected"
         ? [XERO_COPY.connectedTitle, XERO_COPY.connectedLine(org)]
         : state === "disconnected"
@@ -116,6 +139,7 @@ export function XeroCard({
   const canConnect = page.can_edit && state !== "connected" && state !== "matching";
   const asksFirst = onConnect !== undefined && connectNeedsMatching(page);
   const canDisconnect = page.can_edit && (state === "connected" || state === "reconnect");
+  const canChange = page.can_edit && state === "connected" && onChangeMatches !== undefined;
 
   return (
     <section
@@ -152,8 +176,18 @@ export function XeroCard({
         <div className="flex flex-wrap items-center gap-3">
           {state === "matching" && page.can_edit && matchingHref ? (
             <a href={matchingHref} className={SETTINGS_PRIMARY}>
-              {XERO_COPY.continueMatching}
+              {reason === "change" ? XERO_COPY.continueChanging : XERO_COPY.continueMatching}
             </a>
+          ) : null}
+          {canChange ? (
+            <button
+              type="button"
+              onClick={onChangeMatches}
+              disabled={busy}
+              className={SETTINGS_PRIMARY}
+            >
+              {XERO_COPY.changeMatches}
+            </button>
           ) : null}
           {canConnect && asksFirst ? (
             <button type="button" onClick={onConnect} className={SETTINGS_PRIMARY}>

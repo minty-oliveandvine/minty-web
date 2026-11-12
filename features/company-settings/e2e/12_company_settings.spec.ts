@@ -122,6 +122,24 @@ async function stubFlask(page: Page) {
       return route.fulfill({ status, contentType: "application/json", body: JSON.stringify(out) });
     });
   await answer("/api/me/company/users", () => [200, USERS]);
+  // General's chart of accounts and contacts (merged in 2026-11-12): empty, read-only lists here -
+  // their own spec is 13_chart.spec.ts
+  const none = { add: false, edit: false, delete: false };
+  await answer("/api/me/company/accounts", () => [
+    200,
+    {
+      accounts: [],
+      types: [],
+      next_codes: {},
+      xero_live: false,
+      permissions: none,
+      minty_accounts: [],
+    },
+  ]);
+  await answer("/api/me/company/contacts", () => [
+    200,
+    { contacts: [], xero_live: false, permissions: none },
+  ]);
   await answer("/api/me/company/invitations", () => [
     201,
     { invitation_id: "i9", email_sent: true, message: "Invitation sent." },

@@ -115,10 +115,10 @@ export const MAPPING_GROUPS: readonly {
       },
     ],
   },
-  // Xero's own: the contacts a report posts to, grouped after the accounts every company needs
-  // (owner, 2026-11-12). A company keeping its books in Minty gets none, so the group is not drawn.
+  // The contacts a report posts to, grouped after the accounts (owner, 2026-11-12) - with or
+  // without Xero: contacts are never blocked behind it. Drawn when the read has contact fields.
   {
-    title: "Xero contacts",
+    title: "Contacts",
     fields: [
       {
         key: "cashsale_contact",

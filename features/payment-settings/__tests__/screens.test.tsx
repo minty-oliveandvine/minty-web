@@ -76,11 +76,14 @@ const json = (body: unknown, status = 200) =>
 function serve({
   connected = true,
   mintyOnly = false,
+  rights = { can_edit: true, view_only: false },
   accounts = () => json(chart()),
   save = () => json({}),
 }: {
   connected?: boolean;
   mintyOnly?: boolean;
+  /** What the API says the caller may do (owner, 2026-11-12: never the token's role). */
+  rights?: { can_edit: boolean; view_only: boolean };
   accounts?: () => Response;
   save?: (id: string) => Response;
 } = {}) {
@@ -92,6 +95,8 @@ function serve({
     const method = (init.method ?? "GET").toUpperCase();
     if (method === "GET" && url.pathname === "/api/v1/auth/xero-status")
       return json({ connected, minty_only: mintyOnly });
+    if (method === "GET" && url.pathname === "/api/v1/entity-bill-accounts/rights")
+      return json(rights);
     if (method === "GET" && url.pathname === "/api/v1/entity-bill-accounts/") return accounts();
     const put = url.pathname.match(/^\/api\/v1\/entity-bill-accounts\/([^/]+)$/);
     if (method === "PUT" && put) {
@@ -184,9 +189,21 @@ describe("without a live Xero connection", () => {
     expect(await screen.findByRole("searchbox")).toBeInTheDocument();
     expect(screen.queryByText(/Xero isn't connected/)).toBeNull();
     expect(screen.getByRole("button", { name: /Save Changes/ })).toBeInTheDocument();
-    const read = asked().find((u) => u.includes("/entity-bill-accounts/"));
+    const read = asked().find((u) => new URL(u).pathname === "/api/v1/entity-bill-accounts/");
     expect(read).toContain("sync_chart=false");
     expect(read).toContain("include_inactive=true");
+  });
+
+  it("the page scrolls with the document; a long code list scrolls in its own box", async () => {
+    // owner, 2026-11-12: the settings frame scrolled inside its own box (a second page scroll
+    // bar); the code list is long, so it keeps its own, Select all pinned on top
+    serve();
+    show();
+    const list = await codes();
+    expect(document.querySelector("main")?.className ?? "").not.toMatch(/overflow-y-auto/);
+    expect(list.className).toMatch(/overflow-y-auto/);
+    expect(list.className).toMatch(/max-h-\[min\(24rem,50vh\)\]/);
+    expect(within(list).getAllByRole("listitem")[0].className).toMatch(/sticky/);
   });
 
   it("a connected company's read still starts the re-sync", async () => {
@@ -194,7 +211,9 @@ describe("without a live Xero connection", () => {
     show();
 
     await screen.findByRole("searchbox");
-    expect(asked().find((u) => u.includes("/entity-bill-accounts/"))).not.toContain("sync_chart");
+    expect(
+      asked().find((u) => new URL(u).pathname === "/api/v1/entity-bill-accounts/"),
+    ).not.toContain("sync_chart");
   });
 
   it("with no codes at all, points at the hub's Integration tab, where Xero is connected", async () => {
@@ -258,7 +277,7 @@ describe("with Xero connected", () => {
     show();
 
     await codes();
-    expect(asked().find((u) => u.includes("/entity-bill-accounts/"))).toBe(
+    expect(asked().find((u) => new URL(u).pathname === "/api/v1/entity-bill-accounts/")).toBe(
       `${API}/api/v1/entity-bill-accounts/?include_inactive=true`,
     );
   });
@@ -308,6 +327,9 @@ describe("with Xero connected", () => {
     await codes();
 
     const all = screen.getByRole("checkbox", { name: "Select all visible account codes" });
+    // the rights arrive beside the codes: click only once the controls are live (a click on the
+    // still-disabled box did nothing - the run that failed under load)
+    await waitFor(() => expect(all).toBeEnabled());
     expect(all).not.toBeChecked();
     expect((all as HTMLInputElement).indeterminate).toBe(true); // two of three
     await userEvent.click(all);
@@ -448,7 +470,7 @@ describe("Save", () => {
 describe("somebody who may not change these", () => {
   it("is told to ask an Accountant or Admin, and gets no live controls", async () => {
     signIn({ role: "cashier" });
-    serve();
+    serve({ rights: { can_edit: false, view_only: false } });
     show();
 
     await codes();
@@ -470,7 +492,7 @@ describe("somebody who may not change these", () => {
 
   it("is told plainly when they are not a member of the company at all", async () => {
     signIn({ role: "super_admin", system_role: "superadmin", is_view_only: true });
-    serve();
+    serve({ rights: { can_edit: false, view_only: true } });
     show();
 
     await codes();
@@ -483,20 +505,20 @@ describe("somebody who may not change these", () => {
     );
   });
 
-  it("a system super admin's token without the claim is read as view-only", async () => {
-    signIn({ role: "super_admin", system_role: "superadmin" });
-    serve();
+  it("the server's answer wins over whatever the token says", async () => {
+    signIn({ role: "admin" });
+    serve({ rights: { can_edit: false, view_only: false } });
     show();
 
     await codes();
-    expect(
-      screen.getByText("Read-only access — you are not a member of this entity."),
-    ).toBeInTheDocument();
+    expect(tick(ACCOUNTS[0])).toBeDisabled();
+    expect(saveButton()).toBeDisabled();
+    expect(asked()).toContainEqual(expect.stringContaining("/api/v1/entity-bill-accounts/rights"));
   });
 
   it("is never shown that notice while the codes are still loading", () => {
     signIn({ role: "cashier" });
-    serve();
+    serve({ rights: { can_edit: false, view_only: false } });
     show();
 
     expect(screen.queryByText(/view-only access/)).toBeNull();

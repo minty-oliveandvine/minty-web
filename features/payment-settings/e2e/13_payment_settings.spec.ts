@@ -69,8 +69,9 @@ function cors(route: Route): Record<string, string> {
 
 type Run = {
   prompts: string[];
-  /** Whether the codes were read at all. */
+  /** Whether the codes were read at all, and the last read's address. */
   codesRead: boolean;
+  codesUrl?: string;
   /** What a PUT answers; each one sent is recorded in `puts`. */
   put: { status: number; detail?: string };
   puts: { id: string; is_active: boolean }[];
@@ -78,7 +79,7 @@ type Run = {
   entityHeaders: string[];
 };
 
-async function stub(page: Page, { connected = true } = {}): Promise<Run> {
+async function stub(page: Page, { connected = true, empty = false } = {}): Promise<Run> {
   const run: Run = {
     prompts: [],
     codesRead: false,
@@ -105,6 +106,14 @@ async function stub(page: Page, { connected = true } = {}): Promise<Run> {
     const req = route.request();
     if (req.method() === "OPTIONS") return route.fulfill({ status: 204, headers: cors(route) });
     run.entityHeaders.push(req.headers()["x-entity-id"] ?? "");
+    // what the API says this person may do (owner, 2026-11-12: the page never reads the token's role)
+    if (new URL(req.url()).pathname.endsWith("/entity-bill-accounts/rights"))
+      return route.fulfill({
+        status: 200,
+        headers: cors(route),
+        contentType: "application/json",
+        body: JSON.stringify({ can_edit: true, view_only: false }),
+      });
     if (req.method() === "PUT") {
       const id = new URL(req.url()).pathname.split("/").pop() ?? "";
       const { is_active } = req.postDataJSON() as { is_active: boolean };
@@ -130,12 +139,13 @@ async function stub(page: Page, { connected = true } = {}): Promise<Run> {
       });
     }
     run.codesRead = true;
+    run.codesUrl = req.url();
     return route.fulfill({
       status: 200,
       headers: cors(route),
       contentType: "application/json",
       body: JSON.stringify(
-        ACCOUNTS.map((a, i) => ({
+        (empty ? [] : ACCOUNTS).map((a, i) => ({
           id: `e2e-${a.code}`,
           entity_id: ID,
           account_code: a.code,
@@ -184,7 +194,10 @@ async function stub(page: Page, { connected = true } = {}): Promise<Run> {
   return run;
 }
 
-async function arrive(page: Page, options: { connected?: boolean } = {}): Promise<Run> {
+async function arrive(
+  page: Page,
+  options: { connected?: boolean; empty?: boolean } = {},
+): Promise<Run> {
   const run = await stub(page, options);
   await handoff(page, creds(), PAGE);
   await expect(page.getByRole("heading", { name: "Payment Account Code" })).toBeVisible();
@@ -223,9 +236,24 @@ test.describe("payment settings", () => {
     expect(new Set(run.entityHeaders)).toEqual(new Set([ID]));
   });
 
-  test("without Xero the card only says how to connect it (phone)", async ({ page }) => {
+  test("without Xero the stored codes still tick, read without asking Xero (phone)", async ({
+    page,
+  }) => {
+    // owner, 2026-11-12: the codes are the company's own; only a live connection re-syncs them
     await page.setViewportSize({ width: 360, height: 740 });
     const run = await arrive(page, { connected: false });
+    await expect(tick(page, "200")).toBeChecked();
+    expect(new URL(run.codesUrl ?? "").searchParams.get("sync_chart")).toBe("false");
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+      360,
+    );
+  });
+
+  test("without Xero and with no code stored, the card only says how to connect it (phone)", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 360, height: 740 });
+    const run = await arrive(page, { connected: false, empty: true });
 
     const notice = page.getByRole("status").filter({ hasText: "Xero isn't connected." });
     await expect(notice).toBeVisible();
@@ -235,7 +263,7 @@ test.describe("payment settings", () => {
     );
     await expect(page.getByRole("searchbox", { name: /search account code/i })).toHaveCount(0);
     await expect(saveButton(page)).toHaveCount(0);
-    expect(run.codesRead).toBe(false);
+    expect(run.codesRead).toBe(true);
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
       360,
     );

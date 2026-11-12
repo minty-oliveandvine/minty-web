@@ -8,6 +8,7 @@
  * and its matches are kept.
  */
 
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import {
@@ -21,6 +22,9 @@ import {
   SettingsDialog,
   SettingsShell,
 } from "@/components/ui/SettingsShell";
+import { useToast } from "@/components/ui/Toast";
+import { ApiError } from "@/lib/apiClient";
+import { startChangeMatches } from "@/features/company-settings/api/companySettings";
 import { XeroCard, xeroConnectUrl } from "@/features/company-settings/components/XeroCard";
 import { XeroConflictDialog } from "@/features/company-settings/components/XeroConflictDialog";
 import { useIntegrationTab } from "@/features/company-settings/hooks/useIntegrationTab";
@@ -57,6 +61,9 @@ export function IntegrationScreen({
   const tab = useIntegrationTab(company.id, flash, xeroConflict);
   const [confirming, setConfirming] = useState(false);
   const [matchFirst, setMatchFirst] = useState(false);
+  const [starting, setStarting] = useState(false);
+  const router = useRouter();
+  const { showToast } = useToast();
   const page = tab.page;
   const shown = page ? { id: page.company.id, name: page.company.name } : company;
   const disconnecting = tab.busy === "disconnect";
@@ -78,6 +85,23 @@ export function IntegrationScreen({
             onDisconnect={() => setConfirming(true)}
             onConnect={() => setMatchFirst(true)}
             matchingHref={matchingPath(shown.id, shown.name)}
+            // Phase 3 (2026-11-12): the same matching page, prefilled with today's matches
+            onChangeMatches={() => {
+              if (starting) return;
+              setStarting(true);
+              startChangeMatches(shown.id).then(
+                () => router.push(matchingPath(shown.id, shown.name)),
+                (err: unknown) => {
+                  setStarting(false);
+                  showToast(
+                    err instanceof ApiError
+                      ? err.message
+                      : "I couldn't reach the server. Mind trying again?",
+                    "error",
+                  );
+                },
+              );
+            }}
           />
         </>
       )}

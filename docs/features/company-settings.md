@@ -22,7 +22,10 @@ addresses now only redirect. accounts-api is the backend for this feature (`/api
 ## Getting here
 
 - The tab row, from any tab (`lib/settingsTabs.ts`; a module's tab hides when the module is off -
-  the page's own module list once loaded, the token's claims until then).
+  the page's own module list once loaded, the token's claims until then). **Users hides below shop
+  manager** (owner, 2026-11-12; `seesCompanyUsers`, from the token's `role`): accounts-api refuses
+  a cashier the list. A token naming no role keeps it, Minty staff visiting see it, and its own page
+  keeps its tab.
 - The side menu's Settings opens General (`companySettingsPath`'s default, `lib/hubPaths.ts`); the
   module choice's "no module" link opens Module & Subscription.
 - From the other apps and old links: accounts-api's `/entity/<co>/settings/users|general|
@@ -41,6 +44,10 @@ The app's bar (Back, "Settings", the initials, the menu), then an 880px column: 
 hairline, the open one underlined in teal and bold (`aria-current="page"`) - and the tab's cards.
 On a phone the tab row scrolls sideways inside itself (never the page) and starts scrolled so the
 open tab is in view. Every tab is a plain link to this app's page, so the leave guard sees it.
+**Scrolling (owner, 2026-11-12):** the page scrolls with the document under the sticky bar - the
+frame no longer locks the window and scrolls inside `<main>` (that drew a second page scroll bar).
+A long account-code list (Petty Cash Settings' codes, Payment Settings' codes) scrolls in its own
+box, at most `min(24rem, 50vh)`, with Select all pinned on top; search still narrows it.
 
 The pieces every tab is built from (`components/ui/SettingsShell.tsx`): `SettingsCard` (white,
 radius 14, the frames' edge; a region named by its title), `ReadOnlyNotice`, `LoadState` and
@@ -161,6 +168,17 @@ matches are saved. Xero would not take these:" … Later / **Try again**), and t
 disconnected until they are through. On a phone each row stacks (name over its select). Tests:
 `__tests__/matching.test.tsx`.
 
+**Phase 3 (owner, 2026-11-12).** The card's Matching state names why the matching is open (the
+accounts API's `matching.reason`): "Your new Xero organisation needs your accounts matched."
+(`new_org`), "Some accounts were added while Xero was disconnected. Match them to finish reconnecting."
+(`new_accounts`), or **Changing your matches** with **Continue changing** (`change`; publishing goes
+on). A connected company's card offers **Change matches** (`XERO_SETTINGS_UPDATE`): it starts the
+change (`POST .../xero/matching/change`) and opens the same page, every account on its current Xero
+account, with **Cancel** beside Finish. The page's heading, lead and Finish confirm follow the reason:
+"Only records published from now on use the new matches" (`change`, `new_accounts`), "Only records
+from today go to <organisation>. Older records stay with your previous Xero organisation." (`new_org`).
+Tests: `features/company-settings/__tests__/matching.test.tsx`.
+
 ### The organisation is already in use (2026-10-09)
 
 One Xero organisation belongs to one company, so Flask refuses a connect that picks one another
@@ -198,3 +216,63 @@ move), `__tests__/reexports.test.ts`, `lib/__tests__/settingsTabs.test.ts`,
 the sentinel, the header's Back link, Disconnect from Xero, the tab row, and nothing wider than the
 screen at 360 / 768 / 1440). The guard itself: `@minty/shared`'s `leaveGuard` tests. accounts-api's
 side: `hub/tests/test_redirects.py` (the hand-overs), `hub/tests/` for `/api/me/company/*`.
+
+## General: the chart of accounts and contacts (`components/ChartSection.tsx`, `ChartCards.tsx`)
+
+On **General**, under the company's details (owner, 2026-11-12: its own tab first, merged into
+General the same day so the tab row fits): the company's chart of accounts and its contacts,
+added, edited and deleted in one place. General's view-only line covers it (the same roles).
+
+### Where the work is done
+
+The page calls accounts-api's company door - `GET/POST /api/me/company/accounts`,
+`PATCH/DELETE /api/me/company/accounts/<id>`, the same for `contacts`, the company as `?entity=` -
+which checks the person and hands the work to minty-onboarding-api, the ONE implementation of a
+company's accounts and contacts (the owner's choice that day; its `docs/features/wizard-api.md`).
+Each read carries `permissions` (`add`, `edit`, `delete`): the page draws its buttons from them,
+never from a role. Viewing is cashier and up; changing is accountant and up.
+
+### The rules the page shows
+
+- **Every row is the company's own copy, to edit and delete** (owner, 2026-11-12): the accounts and
+  contacts it made, those from its Xero, and its copies of Minty's starter chart and template
+  contacts - marked **Comes with Minty** (`source` `template`), a label of where they came from.
+  Minty's own list is never touched. Only the hidden system accounts daily closing needs stay out of
+  the list.
+- **With or without Xero.** A company live on Xero gets every change there first ("Your change is
+  made in Xero too"); when Xero says no, its reason shows under the field or as a toast, and
+  nothing changes. Without Xero the changes are the company's own; a row already linked to Xero
+  waits for a reconnect (the API's sentence).
+- **Add an account** works as Petty Cash Settings' Add New Method (owner, 2026-11-12): an
+  **Account** dropdown of Minty's accounts (`minty_accounts` in the read: the starter chart for the
+  company's country, every business type's, one per name, less the hidden system rows and any the
+  company has) with "Type an account name to add a new account" on top as it opens. One picked is
+  shown with its code, type and description (no other line - owner, 2026-11-12), and added as it
+  is - Minty's copy, the company's to change from then on (`POST {template_id}`). A typed name that isn't there offers "+ Add
+  '<name>' as a new account", which opens the fields for the company's own: Type, then Code - the
+  next free code for the type filled in ("478 is the next free code for Expense. You can change
+  it."; it follows the type until the person types a code) - Name (the typed name), Description.
+  Nothing picked says "Pick one of Minty's accounts, or type a name to add your own." The dropdown
+  is `components/ui/Combo` - Petty Cash Settings' picker, shared since that day. **Rename** a
+  contact; **Add a contact**.
+- **Checked as typed** (`lib/rules.ts`, the API's own words): too long, a bad character, a code or
+  name already taken; an empty field says so only after a refused Save. Required fields carry the
+  red asterisk and a screen-reader "(required)".
+- **Add and Edit open inline** at the top of their card, above the search and the list - no dialog
+  (owner, 2026-11-12, as Petty Cash Settings' Add New Method); the card's Add button hides while
+  the form is open; Cancel or Escape closes it.
+- **Deleted, then added again** (the same account code, name and type, or the same contact name):
+  the deleted one comes back - in Xero too - with "<name> is back.", never a second one.
+- **Delete asks first**: "Delete <name>?" - "This can't be undone.", plus "Records that already
+  use it keep it, but it leaves every list." when it will be archived, and "It's archived in Xero
+  too." when it is linked.
+- **A view-only person** sees both lists and "You can see these, but only an Accountant or an
+  Admin can change them."
+- Each list has a search; a long list scrolls in its own box (at most `min(28rem, 60vh)`), the
+  account groups' headings pinned as it scrolls.
+
+### Tests
+
+`features/company-settings/__tests__/` - `chartRules`, `chart` (the lists, the locks, add with the
+next code, a refused Save's field sentence, delete's confirm, a contact's taken name, view-only, a
+failed read); e2e `13_chart.spec.ts`.

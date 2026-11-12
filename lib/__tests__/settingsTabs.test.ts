@@ -59,6 +59,38 @@ describe("settingsTabs", () => {
   });
 });
 
+describe("the Users tab follows the role (owner, 2026-11-12)", () => {
+  const token = (claims: Record<string, unknown>) =>
+    `h.${btoa(JSON.stringify({ user_id: "u1", ...claims }))}.s`;
+  const labels = (current: Parameters<typeof settingsTabs>[2] = "general") =>
+    settingsTabs(COMPANY, ALL, current).map((t) => t.label);
+
+  it("hides Users below shop manager - the API refuses them the list", () => {
+    for (const role of ["cashier", "entity_base"]) {
+      setAuth(token({ role }), COMPANY.id, COMPANY.name);
+      expect(labels()).not.toContain("Users");
+    }
+  });
+
+  it("shows it from shop manager up, and to Minty staff visiting (they read the list)", () => {
+    for (const claims of [
+      { role: "shop_manager" },
+      { role: "Admin" },
+      { role: "", system_role: "superadmin" },
+    ]) {
+      setAuth(token(claims), COMPANY.id, COMPANY.name);
+      expect(labels()).toContain("Users");
+    }
+  });
+
+  it("keeps it when the token names no role, and on its own page", () => {
+    setAuth(token({}), COMPANY.id, COMPANY.name);
+    expect(labels()).toContain("Users");
+    setAuth(token({ role: "cashier" }), COMPANY.id, COMPANY.name);
+    expect(labels("users")).toContain("Users");
+  });
+});
+
 describe("settingsBackLink", () => {
   it("is labelled Back, with the Petty Cash app's dashboard as the new-tab fallback", () => {
     expect(settingsBackLink(COMPANY.id)).toEqual({

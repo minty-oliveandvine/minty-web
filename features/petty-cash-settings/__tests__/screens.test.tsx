@@ -76,15 +76,16 @@ const CASHIER: SettingsPermissions = {
   remove_sales_method: false,
   reorder_sales_methods: false,
 };
-const m = (id: string, name: string, shared = false) => ({
+// `own`: typed by the company (pencil and Delete); Minty's only come off its list (owner, 2026-11-12)
+const m = (id: string, name: string, own = false) => ({
   id,
   name,
   value_name: `${name.toLowerCase()}_sales`,
-  shared,
+  own,
 });
 const VISA = m("v1", "Visa");
-const ALIPAY = m("v2", "AlipayHK");
-const FOODPANDA = m("d1", "Foodpanda", true);
+const ALIPAY = m("v2", "AlipayHK", true);
+const FOODPANDA = m("d1", "Foodpanda");
 
 function settings(over: Partial<SettingsRead> = {}): SettingsRead {
   return {
@@ -220,6 +221,8 @@ describe("PettyCashSettingsScreen", () => {
       ),
     ).toEqual(["xero-mapping", "account-codes", "electronic", "delivery"]);
     // not connected: both Xero cards say so, linking to this app's Integration tab
+    // one scroll bar (owner, 2026-11-12): the frame scrolls with the document
+    expect(document.querySelector("main")?.className ?? "").not.toMatch(/overflow-y-auto/);
     const notices = await screen.findAllByText(/Xero isn.t connected/);
     expect(notices).toHaveLength(2);
     // the one notice, as Payment Settings draws it (owner, 2026-11-12)
@@ -290,7 +293,7 @@ describe("PettyCashSettingsScreen", () => {
     const rows = within(list).getAllByRole("listitem");
     expect(rows.map((li) => li.querySelector("img"))).toEqual([null, null, null]);
     const visa = within(rows[0]);
-    expect(visa.getByRole("button", { name: "Delete Visa" })).toBeInTheDocument();
+    expect(visa.getByRole("button", { name: "Remove Visa from my list" })).toBeInTheDocument();
     const handle = visa.getByRole("button", { name: "Move Visa" });
     expect(handle).toHaveAttribute("draggable", "true");
 
@@ -359,7 +362,18 @@ describe("PettyCashSettingsScreen", () => {
       "DELETE /sales-methods/d1": () =>
         answer(
           { ...state, sales_methods: { ...state.sales_methods, delivery: [] } },
-          "Method removed. Reports that used it keep their amounts.",
+          "Foodpanda is off your list. Add it back any time from Add New Method.",
+        ),
+      "DELETE /sales-methods/v2": () =>
+        answer(
+          {
+            ...state,
+            sales_methods: {
+              ...state.sales_methods,
+              electronic: state.sales_methods.electronic.filter((x) => x.id !== "v2"),
+            },
+          },
+          "Alipay HK deleted.",
         ),
     });
     show();
@@ -374,15 +388,21 @@ describe("PettyCashSettingsScreen", () => {
       card("Electronic")
         .getAllByRole("option")
         .map((o) => o.textContent),
-    ).toEqual(["Octopus", "+ Other (type a new name)"]);
+    ).toEqual(["Octopus"]);
+    // the note on top as the list opens (owner, 2026-11-12), never a choice
+    expect(
+      card("Electronic").getByText("Type a method name to add a new method"),
+    ).toBeInTheDocument();
     await user.click(card("Electronic").getByRole("option", { name: "Octopus" }));
     await user.click(card("Electronic").getByRole("button", { name: "Add" }));
     expect(await screen.findByText("Octopus added.")).toBeInTheDocument();
     expect(sent("POST /sales-methods")).toEqual([{ type: "electronic", sale_info_id: "o1" }]);
-    expect(card("Electronic").getByRole("button", { name: "Octopus" })).toBeInTheDocument();
+    // Minty's method: the name is text and there is no pencil (owner, 2026-11-12)
+    expect(card("Electronic").getByText("Octopus")).toBeInTheDocument();
+    expect(card("Electronic").queryByRole("button", { name: "Edit Octopus" })).toBeNull();
 
-    // rename: the name becomes a box, checked as typed, Enter saves
-    await user.click(card("Electronic").getByRole("button", { name: "AlipayHK" }));
+    // rename: the pencil turns the name into a box, checked as typed, Enter saves
+    await user.click(card("Electronic").getByRole("button", { name: "Edit AlipayHK" }));
     const box = card("Electronic").getByRole("textbox", { name: "Rename AlipayHK" });
     await user.clear(box);
     await user.type(box, "visa");
@@ -404,33 +424,38 @@ describe("PettyCashSettingsScreen", () => {
       { type: "electronic", method_ids: ["v2", "v1", "o1"] },
     ]);
 
-    // a shared method can't be renamed, and says why at once
-    await user.click(card("Delivery").getByRole("button", { name: "Foodpanda" }));
-    expect(
-      card("Delivery").getByText(
-        "Other companies use Foodpanda too, so it can't be renamed here. Delete it and add a new method instead.",
-      ),
-    ).toBeInTheDocument();
-    expect(card("Delivery").queryByRole("textbox")).toBeNull();
-
-    // delete asks first: Go back sends nothing, Delete removes it
-    await user.click(card("Delivery").getByRole("button", { name: "Delete Foodpanda" }));
-    expect(screen.getByRole("dialog", { name: "Delete Delivery Method" })).toHaveTextContent(
-      'Are you sure you want to delete "Foodpanda"? This action cannot be undone.',
+    // Minty's method: no pencil; its bin only takes it off the list, and asks first
+    expect(card("Delivery").queryByRole("button", { name: "Edit Foodpanda" })).toBeNull();
+    expect(card("Delivery").queryByRole("button", { name: "Delete Foodpanda" })).toBeNull();
+    const removeFoodpanda = { name: "Remove Foodpanda from my list" };
+    await user.click(card("Delivery").getByRole("button", removeFoodpanda));
+    expect(screen.getByRole("dialog", { name: "Remove Delivery Method" })).toHaveTextContent(
+      'Remove "Foodpanda" from your list? You can add it back any time from Add New Method.',
     );
-    let dialog = within(screen.getByRole("dialog", { name: "Delete Delivery Method" }));
+    let dialog = within(screen.getByRole("dialog", { name: "Remove Delivery Method" }));
     expect(dialog.getByRole("button", { name: "Go back" })).toHaveFocus();
     await user.click(dialog.getByRole("button", { name: "Go back" }));
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(sent("DELETE /sales-methods/d1")).toHaveLength(0);
-    await user.click(card("Delivery").getByRole("button", { name: "Delete Foodpanda" }));
-    dialog = within(screen.getByRole("dialog", { name: "Delete Delivery Method" }));
-    expect(dialog.getByRole("button", { name: "Delete" }).className).toBe(SETTINGS_DANGER_FILL);
-    await user.click(dialog.getByRole("button", { name: "Delete" }));
+    await user.click(card("Delivery").getByRole("button", removeFoodpanda));
+    dialog = within(screen.getByRole("dialog", { name: "Remove Delivery Method" }));
+    expect(dialog.getByRole("button", { name: "Remove" }).className).toBe(SETTINGS_DANGER_FILL);
+    await user.click(dialog.getByRole("button", { name: "Remove" }));
     expect(
-      await screen.findByText("Method removed. Reports that used it keep their amounts."),
+      await screen.findByText(
+        "Foodpanda is off your list. Add it back any time from Add New Method.",
+      ),
     ).toBeInTheDocument();
     expect(card("Delivery").getByText("No delivery methods yet.")).toBeInTheDocument();
+
+    // the company's own method: Delete, confirmed, gone for good
+    await user.click(card("Electronic").getByRole("button", { name: "Delete Alipay HK" }));
+    dialog = within(screen.getByRole("dialog", { name: "Delete Electronic Method" }));
+    expect(screen.getByRole("dialog", { name: "Delete Electronic Method" })).toHaveTextContent(
+      'Are you sure you want to delete "Alipay HK"? This action cannot be undone.',
+    );
+    await user.click(dialog.getByRole("button", { name: "Delete" }));
+    expect(await screen.findByText("Alipay HK deleted.")).toBeInTheDocument();
   });
 
   it("an add by name is checked as typed; a refusal says the API's sentence and keeps the form", async () => {
@@ -444,9 +469,17 @@ describe("PettyCashSettingsScreen", () => {
     const user = userEvent.setup();
 
     await user.click(await card("Delivery").findByRole("button", { name: /Add New Method/ }));
-    await user.click(card("Delivery").getByRole("option", { name: "+ Other (type a new name)" }));
+    // a name typed into the picker is offered as a new method, then lands in the Name box
+    const picker = card("Delivery").getByRole("combobox", { name: "Method" });
+    await user.type(picker, "Lalamove");
+    expect(card("Delivery").queryByText("Type a method name to add a new method")).toBeNull();
+    await user.click(
+      card("Delivery").getByRole("option", { name: "+ Add 'Lalamove' as a new method" }),
+    );
     const name = card("Delivery").getByRole("textbox", { name: "Name" });
     await waitFor(() => expect(name).toHaveFocus());
+    expect(name).toHaveValue("Lalamove");
+    await user.clear(name);
     expect(card("Delivery").queryByText(/still empty/)).toBeNull();
     await user.click(card("Delivery").getByRole("button", { name: "Add" }));
     expect(
@@ -655,7 +688,7 @@ describe("PettyCashSettingsScreen", () => {
     expect(
       await screen.findAllByText("I couldn't reach Xero just now. Try again in a minute."),
     ).toHaveLength(2);
-    expect(card("Electronic").getByRole("button", { name: "Visa" })).toBeInTheDocument();
+    expect(card("Electronic").getByText("Visa")).toBeInTheDocument();
     fail = false;
     await userEvent.click(card("Account mapping").getByRole("button", { name: "Try again" }));
     expect(

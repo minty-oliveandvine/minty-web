@@ -19,7 +19,6 @@ import {
   movedIds,
   placedIds,
   shownTypes,
-  sharedRenameMessage,
   viewOnly,
   type SettingsPermissions,
 } from "@/features/petty-cash-settings/lib/settings";
@@ -60,12 +59,12 @@ describe("the page's address and its links", () => {
 
 describe("the cards follow the business type (owner, 2026-11-11)", () => {
   const lists = (delivery: number) => ({
-    electronic: [{ id: "v", name: "Visa", value_name: "visa_sales", shared: false }],
+    electronic: [{ id: "v", name: "Visa", value_name: "visa_sales", own: false }],
     delivery: Array.from({ length: delivery }, (_, i) => ({
       id: `d${i}`,
       name: `D${i}`,
       value_name: `d${i}_sales`,
-      shared: false,
+      own: false,
     })),
   });
 
@@ -110,8 +109,8 @@ describe("the catalogue picker (Flask's method catalogue)", () => {
 
 describe("a method's name, checked as it is typed", () => {
   const listed = [
-    { id: "a", name: "Visa", value_name: "visa_sales", shared: false },
-    { id: "b", name: "Octopus", value_name: "octopus_sales", shared: true },
+    { id: "a", name: "Visa", value_name: "visa_sales", own: true },
+    { id: "b", name: "Octopus", value_name: "octopus_sales", own: false },
   ];
 
   it("says nothing while it is empty: that only means it is not finished", () => {
@@ -141,14 +140,6 @@ describe("a method's name, checked as it is typed", () => {
     expect(methodNameProblem("VISA", listed, RENAME_NAME_MAX, "a")).toBeNull();
     expect(methodNameProblem("Octopus", listed, RENAME_NAME_MAX, "a")).toBe(
       "Octopus is already on the list.",
-    );
-  });
-});
-
-describe("a shared method's rename", () => {
-  it("says at once why it can't be renamed, and what to do instead", () => {
-    expect(sharedRenameMessage("Visa")).toBe(
-      "Other companies use Visa too, so it can't be renamed here. Delete it and add a new method instead.",
     );
   });
 });

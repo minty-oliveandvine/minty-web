@@ -81,7 +81,7 @@ export type IntegrationPage = {
   /** A `minty` company's own accounts - what the matching page will ask about (SET-1b's count). */
   own_accounts?: number;
   /** Matching started and not finished: the accounts, or (after Finish) suppliers Xero refused. */
-  matching?: { accounts: boolean; contacts: boolean };
+  matching?: { accounts: boolean; contacts: boolean; reason?: MatchReason | null };
   notices: Notice[];
   /** Only on a read that carried a refused connect; null the rest of the time. */
   xero_conflict: XeroConflict | null;
@@ -187,6 +187,10 @@ export function disconnectXero(entityId: string): Promise<IntegrationPage> {
 
 // ---- Match your accounts to Xero (Settings Phase 2, 2026-11-11; accounts-api hub/xero_matching.py) ----
 
+/** Why a matching is open (Phase 3, 2026-11-12; `entities.xero_matching`): a first connect, accounts
+ * added while disconnected, a new organisation, or changing the matches. */
+export type MatchReason = "first" | "new_accounts" | "new_org" | "change";
+
 export type MatchRow = {
   account_id: string;
   code: string;
@@ -208,6 +212,7 @@ export type MatchOption = { id: string; code: string; name: string; kind: string
 
 export type MatchingPage = {
   organisation: string | null;
+  reason?: MatchReason | null;
   groups: { key: string; title: string; rows: MatchRow[] }[];
   options: MatchOption[];
   matched: number;
@@ -216,7 +221,7 @@ export type MatchingPage = {
   blocking: number;
   will_archive: string[];
   will_combine: { xero: string; accounts: string[] }[];
-  pending: { accounts: boolean; contacts: boolean };
+  pending: { accounts: boolean; contacts: boolean; reason?: MatchReason | null };
   failed_contacts: string[];
   connected?: boolean;
   error?: string;
@@ -247,6 +252,16 @@ export function refreshMatching(entityId: string): Promise<MatchingPage> {
 
 export function finishMatching(entityId: string): Promise<MatchingPage> {
   return mintyFetch<MatchingPage>(`${MATCHING}/finish`, { method: "POST", query: q(entityId) });
+}
+
+/** Change the matches (Phase 3): a connected company's page again, prefilled. */
+export function startChangeMatches(entityId: string): Promise<MatchingPage> {
+  return mintyFetch<MatchingPage>(`${MATCHING}/change`, { method: "POST", query: q(entityId) });
+}
+
+/** Leave a change of the matches; nothing changed. */
+export function cancelChangeMatches(entityId: string): Promise<MatchingPage> {
+  return mintyFetch<MatchingPage>(`${MATCHING}/cancel`, { method: "POST", query: q(entityId) });
 }
 
 export function retryContacts(entityId: string): Promise<MatchingPage> {

@@ -49,6 +49,21 @@ export function fetchEntityBillAccounts(
   });
 }
 
+/**
+ * What the caller may do here (`GET /api/v1/entity-bill-accounts/rights`): the same checks the
+ * API runs on the writes - accountant and up, never Minty staff visiting (`viewOnly`). The page
+ * draws its controls from this, never from a role read out of the token (owner, 2026-11-12).
+ */
+export async function fetchRights(
+  entityId: string,
+): Promise<{ canEdit: boolean; viewOnly: boolean }> {
+  const data = await paymentRequestFetch<{ can_edit: boolean; view_only: boolean }>(
+    "/api/v1/entity-bill-accounts/rights",
+    { entityId },
+  );
+  return { canEdit: data.can_edit, viewOnly: data.view_only };
+}
+
 /** Tick or untick one code. Unticking the company's last ticked code answers 409. */
 export function updateEntityBillAccount(
   entityId: string,

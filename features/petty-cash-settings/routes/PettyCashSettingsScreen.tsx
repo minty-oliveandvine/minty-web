@@ -30,7 +30,7 @@ import {
 import { SETTINGS_DANGER_FILL, SETTINGS_OUTLINE } from "@/components/ui/settingsButtons";
 import { LeaveDialog } from "@/components/ui/LeaveDialog";
 import { useToast } from "@/components/ui/Toast";
-import { ApiError, type ApiRequest } from "@/lib/apiClient";
+import { ApiError, mintyFetch, type ApiRequest } from "@/lib/apiClient";
 
 import { pettyCashSettingsFetch } from "@/features/petty-cash-settings/api/pettyCashSettings";
 import { BusyOverlay } from "@/features/petty-cash-settings/components/parts";
@@ -160,7 +160,7 @@ function SettingsBody({
   const call: Call = useCallback(
     async <T,>(
       path: string,
-      init: ApiRequest,
+      init: ApiRequest & { hub?: boolean },
       busyText = SAVING,
       onRefused?: (message: string) => void,
     ): Promise<T | null> => {
@@ -168,6 +168,14 @@ function SettingsBody({
       acting.current = true;
       setBusy(busyText);
       try {
+        if (init.hub) {
+          // accounts-api's company door (Settings' contacts): the company as ?entity=
+          return await mintyFetch<T>(path, {
+            method: init.method,
+            json: init.json,
+            query: { ...init.query, entity: entityId },
+          });
+        }
         return await pettyCashSettingsFetch<T>(entityId, path, init);
       } catch (err) {
         const message = refusal(err);
@@ -322,7 +330,7 @@ function SettingsBody({
       {busy ? <BusyOverlay text={busy} /> : null}
       {confirmDelete ? (
         <SettingsDialog
-          title={`Delete ${KIND[confirmDelete.type].title} Method`}
+          title={`${confirmDelete.method.own ? "Delete" : "Remove"} ${KIND[confirmDelete.type].title} Method`}
           onClose={() => setConfirmDelete(null)}
           actions={
             <>
@@ -344,16 +352,25 @@ function SettingsBody({
                   });
                 }}
               >
-                Delete
+                {confirmDelete.method.own ? "Delete" : "Remove"}
               </button>
             </>
           }
         >
-          <p className="[overflow-wrap:anywhere]">
-            Are you sure you want to delete &quot;
-            <strong className="font-semibold text-set-ink">{confirmDelete.method.name}</strong>
-            &quot;? This action cannot be undone.
-          </p>
+          {confirmDelete.method.own ? (
+            <p className="[overflow-wrap:anywhere]">
+              Are you sure you want to delete &quot;
+              <strong className="font-semibold text-set-ink">{confirmDelete.method.name}</strong>
+              &quot;? This action cannot be undone.
+            </p>
+          ) : (
+            // Minty's method only leaves this company's list (owner, 2026-11-12)
+            <p className="[overflow-wrap:anywhere]">
+              Remove &quot;
+              <strong className="font-semibold text-set-ink">{confirmDelete.method.name}</strong>
+              &quot; from your list? You can add it back any time from Add New Method.
+            </p>
+          )}
         </SettingsDialog>
       ) : null}
     </>

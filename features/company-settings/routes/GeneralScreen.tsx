@@ -2,9 +2,10 @@
 
 /**
  * `/entity/<shortid>/<name>/settings/general` - the company's name, country and currency (Figma
- * SET-G, owner 2026-11-10; on Entity & Integration until then). Read by everyone who may see
- * settings (cashier and up), changed by an accountant and up, renamed by an admin. Leaving with
- * changes asks first.
+ * SET-G, owner 2026-11-10; on Entity & Integration until then), then its chart of accounts and its
+ * contacts (owner, 2026-11-12: merged in from their own tab). Read by everyone who may see settings
+ * (cashier and up), changed by an accountant and up, renamed by an admin. Leaving with changes to
+ * the details asks first.
  */
 
 import { createPortal } from "react-dom";
@@ -12,6 +13,7 @@ import { createPortal } from "react-dom";
 import { LeaveDialog } from "@/components/ui/LeaveDialog";
 import { useLeaveGuard } from "@minty/shared/leaveGuard";
 
+import { ChartSection } from "@/features/company-settings/components/ChartSection";
 import { DetailsForm } from "@/features/company-settings/components/DetailsForm";
 import { LoadState, ReadOnlyNotice, SettingsShell } from "@/components/ui/SettingsShell";
 import { useDetailsDraft } from "@/features/company-settings/hooks/useDetailsDraft";
@@ -49,6 +51,7 @@ export function GeneralScreen({ company }: { company: { id: string; name: string
             error={tab.saveError}
             onSave={(changes) => void tab.save(changes)}
           />
+          <ChartSection entityId={shown.id} />
         </>
       )}
 

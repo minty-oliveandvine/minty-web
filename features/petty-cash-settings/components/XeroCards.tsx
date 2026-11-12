@@ -60,12 +60,15 @@ export type XeroLoad =
 /** One call through the page: its busy overlay and refusal toast; null when it did not go through. */
 export type Call = <T>(
   path: string,
-  init: ApiRequest,
+  /** ``hub``: the call is accounts-api's (``/api/me/company/*``, the company as ``?entity=``). */
+  init: ApiRequest & { hub?: boolean },
   busyText?: string,
   onRefused?: (message: string) => void,
 ) => Promise<T | null>;
 
 const ADD = "__add__";
+/** A contact picker's note, shown as the list opens (onboarding's wording). */
+export const CONTACT_HINT = "Type a contact name to add a new contact";
 
 /** Five pulsing rows while Xero is asked. */
 function Skeleton() {
@@ -152,11 +155,7 @@ export function XeroMappingCard({
     <PettyCashCard
       // one title: the card is no longer Xero's alone (owner, 2026-11-12)
       title="Account mapping"
-      lead={
-        minty
-          ? "The accounts daily closing uses."
-          : "The accounts daily closing uses, and the Xero contacts a report posts to."
-      }
+      lead="The accounts and contacts daily closing uses."
       readOnly={load.kind === "ready" && !editable}
       testId="xero-mapping"
     >
@@ -170,9 +169,7 @@ export function XeroMappingCard({
           key={`${resetKey}:${JSON.stringify(load.read.mapping)}`}
           fields={load.read.mapping}
           minty={minty}
-          // a Xero company without a live connection: its five accounts from the stored chart,
-          // and the Xero contacts group says so (owner, 2026-11-12)
-          offlineHref={!minty && !load.read.live ? connectHref : null}
+          offline={!load.read.live}
           editable={editable}
           busy={busy}
           call={call}
@@ -188,7 +185,7 @@ export function XeroMappingCard({
 function MappingForm({
   fields: initial,
   minty = false,
-  offlineHref = null,
+  offline = false,
   editable,
   busy,
   call,
@@ -199,8 +196,8 @@ function MappingForm({
   fields: MappingField[];
   /** Minty's own accounts: the field lines don't say "from Xero". */
   minty?: boolean;
-  /** A Xero company without a live connection: the Integration tab's address, else null. */
-  offlineHref?: string | null;
+  /** A Xero company without a live connection: its lines don't say "from Xero" either. */
+  offline?: boolean;
   editable: boolean;
   busy: boolean;
   call: Call;
@@ -270,12 +267,13 @@ function MappingForm({
         return out;
       }
       const { matches, offerNew } = contactOptions(field, query, current);
-      const out: ComboRow[] = matches.map((o) => ({
-        key: o.id,
-        label: o.name,
-        selected: o.id === picked[field.key],
-      }));
-      if (!matches.length) out.push({ key: "none", label: "No Xero contact found", info: true });
+      const out: ComboRow[] = [];
+      // the note from the moment the list opens (owner, 2026-11-12; onboarding's MintySelect says the same)
+      if (editable && !query.trim()) out.push({ key: "hint", label: CONTACT_HINT, info: true });
+      out.push(
+        ...matches.map((o) => ({ key: o.id, label: o.name, selected: o.id === picked[field.key] })),
+      );
+      if (!matches.length) out.push({ key: "none", label: "No contact found", info: true });
       if (offerNew !== null && editable) {
         out.push({
           key: ADD,
@@ -296,13 +294,16 @@ function MappingForm({
       document.getElementById(`${idOf(adding.key)}-new`)?.focus();
       return;
     }
-    const made = await call<XeroOption>(
-      "/suppliers",
-      { method: "POST", json: { name } },
+    // Settings' contacts are accounts-api's (owner, 2026-11-12): accountant and up, made in Xero
+    // too when the company is live, never a duplicate; named in the picker by its Xero id, else
+    // its own
+    const made = await call<{ contact: { id: string; name: string; xero_id: string | null } }>(
+      "/api/me/company/contacts",
+      { method: "POST", json: { name }, hub: true },
       "Creating contact…",
     );
     if (!made) return;
-    const contact = { id: made.id, name: made.name };
+    const contact = { id: made.contact.xero_id || made.contact.id, name: made.contact.name };
     setFields((f) => withContact(f, contact));
     pick(adding.key, contact);
     const key = adding.key;
@@ -386,7 +387,7 @@ function MappingForm({
             {group.fields.map(({ key, sub: line, placeholder }) => {
               const field = byKey.get(key);
               if (!field) return null;
-              const sub = minty || offlineHref ? line.replace(" from Xero", "") : line;
+              const sub = minty || offline ? line.replace(" from Xero", "") : line;
               const id = idOf(key);
               const problem = problems[key];
               const problemId = `${id}-problem`;
@@ -500,16 +501,6 @@ function MappingForm({
           </div>
         ),
       )}
-
-      {offlineHref ? (
-        <div
-          data-mapping-group="Xero contacts"
-          className="flex min-w-0 flex-col gap-3 border-t border-set-line pt-4"
-        >
-          <h4 className="text-[14.5px] font-semibold text-set-ink">Xero contacts</h4>
-          <XeroNotConnected href={offlineHref} />
-        </div>
-      ) : null}
 
       {editable ? (
         <div className="flex flex-wrap items-center gap-3 border-t border-set-line pt-4">
@@ -663,6 +654,8 @@ function CodesForm({
         <>
           <ul
             aria-label="Account codes"
+            // a long chart scrolls in its own box, Select all pinned on top (owner, 2026-11-12); the
+            // page around it scrolls with the document, never a second frame
             className="m-0 max-h-[min(24rem,50vh)] list-none overflow-y-auto overscroll-contain rounded-[12px] border border-set-line p-0 [scrollbar-gutter:stable] [scrollbar-width:thin]"
           >
             <li

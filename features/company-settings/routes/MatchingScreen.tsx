@@ -25,6 +25,7 @@ import { useToast } from "@/components/ui/Toast";
 import { ApiError } from "@/lib/apiClient";
 
 import {
+  cancelChangeMatches,
   fetchMatching,
   finishMatching,
   pickMatch,
@@ -64,6 +65,20 @@ export const MATCH_COPY = {
   confirmTitle: "Finish matching?",
   confirmBody:
     "Each matched account takes its Xero code and name, and Minty publishes to Xero from today. This can't be undone.",
+  // Phase 3 (2026-11-12): why the page is open
+  changeTitle: "Change your matches",
+  changeLead:
+    "Pick a different Xero account for any account. Only what's published from now on uses the new matches.",
+  newOrgTitle: "Match your accounts to your new Xero organisation",
+  newOrgLead:
+    "This company now connects to a different Xero organisation. Tell us where each account should post there.",
+  newAccountsTitle: "Match the accounts added while Xero was disconnected",
+  newAccountsLead: "Tell us where each new account should post in Xero.",
+  confirmChange:
+    "Only records published from now on use the new matches. Records already in Xero stay as they are.",
+  confirmNewOrg: (org: string | null) =>
+    `Only records from today go to ${org || "your new organisation"}. Older records stay with your previous Xero organisation.`,
+  cancel: "Cancel",
   willArchive: "Not used, so archived:",
   willCombine: (xero: string, accounts: string[]) =>
     `${accounts.join(" and ")} become one: ${xero}`,
@@ -251,6 +266,21 @@ export function MatchingScreen({ company }: { company: { id: string; name: strin
     );
   }
 
+  const reason = page.reason ?? null;
+  const [heading, lead] =
+    reason === "change"
+      ? [MATCH_COPY.changeTitle, MATCH_COPY.changeLead]
+      : reason === "new_org"
+        ? [MATCH_COPY.newOrgTitle, MATCH_COPY.newOrgLead]
+        : reason === "new_accounts"
+          ? [MATCH_COPY.newAccountsTitle, MATCH_COPY.newAccountsLead]
+          : [MATCH_COPY.title, MATCH_COPY.lead];
+  const confirmBody =
+    reason === "change" || reason === "new_accounts"
+      ? MATCH_COPY.confirmChange
+      : reason === "new_org"
+        ? MATCH_COPY.confirmNewOrg(page.organisation)
+        : MATCH_COPY.confirmBody;
   const toGo = page.total - page.matched;
   const progress = page.total ? Math.round((page.matched / page.total) * 100) : 100;
   const contactsOnly = !page.pending.accounts && page.pending.contacts;
@@ -269,8 +299,8 @@ export function MatchingScreen({ company }: { company: { id: string; name: strin
   return (
     <Frame back={integration}>
       <div className="flex min-w-0 flex-col gap-1">
-        <h2 className="text-[26px] font-bold text-set-ink">{MATCH_COPY.title}</h2>
-        <p className="text-[14px] text-set-ink-2">{MATCH_COPY.lead}</p>
+        <h2 className="text-[26px] font-bold text-set-ink">{heading}</h2>
+        <p className="text-[14px] text-set-ink-2">{lead}</p>
       </div>
 
       {contactsOnly ? (
@@ -370,6 +400,20 @@ export function MatchingScreen({ company }: { company: { id: string; name: strin
               {MATCH_COPY.back}
             </a>
             <div className="flex flex-wrap items-center justify-end gap-3">
+              {reason === "change" ? (
+                <button
+                  type="button"
+                  className={SETTINGS_OUTLINE}
+                  disabled={busy !== null}
+                  onClick={() =>
+                    void run("cancel", () => cancelChangeMatches(company.id)).then((answer) => {
+                      if (answer) router.push(integration);
+                    })
+                  }
+                >
+                  {MATCH_COPY.cancel}
+                </button>
+              ) : null}
               {page.blocking ? (
                 <span id="finish-reason" className="text-[13px] text-set-ink-2">
                   {MATCH_COPY.finishBlocked}
@@ -418,7 +462,7 @@ export function MatchingScreen({ company }: { company: { id: string; name: strin
             </>
           }
         >
-          <p>{MATCH_COPY.confirmBody}</p>
+          <p>{confirmBody}</p>
           {page.will_archive.length ? (
             <p className="mt-2">
               {MATCH_COPY.willArchive} {page.will_archive.join(", ")}

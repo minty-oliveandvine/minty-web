@@ -30,14 +30,16 @@ export function SettingsPage({
   children: ReactNode;
 }) {
   return (
-    <div className="flex h-dvh h-screen min-w-0 max-w-full flex-col overflow-hidden bg-white">
+    // One scroll: the document's, under the sticky header (owner, 2026-11-12). The frame used to lock
+    // the window and scroll inside <main>, so a long list drew a second scroll bar beside it.
+    <div className="flex min-h-dvh min-w-0 max-w-full flex-col bg-white">
       <AppHeader
         title="Settings"
         back={settingsBackLink(company.id)}
         viewer={viewer}
         nav={{ modules: access }}
       />
-      <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto overflow-x-hidden pb-[env(safe-area-inset-bottom,0px)]">
+      <main className="flex min-w-0 flex-1 flex-col overflow-x-clip pb-[env(safe-area-inset-bottom,0px)]">
         <div className="mx-auto flex w-full max-w-[928px] min-w-0 flex-col gap-6 px-4 pt-6 pb-14 sm:px-6 sm:pt-10">
           <div className="flex min-w-0 flex-col gap-1">
             <p className="truncate text-[13px] font-medium text-set-mute">
