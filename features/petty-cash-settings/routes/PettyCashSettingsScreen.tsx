@@ -282,6 +282,18 @@ function SettingsBody({
           resetKey={resetKey}
         />
 
+        {/* under the mapping (owner, 2026-11-12) */}
+        <AccountCodesCard
+          load={xero}
+          busy={busy !== null}
+          call={call}
+          connectHref={connectHref}
+          onRetry={retryXero}
+          onSaved={xeroSaved}
+          onDirty={codesDirty}
+          resetKey={resetKey}
+        />
+
         {shownTypes(read).map((type) => (
           <SalesMethodsCard
             key={type}
@@ -294,17 +306,6 @@ function SettingsBody({
             actions={actions}
           />
         ))}
-
-        <AccountCodesCard
-          load={xero}
-          busy={busy !== null}
-          call={call}
-          connectHref={connectHref}
-          onRetry={retryXero}
-          onSaved={xeroSaved}
-          onDirty={codesDirty}
-          resetKey={resetKey}
-        />
       </div>
 
       {/* Over the sidebar drawer and any other modal, as General's: data-leave-dialog keeps a link

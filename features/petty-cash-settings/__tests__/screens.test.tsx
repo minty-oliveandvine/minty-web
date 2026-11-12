@@ -206,8 +206,17 @@ describe("PettyCashSettingsScreen", () => {
     ]);
     const tabs = within(screen.getByRole("navigation", { name: "Settings sections" }));
     expect(tabs.getByText("Petty Cash Settings")).toHaveAttribute("aria-current", "page");
+    // the account code card sits under the mapping (owner, 2026-11-12), the methods after them
+    expect(
+      Array.from(document.querySelectorAll("[data-settings-card]")).map((c) =>
+        c.getAttribute("data-settings-card"),
+      ),
+    ).toEqual(["xero-mapping", "account-codes", "electronic", "delivery"]);
     // not connected: both Xero cards say so, linking to this app's Integration tab
-    expect(await screen.findAllByText(/Xero isn.t connected/)).toHaveLength(2);
+    const notices = await screen.findAllByText(/Xero isn.t connected/);
+    expect(notices).toHaveLength(2);
+    // the one notice, as Payment Settings draws it (owner, 2026-11-12)
+    for (const n of notices) expect(n.closest("[data-xero-not-connected]")).not.toBeNull();
     for (const link of screen.getAllByRole("link", { name: "Integration" }))
       expect(link).toHaveAttribute("href", "/entity/e1/olive-shop/settings/integration");
     expect(screen.queryByText(READ_ONLY)).toBeNull();

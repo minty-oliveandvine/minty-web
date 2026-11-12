@@ -191,7 +191,7 @@ describe("without a live Xero connection", () => {
 
     // the notice's own link (the tab row has an "Integration" link too)
     const notice = await screen.findByText(/Xero isn't connected\./);
-    const box = notice.closest("[role=status]") as HTMLElement;
+    const box = notice.closest("[data-xero-not-connected]") as HTMLElement;
     expect(box).toHaveTextContent(
       "Xero isn't connected. Connect it in Integration to set these up.",
     );

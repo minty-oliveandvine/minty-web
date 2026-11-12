@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 
+import { XeroNotConnected } from "@/components/ui/XeroNotConnected";
 import { RequiredMark } from "@/components/ui/RequiredMark";
 import { SETTINGS_OUTLINE, SETTINGS_PRIMARY } from "@/components/ui/settingsButtons";
 import { SETTINGS_FIELD_ERROR, SETTINGS_LABEL } from "@/components/ui/settingsFields";
@@ -64,28 +65,6 @@ export type Call = <T>(
 ) => Promise<T | null>;
 
 const ADD = "__add__";
-
-/** Flask's `xero_not_connected()` notice. Xero is connected on the Integration tab. */
-function NotConnected({ connectHref }: { connectHref: string }) {
-  return (
-    <div
-      role="status"
-      className="flex items-start gap-2 rounded-[12px] border border-set-line bg-set-pill px-4 py-3 text-[13px] text-set-ink-2"
-    >
-      <Icon name="link_off" className="text-[18px] leading-5 text-set-mute" />
-      <span className="min-w-0">
-        Xero isn&apos;t connected. Connect it in{" "}
-        <a
-          href={connectHref}
-          className="font-semibold text-set-tab-ink underline underline-offset-2"
-        >
-          Integration
-        </a>{" "}
-        to set these up.
-      </span>
-    </div>
-  );
-}
 
 /** Five pulsing rows while Xero is asked. */
 function Skeleton() {
@@ -182,7 +161,7 @@ export function XeroMappingCard({
       {load.kind !== "ready" ? (
         <NotReady load={load} onRetry={onRetry} />
       ) : !(load.read.live || minty) || !load.read.mapping ? (
-        <NotConnected connectHref={connectHref} />
+        <XeroNotConnected href={connectHref} />
       ) : (
         // a new read (a save) starts the form again from what the API holds
         <MappingForm
@@ -546,7 +525,7 @@ export function AccountCodesCard({
       {load.kind !== "ready" ? (
         <NotReady load={load} onRetry={onRetry} />
       ) : !(load.read.live || load.read.minty) || !load.read.account_codes ? (
-        <NotConnected connectHref={connectHref} />
+        <XeroNotConnected href={connectHref} />
       ) : (
         <CodesForm
           key={`${resetKey}:${JSON.stringify(load.read.account_codes)}`}

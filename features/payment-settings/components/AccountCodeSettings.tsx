@@ -19,6 +19,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
+import { XeroNotConnected } from "@/components/ui/XeroNotConnected";
 import { LeaveDialog } from "@/components/ui/LeaveDialog";
 import { SETTINGS_PRIMARY } from "@/components/ui/settingsButtons";
 import { SETTINGS_INPUT, SETTINGS_INPUT_OK } from "@/components/ui/settingsFields";
@@ -284,28 +285,7 @@ export function AccountCodeSettings({ company }: { company: { id: string; name: 
         {expanded ? (
           <div id="payment-account-codes" className="flex min-w-0 flex-col gap-3">
             {xeroConnected === false ? (
-              <div
-                role="status"
-                className="flex items-start gap-2 rounded-[12px] border border-set-danger-line/40 bg-set-warn-bg px-4 py-3 text-[13px] text-set-ink-2"
-              >
-                {/* `!`: material-symbols' own CSS (unlayered) sets 24px over any utility. */}
-                <span
-                  className="material-symbols-outlined shrink-0 text-[18px]! leading-5! text-danger"
-                  aria-hidden
-                >
-                  link_off
-                </span>
-                <span className="min-w-0">
-                  Xero isn&apos;t connected. Connect it in{" "}
-                  <a
-                    href={integrationPath(company.id, company.name)}
-                    className="font-semibold text-set-tab-ink underline underline-offset-2 hover:text-set-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-set-tab"
-                  >
-                    Integration
-                  </a>{" "}
-                  to set these up.
-                </span>
-              </div>
+              <XeroNotConnected href={integrationPath(company.id, company.name)} />
             ) : (
               <>
                 <div className="relative">
