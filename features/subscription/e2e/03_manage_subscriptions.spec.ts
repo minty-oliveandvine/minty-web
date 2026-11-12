@@ -302,6 +302,57 @@ test.describe("manage subscriptions", () => {
   // R1 + R2 (owner, 2026-11-10), at a phone first: during a free trial the tick means "continue
   // on a paid plan when the trial ends". Unticking only stops that - nothing says cancel - and
   // the tick is reversible as often as the admin likes: untick, tick, untick each saves.
+  // Owner, 2026-11-12: every admin and accountant SEES a company's subscription; only its
+  // subscriber changes it. The API lists such a company with `can_manage: false`.
+  for (const width of [360, 768, 1440]) {
+    test(`at ${width}px a company someone else pays for is read-only, the subscriber named, nothing overflowing`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height: 780 });
+      const [first, ...rest] = ENTITIES;
+      const viewed = {
+        ...first,
+        subscriber: { id: "u-payer", name: "Olive Owner", email: "olive@acme.test" },
+        has_subscriber: true,
+        can_manage: false,
+      };
+      const posts = await stubApi(page, subscriptionsPage([viewed, ...rest]));
+      const cards: string[] = [];
+      page.on("request", (req) => {
+        if (req.url().includes("/api/me/billing/entity-payment-method")) cards.push(req.url());
+      });
+      await handoff(page, creds(), "/subscription/subscriptions", { entity_id: "" });
+
+      const row = body(page).locator(`li[data-entity='${viewed.entity_id}']`);
+      await expect(row).toBeVisible();
+      await expect(row.getByRole("button", { name: /^(Start Trial|Subscribe) ·/ })).toHaveCount(0);
+      await expect(
+        row.getByRole("button", { name: `Actions for ${viewed.entity_name}` }),
+      ).toHaveCount(0);
+
+      await row.getByRole("button", { name: `Open ${viewed.entity_name}` }).click();
+      const open = body(page).locator(`li[data-entity='${viewed.entity_id}'][data-open]`);
+      await expect(
+        open.getByText(/Billing for this company is managed by Olive Owner/),
+      ).toBeVisible({
+        timeout: 15_000,
+      });
+      await expect(open.getByRole("region", { name: "Subscription Summary" })).toBeVisible();
+      await expect(open.getByRole("checkbox")).toHaveCount(0);
+      await expect(open.getByRole("button", { name: "Change" })).toHaveCount(0);
+      await expect(open.getByRole("button", { name: /Start Free Trial/ })).toHaveCount(0);
+      // The page itself never scrolls sideways (the Responsive UI rules).
+      expect(
+        await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1),
+      ).toBe(true);
+      if (process.env.E2E_SHOTS) {
+        await open.screenshot({ path: `${process.env.E2E_SHOTS}/read-only-${width}.png` });
+      }
+      expect(posts).toEqual([]);
+      expect(cards).toEqual([]);
+    });
+  }
+
   test("at 360px a trial's tick: untick, tick, untick - each saves, nothing says cancel", async ({
     page,
   }) => {
