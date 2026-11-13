@@ -217,6 +217,62 @@ describe("a Xero company without a live connection (owner, 2026-11-12)", () => {
   });
 });
 
+describe("a saved account archived in Xero (2026-11-13)", () => {
+  // The Petty Cash Account read as an ordinary "Bank 1" while Xero had archived it, and every
+  // publish into it failed. The API marks it; the card says so until another account is chosen.
+  const archivedRead = () => {
+    const base = xeroRead();
+    const mapping = base.mapping!.map((f) =>
+      f.key === "main_bank"
+        ? {
+            ...f,
+            options: [account("old", "Bank 1", "1011"), account("new", "Bank 1", "1011")],
+            selected: "old",
+            archived: true,
+          }
+        : f,
+    );
+    return { ...base, mapping };
+  };
+  const NOTE = "Bank 1 is archived in Xero. Choose another account to keep publishing.";
+
+  it("says the chosen account is archived, tied to its box", () => {
+    render(
+      <XeroMappingCard
+        {...props}
+        onAdded={vi.fn()}
+        load={{ kind: "ready", read: archivedRead() }}
+      />,
+    );
+    const note = screen.getByText(NOTE);
+    const box = screen.getByRole("combobox", { name: /Petty Cash bank account/ });
+    expect(box).toHaveAttribute("aria-describedby", note.id);
+    expect(box).toHaveAttribute("aria-invalid", "true");
+  });
+
+  it("clears once another account is chosen", () => {
+    render(
+      <XeroMappingCard
+        {...props}
+        onAdded={vi.fn()}
+        load={{ kind: "ready", read: archivedRead() }}
+      />,
+    );
+    const box = screen.getByRole("combobox", { name: /Petty Cash bank account/ });
+    fireEvent.focus(box);
+    const [, replacement] = screen.getAllByRole("option");
+    fireEvent.mouseDown(replacement);
+    expect(screen.queryByText(NOTE)).not.toBeInTheDocument();
+  });
+
+  it("an active account has no note", () => {
+    render(
+      <XeroMappingCard {...props} onAdded={vi.fn()} load={{ kind: "ready", read: xeroRead() }} />,
+    );
+    expect(screen.queryByText(/is archived/)).not.toBeInTheDocument();
+  });
+});
+
 describe("a contact picker tells the person they can type to add (owner, 2026-11-12)", () => {
   const xeroWithContacts = () =>
     read({

@@ -389,7 +389,18 @@ function MappingForm({
               if (!field) return null;
               const sub = minty || offline ? line.replace(" from Xero", "") : line;
               const id = idOf(key);
-              const problem = problems[key];
+              // the saved account archived: said until another is chosen (2026-11-13)
+              const archivedName =
+                field.archived && field.selected && picked[key] === field.selected
+                  ? field.options.find((o) => o.id === field.selected)?.name || field.label
+                  : null;
+              const problem =
+                problems[key] ??
+                (archivedName
+                  ? minty
+                    ? `${archivedName} is archived. Choose another account to continue.`
+                    : `${archivedName} is archived in Xero. Choose another account to keep publishing.`
+                  : undefined);
               const problemId = `${id}-problem`;
               if (adding?.key === key) {
                 const emptyNote = adding.refusedEmpty && !adding.name.trim() ? CONTACT_EMPTY : null;
