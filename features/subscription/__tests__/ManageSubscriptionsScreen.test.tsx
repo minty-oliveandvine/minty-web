@@ -26,6 +26,12 @@ const push = vi.fn();
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push, replace: vi.fn(), back: vi.fn() }),
 }));
+// "Back" to where the person came from: recorded, not followed (jsdom has no history to walk).
+const goBack = vi.hoisted(() => vi.fn());
+vi.mock("@minty/shared/backLink", async (original) => ({
+  ...(await original<typeof import("@minty/shared/backLink")>()),
+  goBack,
+}));
 
 const fetchMock = vi.fn<typeof fetch>();
 
@@ -258,6 +264,22 @@ describe("ManageSubscriptionsScreen", { timeout: 30_000 }, () => {
     // the subscriber's card is never asked for
     const asked = fetchMock.mock.calls.map(([input]) => new URL(String(input)).pathname);
     expect(asked).not.toContain("/api/me/billing/entity-payment-method");
+  });
+
+  it("04-A: Back returns to where the person came from, past its own pages; else the overview", async () => {
+    await show(subscriptionsPage(), INCOMING_TRANSFERS);
+
+    await userEvent.click(screen.getByRole("button", { name: "Back to the previous page" }));
+    expect(goBack).toHaveBeenCalledTimes(1);
+    const [fallback, options] = goBack.mock.calls[0];
+    expect(fallback).toBe("/subscription");
+    expect(options.leaveApp).toBe(true);
+    // Transfer and Incoming come back here with a push: Back steps over them and this page
+    const skipped = (path: string) => options.skip.some((rule: RegExp) => rule.test(path));
+    expect(skipped("/subscription/subscriptions")).toBe(true);
+    expect(skipped("/subscription/subscriptions/subscriber")).toBe(true);
+    expect(skipped("/subscription/subscriptions/incoming")).toBe(true);
+    expect(skipped("/subscription")).toBe(false);
   });
 
   it("04-A: the banner, the transfer card, the sections and their counts", async () => {

@@ -30,6 +30,23 @@ export const PORTAL = {
   billing: subscriptionPath("/billing"),
 } as const;
 
+/** A page and every page under it, as a `@minty/shared/backLink` skip rule. */
+function andBelow(path: string): RegExp {
+  return new RegExp(`^${path.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(/|$)`);
+}
+
+/**
+ * Each portal page's Back (`@minty/shared/backLink`): to where the person came from, past the
+ * page's own sub-pages - which come back to it with a push (Go Back, Cancel), so "the page
+ * before" would be the form just left - and out to the app they came from (`leaveApp`, the
+ * hub's rule). The overview steps over the whole portal: its Back leaves it.
+ */
+export const PORTAL_BACK = {
+  overview: { skip: [andBelow(PORTAL.index)], leaveApp: true },
+  subscriptions: { skip: [andBelow(PORTAL.subscriptions)], leaveApp: true },
+  billing: { skip: [andBelow(PORTAL.billing)], leaveApp: true },
+};
+
 /** `path?a=1&b=2`, the empty ones left out - so an absent account keeps the URL bare. */
 function withParams(path: string, params: Record<string, string | null | undefined>): string {
   const qs = Object.entries(params)

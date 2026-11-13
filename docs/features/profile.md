@@ -85,7 +85,7 @@ _Log Out_ is the side menu's Logout (`lib/logout.ts`): the token goes, and a top
 POST to Minty's `/logout` (`postNavigate` in `lib/handoff.ts`; a GET answers 405, and a
 `strict-origin` referrer meta keeps the `Origin` it checks) ends the session everywhere. In the sheet, ‹ is the menu and × closes the sidebar, leaving the
 person on the page they were on - the sheet never adds a history entry, so it is not part of
-`lib/backLink.ts`'s settings area.
+the header Back's settings area (`HUB_BACK`, `lib/hubPaths.ts`).
 
 ## Tests
 

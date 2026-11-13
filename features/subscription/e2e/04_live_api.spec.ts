@@ -125,11 +125,11 @@ test.describe("over the live API", () => {
     );
     expect(asked).toEqual([`?next=${encodeURIComponent("/subscription")}`]);
     expect(await storedScope(page)).toEqual({ cookie: "", claim: "" });
-    // The way out sits in the header bar (PortalBack), not the page body; with no company
-    // scoped it is this app's own entity list.
+    // The way out sits in the header bar (PortalBack), not the page body; with nothing before
+    // it and no company scoped, its fallback is this app's own entity list.
     const wayOut = await page
       .getByRole("banner")
-      .getByRole("link", { name: "Back to the entity dashboard" })
+      .getByRole("link", { name: "Back", exact: true })
       .getAttribute("href");
     expect(wayOut).toMatch(/\/entities$/);
   });

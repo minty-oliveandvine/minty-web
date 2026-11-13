@@ -96,7 +96,8 @@ export const SUBSCRIPTION_OVERVIEW = "Subscription Overview";
 export const SUBSCRIPTION_UPDATES = "Subscription updates";
 export const MANAGE_SUBSCRIPTION = "Manage Subscription";
 export const GO_TO_BILLING = "Go to payment details and invoices";
-export const BACK_TO_ENTITIES = "Back to the entity dashboard";
+/** 08-A's way back: to where the person came from (2026-11-13; was "Back to the entity dashboard"). */
+export const OVERVIEW_BACK = "Back";
 export const NOTHING_TO_UPDATE = "Nothing needs your attention right now.";
 /** 08-A's card, named for what it is now that the eyebrow ("Payment Method") is gone. */
 export const BILLING_ACCOUNT = "Billing account";

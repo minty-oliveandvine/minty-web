@@ -347,7 +347,7 @@ docs/features/company-settings.md). What is on it:
 
 - **The settings chrome is the shared settings page** (`components/ui/SettingsPage.tsx`, since
   2026-11-10; minty-payment-request-web's header and pill row before): the app's bar (`AppHeader`:
-  "‹ Back" to the page the person came from - `components/ui/BackLink.tsx`, for a new tab the Petty
+  "‹ Back" to the page the person came from - `@minty/shared/backLink`'s `BackLink` (v0.20), for a new tab the Petty
   Cash dashboard; "Settings"; the viewer's initials - `viewer` on the page model - and the side
   menu, Figma 02 on every page, `entities.md`), then the 880px column: the company's name (the page
   model's), "Settings", and the tab row (`components/ui/SettingsTabs.tsx`, spelled by
@@ -606,7 +606,8 @@ re-homed and redrawn to Figma section "04 · Manage Subscriptions — the payer 
   accept_ → `PORTAL.incoming?transfer=`, both built (§14); the seams still to be built from
   their own Figma frames: _Subscribe_ → `moduleRoutes(id).activate(code)`; the payment-failed
   "here" → `PORTAL.billing`, the billing page (§15); "Back to the previous page" →
-  `history.back()`.
+  `goBack` to where the person came from, past Transfer and Incoming (`PORTAL_BACK`, 2026-11-13);
+  the overview in a fresh tab.
 - **The module page's _Manage Subscription_** lands here with `?entity=<id>`: that company's row
   opens (§11) and is scrolled into view — the design's target of that CTA is exactly this.
 - **States** (04-B/C/D/E): nothing paid for (the sad cat, _Go to entity list_ → the entity
@@ -617,7 +618,8 @@ re-homed and redrawn to Figma section "04 · Manage Subscriptions — the payer 
 - **Chrome**: minty-payment-request-web's header (`routes/PortalChrome.tsx` over `components/ui/AppHeader`)
   over the design's 1298px column. **The header's left is the page's own back line** (2026-09-29,
   the user: no more chevron header): "‹ Entity List" and the "Subscriptions" title are gone, and
-  _Back to the entity dashboard_ (08-A) / _Back to the previous page_ (04-A, 08-B) moved out of
+  _Back_ (08-A; "Back to the entity dashboard" until 2026-11-13) / _Back to the previous page_ (04-A, 08-B; each returns to where the person came from, past
+  its own sub-pages - `PORTAL_BACK`, 2026-11-13) moved out of
   the page into the bar, starting exactly where the teal banner does. The layout owns an empty
   slot in the header (`PortalBackSlot`, `AppHeader`'s `lead`) and the page portals its line into
   it (`components/PortalBack.tsx`); the slot pads itself with `cqw` against the header row, so it
@@ -1257,7 +1259,9 @@ its own** - it is the Stripe billing address of the card it charges (the user's 
 schema change), which 08-C writes.
 
 - **08-A "Subscription & Billing"**, at `/subscription` — where Minty's own link lands
-  (Flask's `next` defaults to it). "Back to the entity dashboard" in the header bar — which goes to **the
+  (Flask's `next` defaults to it). "Back" in the header bar returns to where the person came from
+  (past the portal's own pages, out to the app they came from - `PORTAL_BACK.overview`,
+  2026-11-13); with nothing before it (a new tab) it goes to **the
   company this browser is scoped to**, not Minty's entity picker (2026-09-23):
   `lib/mintyEntry.ts::mintyModulesUrl` builds `/entity/{id}/enter?next=/entity/{id}/modules` (no
   token since gap 4: `/enter` works on the accounts-api session, or signs in first), and Minty's `module_selector`
@@ -1516,7 +1520,7 @@ schema change), which 08-C writes.
   - **08-E is 08-Y as a modal**: the same Stripe form, built once as the page. Its "New billing
     account" heading is the sheet's form's (onboarding's 01-D); adding a card to an account reads
     "Add a payment method".
-  - **The list moved.** 08-A is the landing the design draws ("Back to the entity dashboard"
+  - **The list moved.** 08-A is the landing the design draws (its way back
     above it, _Manage Subscription_ → 04-A below), so `/subscription` is the overview now and
     the Manage Subscriptions list is `/subscription/subscriptions`. Flask's handoff default
     (`next=/subscription`) needs no change.

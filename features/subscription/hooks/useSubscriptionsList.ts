@@ -68,6 +68,8 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { goBack } from "@minty/shared/backLink";
+
 import { ApiError } from "@/lib/apiClient";
 import { isEntityScoped } from "@/lib/auth";
 import { redirectToHandoff } from "@/lib/handoff";
@@ -127,7 +129,7 @@ import {
   type ChangeAsked,
   type ChangeResult,
 } from "@/features/subscription/lib/changeResult";
-import { BILLING, PORTAL, moduleRoutes } from "@/features/subscription/lib/paths";
+import { BILLING, PORTAL, PORTAL_BACK, moduleRoutes } from "@/features/subscription/lib/paths";
 import { tickOf, type PendingChange } from "@/features/subscription/lib/subscriptionSummary";
 import {
   useEntitySummary,
@@ -1067,7 +1069,11 @@ export function useSubscriptionsList({
     const failing = entities.find((e) => e.modules.some((m) => m.status === "past_due"));
     router.push(BILLING.account({ entity: failing?.entity_id ?? null }));
   }, [router, entities]);
-  const back = useCallback(() => guardLeave(() => router.back()), [guardLeave, router]);
+  // To where the person came from (past Transfer and Incoming); the overview in a fresh tab.
+  const back = useCallback(
+    () => guardLeave(() => goBack(PORTAL.index, PORTAL_BACK.subscriptions)),
+    [guardLeave],
+  );
 
   return {
     status,

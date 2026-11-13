@@ -8,14 +8,17 @@
  * `SubscriptionOverview` reads the URL and hands the parameters here; the tests render this
  * directly with fixtures.
  *
- * The way back goes to the COMPANY this browser is scoped to, not to Minty's entity picker: a
- * person here from a company's module settings goes back through `/entity/<id>/modules`, to its
- * module selection - or straight into the module, when only one is on (Minty routes it). A
- * result's Back to Manage Subscriptions lands here UNSCOPED (it trades the company's token for
- * the payer's), and then the way back is Minty's entity list.
+ * "Back" returns to the page the person came from into the portal (`PORTAL_BACK.overview`: past
+ * the portal's own pages, out to the app they came from). With nothing before it (a new tab), it
+ * goes to the COMPANY this browser is scoped to, not to Minty's entity picker: through
+ * `/entity/<id>/modules`, to its module selection - or straight into the module, when only one
+ * is on (Minty routes it). A result's Back to Manage Subscriptions lands here UNSCOPED (it trades
+ * the company's token for the payer's), and then that fallback is Minty's entity list.
  */
 
 import { useSyncExternalStore } from "react";
+
+import { BackLink } from "@minty/shared/backLink";
 
 import { getAuth } from "@/lib/auth";
 import { mintyModulesUrl } from "@/lib/mintyEntry";
@@ -34,7 +37,8 @@ import {
   useBillingOverview,
   type UseBillingOverviewArgs,
 } from "@/features/subscription/hooks/useBillingOverview";
-import { BACK_TO_ENTITIES, OVERVIEW_TITLE } from "@/features/subscription/lib/billing";
+import { OVERVIEW_BACK, OVERVIEW_TITLE } from "@/features/subscription/lib/billing";
+import { PORTAL_BACK } from "@/features/subscription/lib/paths";
 
 // A primitive, not the auth object: a fresh object per read makes the store loop (PortalChrome).
 const noSubscribe = () => () => {};
@@ -48,9 +52,13 @@ export function SubscriptionOverviewScreen(args: UseBillingOverviewArgs) {
   return (
     <div className="flex flex-col gap-6 pb-16">
       <PortalBack>
-        <a href={mintyModulesUrl(entityId)} className={BACK_LINE_CLASS}>
-          {BACK_TO_ENTITIES}
-        </a>
+        <BackLink
+          href={mintyModulesUrl(entityId)}
+          className={BACK_LINE_CLASS}
+          {...PORTAL_BACK.overview}
+        >
+          {OVERVIEW_BACK}
+        </BackLink>
       </PortalBack>
       <div className="rounded-[32px] bg-gradient-to-r from-[#18c4c7] via-[#42ccc5] via-[74%] to-[#78d7c5] px-[54px] py-10">
         <h1 className="text-[40px] font-bold leading-none text-white">{OVERVIEW_TITLE}</h1>

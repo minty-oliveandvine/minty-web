@@ -13,16 +13,18 @@
 import Image from "next/image";
 import type { ReactNode } from "react";
 
-import { BackLink } from "@/components/ui/BackLink";
+import { BackLink } from "@minty/shared/backLink";
+
 import { NavMenu, type NavMenuProps } from "@/components/ui/NavMenu";
 import { ViewerBadge } from "@/components/ui/ViewerBadge";
+import { HUB_BACK } from "@/lib/hubPaths";
 import type { Viewer } from "@/lib/viewer";
 
 export type AppHeaderProps = {
   /** The page's name in the bar - omitted when a `lead` stands in for it. */
   title?: string;
   /** The way back: `href` is the fallback; a plain click returns to the page the person came
-   * from (components/ui/BackLink.tsx). Omitted on a page that is itself the start (the entity
+   * from (`@minty/shared/backLink`, `HUB_BACK`). Omitted on a page that is itself the start (the entity
    * list). */
   back?: {
     href: string;
@@ -99,6 +101,7 @@ export function AppHeader({
             ) : !lead && back ? (
               <BackLink
                 href={back.href}
+                {...HUB_BACK}
                 className="inline-flex shrink-0 items-center gap-0.5 text-sm font-medium text-primary transition-colors hover:text-secondary sm:text-base"
               >
                 <span

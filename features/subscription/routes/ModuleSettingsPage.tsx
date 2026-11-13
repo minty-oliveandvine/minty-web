@@ -6,7 +6,7 @@
  * the old `/subscription/entities/…/modules` addresses move here in proxy.ts). The company comes
  * from the address (`components/ui/CompanyFromAddress.tsx`). The query string carries only
  * `fixture` (dev only - see the hook); the way back is the page the person came from
- * (components/ui/BackLink.tsx). Nothing returns here from Stripe.
+ * (`@minty/shared/backLink`). Nothing returns here from Stripe.
  *
  * `useSearchParams` needs a Suspense boundary or `next build` refuses the page.
  */

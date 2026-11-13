@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * The portal's way back - "Back to the entity dashboard" (08-A), "Back to the previous page"
+ * The portal's way back - "Back" (08-A), "Back to the previous page"
  * (04-A, 08-B) - lives in the header bar (the user, 2026-09-29: no more "‹ Entity List"), lined
  * up with the teal banner's left edge. The header belongs to the layout and the line to the
  * page, so the layout owns an empty slot in the header and each page portals its line into it.

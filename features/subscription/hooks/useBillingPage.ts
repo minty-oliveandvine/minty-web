@@ -48,6 +48,8 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { goBack } from "@minty/shared/backLink";
+
 import { ApiError } from "@/lib/apiClient";
 
 import {
@@ -97,7 +99,7 @@ import {
   breakdownFilename,
 } from "@/features/subscription/lib/breakdown";
 import { saveBlob, saveTextFile } from "@/features/subscription/lib/download";
-import { BILLING, overviewPath } from "@/features/subscription/lib/paths";
+import { BILLING, PORTAL_BACK, overviewPath } from "@/features/subscription/lib/paths";
 
 export type BillingStatus = "loading" | "ready" | "error";
 
@@ -591,7 +593,11 @@ export function useBillingPage({
     },
     [router],
   );
-  const back = useCallback(() => router.push(overviewPath(account?.id ?? null)), [router, account]);
+  // To where the person came from (past this account's own pages); its overview in a fresh tab.
+  const back = useCallback(
+    () => goBack(overviewPath(account?.id ?? null), PORTAL_BACK.billing),
+    [account],
+  );
 
   /** Switch the card THIS account charges - from its next bill, for every company on it. */
   const chargeCard = useCallback(

@@ -40,9 +40,14 @@ import {
 const MOVE = "accounts/move";
 
 const push = vi.fn();
-const back = vi.fn();
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push, replace: vi.fn(), back }),
+  useRouter: () => ({ push, replace: vi.fn(), back: vi.fn() }),
+}));
+// "Back" to where the person came from: recorded, not followed (jsdom has no history to walk).
+const goBack = vi.hoisted(() => vi.fn());
+vi.mock("@minty/shared/backLink", async (original) => ({
+  ...(await original<typeof import("@minty/shared/backLink")>()),
+  goBack,
 }));
 
 const API = env.SUBSCRIPTION_API_URL;
@@ -82,7 +87,7 @@ describe("useSubscriptionsList", () => {
     vi.stubGlobal("fetch", fetchMock);
     setAuth("h.eyJ1c2VyX2lkIjoidTEifQ.s", "", "");
     push.mockReset();
-    back.mockReset();
+    goBack.mockReset();
   });
 
   afterEach(() => {
@@ -256,7 +261,11 @@ describe("useSubscriptionsList", () => {
       "/subscription/billing?entity=e-willow-court-limited",
     ]);
     // The panel's Change is not a seam any more: it opens "Billing Accounts" in place.
-    expect(back).toHaveBeenCalledTimes(1);
+    // Back: to where the person came from (past Transfer and Incoming), else the overview.
+    expect(goBack).toHaveBeenCalledWith("/subscription", {
+      skip: [expect.any(RegExp)],
+      leaveApp: true,
+    });
   });
 
   /**
@@ -829,7 +838,7 @@ describe("useSubscriptionsList", () => {
 
     act(() => result.current.back());
     expect(result.current.leavePrompt).not.toBeNull();
-    expect(back).not.toHaveBeenCalled();
+    expect(goBack).not.toHaveBeenCalled();
     act(() => result.current.stay());
 
     act(() => result.current.cancelSubscription(second));

@@ -205,6 +205,38 @@ describe("Matching a Minty company's accounts to Xero", () => {
     expect(screen.getByRole("button", { name: "Finish" })).toBeEnabled();
   });
 
+  it("a long code runs with the name, and a code that repeats the name isn't shown twice", async () => {
+    // Change your matches, 2026-11-13: Xero's codes (4000_01_01, a bank's name as its code) ran
+    // out of the 44px code column into the name.
+    api({
+      "GET /api/me/company/xero/matching": () =>
+        json(
+          matchingPage({
+            groups: [
+              {
+                key: "cash",
+                title: "Cash & bank",
+                rows: [row("a-pc", "Petty Cash", "Petty Cash", { kind: "bank", type: "bank" })],
+              },
+              {
+                key: "sales",
+                title: "Sales",
+                rows: [row("a-cc", "4000_01_01", "Sales_Credit Card")],
+              },
+            ],
+            options: [{ id: "x-pc", code: "Petty Cash", name: "Petty Cash", kind: "bank" }],
+          }),
+        ),
+    });
+    wrap(<MatchingScreen company={{ id: ID, name: "Olive Shop" }} />);
+    const name = await screen.findByText("Sales_Credit Card");
+    expect(name.closest("[data-account]")).toHaveTextContent("4000_01_01 Sales_Credit Card");
+    expect(screen.getByText("Petty Cash", { selector: "[data-account]" }).textContent).toBe(
+      "Petty Cash",
+    );
+    expect(screen.getByRole("option", { name: "Petty Cash" })).toBeInTheDocument();
+  });
+
   it("the header's Back goes to Integration itself, not back through Xero's sign-in", async () => {
     api({ "GET /api/me/company/xero/matching": () => json(matchingPage()) });
     wrap(<MatchingScreen company={COMPANY} />);

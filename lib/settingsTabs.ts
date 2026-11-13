@@ -45,7 +45,7 @@ const ORDER: CompanySettingsTab[] = [
 
 /**
  * The way back: a plain click returns to the page the person came from, whichever app
- * (components/ui/BackLink.tsx, lib/backLink.ts). The href is the fallback for a new tab: Petty
+ * (`@minty/shared/backLink`, `HUB_BACK`). The href is the fallback for a new tab: Petty
  * Cash's dashboard, on the Petty Cash app (the hand-off picks it when given no page).
  */
 export function settingsBackLink(entityId: string): { href: string; label: string } {

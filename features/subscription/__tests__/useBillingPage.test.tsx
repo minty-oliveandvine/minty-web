@@ -44,6 +44,12 @@ const replace = vi.fn();
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push, replace, back: vi.fn() }),
 }));
+// "Back" to where the person came from: recorded, not followed (jsdom has no history to walk).
+const goBack = vi.hoisted(() => vi.fn());
+vi.mock("@minty/shared/backLink", async (original) => ({
+  ...(await original<typeof import("@minty/shared/backLink")>()),
+  goBack,
+}));
 
 function reply(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
@@ -634,7 +640,7 @@ describe("useBillingPage", () => {
     expect(result.current.added).toBeNull();
   });
 
-  it("Add, Edit and Change billing details carry the account; Back is 08-A showing it", async () => {
+  it("Add, Edit and Change billing details carry the account; Back goes back, else to 08-A showing it", async () => {
     serve(accountsFor(WALLET_TWO));
     const { result } = renderHook(() => useBillingPage({ accountId: "acc-company-a" }));
     await waitFor(() => expect(result.current.status).toBe("ready"));
@@ -646,8 +652,13 @@ describe("useBillingPage", () => {
       "/subscription/billing/add?account=acc-company-a",
       "/subscription/billing/edit?card=pm_visa4121&account=acc-company-a",
       "/subscription/billing/details?account=acc-company-a",
-      "/subscription?account=acc-company-a",
     ]);
+    // Back is not a push: to where the person came from, past this account's own pages; with
+    // nothing before it, 08-A showing this account.
+    expect(goBack).toHaveBeenCalledWith("/subscription?account=acc-company-a", {
+      skip: [expect.any(RegExp)],
+      leaveApp: true,
+    });
   });
 
   it("a payer with no account at all is offered one, and no invoices are asked for", async () => {

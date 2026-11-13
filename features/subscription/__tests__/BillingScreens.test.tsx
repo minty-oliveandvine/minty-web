@@ -46,6 +46,12 @@ vi.mock("@/features/subscription/lib/download", () => ({
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push, replace, back: vi.fn() }),
 }));
+// "Back" to where the person came from: recorded, not followed (jsdom has no history to walk).
+const goBack = vi.hoisted(() => vi.fn());
+vi.mock("@minty/shared/backLink", async (original) => ({
+  ...(await original<typeof import("@minty/shared/backLink")>()),
+  goBack,
+}));
 
 // pdf.js draws on canvases from a worker, and jsdom has neither. The stand-in records the bytes it
 // is handed and names the document; Chromium draws the real pages (06_billing.spec.ts).
@@ -178,6 +184,26 @@ describe("the billing page", () => {
     push.mockReset();
   });
   afterEach(() => vi.unstubAllGlobals());
+
+  it("08-B: Back returns to where the person came from, past the billing pages; else the overview", async () => {
+    const user = userEvent.setup();
+    render(<BillingPageScreen fixture="B" />);
+    await screen.findByText("Company A Limited");
+
+    await user.click(screen.getByRole("button", { name: "Back to the previous page" }));
+    expect(push).not.toHaveBeenCalled();
+    expect(goBack).toHaveBeenCalledTimes(1);
+    const [fallback, options] = goBack.mock.calls[0];
+    expect(fallback).toMatch(/^\/subscription(\?account=[^&]+)?$/);
+    expect(options.leaveApp).toBe(true);
+    // the details and card forms come back here with a push: Back steps over them
+    const skipped = (path: string) => options.skip.some((rule: RegExp) => rule.test(path));
+    expect(skipped("/subscription/billing")).toBe(true);
+    expect(skipped("/subscription/billing/details")).toBe(true);
+    expect(skipped("/subscription/billing/edit")).toBe(true);
+    expect(skipped("/subscription")).toBe(false);
+    expect(skipped("/subscription/subscriptions")).toBe(false);
+  });
 
   it("08-B: one account - its name, address and email, the card it charges first, its invoices", async () => {
     const user = userEvent.setup();
@@ -834,11 +860,11 @@ describe("08-A, the portal's landing", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
     await user.click(within(overview).getByRole("button", { name: "Manage Subscription" }));
     expect(push).toHaveBeenCalledWith("/subscription/subscriptions");
-    // With no company scoped, the way back can only be the entity list - this app's own.
-    expect(screen.getByRole("link", { name: "Back to the entity dashboard" })).toHaveAttribute(
-      "href",
-      "/entities",
-    );
+    // Back goes where the person came from; with nothing before it and no company scoped, the
+    // entity list - this app's own.
+    const back = screen.getByRole("link", { name: "Back" });
+    expect(back).toHaveAttribute("href", "/entities");
+    expect(back).toHaveAttribute("data-back-link");
   });
 
   it("07-I: a declined handover is told once, over the landing, and marked seen", async () => {
@@ -1335,15 +1361,13 @@ describe("08-A, the portal's landing", () => {
     expect(screen.getByRole("region", { name: "Subscription Overview" })).toBeVisible();
   });
 
-  it("the way back goes to the scoped company's modules, signed in", () => {
+  it("with nothing before it, the way back goes to the scoped company's modules, signed in", () => {
     // Arrived from a company's module settings, the token names one. Minty's
     // /entity/<id>/modules then routes: one module in, two to the module selection.
     setAuth(TOKEN, "e1", "Olive & Vine Limited");
     render(<SubscriptionOverviewScreen fixture="A" today={TODAY} />);
 
-    const href = screen
-      .getByRole("link", { name: "Back to the entity dashboard" })
-      .getAttribute("href")!;
+    const href = screen.getByRole("link", { name: "Back" }).getAttribute("href")!;
     // through /enter, on the accounts-api session (no token in the address, gap 4)
     expect(href).toBe(
       `${env.ACCOUNTS_API_URL}/entity/e1/enter` +

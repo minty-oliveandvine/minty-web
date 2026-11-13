@@ -99,8 +99,14 @@ function refusal(err: unknown): string {
   return err instanceof ApiError ? err.message : "I couldn't reach the server. Mind trying again?";
 }
 
+/** The code, unless it only repeats the name (a Xero bank coded with its own name). */
+function shownCode(code: string | null | undefined, name: string): string {
+  return code && code.trim().toLowerCase() !== name.trim().toLowerCase() ? code : "";
+}
+
 function optionLabel(o: MatchOption): string {
-  return o.code ? `${o.code} · ${o.name}` : o.name;
+  const code = shownCode(o.code, o.name);
+  return code ? `${code} · ${o.name}` : o.name;
 }
 
 function Row({
@@ -119,7 +125,9 @@ function Row({
     !row.pick && row.suggestion ? fitting.find((o) => o.id === row.suggestion) : undefined;
   const picked = row.pick?.xero_account_id ?? "";
   const needed = row.used && !row.pick;
-  const label = `${row.code ? `${row.code} ` : ""}${row.name}`;
+  // Xero's codes can be long (4000_01_01): the code runs with the name instead of a fixed column.
+  const code = shownCode(row.code, row.name);
+  const label = `${code ? `${code} ` : ""}${row.name}`;
   const note = row.conflict
     ? MATCH_COPY.conflict(row.conflict.code, row.conflict.name)
     : row.combined_with.length
@@ -130,8 +138,12 @@ function Row({
     // the Xero account; one line each from a tablet up, the select under the name on a phone.
     <li className="flex min-w-0 flex-col gap-2 border-b border-set-line px-4 py-2.5 last:border-b-0 md:flex-row md:items-center md:gap-4">
       <div className="flex min-w-0 flex-1 items-center gap-3">
-        <span className="w-11 shrink-0 text-[12.5px] tabular-nums text-set-mute">{row.code}</span>
-        <span className="min-w-0 flex-1 break-words text-[14px] text-set-ink">
+        <span data-account className="min-w-0 flex-1 break-words text-[14px] text-set-ink">
+          {code ? (
+            <>
+              <span className="mr-1 text-[12.5px] tabular-nums text-set-mute">{code}</span>{" "}
+            </>
+          ) : null}
           {row.name}
           {row.used ? (
             <>

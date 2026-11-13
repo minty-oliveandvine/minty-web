@@ -70,5 +70,12 @@ export function companySettingsPath(
   return companyPath(entityId, entityName, `/settings/${tab}`);
 }
 
-/** `/entity/<shortid>/<name>/settings/<tab>` - the area lib/backLink.ts and the menu recognise. */
+/** `/entity/<shortid>/<name>/settings/<tab>` - the area the header's Back and the menu recognise. */
 export const COMPANY_SETTINGS_PATTERN = /^\/entity\/[^/]+\/[^/]+\/settings\/[^/]+\/?$/;
+
+/**
+ * The hub's header Back (`AppHeader`, `@minty/shared/backLink`): past a company's settings tabs
+ * (moving between tabs and reloads never count), and out to the app the person came from (Petty
+ * Cash, Payments) when they came from one - the hub's rule since 2026-10-05.
+ */
+export const HUB_BACK = { skip: [COMPANY_SETTINGS_PATTERN], leaveApp: true };
