@@ -1,7 +1,7 @@
 /**
  * One member of the company: initials, name and address, the role (a select where this person
- * may change it - roles at or below their own), the "Subscriber" tag on the person whose card
- * pays, "You" on their own row, and Remove where they may remove. On a phone the row stacks
+ * may change it - roles at or below their own), the "Subscriber" tag on the company's subscriber
+ * (accounts-api's `subscriber`: entities.subscriber_user_id, on a trial too), "You" on their own row, and Remove where they may remove. On a phone the row stacks
  * (name over role and actions); from 640px it is one line.
  */
 
