@@ -67,7 +67,7 @@ The browser tab names the tab and the company ("General - <company>", `SETTINGS_
 
 The members - initials, name, address, role, "You", and "Subscriber" on the person whose card pays
 (only they, and only as an admin, can change the company's modules). Per row Flask says what this
-person may do: change the role (a select offering the roles at or below their own) and remove
+person may do: change the role (a select offering the roles below their own, plus Admin for an admin - accounts-api's rule) and remove
 (asks first, `ConfirmDialog`; Flask refuses the payer, the last admin and a pending handover's
 nominee in its own words). Names are not edited here - each person keeps their own in My Profile.
 Invite (shop manager and up): an address (English only, `lib/emailInput.ts`), a role and the

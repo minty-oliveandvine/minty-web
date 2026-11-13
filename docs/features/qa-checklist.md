@@ -91,7 +91,7 @@ run" below).
 
 ## Settings — Users tab (`company-settings.md`)
 
-- [ ] The role `<select>` on any row only offers ranks at or below the viewer's own rank.
+- [ ] The role `<select>` on any row only offers ranks below the viewer's own rank; an admin also sees Admin (and can change or remove another admin, but not the only admin or the payer).
 - [ ] Attempting to remove the payer, the last admin, or a pending handover's nominee is refused
       in Flask's own words — try each of the three.
 - [ ] The "Subscriber" tag appears only on the one person whose card actually pays.
