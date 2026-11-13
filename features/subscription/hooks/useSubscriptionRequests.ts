@@ -362,7 +362,10 @@ export function useSubscriptionRequests({
 
   const accept = useCallback(async () => {
     const chosen = reviewed?.account ?? null;
-    if (!row || busy || row.blockers.length > 0 || !chosen) return;
+    // Before anyone confirms the company's billing, accepting only makes this person its
+    // subscriber (owner, 2026-11-13): no account, no module choice - the whole company moves.
+    const unconfirmed = row?.billing_confirmed === false;
+    if (!row || busy || row.blockers.length > 0 || (!chosen && !unconfirmed)) return;
     const taking = reviewed?.taking ?? [];
     const offered = reviewed?.offered ?? [];
     setBusy(true);
@@ -371,10 +374,13 @@ export function useSubscriptionRequests({
       // Sent only when it is a CHOICE. Unchanged, the whole company goes, and omitting the
       // field says exactly that rather than re-listing what the API would read anyway.
       const chose = taking.length < offered.length;
-      await respondToTransfer(row.id, true, {
-        codes: chose ? taking : undefined,
-        billingGroupId: chosen.id,
-      });
+      await respondToTransfer(
+        row.id,
+        true,
+        unconfirmed || !chosen
+          ? {}
+          : { codes: chose ? taking : undefined, billingGroupId: chosen.id },
+      );
       router.push(
         `${PORTAL.subscriptions}?entity=${encodeURIComponent(row.entity_id)}&transferred=1`,
       );

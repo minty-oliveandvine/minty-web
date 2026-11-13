@@ -353,6 +353,46 @@ test.describe("manage subscriptions", () => {
     });
   }
 
+  // Owner, 2026-11-13: a company nobody holds yet is view-only for every admin and accountant
+  // until its subscriber is assigned.
+  for (const width of [360, 768, 1440]) {
+    test(`at ${width}px a company with no subscriber says so and offers nothing`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height: 780 });
+      const [first, ...rest] = ENTITIES;
+      const unassigned = {
+        ...first,
+        subscriber: null,
+        has_subscriber: false,
+        subscriber_set: false,
+        can_manage: false,
+      };
+      const posts = await stubApi(page, subscriptionsPage([unassigned, ...rest]));
+      await handoff(page, creds(), "/subscription/subscriptions", { entity_id: "" });
+
+      const row = body(page).locator(`li[data-entity='${unassigned.entity_id}']`);
+      await expect(row).toBeVisible();
+      await expect(row.getByRole("button", { name: /^(Start Trial|Subscribe) ·/ })).toHaveCount(0);
+      await row.getByRole("button", { name: `Open ${unassigned.entity_name}` }).click();
+      const open = body(page).locator(`li[data-entity='${unassigned.entity_id}'][data-open]`);
+      await expect(
+        open.getByText("This company's subscriber hasn't been set yet", { exact: false }),
+      ).toBeVisible({ timeout: 15_000 });
+      await expect(open.getByRole("checkbox")).toHaveCount(0);
+      await expect(
+        open.getByRole("button", { name: /Activate Subscription|Start Free Trial/ }),
+      ).toHaveCount(0);
+      expect(
+        await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1),
+      ).toBe(true);
+      if (process.env.E2E_SHOTS) {
+        await open.screenshot({ path: `${process.env.E2E_SHOTS}/unassigned-${width}.png` });
+      }
+      expect(posts).toEqual([]);
+    });
+  }
+
   test("at 360px a trial's tick: untick, tick, untick - each saves, nothing says cancel", async ({
     page,
   }) => {

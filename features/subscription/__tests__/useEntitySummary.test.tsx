@@ -77,7 +77,7 @@ describe("useEntitySummary", () => {
       const url = new URL(String(input));
       if (url.pathname.endsWith("/modules")) return reply(200, SUMMARY_FIXTURES.M21);
       return reply(403, {
-        error: "Only the person who pays for this company can change its subscription.",
+        error: "Only this company's subscriber can change its subscription.",
       });
     });
     const { result } = renderHook(() => useEntitySummary(entity, { today: TODAY }));

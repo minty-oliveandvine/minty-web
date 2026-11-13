@@ -19,6 +19,7 @@ import {
   type FixtureFrame,
 } from "@/features/subscription/__fixtures__/modulePage";
 import type { ModulePage } from "@/features/subscription/api/moduleSettings";
+import { UNASSIGNED } from "@/features/subscription/components/ManagedByNotice";
 import { ModuleSettingsScreen } from "@/features/subscription/routes/ModuleSettingsScreen";
 
 const push = vi.fn();
@@ -476,6 +477,13 @@ describe("ModuleSettingsScreen", () => {
     await show(NOT_ADMIN);
     expect(within(screen.getByRole("main")).queryByRole("button")).toBeNull();
     expect(screen.getByText("Only admins can change modules.")).toBeInTheDocument();
+  });
+
+  // Owner, 2026-11-13: only the company's subscriber changes it; with none assigned, nobody may.
+  it("a company with no subscriber assigned says so and offers no button", async () => {
+    await show({ ...NOT_ADMIN, subscriber_set: false });
+    expect(within(screen.getByRole("main")).queryByRole("button")).toBeNull();
+    expect(screen.getByText(UNASSIGNED)).toBeInTheDocument();
   });
 
   it.each(["A", "B", "C", "D", "E", "F"] as FixtureFrame[])(

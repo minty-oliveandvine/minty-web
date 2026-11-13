@@ -18,6 +18,7 @@ import {
   SubscriptionSummaryRow,
   type SummaryRowHandlers,
 } from "@/features/subscription/components/SubscriptionSummaryRow";
+import { UNASSIGNED } from "@/features/subscription/components/ManagedByNotice";
 import { AUTO_RENEW, TRIAL_TERMS } from "@/features/subscription/components/RowFooter";
 import {
   CONFIRM_CHANGE,
@@ -411,6 +412,7 @@ describe("a read-only row (can_manage false)", () => {
       ...entity,
       subscriber: who,
       has_subscriber: who !== null,
+      subscriber_set: who !== null,
       can_manage: false,
     };
     const on = handlers();
@@ -454,9 +456,10 @@ describe("a read-only row (can_manage false)", () => {
     expect(screen.queryByRole("button", { name: /Start Free Trial/ })).toBeNull();
   });
 
-  it("with nobody paying yet, says only an admin can change it", () => {
+  // Owner, 2026-11-13: a company nobody holds is view-only for everyone until one is assigned.
+  it("with no subscriber assigned, says so and offers nothing", () => {
     showReadOnly("M21", null);
-    expect(screen.getByText("Only admins can change modules.")).toBeInTheDocument();
+    expect(screen.getByText(UNASSIGNED)).toBeInTheDocument();
     expect(screen.queryByRole("checkbox")).toBeNull();
   });
 });

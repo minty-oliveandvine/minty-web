@@ -20,7 +20,7 @@ import {
   SUBSCRIBER_OPTIONS,
   SUBSCRIBER_OPTIONS_PENDING,
 } from "@/features/subscription/__fixtures__/transfers";
-import { NEEDS_ACCOUNT } from "@/features/subscription/lib/transfer";
+import { NEEDS_ACCOUNT, UNCONFIRMED_NOTE } from "@/features/subscription/lib/transfer";
 import { ManageSubscriptionsScreen } from "@/features/subscription/routes/ManageSubscriptionsScreen";
 import { SubscriptionRequestsScreen } from "@/features/subscription/routes/SubscriptionRequestsScreen";
 import { TransferSubscriptionScreen } from "@/features/subscription/routes/TransferSubscriptionScreen";
@@ -254,6 +254,27 @@ describe("SubscriptionRequestsScreen", () => {
     expect(await screen.findByRole("dialog", { name: "New billing account" })).toBeInTheDocument();
     expect(push).not.toHaveBeenCalled();
     expect(screen.getByRole("region", { name: "Billing Accounts" })).toBeInTheDocument();
+  });
+
+  // Owner, 2026-11-13: nobody has confirmed the company's billing, so accepting only makes this
+  // person its subscriber - no account, no module choice, nothing charged.
+  it("07-D for a company whose billing nobody has confirmed: no account asked, Confirm ready", async () => {
+    serve({
+      "GET /api/me/subscriptions/transfers": {
+        transfers: [{ ...INCOMING_REQUEST, billing_confirmed: false }],
+      },
+      "GET /api/me/billing/accounts": RECIPIENT_NO_ACCOUNTS,
+    });
+    render(<SubscriptionRequestsScreen today={TODAY} />);
+    const review = await screen.findByRole("region", { name: "Transfer request" });
+    await within(review).findByRole("article", { name: "Petty Cash" });
+    expect(within(review).queryByText(NEEDS_ACCOUNT)).toBeNull();
+    expect(within(review).queryByRole("button", { name: "Add a billing account" })).toBeNull();
+    expect(within(review).queryByRole("checkbox")).toBeNull();
+    expect(screen.getByText(UNCONFIRMED_NOTE)).toBeInTheDocument();
+    expect(
+      within(review).getByRole("button", { name: "Confirm Subscription Transfer" }),
+    ).toBeEnabled();
   });
 });
 

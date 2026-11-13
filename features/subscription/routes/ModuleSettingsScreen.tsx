@@ -117,7 +117,10 @@ export function ModuleSettingsScreen(args: ModuleSettingsScreenProps) {
             </p>
             {m.page && !m.page.can_manage_modules && (
               <div className="mt-2">
-                <ManagedByNotice payer={m.page.payer} />
+                <ManagedByNotice
+                  payer={m.page.payer}
+                  subscriberSet={m.page.subscriber_set !== false}
+                />
               </div>
             )}
 

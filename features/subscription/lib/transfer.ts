@@ -48,6 +48,10 @@ export const NO_BILLING_ACCOUNT_YET = "No billing account yet";
  * offered to any admin, and the account is only needed at the moment of accepting, which is
  * what this says. A card only ever comes with a billing account (the user, 2026-10-01).
  */
+/** 07-D's note for a company whose billing nobody has confirmed (owner, 2026-11-13). */
+export const UNCONFIRMED_NOTE =
+  "Nobody has confirmed billing for this company yet, so nothing is charged. You'll confirm its billing when you activate its subscription.";
+
 export const NEEDS_ACCOUNT =
   "Choose or open a billing account to take this over. Nothing is charged until you confirm.";
 /** 07-E: the panel's title and the line under it. */

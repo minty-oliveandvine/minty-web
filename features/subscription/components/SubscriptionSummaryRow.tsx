@@ -496,7 +496,12 @@ export function SubscriptionSummaryRow({
         </div>
       )}
 
-      {readOnly && <ManagedByNotice payer={entity.subscriber} />}
+      {readOnly && (
+        <ManagedByNotice
+          payer={entity.subscriber}
+          subscriberSet={entity.subscriber_set ?? entity.subscriber !== null}
+        />
+      )}
 
       {(status === "ready" || loading) && view && (
         <>

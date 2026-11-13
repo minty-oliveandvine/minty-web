@@ -52,6 +52,13 @@ export type PortalEntity = {
   /** False on exactly those rows. Absent on an older answer, which means "it has one". */
   has_subscriber?: boolean;
   /**
+   * Whether anyone holds the subscription (owner, 2026-11-13). `subscriber` names the company's
+   * subscriber - its creator or whoever it was handed to - even before billing is confirmed
+   * (`has_subscriber` false); false here means nobody is assigned, and nobody may change it.
+   * Absent on an older answer, which means "set".
+   */
+  subscriber_set?: boolean;
+  /**
    * Whether the viewer may change this company's subscription (owner, 2026-11-12): only its
    * subscriber, or an admin while nobody pays. Every admin and accountant of a company is shown
    * it; on a false row nothing is offered and `subscriber` names who to ask. Absent on an older
@@ -245,6 +252,12 @@ export type IncomingTransfer = {
   settings_path: string;
   from_name: string;
   from_user_id: string;
+  /**
+   * False when nobody has confirmed this company's billing yet (owner, 2026-11-13): accepting
+   * only makes the recipient its subscriber - no billing account is asked for and nothing is
+   * charged; they confirm billing when they activate. Absent on an older answer: confirmed.
+   */
+  billing_confirmed?: boolean;
   status: string;
   expires_at: string;
   amount: number | null;

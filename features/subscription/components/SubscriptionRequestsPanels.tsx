@@ -30,6 +30,7 @@ import {
   NO_REQUESTS,
   NO_REQUESTS_BODY,
   TRANSFER_CHARGE_NOTE,
+  UNCONFIRMED_NOTE,
   expiresLabel,
 } from "@/features/subscription/lib/transfer";
 
@@ -145,9 +146,12 @@ export function IncomingRequestReview({
 }) {
   const { row, view, viewStatus, card, account, offered, taking } = reviewed;
   const blocked = row.blockers.length > 0;
+  // Nobody has confirmed the company's billing (owner, 2026-11-13): accepting only makes this
+  // person its subscriber, so there is no account to choose and no module to drop.
+  const unconfirmed = row.billing_confirmed === false;
   // Only once the accounts have been READ: until then there is none chosen because nothing has
   // answered yet, and saying "add one" to someone who has three is worse than saying nothing.
-  const needsAccount = viewStatus === "ready" && account === null;
+  const needsAccount = !unconfirmed && viewStatus === "ready" && account === null;
   const panel: SummaryView["panel"] | null = view?.panel ?? null;
   // The plan the recipient ends up on: the future half when something has been unticked,
   // otherwise the company as it stands. Normalised to one shape so the price box and the
@@ -187,13 +191,14 @@ export function IncomingRequestReview({
               <SummaryModuleCard
                 module={module}
                 onToggle={
+                  !unconfirmed &&
                   offered.includes(module.code) &&
                   !(taking.length === 1 && taking[0] === module.code)
                     ? () => onToggleModule(module.code)
                     : undefined
                 }
               />
-              {offered.includes(module.code) && (
+              {!unconfirmed && offered.includes(module.code) && (
                 /* THE CHOICE, not the module's state. 07-D is titled "Choose Modules" and
                    this is what does the choosing: ticked = "I am taking this on", and
                    unticking it cancels that module for the company as part of accepting.
@@ -284,22 +289,26 @@ export function IncomingRequestReview({
             <span className="col-start-1 row-start-3 text-right text-sm text-[#737a87]">
               {chosen?.lines.find((l) => l.tag)?.tag ?? ""}
             </span>
-            <div className="col-start-2 row-start-3 flex flex-col items-end justify-self-end">
-              {account && (
-                <p className="text-[15px] text-[#737a87]" data-billing-account>
-                  {account.name}
-                </p>
-              )}
-              <CardNumber account={account} card={card} />
-            </div>
+            {!unconfirmed && (
+              <>
+                <div className="col-start-2 row-start-3 flex flex-col items-end justify-self-end">
+                  {account && (
+                    <p className="text-[15px] text-[#737a87]" data-billing-account>
+                      {account.name}
+                    </p>
+                  )}
+                  <CardNumber account={account} card={card} />
+                </div>
 
-            <button
-              type="button"
-              onClick={onChangeCard}
-              className="col-start-2 row-start-4 justify-self-end text-[15px] text-quiet hover:underline"
-            >
-              {needsAccount ? ADD_BILLING_ACCOUNT : "Change"}
-            </button>
+                <button
+                  type="button"
+                  onClick={onChangeCard}
+                  className="col-start-2 row-start-4 justify-self-end text-[15px] text-quiet hover:underline"
+                >
+                  {needsAccount ? ADD_BILLING_ACCOUNT : "Change"}
+                </button>
+              </>
+            )}
           </div>
           {chosen && (
             <PriceBox price={chosen.price} struck={chosen.struck} greyed={chosen.greyed} />
@@ -368,7 +377,9 @@ export function IncomingRequestReview({
         </section>
       </div>
 
-      <p className="text-[15px] text-[#a0a8b2]">{TRANSFER_CHARGE_NOTE}</p>
+      <p className="text-[15px] text-[#a0a8b2]">
+        {unconfirmed ? UNCONFIRMED_NOTE : TRANSFER_CHARGE_NOTE}
+      </p>
     </section>
   );
 }

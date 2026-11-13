@@ -90,7 +90,15 @@ export type ModulePage = {
    * null both when nobody pays and when the viewer is the one who does.
    */
   has_subscriber: boolean;
-  /** Who pays for this company when it is not the viewer; named in the notice. */
+  /**
+   * Whether anyone holds the subscription at all (owner, 2026-11-13): false = no subscriber
+   * assigned yet, so nobody may change it. Absent on an older answer, which means "set".
+   */
+  subscriber_set?: boolean;
+  /**
+   * Who holds this company's subscription when it is not the viewer - the payer, or before
+   * billing is confirmed its designated subscriber (its creator); named in the notice.
+   */
   payer: { user_id: string; name: string; email: string } | null;
   /** The person looking, for the header. */
   viewer: { name: string; initials: string };

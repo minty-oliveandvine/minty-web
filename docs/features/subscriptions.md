@@ -428,14 +428,24 @@ started=<code>` and let the list rebuild the row from the company's page model a
 - **Who sees what on Manage Subscriptions (owner, 2026-11-12).**
   - **Who sees a company:** every admin and accountant of it sees it on the list, whoever pays. The
     API marks each row `can_manage`.
-  - **A read-only row** (`can_manage` false: someone else pays, or nobody pays and the viewer is
-    an accountant):
+  - **Only the subscriber changes a company (owner, 2026-11-13).** The subscriber is its creator,
+    or whoever it was handed to (`entities.subscriber_user_id`), and the payer once billing is
+    confirmed. A designated subscriber whose billing isn't confirmed sees Activate
+    (`has_subscriber` false, `can_manage` true). A company nobody holds (`subscriber_set` false)
+    is view-only for everyone.
+  - **A read-only row** (`can_manage` false: someone else is the subscriber, or nobody is):
     - Its closed row has no Start Trial, Subscribe or ⋮ (`portalRows.readOnlyCell`: "Not
       subscribed" / "Not active").
     - Its open row shows the cards, plan and price with no tick, button, payment method or Change.
-    - `ManagedByNotice` names the subscriber, or says "Only admins can change modules." when
-      nobody pays yet.
+    - `ManagedByNotice` (also on the module page) names the subscriber, says "This company's
+      subscriber hasn't been set yet, so its subscription can't be changed for now." when nobody
+      holds it, and keeps "Only admins can change modules." for a subscriber who is no longer an
+      admin.
     - The subscriber's card is never fetched for it (`useEntitySummary`).
+  - **Handing over before billing is confirmed:** the incoming offer carries
+    `billing_confirmed: false`. 07-D then asks for no billing account and offers no module ticks,
+    and says nothing is charged (`UNCONFIRMED_NOTE`). Accepting posts no `billing_group_id` and
+    makes the recipient the subscriber.
   - **The figures** (08-A's `overview` and My Profile's overview) count only the viewer's own rows.
   - **The sidebar item** is drawn only when accounts-api's `user.can_view_subscriptions` is true
     (`sidebarHost.loadViewer` passes it to `@minty/shared` v0.19). That covers admins, accountants

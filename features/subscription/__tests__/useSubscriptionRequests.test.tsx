@@ -275,6 +275,30 @@ describe("useSubscriptionRequests", () => {
     );
   });
 
+  // Owner, 2026-11-13: before anyone confirms the company's billing, a handover only moves who
+  // holds the subscription - no billing account is asked for, even from someone who has none.
+  it("a company whose billing nobody has confirmed is accepted with no account", async () => {
+    serve(
+      [{ ...INCOMING_REQUEST, billing_confirmed: false }],
+      {},
+      { ...RECIPIENT_ACCOUNTS, accounts: [] },
+    );
+    const { result } = renderHook(() => useSubscriptionRequests({ today: TODAY }));
+    await waitFor(() => expect(result.current.reviewed?.viewStatus).toBe("ready"));
+    expect(result.current.reviewed?.account).toBeNull();
+    await act(() => result.current.accept());
+    expect(posts).toEqual([
+      {
+        path: "/api/me/subscriptions/transfer/respond",
+        body: { transfer: "t-1", accept: true },
+        entity: null,
+      },
+    ]);
+    expect(push).toHaveBeenCalledWith(
+      "/subscription/subscriptions?entity=e-new-company&transferred=1",
+    );
+  });
+
   it("a refused accept says why and lets the person try again; a blocked one cannot be accepted", async () => {
     serve([INCOMING_REQUEST], {
       "/api/me/subscriptions/transfer/respond": {
